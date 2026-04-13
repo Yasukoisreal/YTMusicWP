@@ -1,0 +1,1110 @@
+<Page
+    x:Class="YTMusicWP.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:YTMusicWP"
+    RequestedTheme="Dark"
+    Background="#121212">
+
+    <Page.Resources>
+        <Style x:Key="IconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="50"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="{TemplateBinding Background}" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="ButtonScale" ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="0.8" Duration="0:0:0.05"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="0.8" Duration="0:0:0.05"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="ContentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CategoryButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="ButtonScale" ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="Pressed">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="0.95" Duration="0:0:0.05"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="0.95" Duration="0:0:0.05"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled"/>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="SongItemTemplate">
+            <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
+                <FlyoutBase.AttachedFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♥ Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="➕ Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="✖ Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                    </MenuFlyout>
+                </FlyoutBase.AttachedFlyout>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Rectangle Grid.Column="0" Width="55" Height="55" Margin="0,0,15,0" RadiusX="6" RadiusY="6">
+                    <Rectangle.Fill>
+                        <ImageBrush Stretch="UniformToFill">
+                            <ImageBrush.ImageSource>
+                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                            </ImageBrush.ImageSource>
+                            <ImageBrush.RelativeTransform>
+                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                            </ImageBrush.RelativeTransform>
+                        </ImageBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#AAAAAA" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <Button Grid.Column="2" Content="⋮" Foreground="#AAAAAA" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PlaylistSongItemTemplate">
+            <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
+                <FlyoutBase.AttachedFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♥ Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="✖ Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
+                        <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                    </MenuFlyout>
+                </FlyoutBase.AttachedFlyout>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Rectangle Grid.Column="0" Width="55" Height="55" Margin="0,0,15,0" RadiusX="6" RadiusY="6">
+                    <Rectangle.Fill>
+                        <ImageBrush Stretch="UniformToFill">
+                            <ImageBrush.ImageSource>
+                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                            </ImageBrush.ImageSource>
+                            <ImageBrush.RelativeTransform>
+                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                            </ImageBrush.RelativeTransform>
+                        </ImageBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#AAAAAA" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <Button Grid.Column="2" Content="⋮" Foreground="#AAAAAA" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="HorizontalSongItemTemplate">
+            <Grid Width="140" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
+                <FlyoutBase.AttachedFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♥ Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="➕ Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                    </MenuFlyout>
+                </FlyoutBase.AttachedFlyout>
+                <StackPanel>
+                    <Rectangle Width="140" Height="140" RadiusX="8" RadiusY="8" Margin="0,0,0,10">
+                        <Rectangle.Fill>
+                            <ImageBrush Stretch="UniformToFill">
+                                <ImageBrush.ImageSource>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
+                                </ImageBrush.ImageSource>
+                                <ImageBrush.RelativeTransform>
+                                    <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                                </ImageBrush.RelativeTransform>
+                            </ImageBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding ChannelName}" FontSize="12" Foreground="#AAAAAA" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="GridSongItemTemplate">
+            <Border Background="#2A2A2A" CornerRadius="6" Margin="0,0,10,10" Height="56" HorizontalAlignment="Stretch" Holding="SongItem_Holding">
+                <FlyoutBase.AttachedFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                    </MenuFlyout>
+                </FlyoutBase.AttachedFlyout>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="56"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Rectangle Grid.Column="0" Width="56" Height="56" RadiusX="6" RadiusY="6">
+                        <Rectangle.Fill>
+                            <ImageBrush Stretch="UniformToFill">
+                                <ImageBrush.ImageSource>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                                </ImageBrush.ImageSource>
+                                <ImageBrush.RelativeTransform>
+                                    <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                                </ImageBrush.RelativeTransform>
+                            </ImageBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis" Margin="8,0,5,0"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <Style x:Key="StretchItemStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style x:Key="HorizontalItemStyle" TargetType="ListViewItem">
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style x:Key="GridItemStyle" TargetType="GridViewItem">
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style x:Key="DarkTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,8,10,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid Background="{TemplateBinding Background}">
+                            <TextBlock x:Name="PlaceholderTextContentPresenter" Foreground="#888888" Text="{TemplateBinding PlaceholderText}" Margin="{TemplateBinding Padding}" IsHitTestVisible="False" VerticalAlignment="Center"/>
+                            <ScrollViewer x:Name="ContentElement" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ModernSliderStyle" TargetType="Slider">
+            <Setter Property="Background" Value="#555555"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Margin="0,15" Background="Transparent">
+                            <Grid x:Name="HorizontalTemplate">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="4" Fill="{TemplateBinding Background}" VerticalAlignment="Center" Margin="0"/>
+                                <Rectangle x:Name="HorizontalDecreaseRect" Grid.Column="0" Height="4" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="0"/>
+
+                                <Thumb x:Name="HorizontalThumb" Grid.Column="1" Margin="0" Padding="0" Background="{TemplateBinding Foreground}">
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Grid Background="Transparent" Width="20" Height="20">
+                                                <Ellipse Width="16" Height="16" Fill="{TemplateBinding Background}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Grid>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Storyboard x:Name="SlideUpStoryboard">
+            <DoubleAnimation Storyboard.TargetName="NowPlayingTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.3">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        <Storyboard x:Name="SlideDownStoryboard" Completed="SlideDownStoryboard_Completed">
+            <DoubleAnimation Storyboard.TargetName="NowPlayingTransform" Storyboard.TargetProperty="Y" To="1000" Duration="0:0:0.3">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseIn"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        <Storyboard x:Name="MenuSlideUpStoryboard">
+            <DoubleAnimation Storyboard.TargetName="MenuTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.25">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+        <Storyboard x:Name="MenuSlideDownStoryboard" Completed="MenuSlideDownStoryboard_Completed">
+            <DoubleAnimation Storyboard.TargetName="MenuTransform" Storyboard.TargetProperty="Y" To="800" Duration="0:0:0.25">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseIn"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <DataTemplate x:Key="QueueItemTemplate">
+            <Grid Margin="0,0,0,15" Background="Transparent">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Width="45" Height="45" CornerRadius="4" Margin="0,0,15,0" Background="#333333">
+                    <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                    <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#AAAAAA" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Pivot x:Name="MainPivot" Title="YOUTUBE MUSIC" Foreground="#1DB954">
+
+                <PivotItem Header="Home">
+                    <Grid>
+                        <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10"/>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,5,0,0">
+                            <StackPanel Margin="0,0,0,30">
+                                <TextBlock x:Name="GreetingText" Text="Good evening" FontSize="26" FontWeight="Bold" Foreground="White" Margin="10,0,0,15"/>
+
+                                <GridView x:Name="HomeQuickGrid" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,25" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
+                                    <GridView.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2"/>
+                                        </ItemsPanelTemplate>
+                                    </GridView.ItemsPanel>
+                                </GridView>
+
+                                <StackPanel x:Name="HomeHistorySection" Visibility="Collapsed">
+                                    <TextBlock Text="Jump back in" FontSize="22" FontWeight="Bold" Foreground="White" Margin="10,0,0,10"/>
+                                    <ListView x:Name="HomeHistoryCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,30">
+                                        <ListView.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <VirtualizingStackPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ListView.ItemsPanel>
+                                    </ListView>
+                                </StackPanel>
+
+                                <TextBlock Text="Made for you" FontSize="22" FontWeight="Bold" Foreground="White" Margin="10,0,0,10"/>
+                                <ListView x:Name="HomeTrendingCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,30">
+                                    <ListView.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ListView.ItemsPanel>
+                                </ListView>
+
+                                <TextBlock Text="Pop Hits" FontSize="22" FontWeight="Bold" Foreground="White" Margin="10,0,0,10"/>
+                                <ListView x:Name="HomePopCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,30">
+                                    <ListView.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ListView.ItemsPanel>
+                                </ListView>
+
+                                <TextBlock Text="Chill vibes" FontSize="22" FontWeight="Bold" Foreground="White" Margin="10,0,0,10"/>
+                                <ListView x:Name="HomeLofiCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,30">
+                                    <ListView.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ListView.ItemsPanel>
+                                </ListView>
+
+                                <TextBlock Text="Workout Motivation" FontSize="22" FontWeight="Bold" Foreground="White" Margin="10,0,0,10"/>
+                                <ListView x:Name="HomeWorkoutCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,10">
+                                    <ListView.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ListView.ItemsPanel>
+                                </ListView>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </PivotItem>
+
+                <PivotItem Header="Search">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Margin="0,5,15,10" Height="44" Background="#222222" CornerRadius="22" BorderThickness="0" VerticalAlignment="Top">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="SearchBox" Grid.Column="0" TextChanged="SearchBox_TextChanged" PlaceholderText="Songs, albums, artists..." Margin="10,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
+                                <Button x:Name="SearchButton" Grid.Column="1" Click="SearchButton_Click" Foreground="White" Width="50" Style="{StaticResource IconButtonStyle}">
+                                    <SymbolIcon Symbol="Find"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="1">
+                            <ProgressBar x:Name="SearchLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
+
+                            <ScrollViewer x:Name="DefaultSearchUI" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="0,15,15,0">
+                                    <TextBlock Text="Browse all" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                            <RowDefinition Height="100"/>
+                                        </Grid.RowDefinitions>
+
+                                        <Button Grid.Row="0" Grid.Column="0" Tag="Global Top 50 Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#E13300" CornerRadius="8">
+                                                <TextBlock Text="Global 50" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="0" Grid.Column="1" Tag="Billboard Hot 100" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#1DB954" CornerRadius="8">
+                                                <TextBlock Text="Billboard" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="1" Grid.Column="0" Tag="Pop Music Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#509BF5" CornerRadius="8">
+                                                <TextBlock Text="Pop" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="1" Grid.Column="1" Tag="EDM Dance House Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#8C1932" CornerRadius="8">
+                                                <TextBlock Text="EDM / Dance" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="2" Grid.Column="0" Tag="K-Pop Trending Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#148A08" CornerRadius="8">
+                                                <TextBlock Text="K-Pop" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="2" Grid.Column="1" Tag="J-Pop Trending Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#E1118C" CornerRadius="8">
+                                                <TextBlock Text="J-Pop" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="3" Grid.Column="0" Tag="Hip-Hop Rap Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#BC5900" CornerRadius="8">
+                                                <TextBlock Text="Hip-Hop" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="3" Grid.Column="1" Tag="R&amp;B Soul Classics" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#503750" CornerRadius="8">
+                                                <TextBlock Text="R&amp;B" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="4" Grid.Column="0" Tag="Lofi Hip Hop Chill Beats" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#AF2896" CornerRadius="8">
+                                                <TextBlock Text="Lofi Chill" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="4" Grid.Column="1" Tag="Viral TikTok Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#477D95" CornerRadius="8">
+                                                <TextBlock Text="Viral" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="5" Grid.Column="0" Tag="Indie Pop Folk" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#E91429" CornerRadius="8">
+                                                <TextBlock Text="Indie" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="5" Grid.Column="1" Tag="Acoustic Chill Covers" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#B49BC8" CornerRadius="8">
+                                                <TextBlock Text="Acoustic" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="6" Grid.Column="0" Tag="Rock Music Classics" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#777777" CornerRadius="8">
+                                                <TextBlock Text="Rock" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="6" Grid.Column="1" Tag="Heavy Metal Core" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#212121" CornerRadius="8">
+                                                <TextBlock Text="Metal" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="7" Grid.Column="0" Tag="Jazz Relaxing Vibes" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#E13300" CornerRadius="8">
+                                                <TextBlock Text="Jazz" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="7" Grid.Column="1" Tag="Classical Piano Relax" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#006450" CornerRadius="8">
+                                                <TextBlock Text="Classical" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="8" Grid.Column="0" Tag="Workout Gym Motivation" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#8D67AB" CornerRadius="8">
+                                                <TextBlock Text="Workout" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="8" Grid.Column="1" Tag="Gaming Music NCS" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#1DB954" CornerRadius="8">
+                                                <TextBlock Text="Gaming" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="9" Grid.Column="0" Tag="Latin Pop Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#509BF5" CornerRadius="8">
+                                                <TextBlock Text="Latin" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="9" Grid.Column="1" Tag="Reggaeton Top Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#8C1932" CornerRadius="8">
+                                                <TextBlock Text="Reggaeton" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="10" Grid.Column="0" Tag="Synthwave Retrowave Chill" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#AF2896" CornerRadius="8">
+                                                <TextBlock Text="Synthwave" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="10" Grid.Column="1" Tag="Phonk Drift Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#477D95" CornerRadius="8">
+                                                <TextBlock Text="Phonk" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="11" Grid.Column="0" Tag="Anime OST Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#148A08" CornerRadius="8">
+                                                <TextBlock Text="Anime OST" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="11" Grid.Column="1" Tag="K-Drama OST Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#E1118C" CornerRadius="8">
+                                                <TextBlock Text="K-Drama" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="12" Grid.Column="0" Tag="Afrobeats Top Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#BC5900" CornerRadius="8">
+                                                <TextBlock Text="Afrobeats" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="12" Grid.Column="1" Tag="Reggae Roots Relax" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#503750" CornerRadius="8">
+                                                <TextBlock Text="Reggae" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+
+                                        <Button Grid.Row="13" Grid.Column="0" Tag="Epic Orchestral Soundtracks" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
+                                            <Border Background="#E91429" CornerRadius="8">
+                                                <TextBlock Text="Epic Music" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                        <Button Grid.Row="13" Grid.Column="1" Tag="Sleep Meditation Relaxing Music" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
+                                            <Border Background="#B49BC8" CornerRadius="8">
+                                                <TextBlock Text="Sleep &amp; Relax" FontWeight="Bold" FontSize="18" Foreground="White" Margin="12,12,0,0"/>
+                                            </Border>
+                                        </Button>
+                                    </Grid>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
+
+                            <Border x:Name="SuggestionPopup" Visibility="Collapsed" Background="#282828" VerticalAlignment="Top" CornerRadius="8" Margin="0,0,15,0">
+                                <ListView x:Name="SuggestionList" IsItemClickEnabled="True" ItemClick="SuggestionList_ItemClick" MaxHeight="250" SelectionMode="None">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" FontSize="16" Foreground="White" Padding="15,12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </PivotItem>
+
+                <PivotItem Header="Library">
+                    <Pivot>
+                        <PivotItem Header="Favorites">
+                            <ListView x:Name="FavoriteSongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
+                        </PivotItem>
+
+                        <PivotItem Header="Playlists">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Button Click="OpenCreatePlaylistDialog_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,5,15,15" Height="50">
+                                    <Border Background="#222222" CornerRadius="8" BorderThickness="1" BorderBrush="#333333">
+                                        <TextBlock Text="➕ Create New Playlist" FontWeight="Bold" FontSize="16" Foreground="#1DB954" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </Button>
+                                <ListView x:Name="PlaylistsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="PlaylistsListView_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,0,0,15" Background="Transparent" Holding="PlaylistItem_Holding">
+                                                <FlyoutBase.AttachedFlyout>
+                                                    <MenuFlyout>
+                                                        <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylist_Click"/>
+                                                    </MenuFlyout>
+                                                </FlyoutBase.AttachedFlyout>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0" Width="55" Height="55" Background="#333333" CornerRadius="6" Margin="0,0,15,0">
+                                                    <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE142;" Foreground="White" FontSize="24"/>
+                                                </Border>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="Custom Playlist" FontSize="14" Foreground="#AAAAAA"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="2" Content="⋮" Foreground="#AAAAAA" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Grid>
+                        </PivotItem>
+
+                        <PivotItem Header="Recent">
+                            <ListView x:Name="HistorySongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
+                        </PivotItem>
+                        <PivotItem Header="Downloads">
+                            <ListView x:Name="DownloadedSongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
+                        </PivotItem>
+                    </Pivot>
+                </PivotItem>
+
+                <PivotItem Header="Settings">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,0,15,0">
+                        <StackPanel Margin="0,10,0,40">
+                            <TextBlock Text="TRENDING REGION" Foreground="#AAAAAA" FontSize="14" Margin="5,0,0,5"/>
+                            <ComboBox x:Name="RegionComboBox" Background="#222222" Foreground="White" BorderThickness="0" Margin="0,0,0,20">
+                                <ComboBoxItem Content="Global (US)" Tag="US"/>
+                                <ComboBoxItem Content="Vietnam (VN)" Tag="VN"/>
+                                <ComboBoxItem Content="South Korea (KR)" Tag="KR"/>
+                                <ComboBoxItem Content="Japan (JP)" Tag="JP"/>
+                                <ComboBoxItem Content="United Kingdom (GB)" Tag="GB"/>
+                            </ComboBox>
+                            <TextBlock Text="YOUTUBE API KEY" Foreground="#AAAAAA" FontSize="14" Margin="5,0,0,5"/>
+                            <Border Background="#222222" CornerRadius="8" Margin="0,0,0,20">
+                                <TextBox x:Name="ApiKeyTextBox" PlaceholderText="Paste Key here..." Style="{StaticResource DarkTextBoxStyle}"/>
+                            </Border>
+                            <TextBlock Text="GOOGLE OAUTH 2.0 (SYNC)" Foreground="#AAAAAA" FontSize="14" Margin="5,0,0,5"/>
+                            <Border Background="#222222" CornerRadius="8" Margin="0,0,0,10">
+                                <TextBox x:Name="ClientIdTextBox" PlaceholderText="Client ID..." Style="{StaticResource DarkTextBoxStyle}"/>
+                            </Border>
+                            <Border Background="#222222" CornerRadius="8" Margin="0,0,0,15">
+                                <TextBox x:Name="ClientSecretTextBox" PlaceholderText="Client Secret..." Style="{StaticResource DarkTextBoxStyle}"/>
+                            </Border>
+                            <TextBlock Text="MANUAL LOGIN:" Foreground="#1DB954" FontSize="14" FontWeight="Bold" Margin="5,0,0,5"/>
+                            <TextBlock Text="1. Copy Auth Link and open it in a browser to grant access.&#x0a;2. Return here and paste the localhost URL (or click Login to auto-catch)." Foreground="#AAAAAA" FontSize="12" Margin="5,0,0,15" TextWrapping="Wrap"/>
+                            <Button Click="CopyAuthLink_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
+                                <Border Background="#509BF5" CornerRadius="8">
+                                    <TextBlock Text="1. Copy Auth Link" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Button>
+                            <Border Background="#222222" CornerRadius="8" Margin="0,0,0,10">
+                                <TextBox x:Name="AuthCodeTextBox" PlaceholderText="Paste Localhost URL here..." Style="{StaticResource DarkTextBoxStyle}"/>
+                            </Border>
+                            <Button Click="LoginGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,25" Height="45">
+                                <Border Background="#1DB954" CornerRadius="8">
+                                    <TextBlock Text="2. Login &amp; Sync" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Button>
+                            <TextBlock x:Name="LoginStatusText" Text="Status: Not Logged In" Foreground="#AAAAAA" FontSize="14" Margin="0,0,0,25" HorizontalAlignment="Center"/>
+                            <Button Content="Save Settings" Click="SaveSettingsButton_Click" Background="#FFFFFF" Foreground="Black" FontWeight="Bold" Margin="0,0,0,30" HorizontalAlignment="Stretch" BorderThickness="0" Height="50">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="25">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <TextBlock Text="DATA MANAGEMENT" Foreground="#AAAAAA" FontSize="14" Margin="5,0,0,5"/>
+                            <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
+                                <Border Background="#8C1932" CornerRadius="8">
+                                    <TextBlock Text="Clear Recent History" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </PivotItem>
+            </Pivot>
+
+            <Grid x:Name="PlaylistDetailsView" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212" Grid.RowSpan="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Button Grid.Row="0" Click="ClosePlaylistDetails_Click" Style="{StaticResource IconButtonStyle}" Width="50" Height="50" Margin="10,15,0,0" HorizontalAlignment="Left">
+                    <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE0A6;" Foreground="White" FontSize="20"/>
+                </Button>
+
+                <StackPanel Grid.Row="1" Margin="20,0,20,20">
+                    <Border Width="150" Height="150" Background="#282828" CornerRadius="8" HorizontalAlignment="Center" Margin="0,10">
+                        <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE142;" Foreground="#555555" FontSize="60"/>
+                    </Border>
+                    <TextBlock x:Name="PlaylistDetailsTitle" Text="Playlist Name" FontSize="26" FontWeight="Bold" Foreground="White" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <Grid Margin="0,20,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="▶ Play All" Click="PlayAllPlaylist_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="140" Height="45">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="22">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Grid.Column="2" Content="⋮" Foreground="#AAAAAA" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
+                            <Button.Flyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+
+                <ListView x:Name="PlaylistSongsList" Grid.Row="2" Margin="20,0,20,0" Padding="0" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource PlaylistSongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
+            </Grid>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Border Background="#212121" Padding="10,10,10,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="0" Background="Transparent" Tapped="MiniPlayer_Tapped">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Rectangle Grid.Column="0" Width="44" Height="44" RadiusX="6" RadiusY="6" Margin="0,0,12,0" VerticalAlignment="Center">
+                            <Rectangle.Fill>
+                                <ImageBrush x:Name="MiniCoverImage" Stretch="UniformToFill">
+                                    <ImageBrush.RelativeTransform>
+                                        <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                                    </ImageBrush.RelativeTransform>
+                                </ImageBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock x:Name="MiniTitle" Text="Not playing" FontSize="15" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="MiniArtist" Text="Select a song" FontSize="13" Foreground="#AAAAAA" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+                    <Button x:Name="MiniPlayPauseBtn" Grid.Column="1" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="50">
+                        <SymbolIcon x:Name="MiniPlayIcon" Symbol="Play" Foreground="White"/>
+                    </Button>
+                    <Button Grid.Column="2" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="50">
+                        <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE101;" Foreground="White" FontSize="20"/>
+                    </Button>
+                </Grid>
+            </Border>
+            <ProgressBar x:Name="MiniProgressBar" VerticalAlignment="Bottom" Height="2" Minimum="0" Maximum="100" Value="0" Foreground="White" Background="Transparent" BorderThickness="0" IsHitTestVisible="False"/>
+        </Grid>
+
+        <Grid x:Name="NowPlayingView" Visibility="Collapsed" Canvas.ZIndex="100" Background="#121212" Grid.RowSpan="2">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="NowPlayingTransform" Y="1000"/>
+            </Grid.RenderTransform>
+            <Grid Canvas.ZIndex="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0,20,0,0" Height="70">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="80"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Click="CloseNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Background="#01000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE0E4;" Foreground="White" FontSize="24"/>
+                    </Button>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="NOW PLAYING" FontSize="12" FontWeight="SemiBold" Foreground="#888888" CharacterSpacing="100" HorizontalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                            <Ellipse x:Name="DotPlayer" Width="6" Height="6" Fill="White" Margin="0,0,4,0" Opacity="1.0"/>
+                            <Ellipse x:Name="DotLyrics" Width="6" Height="6" Fill="White" Margin="4,0,0,0" Opacity="0.3"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Grid.Column="2" Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Background="#01000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE10C;" Foreground="White" FontSize="24"/>
+                    </Button>
+                </Grid>
+                <Pivot x:Name="NowPlayingPivot" Grid.Row="1" Foreground="White" Margin="0,10,0,0" SelectionChanged="NowPlayingPivot_SelectionChanged">
+                    <Pivot.HeaderTemplate>
+                        <DataTemplate>
+                            <Grid Height="0" Visibility="Collapsed"/>
+                        </DataTemplate>
+                    </Pivot.HeaderTemplate>
+                    <Pivot.ItemContainerStyle>
+                        <Style TargetType="PivotItem">
+                            <Setter Property="Margin" Value="0"/>
+                        </Style>
+                    </Pivot.ItemContainerStyle>
+                    <PivotItem>
+                        <Rectangle Width="320" Height="320" RadiusX="8" RadiusY="8" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-20,0,0">
+                            <Rectangle.Fill>
+                                <ImageBrush x:Name="BigCoverImage" Stretch="UniformToFill">
+                                    <ImageBrush.RelativeTransform>
+                                        <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                                    </ImageBrush.RelativeTransform>
+                                </ImageBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+                    </PivotItem>
+                    <PivotItem>
+                        <Grid>
+                            <ProgressBar x:Name="LyricsLoadingBar" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="White"/>
+
+                            <ScrollViewer x:Name="LyricsFallbackScrollViewer" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+                                <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#AAAAAA" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
+                            </ScrollViewer>
+
+                            <ListView x:Name="LyricsListView" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="10,0" ShowsScrollingPlaceholders="False">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding Opacity}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,12" FontWeight="{Binding FontWeight}" HorizontalAlignment="Left"/>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+                            <Rectangle Height="60" VerticalAlignment="Top" IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#121212" Offset="0"/>
+                                        <GradientStop Color="#00121212" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <Rectangle Height="60" VerticalAlignment="Bottom" IsHitTestVisible="False">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
+                                        <GradientStop Color="#121212" Offset="0"/>
+                                        <GradientStop Color="#00121212" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,15" Canvas.ZIndex="10">
+                                <Button Content="A-" Click="DecreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#44000000" BorderThickness="1" BorderBrush="#555" MinHeight="35" MinWidth="45" Padding="0" Margin="0,0,10,0"/>
+                                <Button Content="-0.5s" Click="SyncMinus_Click" FontSize="12" Foreground="White" Background="#44000000" BorderThickness="1" BorderBrush="#555" MinHeight="35" MinWidth="55" Padding="0" Margin="0,0,5,0"/>
+                                <Button Content="+0.5s" Click="SyncPlus_Click" FontSize="12" Foreground="White" Background="#44000000" BorderThickness="1" BorderBrush="#555" MinHeight="35" MinWidth="55" Padding="0" Margin="0,0,10,0"/>
+                                <Button Content="A+" Click="IncreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#44000000" BorderThickness="1" BorderBrush="#555" MinHeight="35" MinWidth="45" Padding="0"/>
+                            </StackPanel>
+                        </Grid>
+                    </PivotItem>
+                    <PivotItem>
+                        <Grid>
+                            <ListView x:Name="QueueListView" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="10,20,10,10" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
+                        </Grid>
+                    </PivotItem>
+                </Pivot>
+                <StackPanel Grid.Row="2" Margin="25,0,25,30">
+                    <Grid Margin="0,0,0,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock x:Name="BigTitle" Text="Title" FontSize="24" FontWeight="Bold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="BigArtist" Text="Artist" FontSize="16" Foreground="#AAAAAA" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <Button x:Name="BigHeartBtn" Grid.Column="2" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0"/>
+                    </Grid>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="CurrentTimeText" Text="00:00" FontSize="12" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                        <Slider x:Name="MusicSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="0" Margin="10,0" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Foreground="#FFFFFF" Background="#555555" Style="{StaticResource ModernSliderStyle}"/>
+                        <TextBlock x:Name="TotalTimeText" Text="00:00" Grid.Column="2" FontSize="12" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Click="ShuffleButton_Click" Style="{StaticResource IconButtonStyle}">
+                            <FontIcon x:Name="ShuffleIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE14B;" Foreground="White" FontSize="20"/>
+                        </Button>
+                        <Button Grid.Column="1" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}">
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE100;" Foreground="White" FontSize="24"/>
+                        </Button>
+                        <Button Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="64" Height="64" Margin="5,0,5,0">
+                            <Border Background="White" CornerRadius="32" Width="64" Height="64">
+                                <SymbolIcon x:Name="BigPlayIcon" Symbol="Play" Foreground="Black"/>
+                            </Border>
+                        </Button>
+                        <Button Grid.Column="3" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}">
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE101;" Foreground="White" FontSize="24"/>
+                        </Button>
+                        <Button Grid.Column="4" Click="RepeatButton_Click" Style="{StaticResource IconButtonStyle}">
+                            <FontIcon x:Name="RepeatIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE1CD;" Foreground="White" FontSize="20"/>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <Grid x:Name="NowPlayingMenuDialog" Visibility="Collapsed" Canvas.ZIndex="250" Background="#A0000000" Grid.RowSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Button Grid.Row="0" Click="CloseNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <Border Grid.Row="1" Background="#282828" CornerRadius="16,16,0,0" Padding="0,20,0,0">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="MenuTransform" Y="800"/>
+                </Border.RenderTransform>
+                <StackPanel>
+                    <Grid Margin="20,0,20,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Rectangle Grid.Column="0" Width="50" Height="50" RadiusX="4" RadiusY="4">
+                            <Rectangle.Fill>
+                                <ImageBrush x:Name="MenuCoverImage" Stretch="UniformToFill">
+                                    <ImageBrush.RelativeTransform>
+                                        <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                                    </ImageBrush.RelativeTransform>
+                                </ImageBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
+                            <TextBlock x:Name="MenuTitle" Text="Title" FontSize="18" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="MenuArtist" Text="Artist" FontSize="14" Foreground="#AAAAAA" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+                    <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="350">
+                        <StackPanel>
+                            <Button Click="MenuAddToPlaylistNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
+                                <Grid Margin="20,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE109;" Foreground="White" FontSize="22" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="Add to Playlist" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                </Grid>
+                            </Button>
+                            <Button Click="MenuSleepTimerNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
+                                <Grid Margin="20,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE121;" Foreground="White" FontSize="22" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="Sleep timer" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                    <TextBlock x:Name="MenuSleepTimerStatus" Grid.Column="2" Text="Off" FontSize="16" Foreground="#1DB954" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+                            <Button Click="MenuShareNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
+                                <Grid Margin="20,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Grid.Column="0" Symbol="Send" Foreground="White" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="Share" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                </Grid>
+                            </Button>
+                            <Button x:Name="NowPlayingDownloadBtn" Click="MenuDownloadNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
+                                <Grid Margin="20,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Grid.Column="0" Symbol="Download" Foreground="White" HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1" Text="Download" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                </Grid>
+                            </Button>
+                            <Button Click="CloseNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Height="60" Margin="0,10,0,10">
+                                <TextBlock Text="Close" FontSize="18" Foreground="#AAAAAA" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="AddToPlaylistDialog" Visibility="Collapsed" Canvas.ZIndex="150" Background="#AA000000" Grid.RowSpan="2">
+            <Border Background="#282828" CornerRadius="8" Width="300" MaxHeight="400" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Add to Playlist" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
+                    <ListView x:Name="DialogPlaylistList" MaxHeight="250" IsItemClickEnabled="True" ItemClick="DialogPlaylistList_ItemClick" SelectionMode="None">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" FontSize="18" Foreground="White" Margin="0,12"/>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <Button Content="Cancel" Click="CancelAddToPlaylist_Click" HorizontalAlignment="Stretch" Foreground="White" Margin="0,15,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+        <Grid x:Name="CreatePlaylistDialog" Visibility="Collapsed" Canvas.ZIndex="150" Background="#AA000000" Grid.RowSpan="2">
+            <Border Background="#282828" CornerRadius="8" Width="300" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="New Playlist" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
+                    <TextBox x:Name="NewPlaylistNameTextBox" PlaceholderText="Playlist name..." Style="{StaticResource DarkTextBoxStyle}" Margin="0,0,0,20"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel" Click="CancelCreatePlaylist_Click" Foreground="#AAAAAA" Margin="0,0,10,0"/>
+                        <Button Content="Create" Click="ConfirmCreatePlaylist_Click" Foreground="#1DB954" FontWeight="Bold"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+        <Grid x:Name="LoginWebContainer" Visibility="Collapsed" Canvas.ZIndex="300" Background="#121212" Grid.RowSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Background="#282828" Padding="15">
+                <Grid>
+                    <TextBlock Text="Google Sign-In" Foreground="White" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <Button Content="✕" Click="CloseLoginWeb_Click" Foreground="White" FontSize="20" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="0" MinWidth="0"/>
+                </Grid>
+            </Border>
+            <WebView x:Name="LoginWebView" Grid.Row="1" NavigationStarting="LoginWebView_NavigationStarting" NavigationCompleted="LoginWebView_NavigationCompleted" NavigationFailed="LoginWebView_NavigationFailed"/>
+            <ProgressBar x:Name="LoginWebLoading" Grid.Row="1" VerticalAlignment="Top" IsIndeterminate="True" Foreground="#1DB954" Visibility="Collapsed"/>
+        </Grid>
+        <Border x:Name="ToastNotification" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Padding="15" Margin="0,0,0,70" CornerRadius="4" Grid.RowSpan="2">
+            <TextBlock x:Name="ToastText" Text="Message" Foreground="White" FontWeight="SemiBold" FontSize="14" TextAlignment="Center"/>
+        </Border>
+        <Border x:Name="DownloadStatusBar" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Top" HorizontalAlignment="Stretch" Padding="15,10" Grid.RowSpan="2">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="DownloadStatusText" Text="Downloading..." Foreground="White" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8" TextTrimming="CharacterEllipsis"/>
+                <ProgressBar x:Name="DownloadProgressBar" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Foreground="White" Background="#116D31"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>
