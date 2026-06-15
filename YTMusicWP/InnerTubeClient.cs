@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -113,6 +113,8 @@ namespace YTMusicWP
         /// Tìm kiếm bài hát qua InnerTube (YouTube Music).
         /// Trả về danh sách YouTubeTrack.
         /// </summary>
+
+    }
 
     // ==========================================
     public class PlaylistResult

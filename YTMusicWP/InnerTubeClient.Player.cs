@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -292,9 +292,5 @@ namespace YTMusicWP
             if (name.EndsWith(" - Chủ đề")) return name.Substring(0, name.Length - 9);
             return name;
         }
-    }
-
-    // ==========================================
-    // RESULT MODELS
     }
 }
