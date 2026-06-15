@@ -27,7 +27,14 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage : Page
     {
-        private static readonly HttpClient _apiClient = new HttpClient();
+        private void SetPlayPauseIcon(bool isPlaying)
+        {
+            Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;
+            MiniPlayIcon.Symbol = sym;
+            BigPlayIcon.Symbol = sym;
+        }
+
+        private static readonly HttpClient _apiClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };
         private ObservableCollection<YouTubeTrack> searchResults = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> homeTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> favoriteTracks = new ObservableCollection<YouTubeTrack>();
@@ -44,6 +51,23 @@ namespace YTMusicWP
         private ObservableCollection<UserPlaylist> userPlaylists = new ObservableCollection<UserPlaylist>();
         private UserPlaylist _currentViewingPlaylist = null;
         private YouTubeTrack _trackPendingForPlaylist = null;
+
+        private string ProxyBaseUrl
+        {
+            get
+            {
+                if (Windows.Storage.ApplicationData.Current.LocalSettings.Values.ContainsKey("CustomProxyUrl"))
+                {
+                    string url = Windows.Storage.ApplicationData.Current.LocalSettings.Values["CustomProxyUrl"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(url))
+                    {
+                        if (url.EndsWith("/")) url = url.TrimEnd('/');
+                        return url;
+                    }
+                }
+                return "https://summer-fire-6e3f.adianhseng.workers.dev";
+            }
+        }
 
         private ObservableCollection<YouTubeTrack> currentQueueTracks = new ObservableCollection<YouTubeTrack>();
 
@@ -77,9 +101,14 @@ namespace YTMusicWP
 
         private MediaPlayer _appMediaPlayer;
 
-        // [OPT-M6] Cache 2 brush tĩnh — tránh tạo object mới mỗi 1 giây trong lyric timer (512MB RAM)
+        // [OPT-M6] Cache static brushes — avoid creating new objects every second/click (512MB RAM)
         private static readonly SolidColorBrush _lyricActiveBrush   = new SolidColorBrush(Windows.UI.Colors.White);
         private static readonly SolidColorBrush _lyricInactiveBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
+        private static readonly SolidColorBrush _greenBrush = new SolidColorBrush(Windows.UI.Colors.Green);
+        private static readonly SolidColorBrush _whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
+
+        // Secret key cho Render server API authentication
+        private const string _apiSecretKey = "LumiaWP81-An";
 
         public MainPage()
         {
@@ -186,7 +215,22 @@ namespace YTMusicWP
 
         private void HardwareButtons_BackPressed(object sender, BackPressedEventArgs e)
         {
-            if (LoginWebContainer.Visibility == Visibility.Visible)
+            if (CustomBottomSheet.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseBottomSheet_Click(null, null);
+            }
+            else if (SettingsPanel.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseSettings_Click(null, null);
+            }
+            else if (ArtistProfileView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseArtistProfile_Click(null, null);
+            }
+            else if (LoginWebContainer.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 CloseLoginWeb_Click(null, null);
@@ -209,7 +253,7 @@ namespace YTMusicWP
             else if (PlaylistDetailsView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
-                PlaylistDetailsView.Visibility = Visibility.Collapsed;
+                ClosePlaylistDetails_Click(null, null);
             }
             else if (NowPlayingView.Visibility == Visibility.Visible)
             {
@@ -223,6 +267,53 @@ namespace YTMusicWP
             }
         }
 
+        // ── Bottom Navigation ──
+        private int _currentTab = 0; // 0=Home, 1=Search, 2=Library
+
+        private void NavHome_Click(object sender, RoutedEventArgs e) { SwitchTab(0); }
+        private void NavSearch_Click(object sender, RoutedEventArgs e) { SwitchTab(1); }
+        private void NavLibrary_Click(object sender, RoutedEventArgs e) { SwitchTab(2); }
+
+        private void SwitchTab(int tab)
+        {
+            _currentTab = tab;
+            HomePanel.Visibility = (tab == 0) ? Visibility.Visible : Visibility.Collapsed;
+            SearchPanel.Visibility = (tab == 1) ? Visibility.Visible : Visibility.Collapsed;
+            LibraryPanel.Visibility = (tab == 2) ? Visibility.Visible : Visibility.Collapsed;
+
+            // Active tab = White, inactive = #B3B3B3
+            var activeBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
+            var inactiveBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
+
+            NavHomeIcon.Fill = (tab == 0) ? activeBrush : inactiveBrush;
+            NavHomeText.Foreground = (tab == 0) ? activeBrush : inactiveBrush;
+            NavHomeText.FontWeight = (tab == 0) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
+
+            // NavSearchIcon is a Canvas with Path children
+            var searchBrush = (tab == 1) ? activeBrush : inactiveBrush;
+            foreach (var child in NavSearchIcon.Children)
+            {
+                var p = child as Windows.UI.Xaml.Shapes.Path;
+                if (p != null) p.Fill = searchBrush;
+            }
+            NavSearchText.Foreground = (tab == 1) ? activeBrush : inactiveBrush;
+            NavSearchText.FontWeight = (tab == 1) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
+
+            NavLibraryIcon.Fill = (tab == 2) ? activeBrush : inactiveBrush;
+            NavLibraryText.Foreground = (tab == 2) ? activeBrush : inactiveBrush;
+            NavLibraryText.FontWeight = (tab == 2) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
+        }
+
+        private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsPanel.Visibility = Visibility.Visible;
+        }
+
+        private void CloseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsPanel.Visibility = Visibility.Collapsed;
+        }
+
         private async void ShowToast(string message, int durationMs = 2500)
         {
             // Dispose CTS cũ trước để tránh memory leak, rồi cancel
@@ -233,10 +324,11 @@ namespace YTMusicWP
 
             ToastText.Text = message;
             ToastNotification.Visibility = Visibility.Visible;
+            ToastFadeInStoryboard.Begin();
             try
             {
                 await Task.Delay(durationMs, token);
-                ToastNotification.Visibility = Visibility.Collapsed;
+                ToastFadeOutStoryboard.Begin();
             }
             catch (OperationCanceledException) { /* Toast mới đã thay thế */ }
         }
@@ -255,14 +347,19 @@ namespace YTMusicWP
 
                 if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing || _appMediaPlayer.CurrentState == MediaPlayerState.Paused)
                 {
-                    Symbol sym = (_appMediaPlayer.CurrentState == MediaPlayerState.Playing) ? Symbol.Pause : Symbol.Play;
-                    MiniPlayIcon.Symbol = sym;
-                    BigPlayIcon.Symbol = sym;
+                    bool isPlaying = (_appMediaPlayer.CurrentState == MediaPlayerState.Playing);
+                    SetPlayPauseIcon(isPlaying);
 
                     string title = localSettings.ContainsKey("CurrentTitle") ? localSettings["CurrentTitle"].ToString() : "Unknown";
                     string artist = localSettings.ContainsKey("CurrentArtist") ? localSettings["CurrentArtist"].ToString() : "Unknown";
                     string vid = localSettings.ContainsKey("CurrentVideoId") ? localSettings["CurrentVideoId"].ToString() : "";
                     string thumb = localSettings.ContainsKey("CurrentThumbnail") ? localSettings["CurrentThumbnail"].ToString() : "";
+
+                    // [OPT-M8] Skip nếu track đã sync — tránh tạo BitmapImage mới khi resume
+                    if (currentTrack != null && currentTrack.VideoId == vid)
+                    {
+                        return;
+                    }
 
                     MiniTitle.Text = title; BigTitle.Text = title;
                     MiniArtist.Text = artist; BigArtist.Text = artist;
@@ -272,14 +369,21 @@ namespace YTMusicWP
 
                     if (!string.IsNullOrEmpty(thumb))
                     {
-                        var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(thumb, UriKind.Absolute));
-                        bigBmp.DecodePixelWidth = 480;
-                        BigCoverImage.ImageSource = bigBmp;
-                        MenuCoverImage.ImageSource = bigBmp;
+                        try
+                        {
+                            var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            bigBmp.DecodePixelWidth = 360;
+                            bigBmp.UriSource = new Uri(GetHighResThumbnail(thumb), UriKind.Absolute);
+                            BigCoverImage.ImageSource = bigBmp;
+                            AlbumArtEntranceStoryboard.Begin();
+                            MenuCoverImage.ImageSource = bigBmp;
 
-                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(thumb, UriKind.Absolute));
-                        miniBmp.DecodePixelWidth = 100;
-                        MiniCoverImage.ImageSource = miniBmp;
+                            var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            miniBmp.DecodePixelWidth = 100;
+                            miniBmp.UriSource = new Uri(thumb, UriKind.Absolute);
+                            MiniCoverImage.ImageSource = miniBmp;
+                        }
+                        catch { }
                     }
 
                     if (!string.IsNullOrEmpty(vid))
@@ -287,7 +391,7 @@ namespace YTMusicWP
                         currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
                         bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
                         BigHeartBtn.Content = isFav ? "♥" : "♡";
-                        BigHeartBtn.Foreground = new SolidColorBrush(isFav ? Windows.UI.Colors.Green : Windows.UI.Colors.White);
+                        BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                         var ignored = UpdateLyricsAsync(title, artist);
                     }
@@ -309,9 +413,22 @@ namespace YTMusicWP
 
             SyncBackgroundPlayer();
 
-            if (!IsInternetAvailable()) ShowToast("Offline Mode. Play downloads in Library.");
-            else if (string.IsNullOrEmpty(ApiKeyTextBox.Text.Trim())) ShowToast("Swipe to Settings and add API Key.");
-            else if (homeTracks.Count == 0) await LoadHomeRecommendations();
+            if (!IsInternetAvailable())
+            {
+                ShowToast("Offline Mode. Play downloads in Library.");
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(ApiKeyTextBox.Text.Trim()))
+                {
+                    ShowToast("Swipe to Settings and add API Key.");
+                }
+                
+                if (homeTracks.Count == 0) 
+                {
+                    await LoadHomeRecommendations();
+                }
+            }
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -546,7 +663,7 @@ namespace YTMusicWP
                 userPlaylists.Remove(_currentViewingPlaylist);
                 SavePlaylistsAsync();
                 ShowToast("Playlist deleted.");
-                PlaylistDetailsView.Visibility = Visibility.Collapsed;
+                PlaylistSlideOutStoryboard.Begin();
             }
         }
 
@@ -567,14 +684,32 @@ namespace YTMusicWP
             if (_currentViewingPlaylist != null)
             {
                 PlaylistDetailsTitle.Text = _currentViewingPlaylist.Name;
+                if (_currentViewingPlaylist.Tracks != null && _currentViewingPlaylist.Tracks.Count > 0 && !string.IsNullOrEmpty(_currentViewingPlaylist.Tracks[0].ThumbnailUrl))
+                {
+                    PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(_currentViewingPlaylist.Tracks[0].ThumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 150 };
+                    PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+                }
                 PlaylistSongsList.ItemsSource = _currentViewingPlaylist.Tracks;
+                PlaylistDetailsTrackCount.Text = (_currentViewingPlaylist.Tracks != null ? _currentViewingPlaylist.Tracks.Count : 0) + " tracks";
                 PlaylistDetailsView.Visibility = Visibility.Visible;
+                PlaylistSlideInStoryboard.Begin();
             }
         }
 
         private void ClosePlaylistDetails_Click(object sender, RoutedEventArgs e)
         {
+            PlaylistSlideOutStoryboard.Begin();
+        }
+
+        private void PlaylistSlideOutStoryboard_Completed(object sender, object e)
+        {
             PlaylistDetailsView.Visibility = Visibility.Collapsed;
+            PlaylistDetailsCoverBrush.ImageSource = null;
+            PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
         }
 
         private void PlayAllPlaylist_Click(object sender, RoutedEventArgs e)
@@ -787,6 +922,14 @@ namespace YTMusicWP
 
         private async void BackgroundMediaPlayer_MessageReceivedFromBackground(object sender, MediaPlayerDataReceivedEventArgs e)
         {
+            if (e.Data.ContainsKey("ToastMessage"))
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    ShowToast(e.Data["ToastMessage"].ToString());
+                });
+            }
+
             if (e.Data.ContainsKey("TrackChanged"))
             {
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -804,17 +947,21 @@ namespace YTMusicWP
 
                     if (!string.IsNullOrEmpty(thumb))
                     {
-                        // [OPT-M1] Reuse BitmapImage bằng cách set UriSource — tránh tạo object mới mỗi lần next/prev
-                        var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                        bigBmp.DecodePixelWidth = 480;
-                        bigBmp.UriSource = new Uri(thumb, UriKind.Absolute);
-                        BigCoverImage.ImageSource  = bigBmp;
-                        MenuCoverImage.ImageSource = bigBmp;
+                        try
+                        {
+                            var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            bigBmp.DecodePixelWidth = 360;
+                            bigBmp.UriSource = new Uri(GetHighResThumbnail(thumb), UriKind.Absolute);
+                            BigCoverImage.ImageSource = bigBmp;
+                            AlbumArtEntranceStoryboard.Begin();
+                            MenuCoverImage.ImageSource = bigBmp;
 
-                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                        miniBmp.DecodePixelWidth = 100;
-                        miniBmp.UriSource = new Uri(thumb, UriKind.Absolute);
-                        MiniCoverImage.ImageSource = miniBmp;
+                            var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            miniBmp.DecodePixelWidth = 100;
+                            miniBmp.UriSource = new Uri(thumb, UriKind.Absolute);
+                            MiniCoverImage.ImageSource = miniBmp;
+                        }
+                        catch { }
                     }
 
                     if (!string.IsNullOrEmpty(vid))
@@ -823,7 +970,7 @@ namespace YTMusicWP
 
                         bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
                         BigHeartBtn.Content = isFav ? "♥" : "♡";
-                        BigHeartBtn.Foreground = new SolidColorBrush(isFav ? Windows.UI.Colors.Green : Windows.UI.Colors.White);
+                        BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                         var ignored = UpdateLyricsAsync(title, artist);
                     }
@@ -833,10 +980,11 @@ namespace YTMusicWP
 
         private void LoadSettings()
         {
-            var settings = ApplicationData.Current.LocalSettings.Values;
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
             if (settings.ContainsKey("YouTubeApiKey")) ApiKeyTextBox.Text = settings["YouTubeApiKey"].ToString();
             if (settings.ContainsKey("GoogleClientId")) ClientIdTextBox.Text = settings["GoogleClientId"].ToString();
             if (settings.ContainsKey("GoogleClientSecret")) ClientSecretTextBox.Text = settings["GoogleClientSecret"].ToString();
+            if (settings.ContainsKey("CustomProxyUrl")) ProxyUrlTextBox.Text = settings["CustomProxyUrl"].ToString();
 
             if (settings.ContainsKey("TrendingRegion"))
             {
@@ -855,10 +1003,10 @@ namespace YTMusicWP
             if (settings.ContainsKey("GoogleAccessToken"))
             {
                 LoginStatusText.Text = "Status: Logged In & Synced!";
-                LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Green);
+                LoginStatusText.Foreground = _greenBrush;
             }
             bool isShuffle = settings.ContainsKey("ShuffleMode") ? (bool)settings["ShuffleMode"] : false;
-            ShuffleIcon.Foreground = new SolidColorBrush(isShuffle ? Windows.UI.Colors.Green : Windows.UI.Colors.White);
+            ShuffleIcon.Foreground = isShuffle ? _greenBrush : _whiteBrush;
             int repeatMode = settings.ContainsKey("RepeatMode") ? (int)settings["RepeatMode"] : 0;
             UpdateRepeatUI(repeatMode);
         }
@@ -866,9 +1014,10 @@ namespace YTMusicWP
         private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
         {
             string newKey = ApiKeyTextBox.Text.Trim();
-            ApplicationData.Current.LocalSettings.Values["YouTubeApiKey"] = newKey;
-            ApplicationData.Current.LocalSettings.Values["GoogleClientId"] = ClientIdTextBox.Text.Trim();
-            ApplicationData.Current.LocalSettings.Values["GoogleClientSecret"] = ClientSecretTextBox.Text.Trim();
+            Windows.Storage.ApplicationData.Current.LocalSettings.Values["YouTubeApiKey"] = newKey;
+            Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientId"] = ClientIdTextBox.Text.Trim();
+            Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientSecret"] = ClientSecretTextBox.Text.Trim();
+            Windows.Storage.ApplicationData.Current.LocalSettings.Values["CustomProxyUrl"] = ProxyUrlTextBox.Text.Trim();
 
             var selectedRegion = RegionComboBox.SelectedItem as ComboBoxItem;
             if (selectedRegion != null && selectedRegion.Tag != null)
@@ -878,7 +1027,7 @@ namespace YTMusicWP
 
             ShowToast("Settings Saved!");
 
-            if (!string.IsNullOrEmpty(newKey) && IsInternetAvailable())
+            if (IsInternetAvailable())
             {
                 homeTracks.Clear();
                 popTracks.Clear();
@@ -1164,22 +1313,29 @@ namespace YTMusicWP
             catch { }
         }
 
-        // FIX #2: Đã xóa SearchSongList_Loaded (dead code) — chức năng được SearchScrollViewer_ViewChanged đảm nhiệm
-
         private void SearchButton_Click(object sender, RoutedEventArgs e)
         {
             if (!IsInternetAvailable()) { ShowToast("No Internet"); return; }
             _typingTimer.Stop(); SuggestionPopup.Visibility = Visibility.Collapsed;
-            string query = SearchBox.Text.Trim();
-            if (string.IsNullOrEmpty(query)) return;
+            if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+            {
+                SearchLoading.Visibility = Visibility.Visible;
+                DefaultSearchUI.Visibility = Visibility.Collapsed;
+                SearchSongList.Visibility = Visibility.Collapsed;
+                _nextSearchToken = "";
+                _currentSearchQuery = SearchBox.Text.Trim();
+                _isLoadingMoreSearch = false;
+                ExecuteSearch(_currentSearchQuery);
+            }
+        }
 
-            _currentSearchQuery = query;
-            _nextSearchToken = "";
-
+        private async void ExecuteSearch(string query)
+        {
             SearchLoading.Visibility = Visibility.Visible;
             DefaultSearchUI.Visibility = Visibility.Collapsed;
 
             SearchSongList.Visibility = Visibility.Visible;
+            SearchSongList.ItemsSource = searchResults;
             SearchSongList.UpdateLayout();
 
             var sv = GetScrollViewer(SearchSongList);
@@ -1190,14 +1346,25 @@ namespace YTMusicWP
             }
 
             searchResults.Clear();
-            PerformSearch(query);
-        }
+            var tracks = await FetchMusicList(query);
+            if (tracks != null && tracks.Count > 0)
+            {
+                var filteredTracks = tracks.AsEnumerable();
+                var songBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterSongsBtn.Background).Color;
+                var playlistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterPlaylistsBtn.Background).Color;
+                var artistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterArtistsBtn.Background).Color;
+                var activeColor = Windows.UI.Color.FromArgb(255, 29, 185, 84); // #1DB954
+                
+                if (songBg == activeColor) filteredTracks = filteredTracks.Where(t => !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:"));
+                else if (playlistBg == activeColor) filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("PLAYLIST:"));
+                else if (artistBg == activeColor) filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("CHANNEL:"));
 
-        private async void PerformSearch(string query)
-        {
-            var tracks = await SearchYouTubeMusic(query);
-            if (tracks != null && tracks.Count > 0) foreach (var t in tracks) searchResults.Add(t);
-            else ShowToast("Quota exceeded or no results.");
+                foreach (var t in filteredTracks) searchResults.Add(t);
+            }
+            else
+            {
+                ShowToast("No results found.");
+            }
             SearchLoading.Visibility = Visibility.Collapsed;
         }
 
@@ -1209,7 +1376,7 @@ namespace YTMusicWP
                 _isLoadingMoreSearch = true;
                 SearchLoading.Visibility = Visibility.Visible;
 
-                var tracks = await SearchYouTubeMusic(_currentSearchQuery, _nextSearchToken);
+                var tracks = await FetchMusicList(_currentSearchQuery, _nextSearchToken);
                 if (tracks != null) foreach (var t in tracks) searchResults.Add(t);
 
                 SearchLoading.Visibility = Visibility.Collapsed;
@@ -1236,10 +1403,10 @@ namespace YTMusicWP
             switch (region)
             {
                 case "VN":
-                    trendingQuery = "nhạc trẻ thịnh hành " + year + " \"Topic\"";
-                    popQuery = "nhạc trẻ remix \"Topic\"";
-                    lofiQuery = "nhạc lofi chill việt nam \"Topic\"";
-                    workoutQuery = "nhạc edm việt nam \"Topic\"";
+                    trendingQuery = "V-pop top hits " + year + " \"Topic\"";
+                    popQuery = "V-pop remix \"Topic\"";
+                    lofiQuery = "V-pop lofi chill \"Topic\"";
+                    workoutQuery = "V-pop EDM \"Topic\"";
                     break;
                 case "KR":
                     trendingQuery = "K-pop trending hits " + year + " \"Topic\"";
@@ -1264,78 +1431,129 @@ namespace YTMusicWP
             // [OPT-Q4] Lưu vào biến riêng, KHÔNG ghi đè _currentSearchQuery của Search
             _currentHomeQuery = trendingQuery;
             var trending = await FetchMusicList(trendingQuery);
-            if (trending != null) foreach (var t in trending) homeTracks.Add(t);
+            if (trending != null) foreach (var t in trending) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) homeTracks.Add(t); }
 
             var pop = await FetchMusicList(popQuery);
-            if (pop != null) foreach (var t in pop) popTracks.Add(t);
+            if (pop != null) foreach (var t in pop) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) popTracks.Add(t); }
 
             var lofi = await FetchMusicList(lofiQuery);
-            if (lofi != null) foreach (var t in lofi) lofiTracks.Add(t);
+            if (lofi != null) foreach (var t in lofi) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) lofiTracks.Add(t); }
 
             var workout = await FetchMusicList(workoutQuery);
-            if (workout != null) foreach (var t in workout) workoutTracks.Add(t);
+            if (workout != null) foreach (var t in workout) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
         }
 
-        // [OPT-Q1] Helper dùng chung để parse 1 track item từ JSON — tránh duplicate 100% code
         private static YouTubeTrack ParseTrackItem(JToken item)
         {
-            if (item["id"]?["videoId"] == null) return null;
-            string vidId   = item["id"]["videoId"].ToString();
+            string vidId = item["id"]?["videoId"]?.ToString();
+            if (string.IsNullOrEmpty(vidId)) vidId = item["id"]?["channelId"]?.ToString() != null ? "CHANNEL:" + item["id"]["channelId"].ToString() : null;
+            if (string.IsNullOrEmpty(vidId)) vidId = item["id"]?["playlistId"]?.ToString() != null ? "PLAYLIST:" + item["id"]["playlistId"].ToString() : null;
+            if (string.IsNullOrEmpty(vidId)) return null;
+
             string title   = System.Net.WebUtility.HtmlDecode(item["snippet"]?["title"]?.ToString() ?? "");
             string channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(item["snippet"]?["channelTitle"]?.ToString() ?? ""));
+            string channelId = item["snippet"]?["channelId"]?.ToString() ?? item["id"]?["channelId"]?.ToString();
             var    thumbs  = item["snippet"]?["thumbnails"];
             string thumbUrl = thumbs?["maxres"]?["url"]?.ToString()
                            ?? thumbs?["standard"]?["url"]?.ToString()
                            ?? thumbs?["high"]?["url"]?.ToString()
-                           ?? thumbs?["medium"]?["url"]?.ToString();
-            return new YouTubeTrack { VideoId = vidId, Title = title, ChannelName = channel, ThumbnailUrl = thumbUrl };
+                           ?? thumbs?["medium"]?["url"]?.ToString()
+                           ?? thumbs?["default"]?["url"]?.ToString();
+            return new YouTubeTrack { VideoId = vidId, Title = title, ChannelName = channel, ChannelId = channelId, ThumbnailUrl = thumbUrl };
         }
 
-        // [OPT-Q3] Helper clean channel name — tránh duplicate 3+ lần trong code
         private static string CleanChannelName(string channel)
         {
-            if (channel.EndsWith(" - Topic"))   return channel.Substring(0, channel.Length - 8);
+            if (string.IsNullOrEmpty(channel)) return channel;
+            if (channel == "Nghệ sĩ") return "Artist";
+            if (channel.EndsWith(" - Topic")) return channel.Substring(0, channel.Length - 8);
             if (channel.EndsWith(" - Chủ đề")) return channel.Substring(0, channel.Length - 9);
             return channel;
         }
 
+        private static string GetHighResThumbnail(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            // [OPT-M7] Giảm 1080→480 cho ảnh bìa — tiết kiệm ~4x RAM khi decode trên thiết bị 512MB
+            if (url.Contains("=w120-h120"))
+                return url.Replace("=w120-h120", "=w480-h480");
+            if (url.Contains("=w60-h60"))
+                return url.Replace("=w60-h60", "=w480-h480");
+            if (url.Contains("=w226-h226"))
+                return url.Replace("=w226-h226", "=w480-h480");
+            if (url.Contains("hqdefault.jpg"))
+                return url.Replace("hqdefault.jpg", "hqdefault.jpg"); // giữ hqdefault (480x360), ko dùng maxresdefault (1280x720)
+            if (url.Contains("mqdefault.jpg"))
+                return url.Replace("mqdefault.jpg", "hqdefault.jpg");
+            if (url.Contains("-s120-"))
+                return url.Replace("-s120-", "-s480-");
+            if (url.Contains("-s68-"))
+                return url.Replace("-s68-", "-s480-");
+            return url;
+        }
+
         public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "")
         {
-            string apiKey = ApiKeyTextBox.Text.Trim();
-            if (string.IsNullOrEmpty(apiKey)) return null;
-
-            // [OPT-M4] maxResults=8 thay vì 10 — tiết kiệm RAM + API quota trên 512MB device
-            string url = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=8&q=" + Uri.EscapeDataString(query) + "&type=video&videoCategoryId=10&key=" + apiKey;
-
-            if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
-            {
-                string region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
-                if (region != "US") url += "&regionCode=" + region;
-            }
-            if (!string.IsNullOrEmpty(pageToken)) url += "&pageToken=" + pageToken;
-
             var list = new List<YouTubeTrack>(8);
+
+            // --- LỚP 1 (ƯU TIÊN): INNERTUBE TRỰC TIẾP (không cần proxy) ---
             try
             {
-                var response = await _apiClient.GetStringAsync(url);
-                var json = JObject.Parse(response);
-                var items = json["items"];
-                if (items == null) return list;
-
-                foreach (var item in items)
+                var innerResults = await InnerTubeClient.SearchAsync(query, 12);
+                if (innerResults != null && innerResults.Count > 0)
                 {
-                    try
-                    {
-                        var track = ParseTrackItem(item);
-                        if (track != null) list.Add(track);
-                    }
-                    catch { continue; }
+                    list.AddRange(innerResults);
+                    return list;
                 }
-                return list;
             }
-            catch { return null; }
+            catch { System.Diagnostics.Debug.WriteLine("FetchMusicList InnerTube lỗi, chuyển sang Lớp 2."); }
+
+            // --- LỚP 2: YOUTUBE API V3 (CHANNELS/PLAYLISTS & FALLBACK) ---
+            string apiKey = ApiKeyTextBox.Text.Trim();
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                // Nếu Lớp 1 đã có dữ liệu (có pageToken hay không), lấy thêm channel/playlist ở trang đầu
+                if (list.Count > 0 && !string.IsNullOrEmpty(pageToken)) return list; 
+
+                string ytUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=" + (list.Count > 0 ? "3" : "8") + "&q=" + Uri.EscapeDataString(query) + "&type=" + (list.Count > 0 ? "channel,playlist" : "video,channel,playlist") + "&key=" + apiKey;
+
+                if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
+                {
+                    string region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+                    if (region != "US") ytUrl += "&regionCode=" + region;
+                }
+                if (!string.IsNullOrEmpty(pageToken) && list.Count == 0) ytUrl += "&pageToken=" + pageToken;
+
+                try
+                {
+                    var response = await _apiClient.GetStringAsync(ytUrl);
+                    var json = JObject.Parse(response);
+                    var items = json["items"];
+                    if (items != null)
+                    {
+                        var ytList = new List<YouTubeTrack>();
+                        foreach (var item in items)
+                        {
+                            try { var track = ParseTrackItem(item); if (track != null) ytList.Add(track); }
+                            catch { continue; }
+                        }
+                        
+                        if (list.Count > 0)
+                        {
+                            ytList.AddRange(list);
+                            return ytList;
+                        }
+                        else
+                        {
+                            return ytList;
+                        }
+                    }
+                }
+                catch { }
+            }
+            return list;
         }
 
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -1412,54 +1630,46 @@ namespace YTMusicWP
             SearchButton_Click(null, null);
         }
 
-        public async Task<List<YouTubeTrack>> SearchYouTubeMusic(string query, string pageToken = "")
+        private static readonly SolidColorBrush _filterActiveBg = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84)); // #1DB954
+        private static readonly SolidColorBrush _filterInactiveBg = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 35, 35, 35)); // #232323
+
+        private void ResetFilters()
         {
-            string apiKey = ApiKeyTextBox.Text.Trim();
-            if (string.IsNullOrEmpty(apiKey)) return null;
-
-            string optimizedQuery = query + " \"Topic\"";
-            string url = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=" + Uri.EscapeDataString(optimizedQuery) + "&type=video&videoCategoryId=10&key=" + apiKey;
-            if (!string.IsNullOrEmpty(pageToken)) url += "&pageToken=" + pageToken;
-
-            var list = new List<YouTubeTrack>(20);
-            try
-            {
-                var response = await _apiClient.GetStringAsync(url);
-                var json = JObject.Parse(response);
-                _nextSearchToken = json["nextPageToken"]?.ToString() ?? "";
-
-                var items = json["items"];
-                if (items != null)
-                {
-                    foreach (var item in items)
-                    {
-                        try { var t = ParseTrackItem(item); if (t != null) list.Add(t); }
-                        catch { continue; }
-                    }
-                }
-
-                // Fallback nếu ít kết quả và không phải trang 2+
-                if (list.Count < 3 && string.IsNullOrEmpty(pageToken))
-                {
-                    string backupUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=" + Uri.EscapeDataString(query + " audio") + "&type=video&videoCategoryId=10&key=" + apiKey;
-                    var backupResponse = await _apiClient.GetStringAsync(backupUrl);
-                    var backupJson = JObject.Parse(backupResponse);
-                    var backupItems = backupJson["items"];
-
-                    list.Clear();
-                    if (backupItems != null)
-                    {
-                        foreach (var item in backupItems)
-                        {
-                            try { var t = ParseTrackItem(item); if (t != null) list.Add(t); }
-                            catch { continue; }
-                        }
-                    }
-                }
-                return list;
-            }
-            catch { return null; }
+            FilterAllBtn.Background = _filterInactiveBg;
+            FilterSongsBtn.Background = _filterInactiveBg;
+            FilterPlaylistsBtn.Background = _filterInactiveBg;
+            FilterArtistsBtn.Background = _filterInactiveBg;
         }
+
+        private void FilterAllBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            ResetFilters();
+            FilterAllBtn.Background = _filterActiveBg;
+            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+        }
+
+        private void FilterSongsBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            ResetFilters();
+            FilterSongsBtn.Background = _filterActiveBg;
+            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+        }
+
+        private void FilterPlaylistsBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            ResetFilters();
+            FilterPlaylistsBtn.Background = _filterActiveBg;
+            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+        }
+
+        private void FilterArtistsBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            ResetFilters();
+            FilterArtistsBtn.Background = _filterActiveBg;
+            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+        }
+
+        // [REMOVED] SearchYouTubeMusic() — dead code, tất cả search paths đều dùng FetchMusicList()
 
         private void SongList_ItemClick(object sender, ItemClickEventArgs e)
         {
@@ -1525,7 +1735,7 @@ namespace YTMusicWP
                     return;
                 }
 
-                string cleanTitle = title.Split(new[] { " - " }, StringSplitOptions.None)[0]
+                string cleanTitle = title
                     .Replace(" (Official Video)", "").Replace(" (Lyric Video)", "")
                     .Replace(" (Official Audio)", "").Replace(" (Audio)", "")
                     .Replace(" (Official MV)", "").Trim();
@@ -1533,32 +1743,99 @@ namespace YTMusicWP
 
                 token.ThrowIfCancellationRequested();
 
-                string url = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
-                var response = await _apiClient.GetStringAsync(url);
-
-                token.ThrowIfCancellationRequested();
-
-                var jsonArray = JArray.Parse(response);
                 string syncedLyrics = null;
                 string plainLyrics = null;
 
-                if (jsonArray.Count > 0)
+                // If artist is a type label ("Song", "Video", etc.), try to extract from title
+                string[] typeLabels = { "Song", "Video", "Artist", "Playlist", "Album", "EP", "Single", "" };
+                if (Array.IndexOf(typeLabels, cleanArtist) >= 0)
                 {
-                    syncedLyrics = jsonArray[0]["syncedLyrics"]?.ToString();
-                    plainLyrics  = jsonArray[0]["plainLyrics"]?.ToString();
+                    // Title often has "ArtistName - SongName" format from YouTube  
+                    if (title.Contains(" - "))
+                    {
+                        var parts = title.Split(new[] { " - " }, StringSplitOptions.None);
+                        if (parts.Length >= 2)
+                        {
+                            cleanArtist = parts[0].Trim();
+                            cleanTitle = parts[1].Replace(" (Official Video)", "").Replace(" (Lyric Video)", "")
+                                .Replace(" (Official Audio)", "").Replace(" (Audio)", "")
+                                .Replace(" (Official MV)", "").Trim();
+                        }
+                    }
+                }
+                else if (cleanTitle.Contains(" - "))
+                {
+                    // Artist is known, title might be "ArtistName - SongName" → take song part
+                    var titleParts = cleanTitle.Split(new[] { " - " }, StringSplitOptions.None);
+                    if (titleParts.Length >= 2)
+                    {
+                        // Check if first part matches the artist → take second part as song title
+                        if (titleParts[0].Trim().Equals(cleanArtist, StringComparison.OrdinalIgnoreCase))
+                        {
+                            cleanTitle = titleParts[1].Trim();
+                        }
+                    }
                 }
 
+                // --- LỚP 1 (ƯU TIÊN): LRCLIB.NET exact match ---
+                try
+                {
+                    string lrcUrl = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
+                    var lrcResp = await _apiClient.GetStringAsync(lrcUrl);
+                    token.ThrowIfCancellationRequested();
+                    var lrcArr = JArray.Parse(lrcResp);
+                    if (lrcArr.Count > 0)
+                    {
+                        // Prefer result with synced lyrics
+                        foreach (var item in lrcArr)
+                        {
+                            string s = item["syncedLyrics"]?.ToString();
+                            if (!string.IsNullOrWhiteSpace(s))
+                            {
+                                syncedLyrics = s;
+                                plainLyrics = item["plainLyrics"]?.ToString();
+                                break;
+                            }
+                        }
+                        if (string.IsNullOrWhiteSpace(syncedLyrics))
+                        {
+                            syncedLyrics = lrcArr[0]["syncedLyrics"]?.ToString();
+                            plainLyrics = lrcArr[0]["plainLyrics"]?.ToString();
+                        }
+                    }
+                }
+                catch { System.Diagnostics.Debug.WriteLine("Lyrics Lớp 1 lỗi, chuyển sang Lớp 2."); }
+
+                // --- LỚP 2 (DỰ PHÒNG): LRCLIB.NET q= broad search ---
                 if (string.IsNullOrWhiteSpace(syncedLyrics))
                 {
-                    string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
-                    var response2 = await _apiClient.GetStringAsync(url2);
-                    token.ThrowIfCancellationRequested();
-                    var jsonArray2 = JArray.Parse(response2);
-                    if (jsonArray2.Count > 0)
+                    try
                     {
-                        syncedLyrics = jsonArray2[0]["syncedLyrics"]?.ToString();
-                        plainLyrics  = jsonArray2[0]["plainLyrics"]?.ToString();
+                        string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
+                        var response2 = await _apiClient.GetStringAsync(url2);
+                        token.ThrowIfCancellationRequested();
+                        var jsonArray2 = JArray.Parse(response2);
+                        if (jsonArray2.Count > 0)
+                        {
+                            // Prefer result with synced lyrics
+                            foreach (var item in jsonArray2)
+                            {
+                                string s = item["syncedLyrics"]?.ToString();
+                                if (!string.IsNullOrWhiteSpace(s))
+                                {
+                                    syncedLyrics = s;
+                                    if (string.IsNullOrWhiteSpace(plainLyrics))
+                                        plainLyrics = item["plainLyrics"]?.ToString();
+                                    break;
+                                }
+                            }
+                            if (string.IsNullOrWhiteSpace(syncedLyrics) && string.IsNullOrWhiteSpace(plainLyrics))
+                            {
+                                plainLyrics = jsonArray2[0]["plainLyrics"]?.ToString();
+                            }
+                        }
                     }
+                    catch { }
                 }
 
                 token.ThrowIfCancellationRequested();
@@ -1617,8 +1894,10 @@ namespace YTMusicWP
                 LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
                 LyricsListView.Visibility = Visibility.Collapsed;
             }
-
-            LyricsLoadingBar.Visibility = Visibility.Collapsed;
+            finally
+            {
+                LyricsLoadingBar.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
@@ -1661,6 +1940,18 @@ namespace YTMusicWP
 
         private void PlayTrack(YouTubeTrack track)
         {
+            if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
+            if (track.VideoId.StartsWith("CHANNEL:"))
+            {
+                OpenArtistProfile(track.VideoId.Substring(8), track.Title ?? track.ChannelName);
+                return;
+            }
+            if (track.VideoId.StartsWith("PLAYLIST:"))
+            {
+                OpenYouTubePlaylist(track.VideoId.Substring(9), track.Title, track.ThumbnailUrl);
+                return;
+            }
+
             try { _appMediaPlayer.Pause(); } catch { }
 
             if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast("No Internet connection"); return; }
@@ -1668,16 +1959,17 @@ namespace YTMusicWP
             currentTrack = track;
             MiniTitle.Text = track.Title; BigTitle.Text = track.Title;
             MiniArtist.Text = track.ChannelName; BigArtist.Text = track.ChannelName;
-            MiniPlayIcon.Symbol = Symbol.Pause; BigPlayIcon.Symbol = Symbol.Pause;
+            SetPlayPauseIcon(true);
             MenuTitle.Text = track.Title;
             MenuArtist.Text = track.ChannelName;
 
             if (!string.IsNullOrEmpty(track.ThumbnailUrl))
             {
                 // [OPT-M3] Dùng chung 1 BitmapImage cho BigCover + MenuCover (cùng src, cùng DecodePixelWidth)
-                var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute));
-                bigBmp.DecodePixelWidth = 480;
+                var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(track.ThumbnailUrl), UriKind.Absolute));
+                bigBmp.DecodePixelWidth = 360;
                 BigCoverImage.ImageSource  = bigBmp;
+                AlbumArtEntranceStoryboard.Begin();
                 MenuCoverImage.ImageSource = bigBmp;
 
                 var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute));
@@ -1687,7 +1979,7 @@ namespace YTMusicWP
 
             bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
             BigHeartBtn.Content = isFav ? "♥" : "♡";
-            BigHeartBtn.Foreground = new SolidColorBrush(isFav ? Windows.UI.Colors.Green : Windows.UI.Colors.White);
+            BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
 
@@ -1698,8 +1990,14 @@ namespace YTMusicWP
             if (searchResults.Contains(track)) activeList = searchResults;
             else if (favoriteTracks.Contains(track)) activeList = favoriteTracks;
             else if (downloadedTracks.Contains(track)) activeList = downloadedTracks;
+            else if (homeHistoryCarouselTracks.Contains(track)) activeList = homeHistoryCarouselTracks;
+            else if (historyQuickGridTracks.Contains(track)) activeList = historyQuickGridTracks;
+            else if (popTracks.Contains(track)) activeList = popTracks;
+            else if (lofiTracks.Contains(track)) activeList = lofiTracks;
+            else if (workoutTracks.Contains(track)) activeList = workoutTracks;
             else if (historyTracks.Contains(track)) activeList = historyTracks;
             else if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Contains(track)) activeList = _currentViewingPlaylist.Tracks;
+            else if (ArtistSongsList.ItemsSource != null) { var artistList = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>; if (artistList != null && artistList.Contains(track)) activeList = artistList; }
 
             // Cập nhật lịch sử SAU khi đã chọn activeList
             var existingHistory = historyTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
@@ -1724,7 +2022,7 @@ namespace YTMusicWP
                 currentQueueTracks.Add(t);
                 urls[i] = t.VideoId.StartsWith("LOCAL:")
                     ? "ms-appdata:///local/" + t.VideoId.Substring(6)
-                    : "https://summer-fire-6e3f.adianhseng.workers.dev/api/play?v=" + t.VideoId + "&key=LumiaWP81-An";
+                    : ""; // AudioTask sẽ tự resolve qua InnerTube
                 titles[i] = t.Title;
                 artists[i] = t.ChannelName;
                 videoIds[i] = t.VideoId;
@@ -1813,10 +2111,10 @@ namespace YTMusicWP
 
         private void NowPlayingPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Fix: cập nhật dot indicator đúng cho cả 3 tab (Player=0, Lyrics=1, Queue=2)
-            bool isPlayer = NowPlayingPivot.SelectedIndex == 0;
-            DotPlayer.Opacity = isPlayer ? 1.0 : 0.3;
-            DotLyrics.Opacity = isPlayer ? 0.3 : 1.0;
+            int idx = NowPlayingPivot.SelectedIndex;
+            DotPlayer.Opacity = idx == 0 ? 1.0 : 0.3;
+            DotLyrics.Opacity = idx == 1 ? 1.0 : 0.3;
+            DotQueue.Opacity  = idx == 2 ? 1.0 : 0.3;
         }
 
         private void SlideDownStoryboard_Completed(object sender, object e)
@@ -1840,26 +2138,392 @@ namespace YTMusicWP
             }
         }
 
+        private YouTubeTrack _bottomSheetTrack;
+
         private void MoreButton_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
             if (btn == null) return;
+            var track = btn.DataContext as YouTubeTrack;
+            if (track == null) return;
 
-            // [OPT-M8] Giới hạn depth=5 để tránh walk toàn bộ VisualTree trên 512MB RAM
-            DependencyObject parent = VisualTreeHelper.GetParent(btn);
-            int depth = 0;
-            while (parent != null && !(parent is Grid) && depth < 5)
+            _bottomSheetTrack = track;
+            BottomSheetTitle.Text = track.Title;
+            BottomSheetArtist.Text = track.ChannelName;
+            try {
+                BottomSheetCover.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl)) { DecodePixelWidth = 100 };
+            } catch {}
+
+            CustomBottomSheet.Visibility = Visibility.Visible;
+            BottomSheetSlideUpStoryboard.Begin();
+        }
+
+        private void CloseBottomSheet_Click(object sender, RoutedEventArgs e)
+        {
+            BottomSheetSlideDownStoryboard.Begin();
+        }
+
+        private void BottomSheetSlideDownStoryboard_Completed(object sender, object e)
+        {
+            CustomBottomSheet.Visibility = Visibility.Collapsed;
+        }
+
+        private void BottomSheetContent_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        private void BottomSheetPlay_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            if (_bottomSheetTrack != null) PlayTrack(_bottomSheetTrack);
+        }
+
+        private void BottomSheetAddToPlaylist_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            if (_bottomSheetTrack != null)
             {
-                parent = VisualTreeHelper.GetParent(parent);
-                depth++;
+                _trackPendingForPlaylist = _bottomSheetTrack;
+                AddToPlaylistDialog.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void BottomSheetGoToArtist_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            if (_bottomSheetTrack != null) OpenArtistProfile(_bottomSheetTrack.ChannelId, _bottomSheetTrack.ChannelName);
+        }
+
+        private void BottomSheetSleepTimer_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            SleepTimer_Click(null, null);
+        }
+
+        private void BottomSheetShare_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            if (_bottomSheetTrack != null)
+            {
+                _trackToShare = _bottomSheetTrack;
+                DataTransferManager.ShowShareUI();
+            }
+        }
+
+        private async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
+        {
+            try
+            {
+                // Close artist profile if it's open, so playlist view is visible above it
+                ArtistProfileView.Visibility = Visibility.Collapsed;
+
+                PlaylistDetailsTitle.Text = playlistName;
+                PlaylistDetailsCoverBrush.ImageSource = null;
+                PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+                if (!string.IsNullOrEmpty(coverUrl))
+                {
+                    PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(coverUrl), UriKind.Absolute)) { DecodePixelWidth = 150 };
+                    PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
+                }
+                PlaylistSongsList.ItemsSource = null;
+                PlaylistDetailsView.Visibility = Visibility.Visible;
+                PlaylistSlideInStoryboard.Begin();
+                
+                var tracks = new ObservableCollection<YouTubeTrack>();
+                bool useFallback = false;
+                string proxyThumbnail = null;
+
+                try
+                {
+                    var plResult = await InnerTubeClient.BrowsePlaylistAsync(playlistId);
+                    proxyThumbnail = plResult.ThumbnailUrl;
+                    if (!string.IsNullOrEmpty(plResult.Title))
+                    {
+                        PlaylistDetailsTitle.Text = plResult.Title;
+                    }
+                    foreach (var t in plResult.Tracks)
+                    {
+                        tracks.Add(t);
+                    }
+                }
+                catch { useFallback = true; }
+
+                if (useFallback || tracks.Count == 0)
+                {
+                    string apiKey = ApiKeyTextBox.Text.Trim();
+                    if (string.IsNullOrEmpty(apiKey))
+                    {
+                        ShowToast("API Key required or proxy failed.");
+                        return;
+                    }
+
+                    string url = $"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={playlistId}&key={apiKey}";
+                    var response = await _apiClient.GetStringAsync(url);
+                    var json = Newtonsoft.Json.Linq.JObject.Parse(response);
+                    
+                    var items = json["items"];
+                    if (items != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            try
+                            {
+                                var snippet = item["snippet"];
+                                string title = snippet["title"]?.ToString();
+                                if (title == "Private video" || title == "Deleted video") continue;
+                                
+                                string vidId = snippet["resourceId"]?["videoId"]?.ToString();
+                                string channel = snippet["videoOwnerChannelTitle"]?.ToString() ?? snippet["channelTitle"]?.ToString();
+                                string channelId = snippet["videoOwnerChannelId"]?.ToString() ?? snippet["channelId"]?.ToString();
+                                var thumbs = snippet["thumbnails"];
+                                string thumbUrl = thumbs?["maxres"]?["url"]?.ToString()
+                                   ?? thumbs?["standard"]?["url"]?.ToString()
+                                   ?? thumbs?["high"]?["url"]?.ToString()
+                                   ?? thumbs?["medium"]?["url"]?.ToString()
+                                   ?? thumbs?["default"]?["url"]?.ToString();
+                                   
+                                tracks.Add(new YouTubeTrack
+                                {
+                                    VideoId = vidId,
+                                    Title = title,
+                                    ChannelName = CleanChannelName(channel),
+                                    ChannelId = channelId,
+                                    ThumbnailUrl = thumbUrl
+                                });
+                            }
+                            catch { continue; }
+                        }
+                    }
+                }
+
+                // If no cover was set, try proxy thumbnail or first track's thumbnail
+                if (PlaylistDetailsCoverRect.Visibility == Visibility.Collapsed && tracks.Count > 0)
+                {
+                    string fallbackCover = proxyThumbnail;
+                    if (string.IsNullOrEmpty(fallbackCover))
+                    {
+                        fallbackCover = tracks.FirstOrDefault(t => !string.IsNullOrEmpty(t.ThumbnailUrl))?.ThumbnailUrl;
+                    }
+                    if (!string.IsNullOrEmpty(fallbackCover))
+                    {
+                        try
+                        {
+                            PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(fallbackCover), UriKind.Absolute)) { DecodePixelWidth = 150 };
+                            PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
+                        }
+                        catch { }
+                    }
+                }
+                
+                _currentViewingPlaylist = new UserPlaylist { Name = playlistName, Tracks = tracks };
+                PlaylistSongsList.ItemsSource = _currentViewingPlaylist.Tracks;
+                PlaylistDetailsTrackCount.Text = tracks.Count + " tracks";
+            }
+            catch { ShowToast("Failed to load playlist"); }
+        }
+
+        private async void OpenArtistProfile(string channelId, string channelName)
+        {
+            ArtistProfileView.Visibility = Visibility.Visible;
+            ArtistSlideInStoryboard.Begin();
+            ArtistLoadingBar.Visibility = Visibility.Visible;
+            ArtistSongsList.Visibility = Visibility.Collapsed;
+            ArtistProfileTitle.Text = channelName ?? "Unknown Artist";
+            ArtistProfileCover.Source = null;
+            ArtistProfileAvatar.ImageSource = null;
+            ArtistAlbumsSection.Visibility = Visibility.Collapsed;
+            ArtistAlbumsList.ItemsSource = null;
+
+            List<YouTubeTrack> tracks = null;
+            List<ArtistAlbum> albums = null;
+            bool hasCustomAvatar = false;
+
+            // --- LẤY AVATAR THẬT TỪ YOUTUBE API (NẾU CÓ API KEY) ---
+            string apiKey = ApiKeyTextBox.Text.Trim();
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                try
+                {
+                    string ytUrl = string.IsNullOrEmpty(channelId) 
+                        ? "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=" + Uri.EscapeDataString(channelName) + "&type=channel&key=" + apiKey
+                        : "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=" + Uri.EscapeDataString(channelId) + "&key=" + apiKey;
+                    
+                    var response = await _apiClient.GetStringAsync(ytUrl);
+                    var json = Newtonsoft.Json.Linq.JObject.Parse(response);
+                    var items = json["items"];
+                    if (items != null && items.Any())
+                    {
+                        var snippet = items[0]["snippet"];
+                        if (string.IsNullOrEmpty(channelId)) 
+                        {
+                            channelId = snippet["channelId"]?.ToString() ?? items[0]["id"]?["channelId"]?.ToString();
+                        }
+                        var thumbUrl = snippet["thumbnails"]?["high"]?["url"]?.ToString() ?? snippet["thumbnails"]?["default"]?["url"]?.ToString();
+                        if (thumbUrl != null)
+                        {
+                            ArtistProfileAvatar.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(thumbUrl))) { DecodePixelWidth = 200 };
+                            hasCustomAvatar = true;
+                        }
+                        var titleStr = snippet["title"]?.ToString();
+                        if (!string.IsNullOrEmpty(titleStr)) ArtistProfileTitle.Text = titleStr;
+                    }
+                }
+                catch { }
             }
 
-            var grid = parent as Grid;
-            if (grid != null)
+            // Lớp 1: InnerTube trực tiếp (không cần proxy)
+            if (!string.IsNullOrEmpty(channelId))
             {
-                var flyout = FlyoutBase.GetAttachedFlyout(grid);
-                if (flyout != null) flyout.ShowAt(grid);
+                try
+                {
+                    var artistResult = await InnerTubeClient.BrowseArtistAsync(channelId);
+                    if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
+                        tracks = artistResult.Tracks;
+
+                    if (!string.IsNullOrEmpty(artistResult.AvatarUrl) && !hasCustomAvatar)
+                    {
+                        ArtistProfileAvatar.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.AvatarUrl))) { DecodePixelWidth = 200 };
+                        hasCustomAvatar = true;
+                    }
+                    if (!string.IsNullOrEmpty(artistResult.CoverUrl))
+                    {
+                        ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 400 };
+                    }
+                    if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                    {
+                        ArtistProfileTitle.Text = artistResult.Name;
+                    }
+                    if (artistResult.Albums != null && artistResult.Albums.Count > 0)
+                    {
+                        albums = artistResult.Albums;
+                    }
+                }
+                catch { }
             }
+
+            // Lớp 2: Dự phòng (Fallback) gọi /api/search như cũ
+            if (tracks == null || tracks.Count == 0)
+            {
+                string query = channelName ?? "";
+                if (!string.IsNullOrEmpty(channelId)) query += " \"Topic\""; 
+                tracks = await FetchMusicList(query);
+            }
+            
+            var list = new ObservableCollection<YouTubeTrack>();
+            if (tracks != null)
+            {
+                foreach(var t in tracks) 
+                {
+                    if (t.VideoId != null && t.VideoId.StartsWith("CHANNEL:")) continue;
+                    list.Add(t);
+                }
+                
+                if (list.Count > 0)
+                {
+                    try {
+                        var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(list[0].ThumbnailUrl))) { DecodePixelWidth = 400 };
+                        if (ArtistProfileCover.Source == null) ArtistProfileCover.Source = bmp;
+                        if (!hasCustomAvatar) ArtistProfileAvatar.ImageSource = bmp;
+                        
+                        if (ArtistProfileTitle.Text == "Nghệ sĩ" || ArtistProfileTitle.Text == "Artist" || ArtistProfileTitle.Text == "Unknown Artist")
+                        {
+                            var trackWithArtist = list.FirstOrDefault(t => !string.IsNullOrEmpty(t.ChannelName) && t.ChannelName != "Nghệ sĩ" && t.ChannelName != "Artist");
+                            if (trackWithArtist != null) ArtistProfileTitle.Text = trackWithArtist.ChannelName;
+                            else if (!string.IsNullOrEmpty(list[0].ChannelName)) ArtistProfileTitle.Text = list[0].ChannelName;
+                        }
+                    } catch {}
+                }
+            }
+
+            ArtistSongsList.ItemsSource = list;
+            ArtistLoadingBar.Visibility = Visibility.Collapsed;
+            ArtistSongsList.Visibility = Visibility.Visible;
+
+            // Populate albums carousel
+            if (albums != null && albums.Count > 0)
+            {
+                // Group by section title (Albums, Singles, etc.)
+                var firstSection = albums[0].SectionTitle;
+                ArtistAlbumsTitle.Text = firstSection;
+                ArtistAlbumsList.ItemsSource = albums;
+                ArtistAlbumsSection.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void MenuGoToArtistNowPlaying_Click(object sender, RoutedEventArgs e)
+        {
+            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            NowPlayingView.Visibility = Visibility.Collapsed;
+            
+            if (currentTrack != null)
+            {
+                OpenArtistProfile(currentTrack.ChannelId, currentTrack.ChannelName);
+            }
+        }
+
+        private void CloseArtistProfile_Click(object sender, RoutedEventArgs e)
+        {
+            ArtistSlideOutStoryboard.Begin();
+        }
+
+        private void ArtistSlideOutStoryboard_Completed(object sender, object e)
+        {
+            ArtistProfileView.Visibility = Visibility.Collapsed;
+            // [OPT-M9] Giải phóng ảnh khi đóng — tiết kiệm RAM
+            ArtistProfileCover.Source = null;
+            ArtistProfileAvatar.ImageSource = null;
+            ArtistSongsList.ItemsSource = null;
+            ArtistAlbumsList.ItemsSource = null;
+            ArtistAlbumsSection.Visibility = Visibility.Collapsed;
+        }
+
+        private void ArtistPlayAll_Click(object sender, RoutedEventArgs e)
+        {
+            var list = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
+            if (list != null && list.Count > 0) PlayTrack(list[0]);
+        }
+
+        private void ArtistShuffle_Click(object sender, RoutedEventArgs e)
+        {
+            var list = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
+            if (list != null && list.Count > 0)
+            {
+                var rng = new Random();
+                int idx = rng.Next(list.Count);
+                PlayTrack(list[idx]);
+            }
+        }
+
+        private void ArtistAlbum_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var album = e.ClickedItem as ArtistAlbum;
+            if (album == null) return;
+
+            // If browseId looks like a playlist, open it
+            if (!string.IsNullOrEmpty(album.BrowseId))
+            {
+                string playlistId = album.BrowseId;
+                if (playlistId.StartsWith("MPREb_"))
+                {
+                    // Album browseId — browse as playlist
+                    OpenYouTubePlaylist(playlistId, album.Title, album.ThumbnailUrl);
+                }
+                else if (playlistId.StartsWith("VL") || playlistId.StartsWith("PL"))
+                {
+                    OpenYouTubePlaylist(playlistId.Replace("VL", ""), album.Title, album.ThumbnailUrl);
+                }
+                else
+                {
+                    // Try to browse as playlist anyway  
+                    OpenYouTubePlaylist(playlistId, album.Title, album.ThumbnailUrl);
+                }
+            }
+        }
+
+        private void ToastFadeOutStoryboard_Completed(object sender, object e)
+        {
+            ToastNotification.Visibility = Visibility.Collapsed;
         }
 
         private void MenuPlay_Click(object sender, RoutedEventArgs e)
@@ -1888,7 +2552,7 @@ namespace YTMusicWP
                 if (currentTrack != null && currentTrack.VideoId == track.VideoId)
                 {
                     BigHeartBtn.Content = existing == null ? "♥" : "♡";
-                    BigHeartBtn.Foreground = new SolidColorBrush(existing == null ? Windows.UI.Colors.Green : Windows.UI.Colors.White);
+                    BigHeartBtn.Foreground = existing == null ? _greenBrush : _whiteBrush;
                 }
             }
         }
@@ -1937,12 +2601,12 @@ namespace YTMusicWP
 
         private async Task DownloadTrackAsync(YouTubeTrack track)
         {
-            if (track == null || track.VideoId.StartsWith("LOCAL:")) return;
+            if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
             if (!IsInternetAvailable()) { ShowToast("Internet required to download"); return; }
 
             try
             {
-                string downloadUrl = "https://summer-fire-6e3f.adianhseng.workers.dev/api/download?v=" + track.VideoId + "&key=LumiaWP81-An";
+                string downloadUrl = ProxyBaseUrl + "/api/download?v=" + track.VideoId + "&key=" + _apiSecretKey;
                 string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars()));
                 StorageFile destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(safeTitle + ".m4a", CreationCollisionOption.ReplaceExisting);
 
@@ -1989,8 +2653,8 @@ namespace YTMusicWP
         {
             if (currentTrack == null) return;
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == currentTrack.VideoId);
-            if (existing != null) { favoriteTracks.Remove(existing); BigHeartBtn.Content = "♡"; BigHeartBtn.Foreground = new SolidColorBrush(Windows.UI.Colors.White); }
-            else { favoriteTracks.Insert(0, currentTrack); BigHeartBtn.Content = "♥"; BigHeartBtn.Foreground = new SolidColorBrush(Windows.UI.Colors.Green); }
+            if (existing != null) { favoriteTracks.Remove(existing); BigHeartBtn.Content = "♡"; BigHeartBtn.Foreground = _whiteBrush; }
+            else { favoriteTracks.Insert(0, currentTrack); BigHeartBtn.Content = "♥"; BigHeartBtn.Foreground = _greenBrush; }
             SaveFavoritesAsync();
         }
 
@@ -1999,7 +2663,7 @@ namespace YTMusicWP
             var settings = ApplicationData.Current.LocalSettings;
             bool newState = !(settings.Values.ContainsKey("ShuffleMode") ? (bool)settings.Values["ShuffleMode"] : false);
             settings.Values["ShuffleMode"] = newState;
-            ShuffleIcon.Foreground = new SolidColorBrush(newState ? Windows.UI.Colors.Green : Windows.UI.Colors.White);
+            ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
         }
 
         private void RepeatButton_Click(object sender, RoutedEventArgs e)
@@ -2013,9 +2677,9 @@ namespace YTMusicWP
 
         private void UpdateRepeatUI(int mode)
         {
-            if (mode == 0) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = new SolidColorBrush(Windows.UI.Colors.White); }
-            else if (mode == 1) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = new SolidColorBrush(Windows.UI.Colors.Green); }
-            else if (mode == 2) { RepeatIcon.Glyph = "\uE1CC"; RepeatIcon.Foreground = new SolidColorBrush(Windows.UI.Colors.Green); }
+            if (mode == 0) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _whiteBrush; }
+            else if (mode == 1) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _greenBrush; }
+            else if (mode == 2) { RepeatIcon.Glyph = "\uE1CC"; RepeatIcon.Foreground = _greenBrush; }
         }
 
         private void SetupTimer()
@@ -2032,8 +2696,7 @@ namespace YTMusicWP
                 {
                     try
                     {
-                        Symbol sym = (sender.CurrentState == MediaPlayerState.Playing) ? Symbol.Pause : Symbol.Play;
-                        MiniPlayIcon.Symbol = sym; BigPlayIcon.Symbol = sym;
+                        SetPlayPauseIcon(sender.CurrentState == MediaPlayerState.Playing);
                     }
                     catch { }
                 });
@@ -2193,6 +2856,7 @@ namespace YTMusicWP
         public string VideoId { get; set; }
         public string Title { get; set; }
         public string ChannelName { get; set; }
+        public string ChannelId { get; set; }
         public string ThumbnailUrl { get; set; }
 
         public Visibility DeleteVisibility
