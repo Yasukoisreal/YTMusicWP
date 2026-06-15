@@ -663,8 +663,11 @@ namespace YTMusicWP
         /// Thử nhiều client: ANDROID_VR → ANDROID_MUSIC → ANDROID.
         /// Gọi từ foreground vì HttpClient mạnh hơn AudioTask.
         /// </summary>
+        public static string LastResolveDebug = "";
+
         public static async Task<string> ResolveStreamUrlAsync(string videoId)
         {
+            LastResolveDebug = "";
             if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:") || videoId.StartsWith("CHANNEL:") || videoId.StartsWith("PLAYLIST:"))
                 return null;
 
@@ -679,6 +682,7 @@ namespace YTMusicWP
                 if (watchResp.IsSuccessStatusCode)
                 {
                     string html = await watchResp.Content.ReadAsStringAsync();
+                    LastResolveDebug = "wp:" + html.Length;
                     string marker = "\"visitorData\":\"";
                     int idx = html.IndexOf(marker);
                     if (idx >= 0)
@@ -689,16 +693,28 @@ namespace YTMusicWP
                         {
                             string candidate = html.Substring(start, end - start);
                             if (candidate.StartsWith("Cg"))
+                            {
                                 vd = candidate;
+                                LastResolveDebug += " vd:OK";
+                            }
                         }
                     }
+                    if (vd == null) LastResolveDebug += " vd:NONE";
+                }
+                else
+                {
+                    LastResolveDebug = "wp:HTTP" + (int)watchResp.StatusCode;
                 }
             }
-            catch { }
+            catch (Exception ex) { LastResolveDebug = "wp:EX:" + ex.Message.Substring(0, Math.Min(30, ex.Message.Length)); }
 
             // Fallback: dùng cached visitorData
             if (string.IsNullOrEmpty(vd))
+            {
                 vd = await GetVisitorDataAsync();
+                if (!string.IsNullOrEmpty(vd))
+                    LastResolveDebug += " vd2:OK";
+            }
 
             // Thử nhiều client type
             var clients = new[]
@@ -740,13 +756,24 @@ namespace YTMusicWP
                     req.Headers.Add("X-YouTube-Client-Version", c.Version);
 
                     var resp = await _client.SendAsync(req);
-                    if (!resp.IsSuccessStatusCode) continue;
+                    if (!resp.IsSuccessStatusCode)
+                    {
+                        LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":H" + (int)resp.StatusCode;
+                        continue;
+                    }
 
                     string json = await resp.Content.ReadAsStringAsync();
                     var data = JObject.Parse(json);
 
-                    string status = data["playabilityStatus"]?["status"]?.ToString();
-                    if (status != "OK") continue;
+                    string status = data["playabilityStatus"]?["status"]?.ToString() ?? "?";
+                    string reason = data["playabilityStatus"]?["reason"]?.ToString() ?? "";
+                    
+                    if (status != "OK")
+                    {
+                        string shortReason = reason.Length > 15 ? reason.Substring(0, 15) : reason;
+                        LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":" + status.Substring(0, Math.Min(5, status.Length));
+                        continue;
+                    }
 
                     // Tìm audio URL: itag 140 (m4a 128kbps) → 139 → 18 (combo)
                     var formats = data["streamingData"]?["adaptiveFormats"];
@@ -759,7 +786,10 @@ namespace YTMusicWP
                             {
                                 string url = fmt["url"]?.ToString();
                                 if (!string.IsNullOrEmpty(url))
+                                {
+                                    LastResolveDebug += " " + c.Name + ":OK";
                                     return PrepareStreamUrl(url);
+                                }
                             }
                         }
                     }
@@ -775,12 +805,22 @@ namespace YTMusicWP
                             {
                                 string url = fmt["url"]?.ToString();
                                 if (!string.IsNullOrEmpty(url))
+                                {
+                                    LastResolveDebug += " i18:OK";
                                     return PrepareStreamUrl(url);
+                                }
                             }
                         }
                     }
+
+                    // Status OK nhưng không có URL
+                    LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":NOURL";
                 }
-                catch { continue; }
+                catch (Exception ex)
+                {
+                    LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":EX";
+                    continue;
+                }
             }
 
             return null;
