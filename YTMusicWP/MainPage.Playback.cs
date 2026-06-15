@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -262,21 +262,6 @@ namespace YTMusicWP
         }
 
         private void MusicSlider_PointerPressed(object sender, PointerRoutedEventArgs e) => _isSliderManipulating = true;
-        private void MusicSlider_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
-        {
-            _isSliderManipulating = false;
-            try
-            {
-                if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
-                {
-                    // FIX #7: Clamp giá trị seek để không bị âm với clip ngắn
-                    _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(MusicSlider.Value, Math.Max(0, _appMediaPlayer.NaturalDuration.TotalSeconds - 2)));
-                    if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
-                }
-            }
-            catch { }
-        }
-
         private void MusicSlider_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         {
             _isSliderManipulating = false;
