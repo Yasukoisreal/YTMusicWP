@@ -87,10 +87,16 @@ namespace AudioPlayerTask
                 {
                     string fastUrl = e.Data["FastUrl"].ToString();
                     if (!string.IsNullOrEmpty(fastUrl) && _currentTrackIndex < _trackList.Count)
+                    {
                         _trackList[_currentTrackIndex] = fastUrl;
+                        // Foreground đã resolve → skip InnerTube trong AudioTask
+                        _innerTubeAttempted = true;
+                    }
                 }
 
+                bool hasFastUrl = _innerTubeAttempted; // set true bởi FastUrl ở trên
                 ResetRetryState();
+                if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
                 StartPlaybackAsync();
             }
             else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext();
@@ -588,25 +594,20 @@ namespace AudioPlayerTask
             {
                 _innerTubeAttempted = true;
                 UpdateSystemMediaControls();
-                SendToast("Resolving...");
 
                 string directUrl = await ResolveViaInnerTubeDirectAsync(vidId);
                 if (!string.IsNullOrEmpty(directUrl))
                 {
                     directUrl = PrepareStreamUrl(directUrl);
-                    SendToast("[IT] " + _innerTubeDebug);
                     PlayUrl(directUrl, vidId);
                     return;
                 }
-
-                SendToast("[IT FAIL] " + _innerTubeDebug);
             }
 
             // FALLBACK: URL từ MainPage — nếu rỗng thì resolve InnerTube lần nữa
             string fallbackUrl = _trackList[_currentTrackIndex];
             if (string.IsNullOrEmpty(fallbackUrl))
             {
-                SendToast("Resolving fallback...");
                 fallbackUrl = await ResolveViaInnerTubeDirectAsync(vidId);
                 if (!string.IsNullOrEmpty(fallbackUrl))
                     fallbackUrl = PrepareStreamUrl(fallbackUrl);
@@ -682,25 +683,21 @@ namespace AudioPlayerTask
             // Retry 1-2: Lấy URL InnerTube MỚI
             if (_retryCount <= 2)
             {
-                SendToast("Refreshing... (retry " + _retryCount + ")");
-                await Task.Delay(1500);
+                await Task.Delay(500);
                 _cachedVisitorData = null;
                 string freshUrl = await ResolveViaInnerTubeDirectAsync(vidId);
                 if (!string.IsNullOrEmpty(freshUrl))
                 {
                     freshUrl = PrepareStreamUrl(freshUrl);
-                    SendToast("[IT] " + _innerTubeDebug);
                     _resolvedUrl = freshUrl;
                     _innerTubeAttempted = true;
                     StartPlaybackAsync();
                     return;
                 }
-                SendToast("[IT FAIL] " + _innerTubeDebug);
             }
 
             // Retry 3-4: Dùng URL từ MainPage
-            SendToast("Fallback... (retry " + _retryCount + ")");
-            await Task.Delay(2000);
+            await Task.Delay(500);
             _innerTubeAttempted = true;
             _resolvedUrl = null;
             StartPlaybackAsync();
