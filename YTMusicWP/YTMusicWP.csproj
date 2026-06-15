@@ -97,6 +97,9 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="InnerTubeClient.cs" />
+    <Compile Include="Models\YouTubeTrack.cs" />
+    <Compile Include="Models\LyricLine.cs" />
+    <Compile Include="Models\UserPlaylist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
