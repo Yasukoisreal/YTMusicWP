@@ -138,29 +138,58 @@ namespace AudioPlayerTask
         /// </summary>
         private static string _cachedVisitorData = null;
 
-        private async Task<string> GetVisitorDataAsync()
+        private async Task<string> GetVisitorDataAsync(string videoId = null)
         {
             // Dùng cache nếu có
             if (!string.IsNullOrEmpty(_cachedVisitorData))
                 return _cachedVisitorData;
 
-            // Nguồn 1: sw.js_data (giống MetroTube)
-            string vd = await FetchVisitorDataFromSwJs();
-            if (!string.IsNullOrEmpty(vd))
+            // Nguồn 1: Watch page (chính xác nhất — visitorData đi kèm video)
+            if (!string.IsNullOrEmpty(videoId))
             {
-                _cachedVisitorData = vd;
-                return vd;
+                string vd = await FetchVisitorDataFromWatchPage(videoId);
+                if (!string.IsNullOrEmpty(vd))
+                {
+                    _cachedVisitorData = vd;
+                    return vd;
+                }
             }
 
-            // Nguồn 2: youtube.com homepage (HTML chứa visitorData trong script tag)
-            vd = await FetchVisitorDataFromHomepage();
-            if (!string.IsNullOrEmpty(vd))
+            // Nguồn 2: sw.js_data (giống MetroTube)
+            string vd2 = await FetchVisitorDataFromSwJs();
+            if (!string.IsNullOrEmpty(vd2))
             {
-                _cachedVisitorData = vd;
-                return vd;
+                _cachedVisitorData = vd2;
+                return vd2;
+            }
+
+            // Nguồn 3: youtube.com homepage
+            vd2 = await FetchVisitorDataFromHomepage();
+            if (!string.IsNullOrEmpty(vd2))
+            {
+                _cachedVisitorData = vd2;
+                return vd2;
             }
 
             return null;
+        }
+
+        private async Task<string> FetchVisitorDataFromWatchPage(string videoId)
+        {
+            try
+            {
+                var httpClient = new Windows.Web.Http.HttpClient();
+                httpClient.DefaultRequestHeaders.Add("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+                httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+
+                var response = await httpClient.GetAsync(new Uri("https://www.youtube.com/watch?v=" + videoId));
+                if (!response.IsSuccessStatusCode) return null;
+
+                string html = await response.Content.ReadAsStringAsync();
+                return ExtractVisitorData(html);
+            }
+            catch { return null; }
         }
 
         private async Task<string> FetchVisitorDataFromSwJs()
@@ -287,7 +316,7 @@ namespace AudioPlayerTask
         {
             try
             {
-                string visitorData = await GetVisitorDataAsync();
+                string visitorData = await GetVisitorDataAsync(videoId);
                 string vdShort = visitorData != null ? visitorData.Substring(0, Math.Min(8, visitorData.Length)) : "NULL";
 
                 var httpClient = new Windows.Web.Http.HttpClient();
