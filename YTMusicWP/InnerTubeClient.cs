@@ -774,110 +774,152 @@ namespace YTMusicWP
             }
 
             // ========================================
-            // FALLBACK 1: Invidious API (giống MetroTube)
+            // FALLBACK: Invidious (API + Embed proxy)
+            // Dùng HttpClient riêng với timeout 5s, chạy song song
             // ========================================
-            string[] invInstances = new[] {
-                "yewtu.be", "iv.duti.dev", "invidious.schenkel.eti.br",
-                "invidious.jing.rocks", "inv.nadeko.net"
-            };
-            foreach (var inst in invInstances)
+            try
             {
-                try
+                string[] invInstances = new[] { "yewtu.be", "iv.duti.dev", "invidious.schenkel.eti.br", "inv.nadeko.net" };
+                
+                var invClient = new HttpClient();
+                invClient.Timeout = TimeSpan.FromSeconds(5);
+                invClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+
+                // Chạy song song: tất cả API + Embed requests cùng lúc
+                var tasks = new List<Task<string>>();
+                foreach (var inst in invInstances)
                 {
-                    var invReq = new HttpRequestMessage(HttpMethod.Get,
-                        "https://" + inst + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams");
-                    invReq.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-                    
-                    var invResp = await _client.SendAsync(invReq);
-                    if (!invResp.IsSuccessStatusCode) continue;
-                    
-                    string invJson = await invResp.Content.ReadAsStringAsync();
-                    var invData = JObject.Parse(invJson);
-                    
-                    // Tìm itag 140 (audio m4a) trong adaptiveFormats
-                    var adaptiveFormats = invData["adaptiveFormats"] as JArray;
-                    if (adaptiveFormats != null)
+                    // Invidious API
+                    tasks.Add(TryInvidiousApiAsync(invClient, inst, videoId));
+                    // Invidious Embed (proxy qua server, bypass geo-block)
+                    tasks.Add(TryInvidiousEmbedAsync(invClient, inst, videoId));
+                }
+
+                // Đợi task đầu tiên hoàn thành thành công
+                while (tasks.Count > 0)
+                {
+                    var completed = await Task.WhenAny(tasks);
+                    tasks.Remove(completed);
+                    try
                     {
-                        foreach (var fmt in adaptiveFormats)
+                        string result = await completed;
+                        if (!string.IsNullOrEmpty(result))
                         {
-                            string itagStr = fmt["itag"]?.ToString();
-                            if (itagStr == "140" || itagStr == "139")
-                            {
-                                string url = fmt["url"]?.ToString();
-                                if (!string.IsNullOrEmpty(url))
-                                {
-                                    LastResolveDebug += " inv:" + inst.Substring(0, Math.Min(8, inst.Length)) + ":OK";
-                                    return PrepareStreamUrl(url);
-                                }
-                            }
+                            return result;
                         }
                     }
-                    
-                    // Fallback: itag 18 trong formatStreams
-                    var fmtStreams = invData["formatStreams"] as JArray;
-                    if (fmtStreams != null)
+                    catch { }
+                }
+                LastResolveDebug += " inv:ALL_FAIL";
+            }
+            catch (Exception ex)
+            {
+                LastResolveDebug += " inv:EX:" + ex.Message.Substring(0, Math.Min(15, ex.Message.Length));
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Invidious API: /api/v1/videos/{id} → parse JSON → itag 140 URL
+        /// </summary>
+        private static async Task<string> TryInvidiousApiAsync(HttpClient client, string instance, string videoId)
+        {
+            try
+            {
+                var resp = await client.GetAsync("https://" + instance + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams");
+                if (!resp.IsSuccessStatusCode) return null;
+                
+                string json = await resp.Content.ReadAsStringAsync();
+                var data = JObject.Parse(json);
+                
+                var adaptiveFormats = data["adaptiveFormats"] as JArray;
+                if (adaptiveFormats != null)
+                {
+                    foreach (var fmt in adaptiveFormats)
                     {
-                        foreach (var fmt in fmtStreams)
+                        string itagStr = fmt["itag"]?.ToString();
+                        if (itagStr == "140" || itagStr == "139")
                         {
-                            string itagStr = fmt["itag"]?.ToString();
-                            if (itagStr == "18")
+                            string url = fmt["url"]?.ToString();
+                            if (!string.IsNullOrEmpty(url))
                             {
-                                string url = fmt["url"]?.ToString();
-                                if (!string.IsNullOrEmpty(url))
-                                {
-                                    LastResolveDebug += " inv18:" + inst.Substring(0, Math.Min(6, inst.Length)) + ":OK";
-                                    return PrepareStreamUrl(url);
-                                }
+                                LastResolveDebug += " api:" + instance.Substring(0, Math.Min(6, instance.Length));
+                                return PrepareStreamUrl(url);
                             }
                         }
                     }
                 }
-                catch { continue; }
-            }
-            LastResolveDebug += " inv:FAIL";
-
-            // ========================================
-            // FALLBACK 2: YT2009 proxy (giống MetroTube)
-            // ========================================
-            string[] yt2009Servers = new[] { "89.168.117.130", "34.41.145.180" };
-            foreach (var server in yt2009Servers)
-            {
-                try
+                
+                var fmtStreams = data["formatStreams"] as JArray;
+                if (fmtStreams != null)
                 {
-                    var yt2009Req = new HttpRequestMessage(HttpMethod.Get,
-                        "http://" + server + "/get_video_info?video_id=" + videoId);
-                    yt2009Req.Headers.Add("User-Agent", "Mozilla/5.0");
-                    
-                    var yt2009Resp = await _client.SendAsync(yt2009Req);
-                    if (!yt2009Resp.IsSuccessStatusCode) continue;
-                    
-                    string info = await yt2009Resp.Content.ReadAsStringAsync();
-                    // Parse query string format: fmt_stream_map or url_encoded_fmt_stream_map
-                    string decoded = System.Net.WebUtility.UrlDecode(info);
-                    
-                    // Tìm URL trực tiếp cho itag 140 hoặc 18
-                    if (decoded.Contains("itag=140") || decoded.Contains("itag=18"))
+                    foreach (var fmt in fmtStreams)
                     {
-                        // Tìm googlevideo.com URL
-                        int urlStart = decoded.IndexOf("https://");
-                        while (urlStart >= 0)
+                        if (fmt["itag"]?.ToString() == "18")
                         {
-                            int urlEnd = decoded.IndexOf("&", urlStart);
-                            if (urlEnd < 0) urlEnd = decoded.Length;
-                            string candidateUrl = decoded.Substring(urlStart, urlEnd - urlStart);
-                            if (candidateUrl.Contains("googlevideo.com") && (candidateUrl.Contains("itag=140") || candidateUrl.Contains("itag=18")))
+                            string url = fmt["url"]?.ToString();
+                            if (!string.IsNullOrEmpty(url))
                             {
-                                LastResolveDebug += " yt2009:" + server.Substring(server.Length - 3) + ":OK";
-                                return PrepareStreamUrl(candidateUrl);
+                                LastResolveDebug += " api18:" + instance.Substring(0, Math.Min(6, instance.Length));
+                                return PrepareStreamUrl(url);
                             }
-                            urlStart = decoded.IndexOf("https://", urlStart + 1);
                         }
                     }
                 }
-                catch { continue; }
             }
-            LastResolveDebug += " yt09:FAIL";
+            catch { }
+            return null;
+        }
 
+        /// <summary>
+        /// Invidious Embed: /embed/{id}?local=1 → parse HTML source tags
+        /// Stream proxy qua Invidious server → bypass geo-block
+        /// </summary>
+        private static async Task<string> TryInvidiousEmbedAsync(HttpClient client, string instance, string videoId)
+        {
+            try
+            {
+                var resp = await client.GetAsync("https://" + instance + "/embed/" + videoId + "?local=1");
+                if (!resp.IsSuccessStatusCode) return null;
+                
+                string html = await resp.Content.ReadAsStringAsync();
+                
+                // Tìm <source src="..." type="audio/mp4"> cho itag 140
+                // Pattern: <source src="/videoplayback?...itag=140...&local=true..." type="audio/mp4"
+                string[] priorities = new[] { "itag=140", "itag=139", "itag=18" };
+                foreach (var itagSearch in priorities)
+                {
+                    int srcIdx = html.IndexOf(itagSearch);
+                    if (srcIdx < 0) continue;
+                    
+                    // Tìm lùi lại <source src="
+                    int tagStart = html.LastIndexOf("<source", srcIdx);
+                    if (tagStart < 0) continue;
+                    
+                    int srcAttr = html.IndexOf("src=\"", tagStart);
+                    if (srcAttr < 0 || srcAttr > srcIdx + 20) continue;
+                    
+                    int urlStart = srcAttr + 5;
+                    int urlEnd = html.IndexOf("\"", urlStart);
+                    if (urlEnd <= urlStart) continue;
+                    
+                    string rawUrl = html.Substring(urlStart, urlEnd - urlStart);
+                    // Decode HTML entities
+                    rawUrl = rawUrl.Replace("&amp;", "&");
+                    
+                    // Nếu URL bắt đầu bằng / → thêm scheme+host
+                    if (rawUrl.StartsWith("/"))
+                        rawUrl = "https://" + instance + rawUrl;
+                    
+                    if (!string.IsNullOrEmpty(rawUrl))
+                    {
+                        LastResolveDebug += " emb:" + instance.Substring(0, Math.Min(6, instance.Length));
+                        return rawUrl; // KHÔNG PrepareStreamUrl vì URL này đã qua proxy
+                    }
+                }
+            }
+            catch { }
             return null;
         }
 

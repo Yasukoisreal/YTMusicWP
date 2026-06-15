@@ -7,6 +7,7 @@ using Windows.Media.Playback;
 using Windows.UI.Notifications;
 using Windows.Data.Xml.Dom;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace AudioPlayerTask
 {
@@ -304,7 +305,9 @@ namespace AudioPlayerTask
                 {
                     var httpClient = new Windows.Web.Http.HttpClient();
                     httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
-                    var resp = await httpClient.GetAsync(new Uri("https://" + inst + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams"));
+                    // Invidious API
+                    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    var resp = await httpClient.GetAsync(new Uri("https://" + inst + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams")).AsTask(cts.Token);
                     if (resp.StatusCode != Windows.Web.Http.HttpStatusCode.Ok) continue;
                     
                     string json = await resp.Content.ReadAsStringAsync();
@@ -320,6 +323,50 @@ namespace AudioPlayerTask
                     {
                         _innerTubeDebug += " inv:" + inst.Substring(0, Math.Min(6, inst.Length));
                         return audioUrl;
+                    }
+                }
+                catch { continue; }
+            }
+
+            // Layer 3: Invidious Embed proxy (bypass geo-block)
+            foreach (var inst in invInstances)
+            {
+                try
+                {
+                    var httpClient = new Windows.Web.Http.HttpClient();
+                    httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    var resp = await httpClient.GetAsync(new Uri("https://" + inst + "/embed/" + videoId + "?local=1")).AsTask(cts.Token);
+                    if (resp.StatusCode != Windows.Web.Http.HttpStatusCode.Ok) continue;
+                    
+                    string html = await resp.Content.ReadAsStringAsync();
+                    
+                    // Parse <source src="...itag=140..."> from embed HTML
+                    string[] itags = new string[] { "itag=140", "itag=139", "itag=18" };
+                    foreach (var itagSearch in itags)
+                    {
+                        int srcIdx = html.IndexOf(itagSearch);
+                        if (srcIdx < 0) continue;
+                        
+                        int tagStart = html.LastIndexOf("<source", srcIdx);
+                        if (tagStart < 0) continue;
+                        
+                        int srcAttr = html.IndexOf("src=\"", tagStart);
+                        if (srcAttr < 0 || srcAttr > srcIdx + 20) continue;
+                        
+                        int urlStart = srcAttr + 5;
+                        int urlEnd = html.IndexOf("\"", urlStart);
+                        if (urlEnd <= urlStart) continue;
+                        
+                        string rawUrl = html.Substring(urlStart, urlEnd - urlStart).Replace("&amp;", "&");
+                        if (rawUrl.StartsWith("/"))
+                            rawUrl = "https://" + inst + rawUrl;
+                        
+                        if (!string.IsNullOrEmpty(rawUrl))
+                        {
+                            _innerTubeDebug += " emb:" + inst.Substring(0, Math.Min(6, inst.Length));
+                            return rawUrl;
+                        }
                     }
                 }
                 catch { continue; }
