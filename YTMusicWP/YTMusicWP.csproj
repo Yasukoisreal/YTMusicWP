@@ -126,6 +126,9 @@
     <Compile Include="MainPage.Storage.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MainPage.Navigation.cs">
+      <DependentUpon>MainPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="InnerTubeClient.cs" />
     <Compile Include="InnerTubeClient.Search.cs" />
     <Compile Include="InnerTubeClient.Browse.cs" />

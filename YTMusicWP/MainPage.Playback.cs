@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -328,6 +328,126 @@ namespace YTMusicWP
                 BackgroundMediaPlayer.SendMessageToBackground(new ValueSet { { "NextTrackMessage", "" } });
             }
             catch { }
+        }
+
+
+        private void SyncBackgroundPlayer()
+        {
+            try
+            {
+                var localSettings = ApplicationData.Current.LocalSettings.Values;
+
+                if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing || _appMediaPlayer.CurrentState == MediaPlayerState.Paused)
+                {
+                    bool isPlaying = (_appMediaPlayer.CurrentState == MediaPlayerState.Playing);
+                    SetPlayPauseIcon(isPlaying);
+
+                    string title = localSettings.ContainsKey("CurrentTitle") ? localSettings["CurrentTitle"].ToString() : "Unknown";
+                    string artist = localSettings.ContainsKey("CurrentArtist") ? localSettings["CurrentArtist"].ToString() : "Unknown";
+                    string vid = localSettings.ContainsKey("CurrentVideoId") ? localSettings["CurrentVideoId"].ToString() : "";
+                    string thumb = localSettings.ContainsKey("CurrentThumbnail") ? localSettings["CurrentThumbnail"].ToString() : "";
+
+                    // [OPT-M8] Skip nếu track đã sync — tránh tạo BitmapImage mới khi resume
+                    if (currentTrack != null && currentTrack.VideoId == vid)
+                    {
+                        return;
+                    }
+
+                    MiniTitle.Text = title; BigTitle.Text = title;
+                    MiniArtist.Text = artist; BigArtist.Text = artist;
+
+                    MenuTitle.Text = title;
+                    MenuArtist.Text = artist;
+
+                    if (!string.IsNullOrEmpty(thumb))
+                    {
+                        try
+                        {
+                            var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            bigBmp.DecodePixelWidth = 360;
+                            bigBmp.UriSource = new Uri(GetHighResThumbnail(thumb), UriKind.Absolute);
+                            BigCoverImage.ImageSource = bigBmp;
+                            AlbumArtEntranceStoryboard.Begin();
+                            MenuCoverImage.ImageSource = bigBmp;
+
+                            var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            miniBmp.DecodePixelWidth = 100;
+                            miniBmp.UriSource = new Uri(thumb, UriKind.Absolute);
+                            MiniCoverImage.ImageSource = miniBmp;
+                        }
+                        catch { }
+                    }
+
+                    if (!string.IsNullOrEmpty(vid))
+                    {
+                        currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
+                        bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
+                        BigHeartBtn.Content = isFav ? "♥" : "♡";
+                        BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+
+                        var ignored = UpdateLyricsAsync(title, artist);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private async void BackgroundMediaPlayer_MessageReceivedFromBackground(object sender, MediaPlayerDataReceivedEventArgs e)
+        {
+            if (e.Data.ContainsKey("ToastMessage"))
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    ShowToast(e.Data["ToastMessage"].ToString());
+                });
+            }
+
+            if (e.Data.ContainsKey("TrackChanged"))
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    string title = e.Data["NewTitle"]?.ToString() ?? "";
+                    string artist = e.Data["NewArtist"]?.ToString() ?? "";
+                    string vid = e.Data.ContainsKey("NewVideoId") ? e.Data["NewVideoId"].ToString() : "";
+                    string thumb = e.Data.ContainsKey("NewThumbnail") ? e.Data["NewThumbnail"].ToString() : "";
+
+                    MiniTitle.Text = title; BigTitle.Text = title;
+                    MiniArtist.Text = artist; BigArtist.Text = artist;
+
+                    MenuTitle.Text = title;
+                    MenuArtist.Text = artist;
+
+                    if (!string.IsNullOrEmpty(thumb))
+                    {
+                        try
+                        {
+                            var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            bigBmp.DecodePixelWidth = 360;
+                            bigBmp.UriSource = new Uri(GetHighResThumbnail(thumb), UriKind.Absolute);
+                            BigCoverImage.ImageSource = bigBmp;
+                            AlbumArtEntranceStoryboard.Begin();
+                            MenuCoverImage.ImageSource = bigBmp;
+
+                            var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            miniBmp.DecodePixelWidth = 100;
+                            miniBmp.UriSource = new Uri(thumb, UriKind.Absolute);
+                            MiniCoverImage.ImageSource = miniBmp;
+                        }
+                        catch { }
+                    }
+
+                    if (!string.IsNullOrEmpty(vid))
+                    {
+                        currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
+
+                        bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
+                        BigHeartBtn.Content = isFav ? "♥" : "♡";
+                        BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+
+                        var ignored = UpdateLyricsAsync(title, artist);
+                    }
+                });
+            }
         }
 
     }
