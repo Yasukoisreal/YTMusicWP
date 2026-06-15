@@ -2013,11 +2013,9 @@ namespace YTMusicWP
             {
                 try
                 {
-                    ShowToast("Resolving " + track.VideoId + "...", 5000);
                     resolvedUrl = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId) ?? "";
-                    ShowToast("[FG] " + InnerTubeClient.LastResolveDebug + (string.IsNullOrEmpty(resolvedUrl) ? " FAIL" : " GOT"), 5000);
                 }
-                catch (Exception ex) { resolvedUrl = ""; ShowToast("[FG EX] " + ex.Message.Substring(0, Math.Min(40, ex.Message.Length)), 5000); }
+                catch { resolvedUrl = ""; }
             }
 
             // OPTIMIZATION: Gộp 2 vòng lặp activeList thành 1 duy nhất
