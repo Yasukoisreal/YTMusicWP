@@ -773,6 +773,111 @@ namespace YTMusicWP
                     LastResolveDebug += " EX:" + ex.Message.Substring(0, Math.Min(25, ex.Message.Length));
             }
 
+            // ========================================
+            // FALLBACK 1: Invidious API (giống MetroTube)
+            // ========================================
+            string[] invInstances = new[] {
+                "yewtu.be", "iv.duti.dev", "invidious.schenkel.eti.br",
+                "invidious.jing.rocks", "inv.nadeko.net"
+            };
+            foreach (var inst in invInstances)
+            {
+                try
+                {
+                    var invReq = new HttpRequestMessage(HttpMethod.Get,
+                        "https://" + inst + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams");
+                    invReq.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                    
+                    var invResp = await _client.SendAsync(invReq);
+                    if (!invResp.IsSuccessStatusCode) continue;
+                    
+                    string invJson = await invResp.Content.ReadAsStringAsync();
+                    var invData = JObject.Parse(invJson);
+                    
+                    // Tìm itag 140 (audio m4a) trong adaptiveFormats
+                    var adaptiveFormats = invData["adaptiveFormats"] as JArray;
+                    if (adaptiveFormats != null)
+                    {
+                        foreach (var fmt in adaptiveFormats)
+                        {
+                            string itagStr = fmt["itag"]?.ToString();
+                            if (itagStr == "140" || itagStr == "139")
+                            {
+                                string url = fmt["url"]?.ToString();
+                                if (!string.IsNullOrEmpty(url))
+                                {
+                                    LastResolveDebug += " inv:" + inst.Substring(0, Math.Min(8, inst.Length)) + ":OK";
+                                    return PrepareStreamUrl(url);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Fallback: itag 18 trong formatStreams
+                    var fmtStreams = invData["formatStreams"] as JArray;
+                    if (fmtStreams != null)
+                    {
+                        foreach (var fmt in fmtStreams)
+                        {
+                            string itagStr = fmt["itag"]?.ToString();
+                            if (itagStr == "18")
+                            {
+                                string url = fmt["url"]?.ToString();
+                                if (!string.IsNullOrEmpty(url))
+                                {
+                                    LastResolveDebug += " inv18:" + inst.Substring(0, Math.Min(6, inst.Length)) + ":OK";
+                                    return PrepareStreamUrl(url);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { continue; }
+            }
+            LastResolveDebug += " inv:FAIL";
+
+            // ========================================
+            // FALLBACK 2: YT2009 proxy (giống MetroTube)
+            // ========================================
+            string[] yt2009Servers = new[] { "89.168.117.130", "34.41.145.180" };
+            foreach (var server in yt2009Servers)
+            {
+                try
+                {
+                    var yt2009Req = new HttpRequestMessage(HttpMethod.Get,
+                        "http://" + server + "/get_video_info?video_id=" + videoId);
+                    yt2009Req.Headers.Add("User-Agent", "Mozilla/5.0");
+                    
+                    var yt2009Resp = await _client.SendAsync(yt2009Req);
+                    if (!yt2009Resp.IsSuccessStatusCode) continue;
+                    
+                    string info = await yt2009Resp.Content.ReadAsStringAsync();
+                    // Parse query string format: fmt_stream_map or url_encoded_fmt_stream_map
+                    string decoded = System.Net.WebUtility.UrlDecode(info);
+                    
+                    // Tìm URL trực tiếp cho itag 140 hoặc 18
+                    if (decoded.Contains("itag=140") || decoded.Contains("itag=18"))
+                    {
+                        // Tìm googlevideo.com URL
+                        int urlStart = decoded.IndexOf("https://");
+                        while (urlStart >= 0)
+                        {
+                            int urlEnd = decoded.IndexOf("&", urlStart);
+                            if (urlEnd < 0) urlEnd = decoded.Length;
+                            string candidateUrl = decoded.Substring(urlStart, urlEnd - urlStart);
+                            if (candidateUrl.Contains("googlevideo.com") && (candidateUrl.Contains("itag=140") || candidateUrl.Contains("itag=18")))
+                            {
+                                LastResolveDebug += " yt2009:" + server.Substring(server.Length - 3) + ":OK";
+                                return PrepareStreamUrl(candidateUrl);
+                            }
+                            urlStart = decoded.IndexOf("https://", urlStart + 1);
+                        }
+                    }
+                }
+                catch { continue; }
+            }
+            LastResolveDebug += " yt09:FAIL";
+
             return null;
         }
 
