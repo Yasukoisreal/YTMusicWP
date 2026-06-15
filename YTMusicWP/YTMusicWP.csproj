@@ -96,43 +96,43 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Playback.cs">
+    <Compile Include="Pages\MainPage.Playback.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Search.cs">
+    <Compile Include="Pages\MainPage.Search.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Auth.cs">
+    <Compile Include="Pages\MainPage.Auth.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.NowPlaying.cs">
+    <Compile Include="Pages\MainPage.NowPlaying.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Library.cs">
+    <Compile Include="Pages\MainPage.Library.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Artist.cs">
+    <Compile Include="Pages\MainPage.Artist.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Home.cs">
+    <Compile Include="Pages\MainPage.Home.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Lyrics.cs">
+    <Compile Include="Pages\MainPage.Lyrics.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Api.cs">
+    <Compile Include="Pages\MainPage.Api.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Storage.cs">
+    <Compile Include="Pages\MainPage.Storage.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainPage.Navigation.cs">
+    <Compile Include="Pages\MainPage.Navigation.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="InnerTubeClient.cs" />
-    <Compile Include="InnerTubeClient.Search.cs" />
-    <Compile Include="InnerTubeClient.Browse.cs" />
-    <Compile Include="InnerTubeClient.Player.cs" />
+    <Compile Include="Services\InnerTubeClient.cs" />
+    <Compile Include="Services\InnerTubeClient.Search.cs" />
+    <Compile Include="Services\InnerTubeClient.Browse.cs" />
+    <Compile Include="Services\InnerTubeClient.Player.cs" />
     <Compile Include="Models\YouTubeTrack.cs" />
     <Compile Include="Models\LyricLine.cs" />
     <Compile Include="Models\UserPlaylist.cs" />
