@@ -1,6 +1,7 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Windows.UI.Xaml;
