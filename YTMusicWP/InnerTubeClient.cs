@@ -671,108 +671,60 @@ namespace YTMusicWP
             if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:") || videoId.StartsWith("CHANNEL:") || videoId.StartsWith("PLAYLIST:"))
                 return null;
 
-            // Lấy visitorData từ watch page (chính xác nhất cho video cụ thể)
-            string vd = null;
+            // Lấy visitorData giống MetroTube (sw.js_data hoặc homepage)
+            string vd = await GetVisitorDataAsync();
+            LastResolveDebug = "vd:" + (vd != null ? "OK" : "NULL");
+
+            // Giống MetroTube: chỉ dùng ANDROID_VR (Oculus Quest 3)
             try
             {
-                var watchReq = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/watch?v=" + videoId);
-                watchReq.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36");
-                watchReq.Headers.Add("Accept-Language", "en-US,en;q=0.9");
-                var watchResp = await _client.SendAsync(watchReq);
-                if (watchResp.IsSuccessStatusCode)
-                {
-                    string html = await watchResp.Content.ReadAsStringAsync();
-                    LastResolveDebug = "wp:" + html.Length;
-                    string marker = "\"visitorData\":\"";
-                    int idx = html.IndexOf(marker);
-                    if (idx >= 0)
-                    {
-                        int start = idx + marker.Length;
-                        int end = html.IndexOf("\"", start);
-                        if (end > start && end - start >= 20 && end - start < 600)
-                        {
-                            string candidate = html.Substring(start, end - start);
-                            if (candidate.StartsWith("Cg"))
-                            {
-                                vd = candidate;
-                                LastResolveDebug += " vd:OK";
-                            }
-                        }
-                    }
-                    if (vd == null) LastResolveDebug += " vd:NONE";
-                }
-                else
-                {
-                    LastResolveDebug = "wp:HTTP" + (int)watchResp.StatusCode;
-                }
-            }
-            catch (Exception ex) { LastResolveDebug = "wp:EX:" + ex.Message.Substring(0, Math.Min(30, ex.Message.Length)); }
-
-            // Fallback: dùng cached visitorData
-            if (string.IsNullOrEmpty(vd))
-            {
-                vd = await GetVisitorDataAsync();
-                if (!string.IsNullOrEmpty(vd))
-                    LastResolveDebug += " vd2:OK";
-            }
-
-            // Thử nhiều client type
-            var clients = new[]
-            {
-                new { Name = "ANDROID_VR", Version = "1.60.19", Id = "28", Make = "Oculus", Model = "Quest 3", Os = "12L",
-                      Ua = "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip" },
-                new { Name = "ANDROID_MUSIC", Version = "7.27.52", Id = "21", Make = "Google", Model = "Pixel 7", Os = "14",
-                      Ua = "com.google.android.apps.youtube.music/7.27.52 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
-                new { Name = "ANDROID", Version = "19.29.37", Id = "3", Make = "Google", Model = "Pixel 7", Os = "14",
-                      Ua = "com.google.android.youtube/19.29.37 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
-            };
-
-            foreach (var c in clients)
-            {
-                try
-                {
                     string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
                     string requestBody = "{" +
                         "\"contentCheckOk\":true," +
                         "\"context\":{\"client\":{" +
-                            "\"clientName\":\"" + c.Name + "\"," +
-                            "\"clientVersion\":\"" + c.Version + "\"," +
-                            "\"deviceMake\":\"" + c.Make + "\"," +
-                            "\"deviceModel\":\"" + c.Model + "\"," +
+                            "\"clientName\":\"ANDROID_VR\"," +
+                            "\"clientVersion\":\"1.60.19\"," +
+                            "\"deviceMake\":\"Oculus\"," +
+                            "\"deviceModel\":\"Quest 3\"," +
                             "\"osName\":\"ANDROID\"," +
-                            "\"osVersion\":\"" + c.Os + "\"," +
+                            "\"osVersion\":\"12L\"," +
                             "\"platform\":\"MOBILE\"," +
+                            "\"clientScreen\":0," +
                             "\"hl\":\"en\",\"gl\":\"US\"" +
                             vdField +
                         "}}," +
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
+                    // Giống MetroTube: thêm &fields= để giảm response size + chỉ lấy cần thiết
                     var req = new HttpRequestMessage(HttpMethod.Post,
-                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false");
+                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.Add("User-Agent", c.Ua);
-                    req.Headers.Add("X-YouTube-Client-Name", c.Id);
-                    req.Headers.Add("X-YouTube-Client-Version", c.Version);
+                    req.Headers.Add("User-Agent",
+                        "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                    req.Headers.Add("X-YouTube-Client-Name", "28");
+                    req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
 
                     var resp = await _client.SendAsync(req);
                     if (!resp.IsSuccessStatusCode)
                     {
-                        LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":H" + (int)resp.StatusCode;
-                        continue;
+                        LastResolveDebug += " H" + (int)resp.StatusCode;
+                        return null;
                     }
 
                     string json = await resp.Content.ReadAsStringAsync();
+                    LastResolveDebug += " len:" + json.Length;
                     var data = JObject.Parse(json);
 
                     string status = data["playabilityStatus"]?["status"]?.ToString() ?? "?";
                     string reason = data["playabilityStatus"]?["reason"]?.ToString() ?? "";
+                    LastResolveDebug += " s:" + status;
                     
                     if (status != "OK")
                     {
-                        string shortReason = reason.Length > 15 ? reason.Substring(0, 15) : reason;
-                        LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":" + status.Substring(0, Math.Min(5, status.Length));
-                        continue;
+                        if (!string.IsNullOrEmpty(reason))
+                            LastResolveDebug += " r:" + reason.Substring(0, Math.Min(20, reason.Length));
+                        return null;
                     }
 
                     // Tìm audio URL: itag 140 (m4a 128kbps) → 139 → 18 (combo)
@@ -787,7 +739,7 @@ namespace YTMusicWP
                                 string url = fmt["url"]?.ToString();
                                 if (!string.IsNullOrEmpty(url))
                                 {
-                                    LastResolveDebug += " " + c.Name + ":OK";
+                                    LastResolveDebug += " i" + itag + ":OK";
                                     return PrepareStreamUrl(url);
                                 }
                             }
@@ -814,13 +766,11 @@ namespace YTMusicWP
                     }
 
                     // Status OK nhưng không có URL
-                    LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":NOURL";
-                }
-                catch (Exception ex)
-                {
-                    LastResolveDebug += " " + c.Name.Substring(c.Name.Length > 8 ? c.Name.Length - 4 : 0) + ":EX";
-                    continue;
-                }
+                    LastResolveDebug += " NOURL";
+            }
+            catch (Exception ex)
+            {
+                    LastResolveDebug += " EX:" + ex.Message.Substring(0, Math.Min(25, ex.Message.Length));
             }
 
             return null;

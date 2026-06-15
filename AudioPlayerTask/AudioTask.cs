@@ -291,24 +291,10 @@ namespace AudioPlayerTask
         {
             _innerTubeDebug = "";
             
-            // Thử nhiều client type: một số video chặn VR nhưng cho phép MUSIC/ANDROID
-            string[][] clients = new string[][] {
-                new string[] { "ANDROID_VR", "1.60.19", "28", "Oculus", "Quest 3", "12L",
-                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip" },
-                new string[] { "ANDROID_MUSIC", "7.27.52", "21", "Google", "Pixel 7", "14",
-                    "com.google.android.apps.youtube.music/7.27.52 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
-                new string[] { "ANDROID", "19.29.37", "3", "Google", "Pixel 7", "14",
-                    "com.google.android.youtube/19.29.37 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
-            };
-
-            foreach (var client in clients)
-            {
-                string url = await TryInnerTubeClient(videoId, client[0], client[1], client[2], client[3], client[4], client[5], client[6]);
-                if (!string.IsNullOrEmpty(url))
-                    return url;
-            }
-
-            return null;
+            // Giống MetroTube: chỉ dùng ANDROID_VR
+            string url = await TryInnerTubeClient(videoId, "ANDROID_VR", "1.60.19", "28", "Oculus", "Quest 3", "12L",
+                "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+            return url;
         }
 
         private async Task<string> TryInnerTubeClient(string videoId, string clientName, string clientVersion, 
@@ -335,6 +321,7 @@ namespace AudioPlayerTask
                         "\"osName\":\"ANDROID\"," +
                         "\"osVersion\":\"" + osVersion + "\"," +
                         "\"platform\":\"MOBILE\"," +
+                        "\"clientScreen\":0," +
                         "\"hl\":\"en\"," +
                         "\"gl\":\"US\"" +
                         vdField +
@@ -352,8 +339,9 @@ namespace AudioPlayerTask
                 httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Name", clientId);
                 httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Version", clientVersion);
 
+                // Giống MetroTube: thêm &fields= để giảm response size
                 var response = await httpClient.PostAsync(
-                    new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false"),
+                    new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData"),
                     content
                 );
 
