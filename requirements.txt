@@ -1,6 +1,0 @@
-flask>=3.0
-gunicorn>=21.2
-yt-dlp>=2026.06.09
-ytmusicapi>=1.8
-requests>=2.31
-curl_cffi>=0.15
