@@ -127,6 +127,9 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="InnerTubeClient.cs" />
+    <Compile Include="InnerTubeClient.Search.cs" />
+    <Compile Include="InnerTubeClient.Browse.cs" />
+    <Compile Include="InnerTubeClient.Player.cs" />
     <Compile Include="Models\YouTubeTrack.cs" />
     <Compile Include="Models\LyricLine.cs" />
     <Compile Include="Models\UserPlaylist.cs" />
