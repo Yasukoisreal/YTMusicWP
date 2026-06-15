@@ -261,15 +261,37 @@ namespace AudioPlayerTask
         private async Task<string> ResolveViaInnerTubeDirectAsync(string videoId)
         {
             _innerTubeDebug = "";
+            
+            // Thử nhiều client type: một số video chặn VR nhưng cho phép MUSIC/ANDROID
+            string[][] clients = new string[][] {
+                new string[] { "ANDROID_VR", "1.60.19", "28", "Oculus", "Quest 3", "12L",
+                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip" },
+                new string[] { "ANDROID_MUSIC", "7.27.52", "21", "Google", "Pixel 7", "14",
+                    "com.google.android.apps.youtube.music/7.27.52 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
+                new string[] { "ANDROID", "19.29.37", "3", "Google", "Pixel 7", "14",
+                    "com.google.android.youtube/19.29.37 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
+            };
+
+            foreach (var client in clients)
+            {
+                string url = await TryInnerTubeClient(videoId, client[0], client[1], client[2], client[3], client[4], client[5], client[6]);
+                if (!string.IsNullOrEmpty(url))
+                    return url;
+            }
+
+            return null;
+        }
+
+        private async Task<string> TryInnerTubeClient(string videoId, string clientName, string clientVersion, 
+            string clientId, string deviceMake, string deviceModel, string osVersion, string userAgent)
+        {
             try
             {
-                // Bước 1: Lấy visitorData (giống MetroTube)
                 string visitorData = await GetVisitorDataAsync();
-                _innerTubeDebug = "vd:" + (visitorData != null ? visitorData.Substring(0, Math.Min(8, visitorData.Length)) : "NULL");
+                string vdShort = visitorData != null ? visitorData.Substring(0, Math.Min(8, visitorData.Length)) : "NULL";
 
                 var httpClient = new Windows.Web.Http.HttpClient();
-                
-                // Bước 2: InnerTube request với visitorData
+
                 string vdField = "";
                 if (!string.IsNullOrEmpty(visitorData))
                     vdField = ",\"visitorData\":\"" + visitorData + "\"";
@@ -277,12 +299,12 @@ namespace AudioPlayerTask
                 string requestBody = "{" +
                     "\"contentCheckOk\":true," +
                     "\"context\":{\"client\":{" +
-                        "\"clientName\":\"ANDROID_VR\"," +
-                        "\"clientVersion\":\"1.60.19\"," +
-                        "\"deviceMake\":\"Oculus\"," +
-                        "\"deviceModel\":\"Quest 3\"," +
+                        "\"clientName\":\"" + clientName + "\"," +
+                        "\"clientVersion\":\"" + clientVersion + "\"," +
+                        "\"deviceMake\":\"" + deviceMake + "\"," +
+                        "\"deviceModel\":\"" + deviceModel + "\"," +
                         "\"osName\":\"ANDROID\"," +
-                        "\"osVersion\":\"12L\"," +
+                        "\"osVersion\":\"" + osVersion + "\"," +
                         "\"platform\":\"MOBILE\"," +
                         "\"hl\":\"en\"," +
                         "\"gl\":\"US\"" +
@@ -297,35 +319,38 @@ namespace AudioPlayerTask
                     "application/json"
                 );
 
-                httpClient.DefaultRequestHeaders.Add("User-Agent",
-                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
-                httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Name", "28");
-                httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Version", "1.60.19");
+                httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+                httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Name", clientId);
+                httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Version", clientVersion);
 
                 var response = await httpClient.PostAsync(
                     new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false"),
                     content
                 );
 
-                _innerTubeDebug = "HTTP:" + (int)response.StatusCode;
-
                 if (!response.IsSuccessStatusCode)
+                {
+                    _innerTubeDebug = clientName + ":HTTP" + (int)response.StatusCode;
                     return null;
+                }
 
                 string json = await response.Content.ReadAsStringAsync();
-                _innerTubeDebug += " len:" + json.Length;
 
                 // Kiểm tra playabilityStatus
+                string status = "";
                 int statusPos = json.IndexOf("\"status\":\"");
                 if (statusPos >= 0)
                 {
                     int sStart = statusPos + 10;
                     int sEnd = json.IndexOf("\"", sStart);
                     if (sEnd > sStart)
-                    {
-                        string status = json.Substring(sStart, sEnd - sStart);
-                        _innerTubeDebug += " s:" + status;
-                    }
+                        status = json.Substring(sStart, sEnd - sStart);
+                }
+
+                if (status != "OK")
+                {
+                    _innerTubeDebug = clientName + ":" + status;
+                    return null;
                 }
 
                 string audioUrl = FindUrlByItag(json, "140");
@@ -335,19 +360,18 @@ namespace AudioPlayerTask
                     audioUrl = FindUrlByItag(json, "18");
 
                 if (!string.IsNullOrEmpty(audioUrl))
-                    _innerTubeDebug += " URL:OK";
-                else
                 {
-                    _innerTubeDebug += " URL:NONE";
-                    // Invalidate visitorData cache — có thể đã hết hạn
-                    _cachedVisitorData = null;
+                    _innerTubeDebug = clientName + ":OK";
+                    return audioUrl;
                 }
 
-                return audioUrl;
+                _innerTubeDebug = clientName + ":NO_URL";
+                _cachedVisitorData = null;
+                return null;
             }
             catch (Exception ex)
             {
-                _innerTubeDebug = "EX:" + ex.Message.Substring(0, Math.Min(50, ex.Message.Length));
+                _innerTubeDebug = clientName + ":EX:" + ex.Message.Substring(0, Math.Min(30, ex.Message.Length));
                 return null;
             }
         }
