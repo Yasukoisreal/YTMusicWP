@@ -1938,7 +1938,7 @@ namespace YTMusicWP
             ShowToast("Lyrics advanced by 0.5s");
         }
 
-        private void PlayTrack(YouTubeTrack track)
+        private async void PlayTrack(YouTubeTrack track)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
             if (track.VideoId.StartsWith("CHANNEL:"))
@@ -2007,6 +2007,17 @@ namespace YTMusicWP
             var ignoredHistory = SaveHistoryAsyncTask();
             RefreshHomeHistorySections();
 
+            // Resolve URL cho bài hiện tại từ foreground (HttpClient mạnh hơn AudioTask)
+            string resolvedUrl = "";
+            if (!track.VideoId.StartsWith("LOCAL:"))
+            {
+                try
+                {
+                    resolvedUrl = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId) ?? "";
+                }
+                catch { resolvedUrl = ""; }
+            }
+
             // OPTIMIZATION: Gộp 2 vòng lặp activeList thành 1 duy nhất
             int count = activeList.Count;
             string[] urls = new string[count];
@@ -2015,21 +2026,24 @@ namespace YTMusicWP
             string[] videoIds = new string[count];
             string[] thumbnails = new string[count];
 
+            int startIndex = Math.Max(0, activeList.IndexOf(track));
+
             currentQueueTracks.Clear();
             for (int i = 0; i < count; i++)
             {
                 var t = activeList[i];
                 currentQueueTracks.Add(t);
-                urls[i] = t.VideoId.StartsWith("LOCAL:")
-                    ? "ms-appdata:///local/" + t.VideoId.Substring(6)
-                    : ""; // AudioTask sẽ tự resolve qua InnerTube
+                if (i == startIndex && !string.IsNullOrEmpty(resolvedUrl))
+                    urls[i] = resolvedUrl; // Dùng URL đã resolve
+                else
+                    urls[i] = t.VideoId.StartsWith("LOCAL:")
+                        ? "ms-appdata:///local/" + t.VideoId.Substring(6)
+                        : ""; // AudioTask sẽ tự resolve cho các bài khác khi đến lượt
                 titles[i] = t.Title;
                 artists[i] = t.ChannelName;
                 videoIds[i] = t.VideoId;
                 thumbnails[i] = t.ThumbnailUrl;
             }
-
-            int startIndex = Math.Max(0, activeList.IndexOf(track));
 
             var message = new ValueSet {
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },

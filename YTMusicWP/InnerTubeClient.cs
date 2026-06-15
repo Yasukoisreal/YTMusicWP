@@ -656,6 +656,150 @@ namespace YTMusicWP
         }
 
         // ==========================================
+        // RESOLVE STREAM URL (for playback)
+        // ==========================================
+        /// <summary>
+        /// Resolve audio stream URL qua InnerTube API.
+        /// Thử nhiều client: ANDROID_VR → ANDROID_MUSIC → ANDROID.
+        /// Gọi từ foreground vì HttpClient mạnh hơn AudioTask.
+        /// </summary>
+        public static async Task<string> ResolveStreamUrlAsync(string videoId)
+        {
+            if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:") || videoId.StartsWith("CHANNEL:") || videoId.StartsWith("PLAYLIST:"))
+                return null;
+
+            // Lấy visitorData từ watch page (chính xác nhất cho video cụ thể)
+            string vd = null;
+            try
+            {
+                var watchReq = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/watch?v=" + videoId);
+                watchReq.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36");
+                watchReq.Headers.Add("Accept-Language", "en-US,en;q=0.9");
+                var watchResp = await _client.SendAsync(watchReq);
+                if (watchResp.IsSuccessStatusCode)
+                {
+                    string html = await watchResp.Content.ReadAsStringAsync();
+                    string marker = "\"visitorData\":\"";
+                    int idx = html.IndexOf(marker);
+                    if (idx >= 0)
+                    {
+                        int start = idx + marker.Length;
+                        int end = html.IndexOf("\"", start);
+                        if (end > start && end - start >= 20 && end - start < 600)
+                        {
+                            string candidate = html.Substring(start, end - start);
+                            if (candidate.StartsWith("Cg"))
+                                vd = candidate;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // Fallback: dùng cached visitorData
+            if (string.IsNullOrEmpty(vd))
+                vd = await GetVisitorDataAsync();
+
+            // Thử nhiều client type
+            var clients = new[]
+            {
+                new { Name = "ANDROID_VR", Version = "1.60.19", Id = "28", Make = "Oculus", Model = "Quest 3", Os = "12L",
+                      Ua = "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip" },
+                new { Name = "ANDROID_MUSIC", Version = "7.27.52", Id = "21", Make = "Google", Model = "Pixel 7", Os = "14",
+                      Ua = "com.google.android.apps.youtube.music/7.27.52 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
+                new { Name = "ANDROID", Version = "19.29.37", Id = "3", Make = "Google", Model = "Pixel 7", Os = "14",
+                      Ua = "com.google.android.youtube/19.29.37 (Linux; U; Android 14; Pixel 7 Build/AP2A.240805.005) gzip" },
+            };
+
+            foreach (var c in clients)
+            {
+                try
+                {
+                    string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+                    string requestBody = "{" +
+                        "\"contentCheckOk\":true," +
+                        "\"context\":{\"client\":{" +
+                            "\"clientName\":\"" + c.Name + "\"," +
+                            "\"clientVersion\":\"" + c.Version + "\"," +
+                            "\"deviceMake\":\"" + c.Make + "\"," +
+                            "\"deviceModel\":\"" + c.Model + "\"," +
+                            "\"osName\":\"ANDROID\"," +
+                            "\"osVersion\":\"" + c.Os + "\"," +
+                            "\"platform\":\"MOBILE\"," +
+                            "\"hl\":\"en\",\"gl\":\"US\"" +
+                            vdField +
+                        "}}," +
+                        "\"videoId\":\"" + videoId + "\"" +
+                    "}";
+
+                    var req = new HttpRequestMessage(HttpMethod.Post,
+                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false");
+                    req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
+                    req.Headers.Add("User-Agent", c.Ua);
+                    req.Headers.Add("X-YouTube-Client-Name", c.Id);
+                    req.Headers.Add("X-YouTube-Client-Version", c.Version);
+
+                    var resp = await _client.SendAsync(req);
+                    if (!resp.IsSuccessStatusCode) continue;
+
+                    string json = await resp.Content.ReadAsStringAsync();
+                    var data = JObject.Parse(json);
+
+                    string status = data["playabilityStatus"]?["status"]?.ToString();
+                    if (status != "OK") continue;
+
+                    // Tìm audio URL: itag 140 (m4a 128kbps) → 139 → 18 (combo)
+                    var formats = data["streamingData"]?["adaptiveFormats"];
+                    if (formats != null)
+                    {
+                        foreach (var fmt in formats)
+                        {
+                            int itag = fmt["itag"]?.Value<int>() ?? 0;
+                            if (itag == 140 || itag == 139)
+                            {
+                                string url = fmt["url"]?.ToString();
+                                if (!string.IsNullOrEmpty(url))
+                                    return PrepareStreamUrl(url);
+                            }
+                        }
+                    }
+
+                    // Fallback: formats (itag 18 = video+audio 360p)
+                    var fmts2 = data["streamingData"]?["formats"];
+                    if (fmts2 != null)
+                    {
+                        foreach (var fmt in fmts2)
+                        {
+                            int itag = fmt["itag"]?.Value<int>() ?? 0;
+                            if (itag == 18)
+                            {
+                                string url = fmt["url"]?.ToString();
+                                if (!string.IsNullOrEmpty(url))
+                                    return PrepareStreamUrl(url);
+                            }
+                        }
+                    }
+                }
+                catch { continue; }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Chuẩn bị URL stream: thêm ratebypass=yes và range=0- để tránh throttle/cut
+        /// </summary>
+        private static string PrepareStreamUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            if (!url.Contains("ratebypass="))
+                url += "&ratebypass=yes";
+            if (!url.Contains("range="))
+                url += "&range=0-";
+            return url;
+        }
+
+        // ==========================================
         // HELPERS
         // ==========================================
         private static string CleanChannelName(string name)
