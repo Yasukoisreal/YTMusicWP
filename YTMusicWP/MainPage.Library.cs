@@ -343,18 +343,27 @@ namespace YTMusicWP
 
             try
             {
-                string downloadUrl = ProxyBaseUrl + "/api/download?v=" + track.VideoId + "&key=" + _apiSecretKey;
+                DownloadStatusBar.Visibility = Visibility.Visible;
+                DownloadStatusText.Text = "Resolving: " + track.Title;
+                DownloadProgressBar.Value = 0;
+                DownloadProgressBar.IsIndeterminate = true;
+
+                // Dùng InnerTube để lấy stream URL thay vì proxy (proxy đã bị chặn)
+                string streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId);
+                if (string.IsNullOrEmpty(streamUrl))
+                {
+                    DownloadStatusBar.Visibility = Visibility.Collapsed;
+                    ShowToast("Cannot resolve audio URL for this track");
+                    return;
+                }
+
                 string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars()));
                 StorageFile destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(safeTitle + ".m4a", CreationCollisionOption.ReplaceExisting);
 
                 BackgroundDownloader downloader = new BackgroundDownloader();
-                DownloadOperation download = downloader.CreateDownload(new Uri(downloadUrl), destinationFile);
+                DownloadOperation download = downloader.CreateDownload(new Uri(streamUrl), destinationFile);
 
-                DownloadStatusBar.Visibility = Visibility.Visible;
-
-                DownloadStatusText.Text = "Connecting: " + track.Title;
-                DownloadProgressBar.Value = 0;
-                DownloadProgressBar.IsIndeterminate = true;
+                DownloadStatusText.Text = "Downloading: " + track.Title;
 
                 var progressCallback = new Progress<DownloadOperation>(op =>
                 {
