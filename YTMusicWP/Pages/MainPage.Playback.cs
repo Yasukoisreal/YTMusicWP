@@ -487,7 +487,14 @@ namespace YTMusicWP
             else
                 topColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);     // Default dark blue-gray
 
-            try { NowPlayingGradientTop.Color = topColor; } catch { }
+            try
+            {
+                NowPlayingGradientTop.Color = topColor;
+                // Sync lyrics top fade with genre color
+                LyricsFadeTopSolid.Color = topColor;
+                LyricsFadeTopTransparent.Color = Windows.UI.Color.FromArgb(0, topColor.R, topColor.G, topColor.B);
+            }
+            catch { }
         }
 
     }
