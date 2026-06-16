@@ -1041,7 +1041,7 @@
                             <ListView x:Name="LyricsListView" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="10,0" ShowsScrollingPlaceholders="False">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding Opacity}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,12" FontWeight="{Binding FontWeight}" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding Opacity}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,12" FontWeight="SemiBold" FontFamily="{StaticResource MontserratSemiBold}" HorizontalAlignment="Left"/>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>

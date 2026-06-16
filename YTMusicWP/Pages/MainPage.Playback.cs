@@ -229,13 +229,11 @@ namespace YTMusicWP
                         // Animate OLD lyric → smooth fade out + scale down
                         if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                         {
-                            currentLyrics[oldIndex].ColorBrush  = _lyricInactiveBrush;
-                            currentLyrics[oldIndex].FontWeight  = Windows.UI.Text.FontWeights.Normal;
+                            currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
 
                             var oldContainer = LyricsListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                             if (oldContainer != null)
                             {
-                                // Ensure ScaleTransform exists
                                 var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
                                 if (oldScale == null)
                                 {
@@ -247,49 +245,31 @@ namespace YTMusicWP
                                 var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
                                 var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
 
-                                // Opacity fade out
                                 var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                {
-                                    To = 0.35, Duration = new Duration(TimeSpan.FromMilliseconds(500)),
-                                    EasingFunction = easeInOut
-                                };
+                                { To = 0.35, Duration = new Duration(TimeSpan.FromMilliseconds(500)), EasingFunction = easeInOut };
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, oldContainer);
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
 
-                                // Scale down X
-                                var sxAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                {
-                                    To = 0.97, Duration = new Duration(TimeSpan.FromMilliseconds(400)),
-                                    EasingFunction = easeInOut
-                                };
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxAnim, oldScale);
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxAnim, "ScaleX");
+                                var sxOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                { To = 0.92, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxOut, oldScale);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxOut, "ScaleX");
 
-                                // Scale down Y
-                                var syAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                {
-                                    To = 0.97, Duration = new Duration(TimeSpan.FromMilliseconds(400)),
-                                    EasingFunction = easeInOut
-                                };
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syAnim, oldScale);
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syAnim, "ScaleY");
+                                var syOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                { To = 0.92, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syOut, oldScale);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syOut, "ScaleY");
 
                                 fadeOut.Children.Add(opAnim);
-                                fadeOut.Children.Add(sxAnim);
-                                fadeOut.Children.Add(syAnim);
+                                fadeOut.Children.Add(sxOut);
+                                fadeOut.Children.Add(syOut);
                                 fadeOut.Begin();
                             }
-                            else
-                            {
-                                currentLyrics[oldIndex].Opacity = 0.35;
-                            }
-                            currentLyrics[oldIndex].FontSize = _baseLyricSize;
+                            else { currentLyrics[oldIndex].Opacity = 0.35; }
                         }
 
-                        // Animate NEW lyric → smooth scale + fade in
-                        currentLyrics[currentLyricIndex].ColorBrush  = _lyricActiveBrush;
-                        currentLyrics[currentLyricIndex].FontSize    = _highlightLyricSize;
-                        currentLyrics[currentLyricIndex].FontWeight  = Windows.UI.Text.FontWeights.Bold;
+                        // Animate NEW lyric → smooth scale up + fade in (NO FontSize/FontWeight change)
+                        currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
 
                         var newContainer = LyricsListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                         if (newContainer != null)
@@ -297,7 +277,7 @@ namespace YTMusicWP
                             var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
                             if (scaleTransform == null)
                             {
-                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
+                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.92, ScaleY = 0.92 };
                                 newContainer.RenderTransformOrigin = new Point(0, 0.5);
                                 newContainer.RenderTransform = scaleTransform;
                             }
@@ -305,45 +285,27 @@ namespace YTMusicWP
                             var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
                             var entrance = new Windows.UI.Xaml.Media.Animation.Storyboard();
 
-                            // Opacity: 0.4 → 1.0 (smooth ease-out)
                             var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            {
-                                From = 0.4, To = 1.0,
-                                Duration = new Duration(TimeSpan.FromMilliseconds(450)),
-                                EasingFunction = easeOut
-                            };
+                            { From = 0.35, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeOut };
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opIn, newContainer);
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
 
-                            // Scale X: 0.96 → 1.0 (smooth ease-out)
-                            var scaleX = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            {
-                                From = 0.96, To = 1.0,
-                                Duration = new Duration(TimeSpan.FromMilliseconds(400)),
-                                EasingFunction = easeOut
-                            };
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleX, scaleTransform);
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleX, "ScaleX");
+                            var sxIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                            { To = 1.05, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxIn, scaleTransform);
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxIn, "ScaleX");
 
-                            // Scale Y: 0.96 → 1.0 (smooth ease-out)
-                            var scaleY = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            {
-                                From = 0.96, To = 1.0,
-                                Duration = new Duration(TimeSpan.FromMilliseconds(400)),
-                                EasingFunction = easeOut
-                            };
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleY, scaleTransform);
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleY, "ScaleY");
+                            var syIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                            { To = 1.05, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syIn, scaleTransform);
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syIn, "ScaleY");
 
                             entrance.Children.Add(opIn);
-                            entrance.Children.Add(scaleX);
-                            entrance.Children.Add(scaleY);
+                            entrance.Children.Add(sxIn);
+                            entrance.Children.Add(syIn);
                             entrance.Begin();
                         }
-                        else
-                        {
-                            currentLyrics[currentLyricIndex].Opacity = 1.0;
-                        }
+                        else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
 
                         LyricsListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
 
