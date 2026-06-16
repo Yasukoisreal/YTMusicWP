@@ -38,12 +38,12 @@ namespace YTMusicWP
 
         private void IncreaseLyricsSize_Click(object sender, RoutedEventArgs e)
         {
-            if (_baseLyricSize < 30)
+            if (_baseLyricSize < 36)
             {
-                _baseLyricSize += 2;
-                _highlightLyricSize += 2;
+                _baseLyricSize += 4;
+                _highlightLyricSize += 4;
                 RefreshLyricsSize();
-                ShowToast("Lyrics size increased");
+                ShowToast("A+ (" + _baseLyricSize + "px)");
             }
         }
 
@@ -51,10 +51,10 @@ namespace YTMusicWP
         {
             if (_baseLyricSize > 12)
             {
-                _baseLyricSize -= 2;
-                _highlightLyricSize -= 2;
+                _baseLyricSize -= 4;
+                _highlightLyricSize -= 4;
                 RefreshLyricsSize();
-                ShowToast("Lyrics size decreased");
+                ShowToast("A- (" + _baseLyricSize + "px)");
             }
         }
 
@@ -64,27 +64,24 @@ namespace YTMusicWP
             {
                 currentLyrics[i].FontSize = (i == currentLyricIndex) ? _highlightLyricSize : _baseLyricSize;
             }
-        }
-
-        private void SyncMinus_Click(object sender, RoutedEventArgs e)
-        {
-            foreach (var line in currentLyrics)
+            // Reset all scale transforms so font change is immediately visible
+            try
             {
-                if (line.Text != "") line.Time = line.Time.Add(TimeSpan.FromSeconds(0.5));
+                for (int i = 0; i < currentLyrics.Count; i++)
+                {
+                    var container = LyricsListView.ContainerFromIndex(i) as Windows.UI.Xaml.FrameworkElement;
+                    if (container != null)
+                    {
+                        var scale = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                        if (scale != null)
+                        {
+                            scale.ScaleX = (i == currentLyricIndex) ? 1.0 : 0.85;
+                            scale.ScaleY = (i == currentLyricIndex) ? 1.0 : 0.85;
+                        }
+                    }
+                }
             }
-            currentLyricIndex = -1;
-            ShowToast("Lyrics delayed by 0.5s");
-        }
-
-        private void SyncPlus_Click(object sender, RoutedEventArgs e)
-        {
-            foreach (var line in currentLyrics)
-            {
-                if (line.Text != "" && line.Time.TotalSeconds >= 0.5)
-                    line.Time = line.Time.Subtract(TimeSpan.FromSeconds(0.5));
-            }
-            currentLyricIndex = -1;
-            ShowToast("Lyrics advanced by 0.5s");
+            catch { }
         }
 
         private void QueueListView_ItemClick(object sender, ItemClickEventArgs e)
