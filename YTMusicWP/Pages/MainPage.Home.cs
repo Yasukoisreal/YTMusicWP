@@ -84,18 +84,28 @@ namespace YTMusicWP
             // [OPT-Q4] Lưu vào biến riêng, KHÔNG ghi đè _currentSearchQuery của Search
             _currentHomeQuery = trendingQuery;
             var trending = await FetchMusicList(trendingQuery);
-            if (trending != null) foreach (var t in trending) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) homeTracks.Add(t); }
+            if (trending != null) foreach (var t in trending) { if (IsMusicTrack(t)) homeTracks.Add(t); }
 
             var pop = await FetchMusicList(popQuery);
-            if (pop != null) foreach (var t in pop) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) popTracks.Add(t); }
+            if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
 
             var lofi = await FetchMusicList(lofiQuery);
-            if (lofi != null) foreach (var t in lofi) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) lofiTracks.Add(t); }
+            if (lofi != null) foreach (var t in lofi) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
 
             var workout = await FetchMusicList(workoutQuery);
-            if (workout != null) foreach (var t in workout) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) workoutTracks.Add(t); }
+            if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
+        }
+
+        private static bool IsMusicTrack(YouTubeTrack t)
+        {
+            if (t.VideoId == null || t.VideoId.StartsWith("CHANNEL:") || t.VideoId.StartsWith("PLAYLIST:")) return false;
+            string ch = (t.ChannelName ?? "").ToLowerInvariant();
+            if (ch == "episode" || ch == "podcast" || ch == "audiobook" || ch == "short stories") return false;
+            string title = (t.Title ?? "").ToLowerInvariant();
+            if (title.Contains("(storyteller)") || title.Contains("full audiobook") || title.Contains("full audio book")) return false;
+            return true;
         }
 
         private void MoodChill_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
