@@ -138,9 +138,16 @@ namespace YTMusicWP
                 string syncedLyrics = null;
                 string plainLyrics = null;
 
-                // Get current track duration for matching
+                // Wait for player duration to be available (max 3s with 200ms polling)
                 double trackDurationSec = 0;
-                try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
+                for (int attempt = 0; attempt < 15; attempt++)
+                {
+                    try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
+                    if (trackDurationSec > 10) break;
+                    await Task.Delay(200);
+                    token.ThrowIfCancellationRequested();
+                }
+                System.Diagnostics.Debug.WriteLine("[Lyrics] Track duration: " + trackDurationSec + "s");
 
                 // ── LAYER 0: /api/get with exact duration (best match) ──
                 if (trackDurationSec > 10)
