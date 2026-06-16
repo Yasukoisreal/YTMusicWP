@@ -144,7 +144,7 @@ namespace YTMusicWP
             var settings = ApplicationData.Current.LocalSettings;
             bool newState = !(settings.Values.ContainsKey("ShuffleMode") ? (bool)settings.Values["ShuffleMode"] : false);
             settings.Values["ShuffleMode"] = newState;
-            ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
+            try { ((Windows.UI.Xaml.Shapes.Path)ShuffleIcon.Child).Fill = newState ? _greenBrush : _whiteBrush; } catch { }
             ShuffleDot.Visibility = newState ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -157,11 +157,19 @@ namespace YTMusicWP
             UpdateRepeatUI(newMode);
         }
 
+        private const string RepeatAllData = "M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z";
+        private const string RepeatOneData = "M13,15V9H12L10,10V11H11.5V15M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z";
+
         private void UpdateRepeatUI(int mode)
         {
-            if (mode == 0) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _whiteBrush; RepeatDot.Visibility = Visibility.Collapsed; }
-            else if (mode == 1) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
-            else if (mode == 2) { RepeatIcon.Glyph = "\uE1CC"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
+            try
+            {
+                var repeatPath = (Windows.UI.Xaml.Shapes.Path)RepeatIcon.Child;
+                if (mode == 0) { repeatPath.Data = PathFromString(RepeatAllData); repeatPath.Fill = _whiteBrush; RepeatDot.Visibility = Visibility.Collapsed; }
+                else if (mode == 1) { repeatPath.Data = PathFromString(RepeatAllData); repeatPath.Fill = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
+                else if (mode == 2) { repeatPath.Data = PathFromString(RepeatOneData); repeatPath.Fill = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
+            }
+            catch { }
         }
 
         private void SetupTimer()

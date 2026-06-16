@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -27,11 +27,30 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage : Page
     {
+        private const string PlayPathData = "M8,5.14V19.14L19,12.14L8,5.14Z";
+        private const string PausePathData = "M14,19H18V5H14M6,19H10V5H6V19Z";
+
         private void SetPlayPauseIcon(bool isPlaying)
         {
-            Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;
-            MiniPlayIcon.Symbol = sym;
-            BigPlayIcon.Symbol = sym;
+            string pathData = isPlaying ? PausePathData : PlayPathData;
+            try
+            {
+                var miniPath = (Windows.UI.Xaml.Shapes.Path)MiniPlayIcon.Child;
+                miniPath.Data = PathFromString(pathData);
+                miniPath.Fill = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+                var bigPath = (Windows.UI.Xaml.Shapes.Path)BigPlayIcon.Child;
+                bigPath.Data = PathFromString(pathData);
+                bigPath.Fill = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.Black);
+            }
+            catch { }
+        }
+
+        private Windows.UI.Xaml.Media.Geometry PathFromString(string data)
+        {
+            // Create a Path from string using binding trick
+            string xaml = "<Path xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='" + data + "'/>";
+            var path = (Windows.UI.Xaml.Shapes.Path)Windows.UI.Xaml.Markup.XamlReader.Load(xaml);
+            return path.Data;
         }
 
         private static readonly HttpClient _apiClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };
