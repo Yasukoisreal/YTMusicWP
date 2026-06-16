@@ -639,6 +639,11 @@ namespace AudioPlayerTask
             _mediaPlayer.AutoPlay = false;
             try
             {
+                // Normalize Volume: set consistent volume level
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
+                _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
+
                 UpdateSystemMediaControls();
                 _mediaPlayer.SetUriSource(new Uri(trackUrl));
                 _currentLoadedVidId = vidId;
@@ -761,10 +766,20 @@ namespace AudioPlayerTask
             var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
             bool shuffle = ls.ContainsKey("ShuffleMode") ? (bool)ls["ShuffleMode"] : false;
             int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;
+            bool autoplay = ls.ContainsKey("Autoplay") ? (bool)ls["Autoplay"] : true;
             if (repeat == 2) { ResetRetryState(); StartPlaybackAsync(); return; }
             ResetRetryState();
             if (shuffle) _currentTrackIndex = _rand.Next(0, _trackList.Count);
-            else { _currentTrackIndex++; if (_currentTrackIndex >= _trackList.Count) { if (repeat == 1) _currentTrackIndex = 0; else { _currentTrackIndex = _trackList.Count - 1; return; } } }
+            else
+            {
+                _currentTrackIndex++;
+                if (_currentTrackIndex >= _trackList.Count)
+                {
+                    if (repeat == 1) _currentTrackIndex = 0;
+                    else if (!autoplay) { _currentTrackIndex = _trackList.Count - 1; return; } // Stop if autoplay off
+                    else { _currentTrackIndex = _trackList.Count - 1; return; }
+                }
+            }
             StartPlaybackAsync();
         }
 

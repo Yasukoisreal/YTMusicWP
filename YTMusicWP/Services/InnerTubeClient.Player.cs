@@ -73,20 +73,31 @@ namespace YTMusicWP
                         return null;
                     }
 
-                    // Tìm audio URL: itag 140 (m4a 128kbps) → 139 → 18 (combo)
+                    // Select itag based on Audio Quality setting
+                    // Low=48kbps (itag 139), Normal=128kbps (itag 140), High=256kbps (itag 251/141)
+                    var qualitySettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                    string qualityKbps = qualitySettings.ContainsKey("AudioQualityKbps") ? qualitySettings["AudioQualityKbps"].ToString() : "128";
+                    int[] preferredItags;
+                    if (qualityKbps == "48") preferredItags = new[] { 139, 140, 18 };        // Low: 48kbps first
+                    else if (qualityKbps == "256") preferredItags = new[] { 251, 141, 140, 18 }; // High: 256kbps opus/m4a
+                    else preferredItags = new[] { 140, 139, 18 };                            // Normal: 128kbps (default)
+
                     var formats = data["streamingData"]?["adaptiveFormats"];
                     if (formats != null)
                     {
-                        foreach (var fmt in formats)
+                        foreach (int targetItag in preferredItags)
                         {
-                            int itag = fmt["itag"]?.Value<int>() ?? 0;
-                            if (itag == 140 || itag == 139)
+                            foreach (var fmt in formats)
                             {
-                                string url = fmt["url"]?.ToString();
-                                if (!string.IsNullOrEmpty(url))
+                                int itag = fmt["itag"]?.Value<int>() ?? 0;
+                                if (itag == targetItag)
                                 {
-                                    LastResolveDebug += " i" + itag + ":OK";
-                                    return PrepareStreamUrl(url);
+                                    string url = fmt["url"]?.ToString();
+                                    if (!string.IsNullOrEmpty(url))
+                                    {
+                                        LastResolveDebug += " i" + itag + ":OK(q" + qualityKbps + ")";
+                                        return PrepareStreamUrl(url);
+                                    }
                                 }
                             }
                         }
