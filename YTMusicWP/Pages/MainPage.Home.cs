@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 
 namespace YTMusicWP
 {
