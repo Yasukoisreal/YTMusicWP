@@ -27,6 +27,50 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage : Page
     {
+        private Storyboard _marqueeStoryboard;
+
+        private void StartTitleMarquee()
+        {
+            StopTitleMarquee();
+            // Wait for layout
+            BigTitle.UpdateLayout();
+            double textWidth = BigTitle.ActualWidth;
+            double canvasWidth = TitleMarqueeCanvas.ActualWidth;
+            if (canvasWidth <= 0) canvasWidth = TitleMarqueeCanvas.Width;
+            if (textWidth <= canvasWidth || textWidth <= 0) return;
+
+            double overflow = textWidth - canvasWidth;
+            double speed = 30; // pixels per second
+            double scrollDuration = overflow / speed;
+            if (scrollDuration < 1) scrollDuration = 1;
+
+            _marqueeStoryboard = new Storyboard();
+            var animForward = new DoubleAnimationUsingKeyFrames();
+            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = 0, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2)) }); // pause at start
+            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = -overflow, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2 + scrollDuration)) }); // scroll left
+            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = -overflow, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration)) }); // pause at end
+            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = 0, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration * 2)) }); // scroll back
+            animForward.RepeatBehavior = RepeatBehavior.Forever;
+            Storyboard.SetTarget(animForward, TitleTranslate);
+            Storyboard.SetTargetProperty(animForward, "X");
+            _marqueeStoryboard.Children.Add(animForward);
+            _marqueeStoryboard.Begin();
+        }
+
+        private void StopTitleMarquee()
+        {
+            if (_marqueeStoryboard != null)
+            {
+                _marqueeStoryboard.Stop();
+                _marqueeStoryboard = null;
+            }
+            TitleTranslate.X = 0;
+        }
+
+        private void TitleMarqueeCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            TitleMarqueeCanvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
+        }
         private void SetPlayPauseIcon(bool isPlaying)
         {
             Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;

@@ -35,6 +35,8 @@ namespace YTMusicWP
 
             currentTrack = track;
             MiniTitle.Text = track.Title; BigTitle.Text = track.Title;
+            // Start marquee after layout completes
+            var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
             MiniArtist.Text = track.ChannelName; BigArtist.Text = track.ChannelName;
             SetPlayPauseIcon(true);
             MenuTitle.Text = track.Title;
