@@ -44,7 +44,7 @@ namespace YTMusicWP
 
                     // Giống MetroTube: thêm &fields= để giảm response size + chỉ lấy cần thiết
                     var req = new HttpRequestMessage(HttpMethod.Post,
-                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData");
+                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
                     req.Headers.Add("User-Agent",
                         "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
@@ -292,5 +292,136 @@ namespace YTMusicWP
             if (name.EndsWith(" - Chủ đề")) return name.Substring(0, name.Length - 9);
             return name;
         }
+
+        // ==========================================
+        // CAPTIONS / SUBTITLES
+        // ==========================================
+        public static async Task<List<CaptionTrack>> GetCaptionTracksAsync(string videoId)
+        {
+            var tracks = new List<CaptionTrack>();
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+                string requestBody = "{" +
+                    "\"contentCheckOk\":true," +
+                    "\"context\":{\"client\":{" +
+                        "\"clientName\":\"ANDROID_VR\"," +
+                        "\"clientVersion\":\"1.60.19\"," +
+                        "\"deviceMake\":\"Oculus\"," +
+                        "\"deviceModel\":\"Quest 3\"," +
+                        "\"osName\":\"ANDROID\"," +
+                        "\"osVersion\":\"12L\"," +
+                        "\"platform\":\"MOBILE\"," +
+                        "\"clientScreen\":0," +
+                        "\"hl\":\"en\",\"gl\":\"US\"" +
+                        vdField +
+                    "}}," +
+                    "\"videoId\":\"" + videoId + "\"" +
+                "}";
+
+                var req = new HttpRequestMessage(HttpMethod.Post,
+                    "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
+                req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
+                req.Headers.Add("User-Agent",
+                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+
+                var resp = await _client.SendAsync(req);
+                if (!resp.IsSuccessStatusCode) return tracks;
+
+                string json = await resp.Content.ReadAsStringAsync();
+                var data = JObject.Parse(json);
+
+                var captionTracks = data?["captions"]?["playerCaptionsTracklistRenderer"]?["captionTracks"];
+                if (captionTracks != null)
+                {
+                    foreach (var ct in captionTracks)
+                    {
+                        var track = new CaptionTrack
+                        {
+                            BaseUrl = ct["baseUrl"]?.ToString() ?? "",
+                            LanguageCode = ct["languageCode"]?.ToString() ?? "",
+                            LanguageName = ct["name"]?["simpleText"]?.ToString() ?? ct["name"]?["runs"]?[0]?["text"]?.ToString() ?? ""
+                        };
+                        if (!string.IsNullOrEmpty(track.BaseUrl))
+                            tracks.Add(track);
+                    }
+                }
+            }
+            catch { }
+            return tracks;
+        }
+
+        public static async Task<List<LyricLine>> FetchCaptionTextAsync(string captionUrl)
+        {
+            var lines = new List<LyricLine>();
+            try
+            {
+                // Request XML format (default)
+                string url = captionUrl;
+                if (!url.Contains("fmt="))
+                    url += "&fmt=srv3";
+
+                var resp = await _client.GetAsync(url);
+                if (!resp.IsSuccessStatusCode) return lines;
+
+                string xml = await resp.Content.ReadAsStringAsync();
+
+                // Parse <text start="1.5" dur="3.2">Hello world</text>
+                int pos = 0;
+                while (pos < xml.Length)
+                {
+                    int textStart = xml.IndexOf("<text ", pos);
+                    if (textStart < 0) break;
+
+                    // Get start attribute
+                    int startAttr = xml.IndexOf("start=\"", textStart);
+                    if (startAttr < 0) break;
+                    int startValBegin = startAttr + 7;
+                    int startValEnd = xml.IndexOf("\"", startValBegin);
+                    if (startValEnd < 0) break;
+                    string startStr = xml.Substring(startValBegin, startValEnd - startValBegin);
+
+                    // Get content
+                    int contentStart = xml.IndexOf(">", textStart) + 1;
+                    int contentEnd = xml.IndexOf("</text>", contentStart);
+                    if (contentEnd < 0) break;
+
+                    string content = xml.Substring(contentStart, contentEnd - contentStart);
+                    // Decode HTML entities
+                    content = content.Replace("&amp;", "&").Replace("&lt;", "<").Replace("&gt;", ">")
+                                     .Replace("&quot;", "\"").Replace("&#39;", "'").Replace("\n", " ");
+
+                    double startSeconds;
+                    if (double.TryParse(startStr, System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out startSeconds))
+                    {
+                        int ms = (int)(startSeconds * 1000);
+                        int min = ms / 60000;
+                        int sec = (ms % 60000) / 1000;
+                        int centis = (ms % 1000) / 10;
+
+                        lines.Add(new LyricLine
+                        {
+                            Time = TimeSpan.FromMilliseconds(ms),
+                            Text = content.Trim(),
+                            TimeTag = string.Format("[{0:D2}:{1:D2}.{2:D2}]", min, sec, centis),
+                            FontSize = 22
+                        });
+                    }
+
+                    pos = contentEnd + 7;
+                }
+            }
+            catch { }
+            return lines;
+        }
+    }
+
+    public class CaptionTrack
+    {
+        public string BaseUrl { get; set; } = "";
+        public string LanguageCode { get; set; } = "";
+        public string LanguageName { get; set; } = "";
     }
 }

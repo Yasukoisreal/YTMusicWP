@@ -91,6 +91,8 @@ namespace YTMusicWP
         private ObservableCollection<YouTubeTrack> popTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> lofiTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> workoutTracks = new ObservableCollection<YouTubeTrack>();
+        private ObservableCollection<YouTubeTrack> podcastTracks = new ObservableCollection<YouTubeTrack>();
+        private ObservableCollection<YouTubeTrack> audiobookTracks = new ObservableCollection<YouTubeTrack>();
 
         private ObservableCollection<UserPlaylist> userPlaylists = new ObservableCollection<UserPlaylist>();
         private UserPlaylist _currentViewingPlaylist = null;

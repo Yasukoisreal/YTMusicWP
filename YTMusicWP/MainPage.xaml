@@ -437,22 +437,24 @@
             <!-- Filter chips -->
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,5,0,10">
                 <StackPanel Orientation="Horizontal">
-                    <Border Background="#333333" CornerRadius="10" Padding="14,6" Margin="0,0,8,0">
+                    <Border x:Name="HomeChipAll" Background="#333333" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="HomeChipAll_Tapped">
                         <TextBlock Text="All" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border Background="#1DB954" CornerRadius="10" Padding="14,6" Margin="0,0,8,0">
+                    <Border x:Name="HomeChipMusic" Background="#1DB954" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="HomeChipMusic_Tapped">
                         <TextBlock Text="Music" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border Background="#333333" CornerRadius="10" Padding="14,6" Margin="0,0,8,0">
+                    <Border x:Name="HomeChipPodcasts" Background="#333333" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="HomeChipPodcasts_Tapped">
                         <TextBlock Text="Podcasts" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border Background="#333333" CornerRadius="10" Padding="14,6">
+                    <Border x:Name="HomeChipAudiobooks" Background="#333333" CornerRadius="10" Padding="14,6" Tapped="HomeChipAudiobooks_Tapped">
                         <TextBlock Text="Audiobooks" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
             <Grid Grid.Row="2">
                 <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10"/>
+                <!-- Music content -->
+                <StackPanel x:Name="HomeMusicPanel">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
                     <StackPanel Margin="0,0,0,30">
                         <!-- Quick shortcuts grid -->
@@ -523,6 +525,19 @@
                         </ListView>
                     </StackPanel>
                 </ScrollViewer>
+                </StackPanel>
+
+                <!-- Podcasts content -->
+                <StackPanel x:Name="HomePodcastPanel" Visibility="Collapsed">
+                    <ProgressBar x:Name="PodcastLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
+                    <ListView x:Name="PodcastList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SearchResultItemTemplate}" ItemContainerStyle="{StaticResource SearchResultItemStyle}" Margin="0,0,0,10"/>
+                </StackPanel>
+
+                <!-- Audiobooks content -->
+                <StackPanel x:Name="HomeAudiobookPanel" Visibility="Collapsed">
+                    <ProgressBar x:Name="AudiobookLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
+                    <ListView x:Name="AudiobookList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SearchResultItemTemplate}" ItemContainerStyle="{StaticResource SearchResultItemStyle}" Margin="0,0,0,10"/>
+                </StackPanel>
             </Grid>
         </Grid>
 

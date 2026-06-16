@@ -267,9 +267,43 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    LyricsFallbackText.Text = "Lyrics not found for this track.";
-                    LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
-                    LyricsListView.Visibility = Visibility.Collapsed;
+                    // Fallback: try YouTube captions/subtitles
+                    bool captionFound = false;
+                    if (currentTrack != null && !string.IsNullOrEmpty(currentTrack.VideoId) && !currentTrack.VideoId.StartsWith("LOCAL:"))
+                    {
+                        try
+                        {
+                            token.ThrowIfCancellationRequested();
+                            var captionTracks = await InnerTubeClient.GetCaptionTracksAsync(currentTrack.VideoId);
+                            if (captionTracks.Count > 0)
+                            {
+                                // Prefer user language, then English, then first available
+                                var preferred = captionTracks.FirstOrDefault(c => c.LanguageCode == "vi")
+                                    ?? captionTracks.FirstOrDefault(c => c.LanguageCode == "en")
+                                    ?? captionTracks.FirstOrDefault(c => c.LanguageCode.StartsWith("en"))
+                                    ?? captionTracks[0];
+
+                                token.ThrowIfCancellationRequested();
+                                var captionLines = await InnerTubeClient.FetchCaptionTextAsync(preferred.BaseUrl);
+                                if (captionLines.Count > 0)
+                                {
+                                    foreach (var cl in captionLines) currentLyrics.Add(cl);
+                                    currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
+                                    captionFound = true;
+                                    System.Diagnostics.Debug.WriteLine("[Lyrics] Caption fallback: " + captionLines.Count + " lines (" + preferred.LanguageName + ")");
+                                }
+                            }
+                        }
+                        catch (OperationCanceledException) { throw; }
+                        catch { }
+                    }
+
+                    if (!captionFound)
+                    {
+                        LyricsFallbackText.Text = "Lyrics not found for this track.";
+                        LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
+                        LyricsListView.Visibility = Visibility.Collapsed;
+                    }
                 }
             }
             catch (OperationCanceledException) { return; }
