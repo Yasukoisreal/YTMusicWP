@@ -1091,9 +1091,9 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="CurrentTimeText" Text="00:00" FontSize="12" Foreground="#B3B3B3" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="CurrentTimeText" Text="00:00" FontSize="12" Foreground="#B3B3B3" VerticalAlignment="Center" MinWidth="38" TextAlignment="Left"/>
                         <Slider x:Name="MusicSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="0" Margin="10,0" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Foreground="#1DB954" Background="#404040" Style="{StaticResource ModernSliderStyle}"/>
-                        <TextBlock x:Name="TotalTimeText" Text="00:00" Grid.Column="2" FontSize="12" Foreground="#B3B3B3" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TotalTimeText" Text="00:00" Grid.Column="2" FontSize="12" Foreground="#B3B3B3" VerticalAlignment="Center" MinWidth="38" TextAlignment="Right"/>
                     </Grid>
                     <Grid Margin="0,10,0,0">
                         <Grid.ColumnDefinitions>
