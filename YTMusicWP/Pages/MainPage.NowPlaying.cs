@@ -81,6 +81,8 @@ namespace YTMusicWP
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideUpStoryboard"];
                 storyboard.Begin();
             }
+            // Start marquee after panel is visible and laid out
+            var ignored3 = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
         }
         private async void RestoreSearchBoxFocus()
         {
