@@ -544,13 +544,9 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Viewbox Width="18" Height="18" Margin="14,0,0,0"><Path Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.49L20.49,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14Z" Fill="#B3B3B3"/></Viewbox>
                     <TextBox x:Name="SearchBox" Grid.Column="1" TextChanged="SearchBox_TextChanged" PlaceholderText="What do you want to listen to?" Margin="6,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
-                    <Button x:Name="SearchButton" Grid.Column="2" Click="SearchButton_Click" Foreground="White" Width="50" Style="{StaticResource IconButtonStyle}">
-                        <Viewbox Width="18" Height="18"><Path Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.49L20.49,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14Z" Fill="White"/></Viewbox>
-                    </Button>
                 </Grid>
             </Border>
 
