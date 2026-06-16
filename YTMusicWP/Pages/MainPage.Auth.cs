@@ -74,14 +74,20 @@ namespace YTMusicWP
             UpdateRepeatUI(repeatMode);
 
             // Playback settings
-            int quality = settings.ContainsKey("AudioQuality") ? (int)settings["AudioQuality"] : 1;
-            AudioQualityComboBox.SelectedIndex = quality;
-            int crossfade = settings.ContainsKey("CrossfadeSeconds") ? (int)settings["CrossfadeSeconds"] : 0;
-            CrossfadeSlider.Value = crossfade;
-            CrossfadeValueText.Text = crossfade + "s";
-            AutoplayToggle.IsOn = settings.ContainsKey("Autoplay") ? (bool)settings["Autoplay"] : true;
-            GaplessToggle.IsOn = settings.ContainsKey("GaplessPlayback") ? (bool)settings["GaplessPlayback"] : true;
-            NormalizeVolumeToggle.IsOn = settings.ContainsKey("NormalizeVolume") ? (bool)settings["NormalizeVolume"] : false;
+            try
+            {
+                int quality = settings.ContainsKey("AudioQuality") ? (int)settings["AudioQuality"] : 1;
+                if (quality >= 0 && quality < AudioQualityComboBox.Items.Count)
+                    AudioQualityComboBox.SelectedIndex = quality;
+                int crossfade = settings.ContainsKey("CrossfadeSeconds") ? (int)settings["CrossfadeSeconds"] : 0;
+                CrossfadeSlider.Value = crossfade;
+                CrossfadeValueText.Text = crossfade + "s";
+                CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
+                AutoplayToggle.IsOn = settings.ContainsKey("Autoplay") ? (bool)settings["Autoplay"] : true;
+                GaplessToggle.IsOn = settings.ContainsKey("GaplessPlayback") ? (bool)settings["GaplessPlayback"] : true;
+                NormalizeVolumeToggle.IsOn = settings.ContainsKey("NormalizeVolume") ? (bool)settings["NormalizeVolume"] : false;
+            }
+            catch { }
         }
 
         private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)

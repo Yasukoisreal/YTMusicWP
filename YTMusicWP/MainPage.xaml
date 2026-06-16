@@ -997,7 +997,7 @@
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock x:Name="CrossfadeValueText" Text="0s" Foreground="#1DB954" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Slider x:Name="CrossfadeSlider" Minimum="0" Maximum="12" StepFrequency="1" Value="0" Width="100" ValueChanged="CrossfadeSlider_ValueChanged" Foreground="#1DB954"/>
+                            <Slider x:Name="CrossfadeSlider" Minimum="0" Maximum="12" StepFrequency="1" Value="0" Width="100" Foreground="#1DB954"/>
                         </StackPanel>
                     </Grid>
                     <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
