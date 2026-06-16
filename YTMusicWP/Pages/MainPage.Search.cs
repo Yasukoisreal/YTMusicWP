@@ -40,8 +40,17 @@ namespace YTMusicWP
             SearchSongList.ItemsSource = searchResults;
 
             searchResults.Clear();
-            var tracks = await FetchMusicList(query);
-            if (tracks != null && tracks.Count > 0)
+            var tracks = await FetchMusicList(query, "", requireApiKey: true);
+
+            // API key missing → show prompt
+            if (tracks == null)
+            {
+                SearchLoading.Visibility = Visibility.Collapsed;
+                ShowToast("API Key required! Go to Settings to set your YouTube API Key.");
+                return;
+            }
+
+            if (tracks.Count > 0)
             {
                 var filteredTracks = tracks.AsEnumerable();
                 var songBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterSongsBtn.Background).Color;
@@ -127,7 +136,7 @@ namespace YTMusicWP
                 SearchLoading.Visibility = Visibility.Visible;
                 System.Diagnostics.Debug.WriteLine("[Search] Loading more with token: " + _nextSearchToken.Substring(0, Math.Min(30, _nextSearchToken.Length)) + "...");
 
-                var tracks = await FetchMusicList(_currentSearchQuery, _nextSearchToken);
+                var tracks = await FetchMusicList(_currentSearchQuery, _nextSearchToken, requireApiKey: true);
                 if (tracks != null)
                 {
                     foreach (var t in tracks) searchResults.Add(t);

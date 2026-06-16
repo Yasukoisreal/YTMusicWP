@@ -52,10 +52,10 @@ namespace YTMusicWP
 
                 if (useFallback || tracks.Count == 0)
                 {
-                    string apiKey = ApiKeyTextBox.Text.Trim();
+                    string apiKey = GetApiKey();
                     if (string.IsNullOrEmpty(apiKey))
                     {
-                        ShowToast("API Key required or proxy failed.");
+                        ShowToast("API Key required! Set it in Settings.");
                         return;
                     }
 
@@ -141,7 +141,7 @@ namespace YTMusicWP
             bool hasCustomAvatar = false;
 
             // --- LẤY AVATAR THẬT TỪ YOUTUBE API (NẾU CÓ API KEY) ---
-            string apiKey = ApiKeyTextBox.Text.Trim();
+            string apiKey = GetApiKey();
             if (!string.IsNullOrEmpty(apiKey))
             {
                 try

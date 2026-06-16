@@ -60,27 +60,106 @@ namespace YTMusicWP
             return url;
         }
 
-        public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "")
+        public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "", bool requireApiKey = false)
         {
             var list = new List<YouTubeTrack>(20);
 
             // --- CONTINUATION: Load more using token ---
             if (!string.IsNullOrEmpty(pageToken) && pageToken != "NEW")
             {
-                try
+                // If token looks like InnerTube continuation (long base64), use InnerTube
+                if (pageToken.Length > 30)
                 {
-                    var contResult = await InnerTubeClient.SearchContinueAsync(pageToken);
-                    if (contResult != null && contResult.Tracks != null)
+                    try
                     {
-                        list.AddRange(contResult.Tracks);
-                        _nextSearchToken = contResult.ContinuationToken ?? "";
+                        var contResult = await InnerTubeClient.SearchContinueAsync(pageToken);
+                        if (contResult != null && contResult.Tracks != null)
+                        {
+                            list.AddRange(contResult.Tracks);
+                            _nextSearchToken = contResult.ContinuationToken ?? "";
+                        }
+                        return list;
+                    }
+                    catch { return list; }
+                }
+                else
+                {
+                    // Short token = YouTube API v3 pageToken
+                    string apiKey2 = GetApiKey();
+                    if (!string.IsNullOrEmpty(apiKey2))
+                    {
+                        try
+                        {
+                            string ytUrl2 = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=" + Uri.EscapeDataString(query) + "&type=video,channel,playlist&key=" + apiKey2 + "&pageToken=" + pageToken;
+                            if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
+                            {
+                                string region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+                                if (region != "US") ytUrl2 += "&regionCode=" + region;
+                            }
+                            var response2 = await _apiClient.GetStringAsync(ytUrl2);
+                            var json2 = JObject.Parse(response2);
+                            _nextSearchToken = json2["nextPageToken"]?.ToString() ?? "";
+                            var items2 = json2["items"];
+                            if (items2 != null) foreach (var item in items2) { try { var t = ParseTrackItem(item); if (t != null) list.Add(t); } catch { } }
+                        }
+                        catch { }
                     }
                     return list;
                 }
-                catch { return list; }
             }
 
-            // --- LỚP 1 (ƯU TIÊN): INNERTUBE TRỰC TIẾP (không cần proxy) ---
+            // ═══════════════════════════════════════════════════
+            // SEARCH CONTEXT: API Key bắt buộc (giống MetroTube)
+            // ═══════════════════════════════════════════════════
+            if (requireApiKey)
+            {
+                string apiKey = GetApiKey();
+                if (string.IsNullOrEmpty(apiKey))
+                    return null; // Caller sẽ hiện thông báo yêu cầu key
+
+                // LAYER 1: YouTube Data API v3 (primary)
+                try
+                {
+                    string ytUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=" + Uri.EscapeDataString(query) + "&type=video,channel,playlist&key=" + apiKey;
+                    if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
+                    {
+                        string region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+                        if (region != "US") ytUrl += "&regionCode=" + region;
+                    }
+
+                    var response = await _apiClient.GetStringAsync(ytUrl);
+                    var json = JObject.Parse(response);
+                    _nextSearchToken = json["nextPageToken"]?.ToString() ?? "";
+                    var items = json["items"];
+                    if (items != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            try { var track = ParseTrackItem(item); if (track != null) list.Add(track); }
+                            catch { continue; }
+                        }
+                    }
+                    if (list.Count > 0) return list;
+                }
+                catch { System.Diagnostics.Debug.WriteLine("[API] YouTube API v3 failed, trying InnerTube fallback"); }
+
+                // LAYER 2: InnerTube fallback (nếu API v3 lỗi)
+                try
+                {
+                    var innerResult = await InnerTubeClient.SearchWithContinuationAsync(query, 20);
+                    if (innerResult != null && innerResult.Tracks != null && innerResult.Tracks.Count > 0)
+                    {
+                        list.AddRange(innerResult.Tracks);
+                        _nextSearchToken = innerResult.ContinuationToken ?? "";
+                    }
+                }
+                catch { }
+                return list;
+            }
+
+            // ═══════════════════════════════════════════════════
+            // HOME CONTEXT: InnerTube only (không cần API key)
+            // ═══════════════════════════════════════════════════
             try
             {
                 var innerResult = await InnerTubeClient.SearchWithContinuationAsync(query, 20);
@@ -88,60 +167,24 @@ namespace YTMusicWP
                 {
                     list.AddRange(innerResult.Tracks);
                     _nextSearchToken = innerResult.ContinuationToken ?? "";
-                    return list;
                 }
             }
-            catch { System.Diagnostics.Debug.WriteLine("FetchMusicList InnerTube lỗi, chuyển sang Lớp 2."); }
-
-            // --- LỚP 2: YOUTUBE API V3 (CHANNELS/PLAYLISTS & FALLBACK) ---
-            string apiKey = ApiKeyTextBox.Text.Trim();
-            if (!string.IsNullOrEmpty(apiKey))
-            {
-                if (list.Count > 0 && !string.IsNullOrEmpty(pageToken)) return list; 
-
-                string ytUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=" + (list.Count > 0 ? "3" : "8") + "&q=" + Uri.EscapeDataString(query) + "&type=" + (list.Count > 0 ? "channel,playlist" : "video,channel,playlist") + "&key=" + apiKey;
-
-                if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
-                {
-                    string region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
-                    if (region != "US") ytUrl += "&regionCode=" + region;
-                }
-                if (!string.IsNullOrEmpty(pageToken) && list.Count == 0) ytUrl += "&pageToken=" + pageToken;
-
-                try
-                {
-                    var response = await _apiClient.GetStringAsync(ytUrl);
-                    var json = JObject.Parse(response);
-                    
-                    // Extract nextPageToken for YouTube API v3
-                    string nextPage = json["nextPageToken"]?.ToString();
-                    if (!string.IsNullOrEmpty(nextPage)) _nextSearchToken = nextPage;
-
-                    var items = json["items"];
-                    if (items != null)
-                    {
-                        var ytList = new List<YouTubeTrack>();
-                        foreach (var item in items)
-                        {
-                            try { var track = ParseTrackItem(item); if (track != null) ytList.Add(track); }
-                            catch { continue; }
-                        }
-                        
-                        if (list.Count > 0)
-                        {
-                            ytList.AddRange(list);
-                            return ytList;
-                        }
-                        else
-                        {
-                            return ytList;
-                        }
-                    }
-                }
-                catch { }
-            }
+            catch { }
             return list;
         }
 
+        private string GetApiKey()
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.ContainsKey("YouTubeApiKey"))
+                {
+                    string key = ApplicationData.Current.LocalSettings.Values["YouTubeApiKey"].ToString().Trim();
+                    if (!string.IsNullOrEmpty(key)) return key;
+                }
+            }
+            catch { }
+            return null;
+        }
     }
 }

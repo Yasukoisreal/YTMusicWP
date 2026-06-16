@@ -801,8 +801,9 @@
                         <ComboBoxItem Content="United Kingdom (GB)" Tag="GB"/>
                     </ComboBox>
                     <TextBlock Text="YOUTUBE API KEY" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
+                    <TextBlock Text="Required for Search, Channels, Playlists &amp; Music" Foreground="#666666" FontSize="11" Margin="5,0,0,5"/>
                     <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,20">
-                        <TextBox x:Name="ApiKeyTextBox" PlaceholderText="Paste Key here..." Style="{StaticResource DarkTextBoxStyle}"/>
+                        <TextBox x:Name="ApiKeyTextBox" PlaceholderText="Paste YouTube Data API Key here..." Style="{StaticResource DarkTextBoxStyle}"/>
                     </Border>
                     <TextBlock Text="CUSTOM PROXY URL" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,20">
