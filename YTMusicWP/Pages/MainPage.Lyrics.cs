@@ -307,13 +307,13 @@ namespace YTMusicWP
                 {
                     string text = string.IsNullOrWhiteSpace(tempLine) ? "♪" : tempLine;
                     foreach (var t in times)
-                        parsedLines.Add(new LyricLine { Time = t, Text = text });
+                        parsedLines.Add(new LyricLine { Time = t, Text = text, FontSize = _lyricFontSize });
                 }
             }
 
             parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
             foreach (var p in parsedLines) currentLyrics.Add(p);
-            currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "" });
+            currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
         }
 
         private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)

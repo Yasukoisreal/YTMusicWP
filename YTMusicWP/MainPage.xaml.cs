@@ -74,8 +74,7 @@ namespace YTMusicWP
         private ObservableCollection<LyricLine> currentLyrics = new ObservableCollection<LyricLine>();
         private int currentLyricIndex = -1;
 
-        private int _baseLyricSize = 18;
-        private int _highlightLyricSize = 24;
+        private int _lyricFontSize = 22;
 
         private DispatcherTimer _typingTimer = new DispatcherTimer();
         private YouTubeTrack currentTrack = null;

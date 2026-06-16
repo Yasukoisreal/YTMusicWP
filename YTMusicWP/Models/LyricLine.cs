@@ -14,7 +14,7 @@ namespace YTMusicWP
         private SolidColorBrush _colorBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
         public SolidColorBrush ColorBrush { get { return _colorBrush; } set { _colorBrush = value; OnPropertyChanged("ColorBrush"); } }
 
-        private double _fontSize = 18;
+        private double _fontSize = 22;
         public double FontSize { get { return _fontSize; } set { _fontSize = value; OnPropertyChanged("FontSize"); } }
 
         private double _opacity = 0.5;

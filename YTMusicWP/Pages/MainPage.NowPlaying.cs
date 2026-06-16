@@ -38,23 +38,21 @@ namespace YTMusicWP
 
         private void IncreaseLyricsSize_Click(object sender, RoutedEventArgs e)
         {
-            if (_baseLyricSize < 36)
+            if (_lyricFontSize < 36)
             {
-                _baseLyricSize += 4;
-                _highlightLyricSize += 4;
+                _lyricFontSize += 2;
                 RefreshLyricsSize();
-                ShowToast("A+ (" + _baseLyricSize + "px)");
+                ShowToast("A+ (" + _lyricFontSize + "px)");
             }
         }
 
         private void DecreaseLyricsSize_Click(object sender, RoutedEventArgs e)
         {
-            if (_baseLyricSize > 12)
+            if (_lyricFontSize > 14)
             {
-                _baseLyricSize -= 4;
-                _highlightLyricSize -= 4;
+                _lyricFontSize -= 2;
                 RefreshLyricsSize();
-                ShowToast("A- (" + _baseLyricSize + "px)");
+                ShowToast("A- (" + _lyricFontSize + "px)");
             }
         }
 
@@ -62,26 +60,8 @@ namespace YTMusicWP
         {
             for (int i = 0; i < currentLyrics.Count; i++)
             {
-                currentLyrics[i].FontSize = (i == currentLyricIndex) ? _highlightLyricSize : _baseLyricSize;
+                currentLyrics[i].FontSize = _lyricFontSize;
             }
-            // Reset all scale transforms so font change is immediately visible
-            try
-            {
-                for (int i = 0; i < currentLyrics.Count; i++)
-                {
-                    var container = LyricsListView.ContainerFromIndex(i) as Windows.UI.Xaml.FrameworkElement;
-                    if (container != null)
-                    {
-                        var scale = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (scale != null)
-                        {
-                            scale.ScaleX = (i == currentLyricIndex) ? 1.0 : 0.85;
-                            scale.ScaleY = (i == currentLyricIndex) ? 1.0 : 0.85;
-                        }
-                    }
-                }
-            }
-            catch { }
         }
 
         private void QueueListView_ItemClick(object sender, ItemClickEventArgs e)
