@@ -65,14 +65,18 @@ namespace YTMusicWP
                 if (settings.ContainsKey("TrendingRegion"))
                 {
                     string r = settings["TrendingRegion"].ToString();
+                    bool found = false;
                     for (int i = 0; i < RegionComboBox.Items.Count; i++)
                     {
-                        if (((ComboBoxItem)RegionComboBox.Items[i]).Tag.ToString() == r)
+                        var tag = ((ComboBoxItem)RegionComboBox.Items[i]).Tag;
+                        if (tag != null && tag.ToString() == r)
                         {
                             RegionComboBox.SelectedIndex = i;
+                            found = true;
                             break;
                         }
                     }
+                    if (!found) RegionComboBox.SelectedIndex = 0; // Fallback: Auto-detect
                 }
                 else
                 {
