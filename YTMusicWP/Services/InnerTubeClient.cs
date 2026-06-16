@@ -22,27 +22,28 @@ namespace YTMusicWP
         // ==========================================
         public static async Task<string> GetVisitorDataAsync()
         {
-            // Cache 30 phút
-            if (_cachedVisitorData != null && (DateTime.Now - _vdCacheTime).TotalMinutes < 30)
+            // Cache 2 hours (visitorData doesn't change often)
+            if (_cachedVisitorData != null && (DateTime.Now - _vdCacheTime).TotalMinutes < 120)
                 return _cachedVisitorData;
 
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/");
+                // Use lightweight sw.js_data endpoint instead of full homepage (~500KB → ~2KB)
+                var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/sw.js_data");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
                 var resp = await _client.SendAsync(request);
                 if (resp.IsSuccessStatusCode)
                 {
-                    string html = await resp.Content.ReadAsStringAsync();
+                    string body = await resp.Content.ReadAsStringAsync();
                     string marker = "\"visitorData\":\"";
-                    int idx = html.IndexOf(marker);
+                    int idx = body.IndexOf(marker);
                     if (idx >= 0)
                     {
                         int start = idx + marker.Length;
-                        int end = html.IndexOf("\"", start);
+                        int end = body.IndexOf("\"", start);
                         if (end > start && end - start >= 20 && end - start < 600)
                         {
-                            string vd = html.Substring(start, end - start);
+                            string vd = body.Substring(start, end - start);
                             if (vd.StartsWith("Cg"))
                             {
                                 _cachedVisitorData = vd;
@@ -54,7 +55,41 @@ namespace YTMusicWP
                 }
             }
             catch { }
-            return _cachedVisitorData; // Return old cache if fetch fails
+
+            // Fallback: try homepage if sw.js_data failed (first time only)
+            if (_cachedVisitorData == null)
+            {
+                try
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/");
+                    request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                    var resp = await _client.SendAsync(request);
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        string html = await resp.Content.ReadAsStringAsync();
+                        string marker = "\"visitorData\":\"";
+                        int idx = html.IndexOf(marker);
+                        if (idx >= 0)
+                        {
+                            int start = idx + marker.Length;
+                            int end = html.IndexOf("\"", start);
+                            if (end > start && end - start >= 20 && end - start < 600)
+                            {
+                                string vd = html.Substring(start, end - start);
+                                if (vd.StartsWith("Cg"))
+                                {
+                                    _cachedVisitorData = vd;
+                                    _vdCacheTime = DateTime.Now;
+                                    return vd;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            return _cachedVisitorData;
         }
 
         // ==========================================
