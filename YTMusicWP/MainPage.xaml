@@ -1033,7 +1033,7 @@
                     </PivotItem>
                     <!-- Lyrics page -->
                     <PivotItem>
-                        <Grid>
+                        <Grid Background="#121212">
                             <ProgressBar x:Name="LyricsLoadingBar" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="White"/>
                             <ScrollViewer x:Name="LyricsFallbackScrollViewer" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
                                 <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#B3B3B3" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
@@ -1051,8 +1051,8 @@
                             <Rectangle Height="60" VerticalAlignment="Top" IsHitTestVisible="False">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop x:Name="LyricsFadeTopSolid" Color="#1A1A2E" Offset="0"/>
-                                        <GradientStop x:Name="LyricsFadeTopTransparent" Color="#001A1A2E" Offset="1"/>
+                                        <GradientStop Color="#121212" Offset="0"/>
+                                        <GradientStop Color="#00121212" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
                             </Rectangle>

@@ -490,9 +490,6 @@ namespace YTMusicWP
             try
             {
                 NowPlayingGradientTop.Color = topColor;
-                // Sync lyrics top fade with genre color
-                LyricsFadeTopSolid.Color = topColor;
-                LyricsFadeTopTransparent.Color = Windows.UI.Color.FromArgb(0, topColor.R, topColor.G, topColor.B);
             }
             catch { }
         }
