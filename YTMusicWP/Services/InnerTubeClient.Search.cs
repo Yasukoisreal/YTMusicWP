@@ -71,6 +71,13 @@ namespace YTMusicWP
                         if (conts != null && conts.HasValues)
                         {
                             continuationToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString();
+                            if (string.IsNullOrEmpty(continuationToken))
+                                continuationToken = conts[0]?["reloadContinuationData"]?["continuation"]?.ToString();
+                            System.Diagnostics.Debug.WriteLine("[InnerTube] Continuation token found: " + (continuationToken != null ? continuationToken.Substring(0, Math.Min(40, continuationToken.Length)) + "..." : "null"));
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine("[InnerTube] No continuations array in shelf");
                         }
                         continue;
                     }
@@ -171,32 +178,73 @@ namespace YTMusicWP
                 var data = await PostInnerTubeAsync(
                     "https://music.youtube.com/youtubei/v1/search?ctoken=" + Uri.EscapeDataString(continuationToken) + "&continuation=" + Uri.EscapeDataString(continuationToken) + "&prettyPrint=false", body, true);
 
+                System.Diagnostics.Debug.WriteLine("[InnerTube Continue] Response keys: " + (data != null ? string.Join(",", ((JObject)data).Properties().Select(p => p.Name)) : "null"));
+
                 // Continuation response: continuationContents.musicShelfContinuation
                 var shelf = data?["continuationContents"]?["musicShelfContinuation"];
-                if (shelf != null)
+                if (shelf == null)
                 {
-                    var items = shelf["contents"];
-                    if (items != null)
+                    // Fallback: try sectionListContinuation
+                    shelf = data?["continuationContents"]?["sectionListContinuation"];
+                    if (shelf != null)
                     {
-                        foreach (var item in items)
+                        // sectionListContinuation has contents[] with musicShelfRenderer
+                        var innerSections = shelf["contents"];
+                        if (innerSections != null)
                         {
-                            try
+                            foreach (var sec in innerSections)
                             {
-                                var track = ParseMusicListItem(item);
-                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                    results.Add(track);
+                                var innerShelf = sec["musicShelfRenderer"];
+                                if (innerShelf != null)
+                                {
+                                    var innerItems = innerShelf["contents"];
+                                    if (innerItems != null)
+                                    {
+                                        foreach (var item in innerItems)
+                                        {
+                                            try
+                                            {
+                                                var track = ParseMusicListItem(item);
+                                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                                    results.Add(track);
+                                            }
+                                            catch { continue; }
+                                        }
+                                    }
+                                }
                             }
-                            catch { continue; }
                         }
+                        System.Diagnostics.Debug.WriteLine("[InnerTube Continue] sectionListContinuation: " + results.Count + " tracks");
+                        return new SearchResult { Tracks = results, ContinuationToken = null };
                     }
-                    var conts = shelf["continuations"];
-                    if (conts != null && conts.HasValues)
+                    System.Diagnostics.Debug.WriteLine("[InnerTube Continue] No shelf found in response");
+                    return new SearchResult { Tracks = results, ContinuationToken = null };
+                }
+
+                var items2 = shelf["contents"];
+                if (items2 != null)
+                {
+                    foreach (var item in items2)
                     {
-                        nextToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString();
+                        try
+                        {
+                            var track = ParseMusicListItem(item);
+                            if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                results.Add(track);
+                        }
+                        catch { continue; }
                     }
                 }
+                var conts = shelf["continuations"];
+                if (conts != null && conts.HasValues)
+                {
+                    nextToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString();
+                    if (string.IsNullOrEmpty(nextToken))
+                        nextToken = conts[0]?["reloadContinuationData"]?["continuation"]?.ToString();
+                }
+                System.Diagnostics.Debug.WriteLine("[InnerTube Continue] Got " + results.Count + " tracks, next token: " + (nextToken != null ? "yes" : "no"));
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine("[InnerTube Continue] Error: " + ex.Message); }
             return new SearchResult { Tracks = results, ContinuationToken = nextToken };
         }
 

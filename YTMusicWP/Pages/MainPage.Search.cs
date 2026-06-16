@@ -29,6 +29,8 @@ namespace YTMusicWP
             }
         }
 
+        private ScrollViewer _searchScrollViewer;
+
         private async void ExecuteSearch(string query)
         {
             SearchLoading.Visibility = Visibility.Visible;
@@ -36,14 +38,6 @@ namespace YTMusicWP
 
             SearchSongList.Visibility = Visibility.Visible;
             SearchSongList.ItemsSource = searchResults;
-            SearchSongList.UpdateLayout();
-
-            var sv = GetScrollViewer(SearchSongList);
-            if (sv != null)
-            {
-                sv.ViewChanged -= SearchScrollViewer_ViewChanged;
-                sv.ViewChanged += SearchScrollViewer_ViewChanged;
-            }
 
             searchResults.Clear();
             var tracks = await FetchMusicList(query);
@@ -67,6 +61,12 @@ namespace YTMusicWP
             }
             SearchLoading.Visibility = Visibility.Collapsed;
 
+            System.Diagnostics.Debug.WriteLine("[Search] Results: " + searchResults.Count + ", NextToken: " + (_nextSearchToken ?? "null"));
+
+            // Attach ScrollViewer AFTER data loaded and layout updated
+            SearchSongList.UpdateLayout();
+            AttachSearchScrollViewer();
+
             // Fade-in search results
             SearchSongList.Opacity = 0;
             var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
@@ -80,6 +80,44 @@ namespace YTMusicWP
             fadeIn.Begin();
         }
 
+        private void AttachSearchScrollViewer()
+        {
+            if (_searchScrollViewer != null)
+            {
+                _searchScrollViewer.ViewChanged -= SearchScrollViewer_ViewChanged;
+                _searchScrollViewer.ViewChanged += SearchScrollViewer_ViewChanged;
+                return;
+            }
+
+            var sv = GetScrollViewer(SearchSongList);
+            if (sv != null)
+            {
+                _searchScrollViewer = sv;
+                sv.ViewChanged -= SearchScrollViewer_ViewChanged;
+                sv.ViewChanged += SearchScrollViewer_ViewChanged;
+                System.Diagnostics.Debug.WriteLine("[Search] ScrollViewer attached OK");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("[Search] ScrollViewer NOT found, will retry on Loaded");
+                SearchSongList.Loaded -= SearchSongList_Loaded;
+                SearchSongList.Loaded += SearchSongList_Loaded;
+            }
+        }
+
+        private void SearchSongList_Loaded(object sender, RoutedEventArgs e)
+        {
+            SearchSongList.Loaded -= SearchSongList_Loaded;
+            var sv = GetScrollViewer(SearchSongList);
+            if (sv != null)
+            {
+                _searchScrollViewer = sv;
+                sv.ViewChanged -= SearchScrollViewer_ViewChanged;
+                sv.ViewChanged += SearchScrollViewer_ViewChanged;
+                System.Diagnostics.Debug.WriteLine("[Search] ScrollViewer attached via Loaded event");
+            }
+        }
+
         private async void SearchScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
             var sv = sender as ScrollViewer;
@@ -87,9 +125,14 @@ namespace YTMusicWP
             {
                 _isLoadingMoreSearch = true;
                 SearchLoading.Visibility = Visibility.Visible;
+                System.Diagnostics.Debug.WriteLine("[Search] Loading more with token: " + _nextSearchToken.Substring(0, Math.Min(30, _nextSearchToken.Length)) + "...");
 
                 var tracks = await FetchMusicList(_currentSearchQuery, _nextSearchToken);
-                if (tracks != null) foreach (var t in tracks) searchResults.Add(t);
+                if (tracks != null)
+                {
+                    foreach (var t in tracks) searchResults.Add(t);
+                    System.Diagnostics.Debug.WriteLine("[Search] Loaded " + tracks.Count + " more, total: " + searchResults.Count);
+                }
 
                 SearchLoading.Visibility = Visibility.Collapsed;
                 _isLoadingMoreSearch = false;
