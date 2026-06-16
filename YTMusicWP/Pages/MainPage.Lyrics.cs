@@ -254,6 +254,17 @@ namespace YTMusicWP
                 catch { }
             }
         }
+        private void LyricsListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.ItemContainer != null)
+            {
+                // Start all items in "inactive" state
+                args.ItemContainer.Opacity = 0.35;
+                var st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                args.ItemContainer.RenderTransformOrigin = new Point(0, 0.5);
+                args.ItemContainer.RenderTransform = st;
+            }
+        }
 
     }
 }

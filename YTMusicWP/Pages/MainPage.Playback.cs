@@ -251,12 +251,12 @@ namespace YTMusicWP
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
 
                                 var sxOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                { To = 0.92, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
+                                { To = 0.85, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxOut, oldScale);
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxOut, "ScaleX");
 
                                 var syOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                { To = 0.92, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
+                                { To = 0.85, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syOut, oldScale);
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syOut, "ScaleY");
 
@@ -277,7 +277,7 @@ namespace YTMusicWP
                             var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
                             if (scaleTransform == null)
                             {
-                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.92, ScaleY = 0.92 };
+                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
                                 newContainer.RenderTransformOrigin = new Point(0, 0.5);
                                 newContainer.RenderTransform = scaleTransform;
                             }
@@ -291,12 +291,12 @@ namespace YTMusicWP
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
 
                             var sxIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            { To = 1.05, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
+                            { To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxIn, scaleTransform);
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxIn, "ScaleX");
 
                             var syIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            { To = 1.05, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
+                            { To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syIn, scaleTransform);
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syIn, "ScaleY");
 
