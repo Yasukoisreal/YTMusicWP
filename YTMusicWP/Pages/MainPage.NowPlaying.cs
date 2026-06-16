@@ -105,24 +105,17 @@ namespace YTMusicWP
                 storyboard.Begin();
             }
         }
-
-        private async void DismissKeyboard()
+        private async void RestoreSearchBoxFocus()
         {
-            // WP8.1: Block SearchBox from receiving auto-focus when panels close
-            if (SearchBox != null)
-            {
-                SearchBox.IsTabStop = false;
-                SearchBox.IsEnabled = false;
-                SearchBox.IsEnabled = true;
-                // Restore after focus system settles
-                await Task.Delay(300);
-                SearchBox.IsTabStop = true;
-            }
+            await Task.Delay(500);
+            if (SearchBox != null) SearchBox.IsTabStop = true;
         }
 
         private void CloseNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            DismissKeyboard();
+            // Block SearchBox focus BEFORE any panel changes
+            if (SearchBox != null) SearchBox.IsTabStop = false;
+            
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"];
@@ -131,6 +124,7 @@ namespace YTMusicWP
             else
             {
                 NowPlayingView.Visibility = Visibility.Collapsed;
+                RestoreSearchBoxFocus();
             }
         }
 
@@ -151,6 +145,8 @@ namespace YTMusicWP
 
         private void CloseNowPlayingMenu_Click(object sender, RoutedEventArgs e)
         {
+            if (SearchBox != null) SearchBox.IsTabStop = false;
+            
             if (this.Resources.ContainsKey("MenuSlideDownStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["MenuSlideDownStoryboard"];
@@ -159,13 +155,14 @@ namespace YTMusicWP
             else
             {
                 NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+                RestoreSearchBoxFocus();
             }
         }
 
         private void MenuSlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
-            DismissKeyboard();
+            RestoreSearchBoxFocus();
         }
 
         private async void MenuDownloadNowPlaying_Click(object sender, RoutedEventArgs e)
@@ -185,7 +182,7 @@ namespace YTMusicWP
         private void SlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingView.Visibility = Visibility.Collapsed;
-            DismissKeyboard();
+            RestoreSearchBoxFocus();
         }
 
         private void SongItem_Holding(object sender, HoldingRoutedEventArgs e)
