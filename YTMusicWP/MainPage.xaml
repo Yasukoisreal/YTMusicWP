@@ -528,13 +528,13 @@
                 <!-- Podcasts content -->
                 <StackPanel x:Name="HomePodcastPanel" Visibility="Collapsed">
                     <ProgressBar x:Name="PodcastLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
-                    <ListView x:Name="PodcastList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="0,0,0,10"/>
+                    <ListView x:Name="PodcastList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="10,0,0,10"/>
                 </StackPanel>
 
                 <!-- Audiobooks content -->
                 <StackPanel x:Name="HomeAudiobookPanel" Visibility="Collapsed">
                     <ProgressBar x:Name="AudiobookLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
-                    <ListView x:Name="AudiobookList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="0,0,0,10"/>
+                    <ListView x:Name="AudiobookList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="10,0,0,10"/>
                 </StackPanel>
             </Grid>
         </Grid>
