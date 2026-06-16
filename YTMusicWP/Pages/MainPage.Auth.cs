@@ -1,6 +1,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -96,17 +97,10 @@ namespace YTMusicWP
         {
             string clientId = ClientIdTextBox.Text.Trim();
             string clientSecret = ClientSecretTextBox.Text.Trim();
-            string inputCode = AuthCodeTextBox.Text.Trim();
 
             if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
             {
                 ShowToast("Please enter Client ID and Secret first!");
-                return;
-            }
-
-            if (!string.IsNullOrEmpty(inputCode))
-            {
-                ExtractAndProcessCode(inputCode);
                 return;
             }
 
@@ -115,7 +109,7 @@ namespace YTMusicWP
                              "&redirect_uri=http://localhost" +
                              "&response_type=code" +
                              "&scope=https://www.googleapis.com/auth/youtube" +
-                             "&access_type=offline";
+                             "&access_type=offline&prompt=consent";
 
             _isAuthProcessing = false;
             LoginWebContainer.Visibility = Visibility.Visible;
@@ -236,7 +230,7 @@ namespace YTMusicWP
                     settings["GoogleClientSecret"] = clientSecret;
                     // Token expiry: expires_in is seconds (typically 3600)
                     long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
-                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).ToUnixTimeSeconds();
+                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 
                     ShowToast("Login successful! Syncing...");
                     await SyncAllAsync(accessToken);
@@ -339,8 +333,9 @@ namespace YTMusicWP
             // Check expiry
             if (settings.ContainsKey("GoogleTokenExpiry"))
             {
-                long expiry = (long)settings["GoogleTokenExpiry"];
-                if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= expiry)
+                double expiry = (double)settings["GoogleTokenExpiry"];
+                double now = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                if (now >= expiry)
                 {
                     // Token expired → refresh
                     string newToken = await RefreshGoogleTokenAsync();
@@ -373,7 +368,7 @@ namespace YTMusicWP
                     string newToken = json["access_token"]?.ToString();
                     long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
                     settings["GoogleAccessToken"] = newToken;
-                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).ToUnixTimeSeconds();
+                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
                     return newToken;
                 }
             }

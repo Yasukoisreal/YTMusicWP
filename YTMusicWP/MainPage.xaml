@@ -861,19 +861,10 @@
                     <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,15">
                         <TextBox x:Name="ClientSecretTextBox" PlaceholderText="Client Secret..." Style="{StaticResource DarkTextBoxStyle}"/>
                     </Border>
-                    <TextBlock Text="MANUAL LOGIN:" Foreground="#1DB954" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Margin="5,0,0,5"/>
-                    <TextBlock Text="1. Copy Auth Link and open it in a browser to grant access.&#x0a;2. Return here and paste the localhost URL (or click Login to auto-catch)." Foreground="#B3B3B3" FontSize="12" Margin="5,0,0,15" TextWrapping="Wrap"/>
-                    <Button Click="CopyAuthLink_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
-                        <Border Background="#509BF5" CornerRadius="8">
-                            <TextBlock Text="1. Copy Auth Link" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Button>
-                    <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,10">
-                        <TextBox x:Name="AuthCodeTextBox" PlaceholderText="Paste Localhost URL here..." Style="{StaticResource DarkTextBoxStyle}"/>
-                    </Border>
-                    <Button Click="LoginGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,25" Height="45">
+                    <TextBlock Text="Click Login to sign in with your Google account." Foreground="#B3B3B3" FontSize="12" Margin="5,0,0,15" TextWrapping="Wrap"/>
+                    <Button Click="LoginGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,25" Height="50">
                         <Border Background="#1DB954" CornerRadius="8">
-                            <TextBlock Text="2. Login &amp; Sync" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="Login with Google" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Button>
                     <TextBlock x:Name="LoginStatusText" Text="Status: Not Logged In" Foreground="#B3B3B3" FontSize="14" Margin="0,0,0,25" HorizontalAlignment="Center"/>
