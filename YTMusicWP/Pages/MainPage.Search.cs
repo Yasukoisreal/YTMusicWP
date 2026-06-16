@@ -66,6 +66,18 @@ namespace YTMusicWP
                 ShowToast("No results found.");
             }
             SearchLoading.Visibility = Visibility.Collapsed;
+
+            // Fade-in search results
+            SearchSongList.Opacity = 0;
+            var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
+            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                From = 0, To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(200))
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, SearchSongList);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
+            fadeIn.Children.Add(anim);
+            fadeIn.Begin();
         }
 
         private async void SearchScrollViewer_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Windows.Phone.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -73,10 +73,34 @@ namespace YTMusicWP
 
         private void SwitchTab(int tab)
         {
+            if (_currentTab == tab) return;
             _currentTab = tab;
-            HomePanel.Visibility = (tab == 0) ? Visibility.Visible : Visibility.Collapsed;
-            SearchPanel.Visibility = (tab == 1) ? Visibility.Visible : Visibility.Collapsed;
-            LibraryPanel.Visibility = (tab == 2) ? Visibility.Visible : Visibility.Collapsed;
+
+            // Fade-in animation for active panel
+            var panels = new[] { HomePanel, SearchPanel, LibraryPanel };
+            for (int i = 0; i < panels.Length; i++)
+            {
+                if (i == tab)
+                {
+                    panels[i].Opacity = 0;
+                    panels[i].Visibility = Visibility.Visible;
+                    var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                    var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                    {
+                        From = 0,
+                        To = 1,
+                        Duration = new Duration(TimeSpan.FromMilliseconds(150))
+                    };
+                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, panels[i]);
+                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
+                    fadeIn.Children.Add(anim);
+                    fadeIn.Begin();
+                }
+                else
+                {
+                    panels[i].Visibility = Visibility.Collapsed;
+                }
+            }
 
             // Active tab = White, inactive = #B3B3B3
             var activeBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));

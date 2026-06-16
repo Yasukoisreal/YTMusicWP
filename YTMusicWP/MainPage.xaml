@@ -1,4 +1,4 @@
-﻿<Page
+<Page
     x:Class="YTMusicWP.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -280,8 +280,8 @@
         </Style>
 
         <Style x:Key="ModernSliderStyle" TargetType="Slider">
-            <Setter Property="Background" Value="#555555"/>
-            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Background" Value="#535353"/>
+            <Setter Property="Foreground" Value="#1DB954"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
@@ -292,12 +292,12 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="4" Fill="{TemplateBinding Background}" VerticalAlignment="Center" Margin="0"/>
-                                <Rectangle x:Name="HorizontalDecreaseRect" Grid.Column="0" Height="4" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="0"/>
-                                <Thumb x:Name="HorizontalThumb" Grid.Column="1" Margin="0" Padding="0" Background="{TemplateBinding Foreground}">
+                                <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="4" Fill="{TemplateBinding Background}" VerticalAlignment="Center" Margin="0" RadiusX="2" RadiusY="2"/>
+                                <Rectangle x:Name="HorizontalDecreaseRect" Grid.Column="0" Height="4" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="0" RadiusX="2" RadiusY="2"/>
+                                <Thumb x:Name="HorizontalThumb" Grid.Column="1" Margin="0" Padding="0" Background="White">
                                     <Thumb.Template>
                                         <ControlTemplate TargetType="Thumb">
-                                            <Grid Background="Transparent" Width="24" Height="24">
+                                            <Grid Background="Transparent" Width="28" Height="28">
                                                 <Ellipse Width="14" Height="14" Fill="{TemplateBinding Background}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                             </Grid>
                                         </ControlTemplate>
@@ -886,7 +886,17 @@
 
         <!-- ═══════════════════════════════════ MINI PLAYER (Row 1) ═══════════════════════════════════ -->
         <Grid Grid.Row="1">
-            <Border Background="#1A1A1A" Padding="10,8,10,10">
+            <!-- Mini player green accent top line -->
+            <Rectangle Height="2" VerticalAlignment="Top" Canvas.ZIndex="5">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                        <GradientStop Color="#1DB954" Offset="0"/>
+                        <GradientStop Color="#1DB954" Offset="0.5"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Border Background="#181818" Padding="10,8,10,10">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -959,10 +969,19 @@
         </Border>
 
         <!-- ═══════════════════════════════════ NOW PLAYING VIEW ═══════════════════════════════════ -->
-        <Grid x:Name="NowPlayingView" Visibility="Collapsed" Canvas.ZIndex="100" Background="#121212" Grid.RowSpan="3">
+        <Grid x:Name="NowPlayingView" Visibility="Collapsed" Canvas.ZIndex="100" Grid.RowSpan="3">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="NowPlayingTransform" Y="1000"/>
             </Grid.RenderTransform>
+            <!-- Gradient background (genre-based color) -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush x:Name="NowPlayingGradient" StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop x:Name="NowPlayingGradientTop" Color="#1A1A2E" Offset="0"/>
+                        <GradientStop Color="#121212" Offset="0.6"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
             <Grid Canvas.ZIndex="10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -1121,11 +1140,13 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Button Grid.Row="0" Click="CloseNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <Border Grid.Row="1" Background="#252525" CornerRadius="20,20,0,0" Padding="0,10,0,0">
+            <Border Grid.Row="1" Background="#252525" CornerRadius="20,20,0,0" Padding="0,0,0,0">
                 <Border.RenderTransform>
                     <TranslateTransform x:Name="MenuTransform" Y="800"/>
                 </Border.RenderTransform>
                 <StackPanel>
+                    <!-- Drag handle -->
+                    <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,10,0,10" HorizontalAlignment="Center"/>
                     <Grid Margin="20,0,20,20">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="50"/>
@@ -1205,6 +1226,8 @@
                     <TranslateTransform x:Name="BottomSheetTransform" Y="800"/>
                 </Border.RenderTransform>
                 <StackPanel Tapped="BottomSheetContent_Tapped">
+                    <!-- Drag handle -->
+                    <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,10,0,10" HorizontalAlignment="Center"/>
                     <Grid Margin="20,0,20,20">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="50"/>

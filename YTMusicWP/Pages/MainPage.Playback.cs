@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -59,6 +59,7 @@ namespace YTMusicWP
             BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
+            UpdateNowPlayingGradient(track.Title, track.ChannelName);
 
             // BUG FIX: Xác định activeList TRƯỚC khi insert vào history.
             // Nếu detect sau khi insert, historyTracks.Contains(track) sẽ luôn true,
@@ -386,6 +387,7 @@ namespace YTMusicWP
                         BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                         var ignored = UpdateLyricsAsync(title, artist);
+                        UpdateNowPlayingGradient(title, artist);
                     }
                 }
             }
@@ -445,9 +447,47 @@ namespace YTMusicWP
                         BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                         var ignored = UpdateLyricsAsync(title, artist);
+                        UpdateNowPlayingGradient(title, artist);
                     }
                 });
             }
+        }
+
+        // ── Genre-Based Gradient for Now Playing ──
+        private void UpdateNowPlayingGradient(string title, string artist)
+        {
+            // Detect genre from title/artist keywords → Spotify-like gradient colors
+            string combined = (title + " " + artist).ToLowerInvariant();
+            Windows.UI.Color topColor;
+
+            if (combined.Contains("kpop") || combined.Contains("k-pop") || combined.Contains("bts") || combined.Contains("blackpink") || combined.Contains("twice"))
+                topColor = Windows.UI.Color.FromArgb(255, 180, 80, 200);   // Purple-pink
+            else if (combined.Contains("jpop") || combined.Contains("j-pop") || combined.Contains("anime"))
+                topColor = Windows.UI.Color.FromArgb(255, 225, 17, 140);   // Hot pink
+            else if (combined.Contains("lofi") || combined.Contains("chill") || combined.Contains("jazz"))
+                topColor = Windows.UI.Color.FromArgb(255, 40, 100, 120);   // Teal
+            else if (combined.Contains("edm") || combined.Contains("electronic") || combined.Contains("house"))
+                topColor = Windows.UI.Color.FromArgb(255, 80, 155, 245);   // Electric blue
+            else if (combined.Contains("hip hop") || combined.Contains("rap") || combined.Contains("trap"))
+                topColor = Windows.UI.Color.FromArgb(255, 140, 25, 50);    // Dark red
+            else if (combined.Contains("rock") || combined.Contains("metal") || combined.Contains("punk"))
+                topColor = Windows.UI.Color.FromArgb(255, 80, 60, 60);     // Dark brown
+            else if (combined.Contains("pop") || combined.Contains("hit") || combined.Contains("top"))
+                topColor = Windows.UI.Color.FromArgb(255, 29, 185, 84);    // Spotify green
+            else if (combined.Contains("indie") || combined.Contains("alternative"))
+                topColor = Windows.UI.Color.FromArgb(255, 180, 156, 200);  // Soft lavender
+            else if (combined.Contains("classical") || combined.Contains("piano") || combined.Contains("orchestra"))
+                topColor = Windows.UI.Color.FromArgb(255, 50, 50, 100);    // Deep navy
+            else if (combined.Contains("latin") || combined.Contains("reggaeton") || combined.Contains("salsa"))
+                topColor = Windows.UI.Color.FromArgb(255, 225, 20, 41);    // Vibrant red
+            else if (combined.Contains("phonk") || combined.Contains("drift"))
+                topColor = Windows.UI.Color.FromArgb(255, 100, 20, 80);    // Deep magenta
+            else if (combined.Contains("r&b") || combined.Contains("soul") || combined.Contains("rnb"))
+                topColor = Windows.UI.Color.FromArgb(255, 80, 55, 80);     // Plum
+            else
+                topColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);     // Default dark blue-gray
+
+            try { NowPlayingGradientTop.Color = topColor; } catch { }
         }
 
     }
