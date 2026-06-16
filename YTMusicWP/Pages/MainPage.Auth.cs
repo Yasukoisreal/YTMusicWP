@@ -85,7 +85,7 @@ namespace YTMusicWP
                              "client_id=" + Uri.EscapeDataString(clientId) +
                              "&redirect_uri=http://localhost" +
                              "&response_type=code" +
-                             "&scope=https://www.googleapis.com/auth/youtube.readonly" +
+                             "&scope=https://www.googleapis.com/auth/youtube" +
                              "&access_type=offline";
 
             await Windows.System.Launcher.LaunchUriAsync(new Uri(authUrl));
@@ -114,7 +114,7 @@ namespace YTMusicWP
                              "client_id=" + Uri.EscapeDataString(clientId) +
                              "&redirect_uri=http://localhost" +
                              "&response_type=code" +
-                             "&scope=https://www.googleapis.com/auth/youtube.readonly" +
+                             "&scope=https://www.googleapis.com/auth/youtube" +
                              "&access_type=offline";
 
             _isAuthProcessing = false;
@@ -234,9 +234,12 @@ namespace YTMusicWP
                     settings["GoogleRefreshToken"] = refreshToken;
                     settings["GoogleClientId"] = clientId;
                     settings["GoogleClientSecret"] = clientSecret;
+                    // Token expiry: expires_in is seconds (typically 3600)
+                    long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
+                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).ToUnixTimeSeconds();
 
-                    ShowToast("Login successful! Fetching music...");
-                    await SyncLikedVideosAsync(accessToken);
+                    ShowToast("Login successful! Syncing...");
+                    await SyncAllAsync(accessToken);
                 }
                 else
                 {
@@ -253,12 +256,15 @@ namespace YTMusicWP
             }
         }
 
+        // ══════════════════════════════════════════
+        // SYNC LIKED VIDEOS
+        // ══════════════════════════════════════════
         private async Task SyncLikedVideosAsync(string accessToken)
         {
             try
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
-                string url = "https://www.googleapis.com/youtube/v3/videos?myRating=like&part=snippet&maxResults=20";
+                string url = "https://www.googleapis.com/youtube/v3/videos?myRating=like&part=snippet&maxResults=50";
 
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("Authorization", "Bearer " + accessToken);
@@ -270,7 +276,6 @@ namespace YTMusicWP
                     var json = JObject.Parse(resultJson);
 
                     bool hasNew = false;
-                    // [OPT-C3] Guard null — items có thể null nếu quota exceeded
                     var itemsToken = json["items"];
                     if (itemsToken == null) { LoginStatusText.Text = "Status: API Quota Exceeded"; return; }
                     var items = itemsToken.Reverse();
@@ -298,8 +303,7 @@ namespace YTMusicWP
                     if (hasNew) SaveFavoritesAsync();
 
                     LoginStatusText.Text = "Status: Logged In & Synced!";
-                    LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Green);
-                    ShowToast("Successfully loaded Liked Songs from YouTube!");
+                    LoginStatusText.Foreground = _greenBrush;
                 }
                 else
                 {
@@ -314,22 +318,50 @@ namespace YTMusicWP
             }
         }
 
-        private async Task RefreshGoogleTokenAndSyncAsync()
+        // ══════════════════════════════════════════
+        // SYNC ALL — Called after login and on app resume
+        // ══════════════════════════════════════════
+        private async Task SyncAllAsync(string accessToken)
+        {
+            await SyncLikedVideosAsync(accessToken);
+            await SyncUserPlaylistsAsync(accessToken);
+            await SyncSubscriptionsAsync(accessToken);
+        }
+
+        // ══════════════════════════════════════════
+        // GET ACCESS TOKEN — Auto-refresh if expired
+        // ══════════════════════════════════════════
+        private async Task<string> GetAccessTokenAsync()
         {
             var settings = ApplicationData.Current.LocalSettings.Values;
-            if (!settings.ContainsKey("GoogleRefreshToken") || !settings.ContainsKey("GoogleClientId") || !settings.ContainsKey("GoogleClientSecret")) return;
+            if (!settings.ContainsKey("GoogleAccessToken")) return null;
 
-            string refreshToken = settings["GoogleRefreshToken"].ToString();
-            string clientId = settings["GoogleClientId"].ToString();
-            string clientSecret = settings["GoogleClientSecret"].ToString();
+            // Check expiry
+            if (settings.ContainsKey("GoogleTokenExpiry"))
+            {
+                long expiry = (long)settings["GoogleTokenExpiry"];
+                if (DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= expiry)
+                {
+                    // Token expired → refresh
+                    string newToken = await RefreshGoogleTokenAsync();
+                    return newToken;
+                }
+            }
+            return settings["GoogleAccessToken"].ToString();
+        }
+
+        private async Task<string> RefreshGoogleTokenAsync()
+        {
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            if (!settings.ContainsKey("GoogleRefreshToken") || !settings.ContainsKey("GoogleClientId") || !settings.ContainsKey("GoogleClientSecret")) return null;
 
             try
             {
                 var content = new FormUrlEncodedContent(new[]
                 {
-                    new KeyValuePair<string, string>("client_id", clientId),
-                    new KeyValuePair<string, string>("client_secret", clientSecret),
-                    new KeyValuePair<string, string>("refresh_token", refreshToken),
+                    new KeyValuePair<string, string>("client_id", settings["GoogleClientId"].ToString()),
+                    new KeyValuePair<string, string>("client_secret", settings["GoogleClientSecret"].ToString()),
+                    new KeyValuePair<string, string>("refresh_token", settings["GoogleRefreshToken"].ToString()),
                     new KeyValuePair<string, string>("grant_type", "refresh_token")
                 });
 
@@ -338,15 +370,188 @@ namespace YTMusicWP
                 {
                     string resultJson = await response.Content.ReadAsStringAsync();
                     var json = JObject.Parse(resultJson);
-                    string newAccessToken = json["access_token"]?.ToString();
+                    string newToken = json["access_token"]?.ToString();
+                    long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
+                    settings["GoogleAccessToken"] = newToken;
+                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).ToUnixTimeSeconds();
+                    return newToken;
+                }
+            }
+            catch { }
+            return null;
+        }
 
-                    settings["GoogleAccessToken"] = newAccessToken;
+        // ══════════════════════════════════════════
+        // SYNC USER PLAYLISTS — Import from YouTube
+        // ══════════════════════════════════════════
+        private ObservableCollection<YouTubePlaylistInfo> _youtubeUserPlaylists = new ObservableCollection<YouTubePlaylistInfo>();
 
-                    await SyncLikedVideosAsync(newAccessToken);
+        private async Task SyncUserPlaylistsAsync(string accessToken)
+        {
+            try
+            {
+                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                var response = await _apiClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return;
+
+                string resultJson = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(resultJson);
+                var items = json["items"];
+                if (items == null) return;
+
+                _youtubeUserPlaylists.Clear();
+                foreach (var item in items)
+                {
+                    try
+                    {
+                        var snippet = item["snippet"];
+                        string plId = item["id"]?.ToString();
+                        string title = snippet?["title"]?.ToString() ?? "";
+                        int count = item["contentDetails"]?["itemCount"]?.Value<int>() ?? 0;
+                        var thumbs = snippet?["thumbnails"];
+                        string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["medium"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
+
+                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                        {
+                            PlaylistId = plId,
+                            Title = title,
+                            TrackCount = count,
+                            ThumbnailUrl = thumbUrl
+                        });
+                    }
+                    catch { continue; }
                 }
             }
             catch { }
         }
 
+        // ══════════════════════════════════════════
+        // SYNC SUBSCRIPTIONS
+        // ══════════════════════════════════════════
+        private ObservableCollection<YouTubeSubscription> _youtubeSubscriptions = new ObservableCollection<YouTubeSubscription>();
+
+        private async Task SyncSubscriptionsAsync(string accessToken)
+        {
+            try
+            {
+                string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&order=alphabetical";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                var response = await _apiClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return;
+
+                string resultJson = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(resultJson);
+                var items = json["items"];
+                if (items == null) return;
+
+                _youtubeSubscriptions.Clear();
+                foreach (var item in items)
+                {
+                    try
+                    {
+                        var snippet = item["snippet"];
+                        string channelId = snippet?["resourceId"]?["channelId"]?.ToString();
+                        string title = snippet?["title"]?.ToString() ?? "";
+                        var thumbs = snippet?["thumbnails"];
+                        string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
+
+                        _youtubeSubscriptions.Add(new YouTubeSubscription
+                        {
+                            ChannelId = channelId,
+                            Title = title,
+                            ThumbnailUrl = thumbUrl
+                        });
+                    }
+                    catch { continue; }
+                }
+            }
+            catch { }
+        }
+
+        // ══════════════════════════════════════════
+        // LIKE / DISLIKE VIDEO
+        // ══════════════════════════════════════════
+        private async Task<bool> RateVideoAsync(string videoId, string rating)
+        {
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token)) return false;
+
+            try
+            {
+                string url = "https://www.googleapis.com/youtube/v3/videos/rate?id=" + videoId + "&rating=" + rating;
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Add("Authorization", "Bearer " + token);
+                request.Content = new StringContent("");
+
+                var response = await _apiClient.SendAsync(request);
+                return response.IsSuccessStatusCode || (int)response.StatusCode == 204;
+            }
+            catch { return false; }
+        }
+
+        // ══════════════════════════════════════════
+        // WATCH LATER
+        // ══════════════════════════════════════════
+        private async Task<bool> AddToWatchLaterAsync(string videoId)
+        {
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token)) return false;
+
+            try
+            {
+                string url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet";
+                var body = new JObject
+                {
+                    ["snippet"] = new JObject
+                    {
+                        ["playlistId"] = "WL",
+                        ["resourceId"] = new JObject
+                        {
+                            ["kind"] = "youtube#video",
+                            ["videoId"] = videoId
+                        }
+                    }
+                };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Add("Authorization", "Bearer " + token);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+
+                var response = await _apiClient.SendAsync(request);
+                return response.IsSuccessStatusCode;
+            }
+            catch { return false; }
+        }
+
+        private async Task RefreshGoogleTokenAndSyncAsync()
+        {
+            string token = await RefreshGoogleTokenAsync();
+            if (!string.IsNullOrEmpty(token))
+                await SyncAllAsync(token);
+        }
+
+    }
+
+    // ══════════════════════════════════════════
+    // MODEL CLASSES
+    // ══════════════════════════════════════════
+    public class YouTubePlaylistInfo
+    {
+        public string PlaylistId { get; set; }
+        public string Title { get; set; }
+        public int TrackCount { get; set; }
+        public string ThumbnailUrl { get; set; }
+    }
+
+    public class YouTubeSubscription
+    {
+        public string ChannelId { get; set; }
+        public string Title { get; set; }
+        public string ThumbnailUrl { get; set; }
     }
 }

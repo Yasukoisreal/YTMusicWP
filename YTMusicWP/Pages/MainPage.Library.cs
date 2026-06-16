@@ -395,5 +395,26 @@ namespace YTMusicWP
             }
         }
 
+        // ══════════════════════════════════════════
+        // YouTube Playlists & Subscriptions click
+        // ══════════════════════════════════════════
+        private void YouTubePlaylist_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var info = e.ClickedItem as YouTubePlaylistInfo;
+            if (info != null && !string.IsNullOrEmpty(info.PlaylistId))
+            {
+                OpenYouTubePlaylist(info.PlaylistId, info.Title, info.ThumbnailUrl);
+            }
+        }
+
+        private void Subscription_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var sub = e.ClickedItem as YouTubeSubscription;
+            if (sub != null && !string.IsNullOrEmpty(sub.ChannelId))
+            {
+                OpenArtistProfile(sub.ChannelId, sub.Title);
+            }
+        }
+
     }
 }

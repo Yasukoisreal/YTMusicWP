@@ -36,6 +36,22 @@ namespace YTMusicWP
             SleepTimer_Click(null, null);
         }
 
+        private async void MenuWatchLaterNowPlaying_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
+            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
+            {
+                ShowToast("Login required for Watch Later");
+                return;
+            }
+
+            bool success = await AddToWatchLaterAsync(currentTrack.VideoId);
+            ShowToast(success ? "Added to Watch Later!" : "Failed to add to Watch Later");
+        }
+
         private void IncreaseLyricsSize_Click(object sender, RoutedEventArgs e)
         {
             if (_lyricFontSize < 36)

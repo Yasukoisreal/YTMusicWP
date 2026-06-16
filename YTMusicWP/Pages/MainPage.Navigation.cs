@@ -69,7 +69,15 @@ namespace YTMusicWP
 
         private void NavSearch_Click(object sender, RoutedEventArgs e) { SwitchTab(1); }
 
-        private void NavLibrary_Click(object sender, RoutedEventArgs e) { SwitchTab(2); }
+        private void NavLibrary_Click(object sender, RoutedEventArgs e)
+        {
+            SwitchTab(2);
+            // Bind synced data when switching to Library
+            if (YouTubePlaylistsListView.ItemsSource == null)
+                YouTubePlaylistsListView.ItemsSource = _youtubeUserPlaylists;
+            if (SubscriptionsListView.ItemsSource == null)
+                SubscriptionsListView.ItemsSource = _youtubeSubscriptions;
+        }
 
         private void SwitchTab(int tab)
         {

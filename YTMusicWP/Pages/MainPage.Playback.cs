@@ -137,13 +137,23 @@ namespace YTMusicWP
             try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
         }
 
-        private void HeartButton_Click(object sender, RoutedEventArgs e)
+        private async void HeartButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentTrack == null) return;
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == currentTrack.VideoId);
+            bool isAdding = (existing == null);
+
             if (existing != null) { favoriteTracks.Remove(existing); BigHeartBtn.Content = "♡"; BigHeartBtn.Foreground = _whiteBrush; }
             else { favoriteTracks.Insert(0, currentTrack); BigHeartBtn.Content = "♥"; BigHeartBtn.Foreground = _greenBrush; }
             SaveFavoritesAsync();
+
+            // Sync to YouTube if logged in
+            if (!currentTrack.VideoId.StartsWith("LOCAL:") && !currentTrack.VideoId.StartsWith("CHANNEL:") && !currentTrack.VideoId.StartsWith("PLAYLIST:"))
+            {
+                string rating = isAdding ? "like" : "none";
+                bool success = await RateVideoAsync(currentTrack.VideoId, rating);
+                if (success && isAdding) System.Diagnostics.Debug.WriteLine("[Auth] Liked on YouTube: " + currentTrack.VideoId);
+            }
         }
 
         private void ShuffleButton_Click(object sender, RoutedEventArgs e)

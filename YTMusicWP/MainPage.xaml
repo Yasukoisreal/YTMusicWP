@@ -775,6 +775,51 @@
                 <PivotItem Header="Downloads">
                     <ListView x:Name="DownloadedSongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
                 </PivotItem>
+                <PivotItem Header="YT Playlists">
+                    <ListView x:Name="YouTubePlaylistsListView" IsItemClickEnabled="True" ItemClick="YouTubePlaylist_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,5,0,10" Background="Transparent">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="56" Height="56" CornerRadius="8" Margin="0,0,12,0">
+                                        <Border.Background>
+                                            <ImageBrush ImageSource="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                                        </Border.Background>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                                        <TextBlock FontSize="13" Foreground="#B3B3B3" Margin="0,3,0,0">
+                                            <Run Text="{Binding TrackCount}"/> <Run Text="tracks"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </PivotItem>
+                <PivotItem Header="Subscriptions">
+                    <ListView x:Name="SubscriptionsListView" IsItemClickEnabled="True" ItemClick="Subscription_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,5,0,10" Background="Transparent">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="48" Height="48" CornerRadius="24" Margin="0,0,12,0">
+                                        <Border.Background>
+                                            <ImageBrush ImageSource="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
+                                        </Border.Background>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </PivotItem>
             </Pivot>
         </Grid>
 
@@ -1299,6 +1344,13 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" Fill="White"/></Viewbox>
                             <TextBlock Grid.Column="1" Text="Download" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </Button>
+                    <Button Click="MenuWatchLaterNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M12,2C6.5,2 2,6.5 2,12S6.5,22 12,22 22,17.5 22,12 17.5,2 12,2M17,13H11V7H12.5V11.5H17V13Z" Fill="White"/></Viewbox>
+                            <TextBlock Grid.Column="1" Text="Watch Later" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                         </Grid>
                     </Button>
                     <!-- Close button - always visible, outside scroll -->
