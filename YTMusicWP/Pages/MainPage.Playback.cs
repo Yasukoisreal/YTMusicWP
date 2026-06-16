@@ -145,6 +145,7 @@ namespace YTMusicWP
             bool newState = !(settings.Values.ContainsKey("ShuffleMode") ? (bool)settings.Values["ShuffleMode"] : false);
             settings.Values["ShuffleMode"] = newState;
             ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
+            ShuffleDot.Visibility = newState ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void RepeatButton_Click(object sender, RoutedEventArgs e)
@@ -158,9 +159,9 @@ namespace YTMusicWP
 
         private void UpdateRepeatUI(int mode)
         {
-            if (mode == 0) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _whiteBrush; }
-            else if (mode == 1) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _greenBrush; }
-            else if (mode == 2) { RepeatIcon.Glyph = "\uE1CC"; RepeatIcon.Foreground = _greenBrush; }
+            if (mode == 0) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _whiteBrush; RepeatDot.Visibility = Visibility.Collapsed; }
+            else if (mode == 1) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
+            else if (mode == 2) { RepeatIcon.Glyph = "\uE1CC"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
         }
 
         private void SetupTimer()

@@ -476,25 +476,31 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Search bar -->
-            <Border Grid.Row="0" Margin="10,15,15,10" Height="46" Background="#1E1E1E" CornerRadius="23" BorderThickness="0" VerticalAlignment="Top">
+            <!-- Search title -->
+            <TextBlock Text="Search" FontSize="28" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="15,15,0,10"/>
+
+            <!-- Search bar with icon -->
+            <Border Grid.Row="1" Margin="10,0,15,10" Height="46" Background="#1E1E1E" CornerRadius="23" BorderThickness="0" VerticalAlignment="Top">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="SearchBox" Grid.Column="0" TextChanged="SearchBox_TextChanged" PlaceholderText="Songs, albums, artists..." Margin="10,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
-                    <Button x:Name="SearchButton" Grid.Column="1" Click="SearchButton_Click" Foreground="White" Width="50" Style="{StaticResource IconButtonStyle}">
+                    <SymbolIcon Symbol="Find" Foreground="#B3B3B3" Margin="14,0,0,0"/>
+                    <TextBox x:Name="SearchBox" Grid.Column="1" TextChanged="SearchBox_TextChanged" PlaceholderText="What do you want to listen to?" Margin="6,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
+                    <Button x:Name="SearchButton" Grid.Column="2" Click="SearchButton_Click" Foreground="White" Width="50" Style="{StaticResource IconButtonStyle}">
                         <SymbolIcon Symbol="Find"/>
                     </Button>
                 </Grid>
             </Border>
 
             <!-- Filter Buttons -->
-            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,0,0,10">
+            <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,0,0,10">
                 <StackPanel Orientation="Horizontal">
                     <Border x:Name="FilterAllBtn" Background="#1DB954" CornerRadius="20" Padding="14,6" Margin="0,0,8,0" Tapped="FilterAllBtn_Tapped">
                         <TextBlock Text="All" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
@@ -505,14 +511,17 @@
                     <Border x:Name="FilterPlaylistsBtn" Background="#232323" CornerRadius="20" Padding="14,6" Margin="0,0,8,0" Tapped="FilterPlaylistsBtn_Tapped">
                         <TextBlock Text="Playlists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterArtistsBtn" Background="#232323" CornerRadius="20" Padding="14,6" Tapped="FilterArtistsBtn_Tapped">
+                    <Border x:Name="FilterArtistsBtn" Background="#232323" CornerRadius="20" Padding="14,6" Margin="0,0,8,0" Tapped="FilterArtistsBtn_Tapped">
                         <TextBlock Text="Artists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    </Border>
+                    <Border x:Name="FilterVideosBtn" Background="#232323" CornerRadius="20" Padding="14,6" Tapped="FilterAllBtn_Tapped">
+                        <TextBlock Text="Videos" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
 
             <!-- Search results area -->
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="3">
                 <ProgressBar x:Name="SearchLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
 
                 <ScrollViewer x:Name="DefaultSearchUI" VerticalScrollBarVisibility="Auto">
@@ -634,7 +643,26 @@
 
         <!-- ═══════════════════════════════════ LIBRARY PANEL ═══════════════════════════════════ -->
         <Grid x:Name="LibraryPanel" Grid.Row="0" Visibility="Collapsed">
-            <Pivot Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <!-- Library Header -->
+            <Grid Margin="15,15,15,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="32" Height="32" CornerRadius="16" Background="#1DB954" Margin="0,0,10,0">
+                    <TextBlock Text="Y" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Grid.Column="1" Text="Your Library" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Click="OpenSettings_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
+                    <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE115;" Foreground="White" FontSize="20"/>
+                </Button>
+            </Grid>
+            <Pivot Grid.Row="1" Margin="0,5,0,0">
                 <PivotItem Header="Favorites">
                     <ListView x:Name="FavoriteSongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
                 </PivotItem>
@@ -1018,18 +1046,23 @@
                     </Pivot.ItemContainerStyle>
                     <!-- Player page -->
                     <PivotItem>
-                        <Rectangle Width="300" Height="300" RadiusX="16" RadiusY="16" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-10,0,0" RenderTransformOrigin="0.5,0.5">
-                            <Rectangle.RenderTransform>
-                                <CompositeTransform x:Name="BigCoverTransform" ScaleX="1" ScaleY="1"/>
-                            </Rectangle.RenderTransform>
-                            <Rectangle.Fill>
-                                <ImageBrush x:Name="BigCoverImage" Stretch="UniformToFill">
-                                    <ImageBrush.RelativeTransform>
-                                        <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
-                                    </ImageBrush.RelativeTransform>
-                                </ImageBrush>
-                            </Rectangle.Fill>
-                        </Rectangle>
+                        <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-10,0,0">
+                            <!-- Shadow effect -->
+                            <Rectangle Width="290" Height="290" RadiusX="16" RadiusY="16" Fill="#40000000" Margin="10,10,0,0"/>
+                            <!-- Album art -->
+                            <Rectangle Width="300" Height="300" RadiusX="16" RadiusY="16" RenderTransformOrigin="0.5,0.5">
+                                <Rectangle.RenderTransform>
+                                    <CompositeTransform x:Name="BigCoverTransform" ScaleX="1" ScaleY="1"/>
+                                </Rectangle.RenderTransform>
+                                <Rectangle.Fill>
+                                    <ImageBrush x:Name="BigCoverImage" Stretch="UniformToFill">
+                                        <ImageBrush.RelativeTransform>
+                                            <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1.35" ScaleY="1.35"/>
+                                        </ImageBrush.RelativeTransform>
+                                    </ImageBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                        </Grid>
                     </PivotItem>
                     <!-- Lyrics page -->
                     <PivotItem>
@@ -1104,21 +1137,27 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" Click="ShuffleButton_Click" Style="{StaticResource IconButtonStyle}">
-                            <FontIcon x:Name="ShuffleIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE14B;" Foreground="White" FontSize="20"/>
+                            <StackPanel>
+                                <FontIcon x:Name="ShuffleIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE14B;" Foreground="White" FontSize="20"/>
+                                <Ellipse x:Name="ShuffleDot" Width="4" Height="4" Fill="#1DB954" Margin="0,3,0,0" Visibility="Collapsed"/>
+                            </StackPanel>
                         </Button>
                         <Button Grid.Column="1" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}">
                             <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE100;" Foreground="White" FontSize="24"/>
                         </Button>
                         <Button Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="64" Height="64" Margin="5,0,5,0">
                             <Border Background="#1DB954" CornerRadius="32" Width="64" Height="64">
-                                <SymbolIcon x:Name="BigPlayIcon" Symbol="Play" Foreground="White"/>
+                                <SymbolIcon x:Name="BigPlayIcon" Symbol="Play" Foreground="Black"/>
                             </Border>
                         </Button>
                         <Button Grid.Column="3" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}">
                             <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE101;" Foreground="White" FontSize="24"/>
                         </Button>
                         <Button Grid.Column="4" Click="RepeatButton_Click" Style="{StaticResource IconButtonStyle}">
-                            <FontIcon x:Name="RepeatIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE1CD;" Foreground="White" FontSize="20"/>
+                            <StackPanel>
+                                <FontIcon x:Name="RepeatIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE1CD;" Foreground="White" FontSize="20"/>
+                                <Ellipse x:Name="RepeatDot" Width="4" Height="4" Fill="#1DB954" Margin="0,3,0,0" Visibility="Collapsed"/>
+                            </StackPanel>
                         </Button>
                     </Grid>
                 </StackPanel>
