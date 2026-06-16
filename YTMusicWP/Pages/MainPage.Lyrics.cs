@@ -80,7 +80,16 @@ namespace YTMusicWP
                 string cleanTitle = title
                     .Replace(" (Official Video)", "").Replace(" (Lyric Video)", "")
                     .Replace(" (Official Audio)", "").Replace(" (Audio)", "")
-                    .Replace(" (Official MV)", "").Trim();
+                    .Replace(" (Official MV)", "").Replace(" (Official Music Video)", "")
+                    .Replace(" (Visualizer)", "").Replace(" (Visualiser)", "")
+                    .Replace(" [Official Video]", "").Replace(" [Official Audio]", "")
+                    .Replace(" [NCS Release]", "").Replace(" [NCS]", "")
+                    .Replace(" (NCS Release)", "").Replace(" (NCS)", "");
+                // Strip (feat. ...) and [feat. ...]
+                cleanTitle = Regex.Replace(cleanTitle, @"\s*[\(\[](feat\.?|ft\.?|featuring)[^\)\]]*[\)\]]", "", RegexOptions.IgnoreCase);
+                // Strip trailing (Remix), (Extended Mix), etc.
+                cleanTitle = Regex.Replace(cleanTitle, @"\s*[\(\[](?:Remix|Extended Mix|Radio Edit|Sped Up|Slowed)[^\)\]]*[\)\]]", "", RegexOptions.IgnoreCase);
+                cleanTitle = cleanTitle.Trim();
                 string cleanArtist = CleanChannelName(artist);
 
                 // Extract artist from title if needed
@@ -129,12 +138,65 @@ namespace YTMusicWP
                 string syncedLyrics = null;
                 string plainLyrics = null;
 
+                // Get current track duration for matching
+                double trackDurationSec = 0;
+                try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
+
                 // ── PARALLEL: Fire both API calls simultaneously ──
                 string url1 = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
                 string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
 
                 var task1 = _apiClient.GetStringAsync(url1);
                 var task2 = _apiClient.GetStringAsync(url2);
+
+                // Helper: pick best synced lyrics match from results array, preferring duration match
+                Func<JArray, string[]> pickBestMatch = (arr) =>
+                {
+                    if (arr == null || arr.Count == 0) return new string[] { null, null };
+                    
+                    JToken bestItem = null;
+                    double bestDiff = double.MaxValue;
+                    
+                    foreach (var item in arr)
+                    {
+                        string s = item["syncedLyrics"]?.ToString();
+                        if (string.IsNullOrWhiteSpace(s)) continue;
+                        
+                        double itemDuration = item["duration"]?.Value<double>() ?? 0;
+                        
+                        if (trackDurationSec > 10 && itemDuration > 10)
+                        {
+                            double diff = Math.Abs(itemDuration - trackDurationSec);
+                            if (diff < bestDiff)
+                            {
+                                bestDiff = diff;
+                                bestItem = item;
+                            }
+                        }
+                        else if (bestItem == null)
+                        {
+                            // No duration to compare, take first with synced
+                            bestItem = item;
+                            bestDiff = 999;
+                        }
+                    }
+                    
+                    // Only accept if duration diff is within 15 seconds, or we have no duration info
+                    if (bestItem != null && (bestDiff < 15 || trackDurationSec < 10))
+                    {
+                        return new string[] { bestItem["syncedLyrics"]?.ToString(), bestItem["plainLyrics"]?.ToString() };
+                    }
+                    
+                    // Fallback: if no good duration match, still take best available (could be wrong version but better than nothing)
+                    if (bestItem != null)
+                    {
+                        System.Diagnostics.Debug.WriteLine("[Lyrics] Duration mismatch: track=" + trackDurationSec + "s, best=" + (bestItem["duration"]?.Value<double>() ?? 0) + "s, diff=" + bestDiff + "s");
+                        return new string[] { bestItem["syncedLyrics"]?.ToString(), bestItem["plainLyrics"]?.ToString() };
+                    }
+                    
+                    // No synced lyrics found, return plain from first item
+                    return new string[] { null, arr[0]["plainLyrics"]?.ToString() };
+                };
 
                 // Wait for Layer 1 first (exact match = higher quality)
                 try
@@ -144,13 +206,9 @@ namespace YTMusicWP
                     var arr1 = JArray.Parse(resp1);
                     if (arr1.Count > 0)
                     {
-                        foreach (var item in arr1)
-                        {
-                            string s = item["syncedLyrics"]?.ToString();
-                            if (!string.IsNullOrWhiteSpace(s)) { syncedLyrics = s; plainLyrics = item["plainLyrics"]?.ToString(); break; }
-                        }
-                        if (string.IsNullOrWhiteSpace(syncedLyrics))
-                        { syncedLyrics = arr1[0]["syncedLyrics"]?.ToString(); plainLyrics = arr1[0]["plainLyrics"]?.ToString(); }
+                        var match1 = pickBestMatch(arr1);
+                        syncedLyrics = match1[0];
+                        plainLyrics = match1[1];
                     }
                 }
                 catch { }
@@ -165,13 +223,9 @@ namespace YTMusicWP
                         var arr2 = JArray.Parse(resp2);
                         if (arr2.Count > 0)
                         {
-                            foreach (var item in arr2)
-                            {
-                                string s = item["syncedLyrics"]?.ToString();
-                                if (!string.IsNullOrWhiteSpace(s)) { syncedLyrics = s; if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = item["plainLyrics"]?.ToString(); break; }
-                            }
-                            if (string.IsNullOrWhiteSpace(syncedLyrics) && string.IsNullOrWhiteSpace(plainLyrics))
-                                plainLyrics = arr2[0]["plainLyrics"]?.ToString();
+                            var match2 = pickBestMatch(arr2);
+                            if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0];
+                            if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1];
                         }
                     }
                     catch { }
