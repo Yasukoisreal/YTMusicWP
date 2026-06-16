@@ -226,33 +226,98 @@ namespace YTMusicWP
                         int oldIndex = currentLyricIndex;
                         currentLyricIndex = newIndex;
 
+                        // Animate OLD lyric → fade out
                         if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                         {
-                            // [OPT-M6] Dùng cached static brush — không tạo object mới mỗi giây
                             currentLyrics[oldIndex].ColorBrush  = _lyricInactiveBrush;
                             currentLyrics[oldIndex].FontSize    = _baseLyricSize;
-                            currentLyrics[oldIndex].Opacity     = 0.5;
                             currentLyrics[oldIndex].FontWeight  = Windows.UI.Text.FontWeights.Normal;
+
+                            var oldContainer = LyricsListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                            if (oldContainer != null)
+                            {
+                                var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                                var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                {
+                                    To = 0.4, Duration = new Duration(TimeSpan.FromMilliseconds(300))
+                                };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, oldContainer);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
+                                fadeOut.Children.Add(opAnim);
+                                fadeOut.Begin();
+                            }
+                            else
+                            {
+                                currentLyrics[oldIndex].Opacity = 0.4;
+                            }
                         }
 
+                        // Animate NEW lyric → scale pulse + fade in
                         currentLyrics[currentLyricIndex].ColorBrush  = _lyricActiveBrush;
-                        currentLyrics[currentLyricIndex].FontSize     = _highlightLyricSize;
-                        currentLyrics[currentLyricIndex].Opacity      = 1.0;
-                        currentLyrics[currentLyricIndex].FontWeight   = Windows.UI.Text.FontWeights.Bold;
+                        currentLyrics[currentLyricIndex].FontSize    = _highlightLyricSize;
+                        currentLyrics[currentLyricIndex].FontWeight  = Windows.UI.Text.FontWeights.Bold;
+
+                        var newContainer = LyricsListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                        if (newContainer != null)
+                        {
+                            // Ensure RenderTransform is ScaleTransform
+                            var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                            if (scaleTransform == null)
+                            {
+                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
+                                newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                newContainer.RenderTransform = scaleTransform;
+                            }
+
+                            var entrance = new Windows.UI.Xaml.Media.Animation.Storyboard();
+
+                            // Opacity: 0.6 → 1.0
+                            var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                            {
+                                From = 0.6, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(250))
+                            };
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opIn, newContainer);
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
+
+                            // Scale X: 0.97 → 1.0
+                            var scaleX = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                            {
+                                From = 0.97, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(300))
+                            };
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleX, scaleTransform);
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleX, "ScaleX");
+
+                            // Scale Y: 0.97 → 1.0
+                            var scaleY = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                            {
+                                From = 0.97, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(300))
+                            };
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleY, scaleTransform);
+                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleY, "ScaleY");
+
+                            entrance.Children.Add(opIn);
+                            entrance.Children.Add(scaleX);
+                            entrance.Children.Add(scaleY);
+                            entrance.Begin();
+                        }
+                        else
+                        {
+                            currentLyrics[currentLyricIndex].Opacity = 1.0;
+                        }
 
                         LyricsListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
 
                         if (_cachedLyricsScrollViewer == null)
                             _cachedLyricsScrollViewer = GetScrollViewer(LyricsListView);
 
-                        var container = LyricsListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                        if (_cachedLyricsScrollViewer != null && container != null)
+                        var activeContainer = (newContainer ?? LyricsListView.ContainerFromIndex(currentLyricIndex)) as FrameworkElement;
+                        if (_cachedLyricsScrollViewer != null && activeContainer != null)
                         {
-                            var transform    = container.TransformToVisual(_cachedLyricsScrollViewer);
+                            var transform    = activeContainer.TransformToVisual(_cachedLyricsScrollViewer);
                             var lyricPos     = transform.TransformPoint(new Point(0, 0));
                             double targetOff = _cachedLyricsScrollViewer.VerticalOffset + lyricPos.Y
                                             - (_cachedLyricsScrollViewer.ViewportHeight / 2.0)
-                                            + (container.ActualHeight / 2.0);
+                                            + (activeContainer.ActualHeight / 2.0);
                             _cachedLyricsScrollViewer.ChangeView(null, targetOff, null, false);
                         }
                     }
