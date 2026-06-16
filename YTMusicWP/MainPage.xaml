@@ -1409,7 +1409,7 @@
                         <Button x:Name="BigHeartBtn" Grid.Column="2" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0"/>
                     </Grid>
                     <StackPanel Margin="0,0,0,5">
-                        <Slider x:Name="MusicSlider" Minimum="0" Maximum="100" Value="0" Margin="0,-5,0,-5" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Foreground="#1DB954" Background="#404040" Style="{StaticResource ModernSliderStyle}"/>
+                        <Slider x:Name="MusicSlider" Minimum="0" Maximum="100" Value="0" Margin="-12,-5,-12,-5" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Foreground="#1DB954" Background="#404040" Style="{StaticResource ModernSliderStyle}"/>
                         <Grid Margin="0,-5,0,0">
                             <TextBlock x:Name="CurrentTimeText" Text="00:00" FontSize="12" Foreground="#B3B3B3" HorizontalAlignment="Left"/>
                             <TextBlock x:Name="TotalTimeText" Text="00:00" FontSize="12" Foreground="#B3B3B3" HorizontalAlignment="Right"/>
