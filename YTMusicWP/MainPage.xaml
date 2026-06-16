@@ -454,8 +454,7 @@
             <Grid Grid.Row="2">
                 <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10"/>
                 <!-- Music content -->
-                <StackPanel x:Name="HomeMusicPanel">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
+                <ScrollViewer x:Name="HomeMusicPanel" VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
                     <StackPanel Margin="0,0,0,30">
                         <!-- Quick shortcuts grid -->
                         <GridView x:Name="HomeQuickGrid" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
@@ -525,7 +524,6 @@
                         </ListView>
                     </StackPanel>
                 </ScrollViewer>
-                </StackPanel>
 
                 <!-- Podcasts content -->
                 <StackPanel x:Name="HomePodcastPanel" Visibility="Collapsed">
