@@ -35,57 +35,74 @@ namespace YTMusicWP
             catch { return "US"; }
         }
 
+        // Safe helpers to prevent crash when upgrading with stale LocalSettings data
+        private static int SafeGetInt(Windows.Foundation.Collections.IPropertySet s, string key, int def)
+        {
+            try { if (s.ContainsKey(key)) return System.Convert.ToInt32(s[key]); } catch { }
+            return def;
+        }
+        private static bool SafeGetBool(Windows.Foundation.Collections.IPropertySet s, string key, bool def)
+        {
+            try { if (s.ContainsKey(key)) return System.Convert.ToBoolean(s[key]); } catch { }
+            return def;
+        }
+        private static string SafeGetString(Windows.Foundation.Collections.IPropertySet s, string key, string def)
+        {
+            try { if (s.ContainsKey(key)) return s[key].ToString(); } catch { }
+            return def;
+        }
+
         private void LoadSettings()
         {
-            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-            if (settings.ContainsKey("YouTubeApiKey")) ApiKeyTextBox.Text = settings["YouTubeApiKey"].ToString();
-            if (settings.ContainsKey("GoogleClientId")) ClientIdTextBox.Text = settings["GoogleClientId"].ToString();
-            if (settings.ContainsKey("GoogleClientSecret")) ClientSecretTextBox.Text = settings["GoogleClientSecret"].ToString();
-            if (settings.ContainsKey("CustomProxyUrl")) ProxyUrlTextBox.Text = settings["CustomProxyUrl"].ToString();
-
-            if (settings.ContainsKey("TrendingRegion"))
-            {
-                string r = settings["TrendingRegion"].ToString();
-                for (int i = 0; i < RegionComboBox.Items.Count; i++)
-                {
-                    if (((ComboBoxItem)RegionComboBox.Items[i]).Tag.ToString() == r)
-                    {
-                        RegionComboBox.SelectedIndex = i;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                // First run: auto-detect region from OS
-                string detected = DetectOsRegion();
-                settings["TrendingRegion"] = detected;
-                RegionComboBox.SelectedIndex = 0; // Auto-detect
-            }
-
-            if (settings.ContainsKey("GoogleAccessToken"))
-            {
-                LoginStatusText.Text = "Status: Logged In & Synced!";
-                LoginStatusText.Foreground = _greenBrush;
-            }
-            bool isShuffle = settings.ContainsKey("ShuffleMode") ? (bool)settings["ShuffleMode"] : false;
-            ShuffleIcon.Foreground = isShuffle ? _greenBrush : _whiteBrush;
-            int repeatMode = settings.ContainsKey("RepeatMode") ? (int)settings["RepeatMode"] : 0;
-            UpdateRepeatUI(repeatMode);
-
-            // Playback settings
             try
             {
-                int quality = settings.ContainsKey("AudioQuality") ? (int)settings["AudioQuality"] : 1;
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                ApiKeyTextBox.Text = SafeGetString(settings, "YouTubeApiKey", "");
+                ClientIdTextBox.Text = SafeGetString(settings, "GoogleClientId", "");
+                ClientSecretTextBox.Text = SafeGetString(settings, "GoogleClientSecret", "");
+                ProxyUrlTextBox.Text = SafeGetString(settings, "CustomProxyUrl", "");
+
+                if (settings.ContainsKey("TrendingRegion"))
+                {
+                    string r = settings["TrendingRegion"].ToString();
+                    for (int i = 0; i < RegionComboBox.Items.Count; i++)
+                    {
+                        if (((ComboBoxItem)RegionComboBox.Items[i]).Tag.ToString() == r)
+                        {
+                            RegionComboBox.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    string detected = DetectOsRegion();
+                    settings["TrendingRegion"] = detected;
+                    RegionComboBox.SelectedIndex = 0;
+                }
+
+                if (settings.ContainsKey("GoogleAccessToken"))
+                {
+                    LoginStatusText.Text = "Status: Logged In & Synced!";
+                    LoginStatusText.Foreground = _greenBrush;
+                }
+
+                bool isShuffle = SafeGetBool(settings, "ShuffleMode", false);
+                ShuffleIcon.Foreground = isShuffle ? _greenBrush : _whiteBrush;
+                int repeatMode = SafeGetInt(settings, "RepeatMode", 0);
+                UpdateRepeatUI(repeatMode);
+
+                // Playback settings
+                int quality = SafeGetInt(settings, "AudioQuality", 1);
                 if (quality >= 0 && quality < AudioQualityComboBox.Items.Count)
                     AudioQualityComboBox.SelectedIndex = quality;
-                int crossfade = settings.ContainsKey("CrossfadeSeconds") ? (int)settings["CrossfadeSeconds"] : 0;
+                int crossfade = SafeGetInt(settings, "CrossfadeSeconds", 0);
                 CrossfadeSlider.Value = crossfade;
                 CrossfadeValueText.Text = crossfade + "s";
                 CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
-                AutoplayToggle.IsOn = settings.ContainsKey("Autoplay") ? (bool)settings["Autoplay"] : true;
-                GaplessToggle.IsOn = settings.ContainsKey("GaplessPlayback") ? (bool)settings["GaplessPlayback"] : true;
-                NormalizeVolumeToggle.IsOn = settings.ContainsKey("NormalizeVolume") ? (bool)settings["NormalizeVolume"] : false;
+                AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
+                GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
+                NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
             }
             catch { }
         }
