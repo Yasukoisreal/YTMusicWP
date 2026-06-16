@@ -107,6 +107,8 @@ namespace YTMusicWP
 
         private void CloseNowPlaying_Click(object sender, RoutedEventArgs e)
         {
+            // Prevent SearchBox from auto-focusing and showing keyboard
+            this.Focus(FocusState.Programmatic);
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"];
@@ -149,6 +151,7 @@ namespace YTMusicWP
         private void MenuSlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            this.Focus(FocusState.Programmatic);
         }
 
         private async void MenuDownloadNowPlaying_Click(object sender, RoutedEventArgs e)
@@ -168,6 +171,7 @@ namespace YTMusicWP
         private void SlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingView.Visibility = Visibility.Collapsed;
+            this.Focus(FocusState.Programmatic);
         }
 
         private void SongItem_Holding(object sender, HoldingRoutedEventArgs e)
