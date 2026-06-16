@@ -83,9 +83,9 @@ namespace YTMusicWP
                 CrossfadeSlider.Value = crossfade;
                 CrossfadeValueText.Text = crossfade + "s";
                 CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
-                AutoplayToggle.IsChecked = settings.ContainsKey("Autoplay") ? (bool)settings["Autoplay"] : true;
-                GaplessToggle.IsChecked = settings.ContainsKey("GaplessPlayback") ? (bool)settings["GaplessPlayback"] : true;
-                NormalizeVolumeToggle.IsChecked = settings.ContainsKey("NormalizeVolume") ? (bool)settings["NormalizeVolume"] : false;
+                AutoplayToggle.IsOn = settings.ContainsKey("Autoplay") ? (bool)settings["Autoplay"] : true;
+                GaplessToggle.IsOn = settings.ContainsKey("GaplessPlayback") ? (bool)settings["GaplessPlayback"] : true;
+                NormalizeVolumeToggle.IsOn = settings.ContainsKey("NormalizeVolume") ? (bool)settings["NormalizeVolume"] : false;
             }
             catch { }
         }
@@ -115,9 +115,9 @@ namespace YTMusicWP
             ApplicationData.Current.LocalSettings.Values["AudioQuality"] = AudioQualityComboBox.SelectedIndex;
             ApplicationData.Current.LocalSettings.Values["AudioQualityKbps"] = (qualityItem != null && qualityItem.Tag != null) ? qualityItem.Tag.ToString() : "128";
             ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = (int)CrossfadeSlider.Value;
-            ApplicationData.Current.LocalSettings.Values["Autoplay"] = AutoplayToggle.IsChecked == true;
-            ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = GaplessToggle.IsChecked == true;
-            ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsChecked == true;
+            ApplicationData.Current.LocalSettings.Values["Autoplay"] = AutoplayToggle.IsOn;
+            ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = GaplessToggle.IsOn;
+            ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
 
             ShowToast("Settings Saved!");
 
