@@ -606,7 +606,7 @@
                             <Button Grid.Row="0" Grid.Column="0" Tag="Global Top 50 Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E13300" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/UrSSgR9bpSAhjnEAlm1eMXEOHGNpRVGOCXksrBj2E1JRGg0Js2uI3gcfOHOCGO5VNOaI-RjW8qw4bdQ=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Global 50" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -616,7 +616,7 @@
                             <Button Grid.Row="0" Grid.Column="1" Tag="Billboard Hot 100" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#1DB954" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/pkKOHFEDFxT1Gc09qeeNFIJqfvG6cMxftqaU39qp_lxEzjba00rl_0RV-0RFiUhgSEkNV4aFEA1nLYrr=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/RgKAFK5djSk/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Billboard" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -626,7 +626,7 @@
                             <Button Grid.Row="1" Grid.Column="0" Tag="Pop Music Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#509BF5" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/e-emSYR1qIamm9kEed_jPxSmri_vAGH3W2TaHCW0kPyXaMHF9B0MMeJcSelVLqjN2uRI6p4FM7Fx3ViF=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/fRh_vgS2dFE/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -636,7 +636,7 @@
                             <Button Grid.Row="1" Grid.Column="1" Tag="EDM Dance House Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#8C1932" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/z4jNMsOSMIf85U4LWntVknaYVai-h_5LROCb0Ms0aHKM2FBLfndUVJIf3DeEVzKI6VCX0u1dSJ0PpCC_=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/IcrbM1l_BoI/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="EDM" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -646,7 +646,7 @@
                             <Button Grid.Row="2" Grid.Column="0" Tag="K-Pop Trending Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#148A08" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/GWfadW1LMOzJls-lJXxApF0l2R2KMwxtkH0KzVOiED_HJb-B_YuFbh_s7IwlW-7u0AZrDfJJ2i5KW7k=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="K-Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -656,7 +656,7 @@
                             <Button Grid.Row="2" Grid.Column="1" Tag="J-Pop Trending Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#E1118C" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/y-jJEX_TP29rG3e5H79dMClH-gIPD6SIf8MNE1KMf2Lob1CJkXcb3NRuLTaJvtYVAj_rvXV-2rPaPuGb=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/ZRtdQ81jPUQ/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="J-Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -666,7 +666,7 @@
                             <Button Grid.Row="3" Grid.Column="0" Tag="Hip-Hop Rap Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#BC5900" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/aOe6oxjHnCFvkq-IMIhJkMbfUbQLLjx9QPv9cjuQly-DAbX13b7K86URsOI7JXBHX5bfEMXKT7S-gFE=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/_Yhyp-_hX2s/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Hip-Hop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -676,7 +676,7 @@
                             <Button Grid.Row="3" Grid.Column="1" Tag="R&amp;B Soul Classics" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#503750" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/NDyfp4kqhOXv3-1LIWByBXbPn-wPNfrsJh6n_mZRWCpah0BKWT7sc5JKm0f_0RP-rECzCn6VR4LzRl0=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/XXYlFuWEuKI/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="R&amp;B" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -686,7 +686,7 @@
                             <Button Grid.Row="4" Grid.Column="0" Tag="Lofi Hip Hop Chill Beats" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#AF2896" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/z8FKh36xcDEkmnP-IyJogI2N5aGQxr3g7DjuKJqOWC69GS5VmDM3RbF8xQDDiDOt89BiDJIgX0u8FqkN=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/jfKfPfyJRdk/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Lofi Chill" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -696,7 +696,7 @@
                             <Button Grid.Row="4" Grid.Column="1" Tag="Viral TikTok Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#477D95" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/b8whMn1NPZQ0Li9rW5l4IUqjpm-UjqbqYtJMK6HXMUjYfCA8R73HjRmg5ITGDORA17FTaWWbSqHSQH4=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/nYh-n7EOtMA/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Viral" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -706,7 +706,7 @@
                             <Button Grid.Row="5" Grid.Column="0" Tag="Indie Pop Folk" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E91429" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/qDcRXSAVk7F3Gmh0WEhSbepMBjEVfCCrhdm4YTJjkPR8T0BsYPAdUkUNEW43uFfYS6KGsfTEjWh7GHo=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/pstVCGyaUBM/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Indie" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -716,7 +716,7 @@
                             <Button Grid.Row="5" Grid.Column="1" Tag="Acoustic Chill Covers" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#B49BC8" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/nVVN0k3Gy6xPhR04xlXLlhh7la-M_MBJz9e6cYfDWR5mQm1k9aMJAk-5s_W2dbDCA07bFBJD6oSDfbs=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/2Vv-BfVoq4g/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Acoustic" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -726,7 +726,7 @@
                             <Button Grid.Row="6" Grid.Column="0" Tag="Rock Music Classics" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#777777" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/T4KVQGL-R4YBGdPHnw8kLQrGY3MoIuetYwP4qRhsjC0v4GAORLGMM6GGkZULBD-XsfAjfNV9o6I67w=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/fJ9rUzIMcZQ/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Rock" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -736,7 +736,7 @@
                             <Button Grid.Row="6" Grid.Column="1" Tag="Heavy Metal Core" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#212121" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/WTbppHCBXvMgNBjnEmLadep3Qj0ObjGE9FYQrlSh-pDRKVKHbNdT4U8c7QG5y3xTj8eL2l8jTlz3Y08=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/cd-go0oBF4Y/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Metal" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -746,7 +746,7 @@
                             <Button Grid.Row="7" Grid.Column="0" Tag="Jazz Relaxing Vibes" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E13300" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/E6AMz5EhjXPLz_04JKLC2y1GDzPCEMV_4SOL_GZZYCAxU0S--Q_gMDy3HMkeyqLMUqKlqfCNKIUMqMOQ=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/vmDDOFXSgAs/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Jazz" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -756,7 +756,7 @@
                             <Button Grid.Row="7" Grid.Column="1" Tag="Classical Piano Relax" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#006450" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/3t9EGiXlGm_HkUlUGJ7SVWlIOr4VQFCYHe5z0bFm9l-gJIdfVEuTlDTpZVaO9f7sa1IZ9mOhkzpJlA=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/4Tr0otuiQuU/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Classical" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -766,7 +766,7 @@
                             <Button Grid.Row="8" Grid.Column="0" Tag="Workout Gym Motivation" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#8D67AB" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/v4XWZGl_uXlBT1xHoL9fPXcNOSqDN3AER0FwK3GBQnBXxXCi7_ixcvGh2OgiYBCZ1X7V4TSpZcLNmQ=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/btPJPFnesV4/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Workout" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -776,7 +776,7 @@
                             <Button Grid.Row="8" Grid.Column="1" Tag="Gaming Music NCS" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#1DB954" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/kHB9SMspKLP1HOkGElpDhTMiNu6VbJoLLf0Zla_4hD2rJLi0Ym5a_f5n7RKQ_o-S2nMN1ql9KhZUDqBm=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/K4DyBUG242c/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Gaming" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
@@ -786,7 +786,7 @@
                             <Button Grid.Row="9" Grid.Column="0" Tag="Latin Pop Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#509BF5" CornerRadius="8">
                                     <Grid>
-                                        <Image Source="https://lh3.googleusercontent.com/5aN-GZqVnm1N0rtGRPR3JVDjiEvfJehfbPz9fBfwXrlsmAW5TrIN_d4kUNAWNxgf3VPluGDSPTN7rgg=w226-h226-l90-rj" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
+                                        <Image Source="https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg" Stretch="UniformToFill" Opacity="0.4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="70" Height="70" Margin="0,0,-5,-5">
                                             <Image.RenderTransform><RotateTransform Angle="25"/></Image.RenderTransform>
                                         </Image>
                                         <TextBlock Text="Latin" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
