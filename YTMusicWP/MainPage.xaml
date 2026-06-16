@@ -1006,13 +1006,10 @@
                         </StackPanel>
                     </Grid>
                     <Button x:Name="MiniPlayPauseBtn" Grid.Column="1" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="50">
-                        <Grid Width="22" Height="22">
-                            <Path x:Name="MiniPlayPath" Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White" Stretch="Uniform"/>
-                            <Path x:Name="MiniPausePath" Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="White" Stretch="Uniform" Visibility="Collapsed"/>
-                        </Grid>
+                        <SymbolIcon x:Name="MiniPlayIcon" Symbol="Play" Foreground="White"/>
                     </Button>
                     <Button Grid.Column="2" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="50">
-                        <Viewbox Width="20" Height="20"><Path Data="M16,18H18V6H16M6,18L14.5,12 6,6V18Z" Fill="White"/></Viewbox>
+                        <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE101;" Foreground="White" FontSize="20"/>
                     </Button>
                 </Grid>
             </Border>
@@ -1196,27 +1193,24 @@
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" Click="ShuffleButton_Click" Style="{StaticResource IconButtonStyle}">
                             <StackPanel>
-                                <Viewbox x:Name="ShuffleIcon" Width="20" Height="20"><Path Data="M14.83,13.41L13.42,14.82L16.55,17.95L14.5,20H20V14.5L17.96,16.54L14.83,13.41M14.5,4L16.54,6.04L4,18.59L5.41,20L17.96,7.46L20,9.5V4M10.59,9.17L5.41,4L4,5.41L9.17,10.58L10.59,9.17Z" Fill="White"/></Viewbox>
+                                <FontIcon x:Name="ShuffleIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE14B;" Foreground="White" FontSize="20"/>
                                 <Ellipse x:Name="ShuffleDot" Width="4" Height="4" Fill="#1DB954" Margin="0,3,0,0" Visibility="Collapsed"/>
                             </StackPanel>
                         </Button>
                         <Button Grid.Column="1" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}">
-                            <Viewbox Width="24" Height="24"><Path Data="M6,18H8V6H6M18,18L9.5,12 18,6V18Z" Fill="White"/></Viewbox>
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE100;" Foreground="White" FontSize="24"/>
                         </Button>
                         <Button Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="64" Height="64" Margin="5,0,5,0">
                             <Border Background="#1DB954" CornerRadius="32" Width="64" Height="64">
-                                <Grid Width="28" Height="28" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Path x:Name="BigPlayPath" Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="Black" Stretch="Uniform"/>
-                                    <Path x:Name="BigPausePath" Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="Black" Stretch="Uniform" Visibility="Collapsed"/>
-                                </Grid>
+                                <SymbolIcon x:Name="BigPlayIcon" Symbol="Play" Foreground="Black"/>
                             </Border>
                         </Button>
                         <Button Grid.Column="3" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}">
-                            <Viewbox Width="24" Height="24"><Path Data="M16,18H18V6H16M6,18L14.5,12 6,6V18Z" Fill="White"/></Viewbox>
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE101;" Foreground="White" FontSize="24"/>
                         </Button>
                         <Button Grid.Column="4" Click="RepeatButton_Click" Style="{StaticResource IconButtonStyle}">
                             <StackPanel>
-                                <Viewbox x:Name="RepeatIcon" Width="20" Height="20"><Path Data="M17,17H7V14L3,18L7,22V19H19V13H17M7,7H17V10L21,6L17,2V5H5V11H7V7Z" Fill="White"/></Viewbox>
+                                <FontIcon x:Name="RepeatIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE1CD;" Foreground="White" FontSize="20"/>
                                 <Ellipse x:Name="RepeatDot" Width="4" Height="4" Fill="#1DB954" Margin="0,3,0,0" Visibility="Collapsed"/>
                             </StackPanel>
                         </Button>

@@ -27,24 +27,11 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage : Page
     {
-        private const string PlayPathData = "M8,5.14V19.14L19,12.14L8,5.14Z";
-        private const string PausePathData = "M14,19H18V5H14M6,19H10V5H6V19Z";
-
         private void SetPlayPauseIcon(bool isPlaying)
         {
-            var playVis = isPlaying ? Visibility.Collapsed : Visibility.Visible;
-            var pauseVis = isPlaying ? Visibility.Visible : Visibility.Collapsed;
-            MiniPlayPath.Visibility = playVis;
-            MiniPausePath.Visibility = pauseVis;
-            BigPlayPath.Visibility = playVis;
-            BigPausePath.Visibility = pauseVis;
-        }
-
-        private Windows.UI.Xaml.Media.Geometry PathFromString(string data)
-        {
-            string xaml = "<Path xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='" + data + "'/>";
-            var path = (Windows.UI.Xaml.Shapes.Path)Windows.UI.Xaml.Markup.XamlReader.Load(xaml);
-            return path.Data;
+            Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;
+            MiniPlayIcon.Symbol = sym;
+            BigPlayIcon.Symbol = sym;
         }
 
         private static readonly HttpClient _apiClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };

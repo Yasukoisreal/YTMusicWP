@@ -41,7 +41,7 @@ namespace YTMusicWP
                 LoginStatusText.Foreground = _greenBrush;
             }
             bool isShuffle = settings.ContainsKey("ShuffleMode") ? (bool)settings["ShuffleMode"] : false;
-            try { ((Windows.UI.Xaml.Shapes.Path)ShuffleIcon.Child).Fill = isShuffle ? _greenBrush : _whiteBrush; } catch { }
+            ShuffleIcon.Foreground = isShuffle ? _greenBrush : _whiteBrush;
             int repeatMode = settings.ContainsKey("RepeatMode") ? (int)settings["RepeatMode"] : 0;
             UpdateRepeatUI(repeatMode);
         }
