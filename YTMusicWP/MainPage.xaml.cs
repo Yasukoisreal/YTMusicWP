@@ -22,17 +22,17 @@ using System.Threading;
 using Windows.Networking.BackgroundTransfer;
 using Windows.Phone.UI.Input;
 using Windows.ApplicationModel.DataTransfer;
+using Anim = Windows.UI.Xaml.Media.Animation;
 
 namespace YTMusicWP
 {
     public sealed partial class MainPage : Page
     {
-        private Storyboard _marqueeStoryboard;
+        private Anim.Storyboard _marqueeStoryboard;
 
         private void StartTitleMarquee()
         {
             StopTitleMarquee();
-            // Wait for layout
             BigTitle.UpdateLayout();
             double textWidth = BigTitle.ActualWidth;
             double canvasWidth = TitleMarqueeCanvas.ActualWidth;
@@ -40,20 +40,20 @@ namespace YTMusicWP
             if (textWidth <= canvasWidth || textWidth <= 0) return;
 
             double overflow = textWidth - canvasWidth;
-            double speed = 30; // pixels per second
+            double speed = 30;
             double scrollDuration = overflow / speed;
             if (scrollDuration < 1) scrollDuration = 1;
 
-            _marqueeStoryboard = new Storyboard();
-            var animForward = new DoubleAnimationUsingKeyFrames();
-            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = 0, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2)) }); // pause at start
-            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = -overflow, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2 + scrollDuration)) }); // scroll left
-            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = -overflow, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration)) }); // pause at end
-            animForward.KeyFrames.Add(new LinearDoubleKeyFrame { Value = 0, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration * 2)) }); // scroll back
-            animForward.RepeatBehavior = RepeatBehavior.Forever;
-            Storyboard.SetTarget(animForward, TitleTranslate);
-            Storyboard.SetTargetProperty(animForward, "X");
-            _marqueeStoryboard.Children.Add(animForward);
+            _marqueeStoryboard = new Anim.Storyboard();
+            var anim = new Anim.DoubleAnimationUsingKeyFrames();
+            anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = 0, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2)) });
+            anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = -overflow, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2 + scrollDuration)) });
+            anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = -overflow, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration)) });
+            anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = 0, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration * 2)) });
+            anim.RepeatBehavior = new Anim.RepeatBehavior(1000); // repeat many times
+            Anim.Storyboard.SetTarget(anim, TitleTranslate);
+            Anim.Storyboard.SetTargetProperty(anim, "X");
+            _marqueeStoryboard.Children.Add(anim);
             _marqueeStoryboard.Begin();
         }
 
