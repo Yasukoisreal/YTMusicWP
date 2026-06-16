@@ -226,7 +226,7 @@ namespace YTMusicWP
                         int oldIndex = currentLyricIndex;
                         currentLyricIndex = newIndex;
 
-                        // Animate OLD lyric → fade out
+                        // Animate OLD lyric → smooth fade out
                         if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                         {
                             currentLyrics[oldIndex].ColorBrush  = _lyricInactiveBrush;
@@ -239,7 +239,8 @@ namespace YTMusicWP
                                 var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
                                 var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
                                 {
-                                    To = 0.4, Duration = new Duration(TimeSpan.FromMilliseconds(300))
+                                    To = 0.35, Duration = new Duration(TimeSpan.FromMilliseconds(500)),
+                                    EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
                                 };
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, oldContainer);
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
@@ -248,11 +249,11 @@ namespace YTMusicWP
                             }
                             else
                             {
-                                currentLyrics[oldIndex].Opacity = 0.4;
+                                currentLyrics[oldIndex].Opacity = 0.35;
                             }
                         }
 
-                        // Animate NEW lyric → scale pulse + fade in
+                        // Animate NEW lyric → smooth scale + fade in
                         currentLyrics[currentLyricIndex].ColorBrush  = _lyricActiveBrush;
                         currentLyrics[currentLyricIndex].FontSize    = _highlightLyricSize;
                         currentLyrics[currentLyricIndex].FontWeight  = Windows.UI.Text.FontWeights.Bold;
@@ -260,7 +261,6 @@ namespace YTMusicWP
                         var newContainer = LyricsListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                         if (newContainer != null)
                         {
-                            // Ensure RenderTransform is ScaleTransform
                             var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
                             if (scaleTransform == null)
                             {
@@ -269,28 +269,35 @@ namespace YTMusicWP
                                 newContainer.RenderTransform = scaleTransform;
                             }
 
+                            var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
                             var entrance = new Windows.UI.Xaml.Media.Animation.Storyboard();
 
-                            // Opacity: 0.6 → 1.0
+                            // Opacity: 0.4 → 1.0 (smooth ease-out)
                             var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
                             {
-                                From = 0.6, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(250))
+                                From = 0.4, To = 1.0,
+                                Duration = new Duration(TimeSpan.FromMilliseconds(450)),
+                                EasingFunction = easeOut
                             };
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opIn, newContainer);
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
 
-                            // Scale X: 0.97 → 1.0
+                            // Scale X: 0.96 → 1.0 (smooth ease-out)
                             var scaleX = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
                             {
-                                From = 0.97, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(300))
+                                From = 0.96, To = 1.0,
+                                Duration = new Duration(TimeSpan.FromMilliseconds(400)),
+                                EasingFunction = easeOut
                             };
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleX, scaleTransform);
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleX, "ScaleX");
 
-                            // Scale Y: 0.97 → 1.0
+                            // Scale Y: 0.96 → 1.0 (smooth ease-out)
                             var scaleY = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
                             {
-                                From = 0.97, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(300))
+                                From = 0.96, To = 1.0,
+                                Duration = new Duration(TimeSpan.FromMilliseconds(400)),
+                                EasingFunction = easeOut
                             };
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleY, scaleTransform);
                             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleY, "ScaleY");
