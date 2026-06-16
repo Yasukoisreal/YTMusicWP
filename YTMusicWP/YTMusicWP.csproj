@@ -97,37 +97,37 @@
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Playback.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Search.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Auth.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.NowPlaying.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Library.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Artist.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Home.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Lyrics.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Api.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Storage.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Pages\MainPage.Navigation.cs">
-      <DependentUpon>MainPage.xaml</DependentUpon>
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Services\InnerTubeClient.cs" />
     <Compile Include="Services\InnerTubeClient.Search.cs" />
