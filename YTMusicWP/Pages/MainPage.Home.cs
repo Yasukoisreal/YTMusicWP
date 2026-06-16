@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -95,6 +95,34 @@ namespace YTMusicWP
             if (workout != null) foreach (var t in workout) { if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:")) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
+        }
+
+        private void MoodChill_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            SwitchTab(1);
+            SearchBox.Text = "lofi chill beats relax";
+            SearchButton_Click(null, null);
+        }
+
+        private void MoodFocus_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            SwitchTab(1);
+            SearchBox.Text = "focus study concentration music";
+            SearchButton_Click(null, null);
+        }
+
+        private void MoodEnergy_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            SwitchTab(1);
+            SearchBox.Text = "energy workout pump up hits";
+            SearchButton_Click(null, null);
+        }
+
+        private void MoodSad_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            SwitchTab(1);
+            SearchBox.Text = "sad emotional songs";
+            SearchButton_Click(null, null);
         }
     }
 }
