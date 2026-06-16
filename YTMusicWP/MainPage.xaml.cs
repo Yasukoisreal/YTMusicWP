@@ -32,22 +32,16 @@ namespace YTMusicWP
 
         private void SetPlayPauseIcon(bool isPlaying)
         {
-            string pathData = isPlaying ? PausePathData : PlayPathData;
-            try
-            {
-                var miniPath = (Windows.UI.Xaml.Shapes.Path)MiniPlayIcon.Child;
-                miniPath.Data = PathFromString(pathData);
-                miniPath.Fill = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
-                var bigPath = (Windows.UI.Xaml.Shapes.Path)BigPlayIcon.Child;
-                bigPath.Data = PathFromString(pathData);
-                bigPath.Fill = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.Black);
-            }
-            catch { }
+            var playVis = isPlaying ? Visibility.Collapsed : Visibility.Visible;
+            var pauseVis = isPlaying ? Visibility.Visible : Visibility.Collapsed;
+            MiniPlayPath.Visibility = playVis;
+            MiniPausePath.Visibility = pauseVis;
+            BigPlayPath.Visibility = playVis;
+            BigPausePath.Visibility = pauseVis;
         }
 
         private Windows.UI.Xaml.Media.Geometry PathFromString(string data)
         {
-            // Create a Path from string using binding trick
             string xaml = "<Path xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='" + data + "'/>";
             var path = (Windows.UI.Xaml.Shapes.Path)Windows.UI.Xaml.Markup.XamlReader.Load(xaml);
             return path.Data;
