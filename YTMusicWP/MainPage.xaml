@@ -839,11 +839,97 @@
                 <StackPanel Margin="0,10,0,40">
                     <TextBlock Text="TRENDING REGION" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <ComboBox x:Name="RegionComboBox" Background="#222222" Foreground="White" BorderThickness="0" Margin="0,0,0,20">
-                        <ComboBoxItem Content="Global (US)" Tag="US"/>
-                        <ComboBoxItem Content="Vietnam (VN)" Tag="VN"/>
-                        <ComboBoxItem Content="South Korea (KR)" Tag="KR"/>
+                        <ComboBoxItem Content="🌍 Auto-detect" Tag="AUTO"/>
+                        <ComboBoxItem Content="🌐 Worldwide" Tag=""/>
+                        <ComboBoxItem Content="Algeria (DZ)" Tag="DZ"/>
+                        <ComboBoxItem Content="Argentina (AR)" Tag="AR"/>
+                        <ComboBoxItem Content="Australia (AU)" Tag="AU"/>
+                        <ComboBoxItem Content="Austria (AT)" Tag="AT"/>
+                        <ComboBoxItem Content="Azerbaijan (AZ)" Tag="AZ"/>
+                        <ComboBoxItem Content="Bahrain (BH)" Tag="BH"/>
+                        <ComboBoxItem Content="Bangladesh (BD)" Tag="BD"/>
+                        <ComboBoxItem Content="Belarus (BY)" Tag="BY"/>
+                        <ComboBoxItem Content="Belgium (BE)" Tag="BE"/>
+                        <ComboBoxItem Content="Bolivia (BO)" Tag="BO"/>
+                        <ComboBoxItem Content="Bosnia (BA)" Tag="BA"/>
+                        <ComboBoxItem Content="Brazil (BR)" Tag="BR"/>
+                        <ComboBoxItem Content="Bulgaria (BG)" Tag="BG"/>
+                        <ComboBoxItem Content="Canada (CA)" Tag="CA"/>
+                        <ComboBoxItem Content="Chile (CL)" Tag="CL"/>
+                        <ComboBoxItem Content="Colombia (CO)" Tag="CO"/>
+                        <ComboBoxItem Content="Costa Rica (CR)" Tag="CR"/>
+                        <ComboBoxItem Content="Croatia (HR)" Tag="HR"/>
+                        <ComboBoxItem Content="Czech Republic (CZ)" Tag="CZ"/>
+                        <ComboBoxItem Content="Denmark (DK)" Tag="DK"/>
+                        <ComboBoxItem Content="Dominican Republic (DO)" Tag="DO"/>
+                        <ComboBoxItem Content="Ecuador (EC)" Tag="EC"/>
+                        <ComboBoxItem Content="Egypt (EG)" Tag="EG"/>
+                        <ComboBoxItem Content="El Salvador (SV)" Tag="SV"/>
+                        <ComboBoxItem Content="Estonia (EE)" Tag="EE"/>
+                        <ComboBoxItem Content="Finland (FI)" Tag="FI"/>
+                        <ComboBoxItem Content="France (FR)" Tag="FR"/>
+                        <ComboBoxItem Content="Georgia (GE)" Tag="GE"/>
+                        <ComboBoxItem Content="Germany (DE)" Tag="DE"/>
+                        <ComboBoxItem Content="Ghana (GH)" Tag="GH"/>
+                        <ComboBoxItem Content="Greece (GR)" Tag="GR"/>
+                        <ComboBoxItem Content="Guatemala (GT)" Tag="GT"/>
+                        <ComboBoxItem Content="Honduras (HN)" Tag="HN"/>
+                        <ComboBoxItem Content="Hong Kong (HK)" Tag="HK"/>
+                        <ComboBoxItem Content="Hungary (HU)" Tag="HU"/>
+                        <ComboBoxItem Content="Iceland (IS)" Tag="IS"/>
+                        <ComboBoxItem Content="India (IN)" Tag="IN"/>
+                        <ComboBoxItem Content="Indonesia (ID)" Tag="ID"/>
+                        <ComboBoxItem Content="Iraq (IQ)" Tag="IQ"/>
+                        <ComboBoxItem Content="Ireland (IE)" Tag="IE"/>
+                        <ComboBoxItem Content="Israel (IL)" Tag="IL"/>
+                        <ComboBoxItem Content="Italy (IT)" Tag="IT"/>
                         <ComboBoxItem Content="Japan (JP)" Tag="JP"/>
+                        <ComboBoxItem Content="Jordan (JO)" Tag="JO"/>
+                        <ComboBoxItem Content="Kenya (KE)" Tag="KE"/>
+                        <ComboBoxItem Content="Kuwait (KW)" Tag="KW"/>
+                        <ComboBoxItem Content="Latvia (LV)" Tag="LV"/>
+                        <ComboBoxItem Content="Lebanon (LB)" Tag="LB"/>
+                        <ComboBoxItem Content="Lithuania (LT)" Tag="LT"/>
+                        <ComboBoxItem Content="Macedonia (MK)" Tag="MK"/>
+                        <ComboBoxItem Content="Malaysia (MY)" Tag="MY"/>
+                        <ComboBoxItem Content="Mexico (MX)" Tag="MX"/>
+                        <ComboBoxItem Content="Montenegro (ME)" Tag="ME"/>
+                        <ComboBoxItem Content="Morocco (MA)" Tag="MA"/>
+                        <ComboBoxItem Content="Netherlands (NL)" Tag="NL"/>
+                        <ComboBoxItem Content="New Zealand (NZ)" Tag="NZ"/>
+                        <ComboBoxItem Content="Nigeria (NG)" Tag="NG"/>
+                        <ComboBoxItem Content="Norway (NO)" Tag="NO"/>
+                        <ComboBoxItem Content="Oman (OM)" Tag="OM"/>
+                        <ComboBoxItem Content="Peru (PE)" Tag="PE"/>
+                        <ComboBoxItem Content="Philippines (PH)" Tag="PH"/>
+                        <ComboBoxItem Content="Poland (PL)" Tag="PL"/>
+                        <ComboBoxItem Content="Portugal (PT)" Tag="PT"/>
+                        <ComboBoxItem Content="Puerto Rico (PR)" Tag="PR"/>
+                        <ComboBoxItem Content="Qatar (QA)" Tag="QA"/>
+                        <ComboBoxItem Content="Romania (RO)" Tag="RO"/>
+                        <ComboBoxItem Content="Russia (RU)" Tag="RU"/>
+                        <ComboBoxItem Content="Saudi Arabia (SA)" Tag="SA"/>
+                        <ComboBoxItem Content="Senegal (SN)" Tag="SN"/>
+                        <ComboBoxItem Content="Serbia (RS)" Tag="RS"/>
+                        <ComboBoxItem Content="Singapore (SG)" Tag="SG"/>
+                        <ComboBoxItem Content="Slovakia (SK)" Tag="SK"/>
+                        <ComboBoxItem Content="Slovenia (SI)" Tag="SI"/>
+                        <ComboBoxItem Content="South Africa (ZA)" Tag="ZA"/>
+                        <ComboBoxItem Content="South Korea (KR)" Tag="KR"/>
+                        <ComboBoxItem Content="Spain (ES)" Tag="ES"/>
+                        <ComboBoxItem Content="Sweden (SE)" Tag="SE"/>
+                        <ComboBoxItem Content="Switzerland (CH)" Tag="CH"/>
+                        <ComboBoxItem Content="Taiwan (TW)" Tag="TW"/>
+                        <ComboBoxItem Content="Thailand (TH)" Tag="TH"/>
+                        <ComboBoxItem Content="Tunisia (TN)" Tag="TN"/>
+                        <ComboBoxItem Content="Turkey (TR)" Tag="TR"/>
+                        <ComboBoxItem Content="Uganda (UG)" Tag="UG"/>
+                        <ComboBoxItem Content="Ukraine (UA)" Tag="UA"/>
+                        <ComboBoxItem Content="UAE (AE)" Tag="AE"/>
                         <ComboBoxItem Content="United Kingdom (GB)" Tag="GB"/>
+                        <ComboBoxItem Content="United States (US)" Tag="US"/>
+                        <ComboBoxItem Content="Vietnam (VN)" Tag="VN"/>
+                        <ComboBoxItem Content="Yemen (YE)" Tag="YE"/>
                     </ComboBox>
                     <TextBlock Text="YOUTUBE API KEY" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <TextBlock Text="Required for Search, Channels, Playlists &amp; Music" Foreground="#666666" FontSize="11" Margin="5,0,0,5"/>

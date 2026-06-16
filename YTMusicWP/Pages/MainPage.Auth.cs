@@ -14,6 +14,27 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        private string DetectOsRegion()
+        {
+            try
+            {
+                var region = new Windows.Globalization.GeographicRegion();
+                string code = region.CodeTwoLetter.ToUpper();
+                // Validate against supported list
+                var supported = new System.Collections.Generic.HashSet<string>
+                {
+                    "DZ","AR","AU","AT","AZ","BH","BD","BY","BE","BO","BA","BR","BG","CA","CL",
+                    "CO","CR","HR","CZ","DK","DO","EC","EG","SV","EE","FI","FR","GE","DE","GH",
+                    "GR","GT","HN","HK","HU","IS","IN","ID","IQ","IE","IL","IT","JP","JO","KE",
+                    "KW","LV","LB","LT","MK","MY","MX","ME","MA","NL","NZ","NG","NO","OM","PE",
+                    "PH","PL","PT","PR","QA","RO","RU","SA","SN","RS","SG","SK","SI","ZA","KR",
+                    "ES","SE","CH","TW","TH","TN","TR","UG","UA","AE","GB","US","VN","YE"
+                };
+                return supported.Contains(code) ? code : "US";
+            }
+            catch { return "US"; }
+        }
+
         private void LoadSettings()
         {
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -34,7 +55,13 @@ namespace YTMusicWP
                     }
                 }
             }
-            else RegionComboBox.SelectedIndex = 0;
+            else
+            {
+                // First run: auto-detect region from OS
+                string detected = DetectOsRegion();
+                settings["TrendingRegion"] = detected;
+                RegionComboBox.SelectedIndex = 0; // Auto-detect
+            }
 
             if (settings.ContainsKey("GoogleAccessToken"))
             {
@@ -58,7 +85,13 @@ namespace YTMusicWP
             var selectedRegion = RegionComboBox.SelectedItem as ComboBoxItem;
             if (selectedRegion != null && selectedRegion.Tag != null)
             {
-                ApplicationData.Current.LocalSettings.Values["TrendingRegion"] = selectedRegion.Tag.ToString();
+                string regionTag = selectedRegion.Tag.ToString();
+                if (regionTag == "AUTO")
+                {
+                    // Auto-detect from OS
+                    regionTag = DetectOsRegion();
+                }
+                ApplicationData.Current.LocalSettings.Values["TrendingRegion"] = regionTag;
             }
 
             ShowToast("Settings Saved!");
