@@ -46,10 +46,13 @@ namespace YTMusicWP
             catch { }
             return TimeSpan.Zero;
         }
+        // ── Lyrics Cache (in-memory, keyed by cleaned title+artist) ──
+        private static readonly Dictionary<string, string> _lyricsCache = new Dictionary<string, string>();
+        private static readonly Dictionary<string, string> _plainLyricsCache = new Dictionary<string, string>();
+        private const int MAX_LYRICS_CACHE = 20;
 
         private async Task UpdateLyricsAsync(string title, string artist)
         {
-            // [OPT-C2] Hủy Task lyrics cũ trước khi bắt đầu Task mới — tránh race condition khi skip bài nhanh
             var oldLyricsCts = _lyricsCts;
             _lyricsCts = new CancellationTokenSource();
             if (oldLyricsCts != null) { oldLyricsCts.Cancel(); oldLyricsCts.Dispose(); }
@@ -80,16 +83,10 @@ namespace YTMusicWP
                     .Replace(" (Official MV)", "").Trim();
                 string cleanArtist = CleanChannelName(artist);
 
-                token.ThrowIfCancellationRequested();
-
-                string syncedLyrics = null;
-                string plainLyrics = null;
-
-                // If artist is a type label ("Song", "Video", etc.), try to extract from title
+                // Extract artist from title if needed
                 string[] typeLabels = { "Song", "Video", "Artist", "Playlist", "Album", "EP", "Single", "" };
                 if (Array.IndexOf(typeLabels, cleanArtist) >= 0)
                 {
-                    // Title often has "ArtistName - SongName" format from YouTube  
                     if (title.Contains(" - "))
                     {
                         var parts = title.Split(new[] { " - " }, StringSplitOptions.None);
@@ -104,74 +101,77 @@ namespace YTMusicWP
                 }
                 else if (cleanTitle.Contains(" - "))
                 {
-                    // Artist is known, title might be "ArtistName - SongName" → take song part
                     var titleParts = cleanTitle.Split(new[] { " - " }, StringSplitOptions.None);
-                    if (titleParts.Length >= 2)
-                    {
-                        // Check if first part matches the artist → take second part as song title
-                        if (titleParts[0].Trim().Equals(cleanArtist, StringComparison.OrdinalIgnoreCase))
-                        {
-                            cleanTitle = titleParts[1].Trim();
-                        }
-                    }
+                    if (titleParts.Length >= 2 && titleParts[0].Trim().Equals(cleanArtist, StringComparison.OrdinalIgnoreCase))
+                        cleanTitle = titleParts[1].Trim();
                 }
 
-                // --- LỚP 1 (ƯU TIÊN): LRCLIB.NET exact match ---
+                string cacheKey = (cleanTitle + "|" + cleanArtist).ToLowerInvariant();
+
+                // ── Check Cache First ──
+                if (_lyricsCache.ContainsKey(cacheKey))
+                {
+                    ParseAndDisplaySyncedLyrics(_lyricsCache[cacheKey]);
+                    LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                    return;
+                }
+                if (_plainLyricsCache.ContainsKey(cacheKey))
+                {
+                    LyricsFallbackText.Text = _plainLyricsCache[cacheKey];
+                    LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
+                    LyricsListView.Visibility = Visibility.Collapsed;
+                    LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                token.ThrowIfCancellationRequested();
+
+                string syncedLyrics = null;
+                string plainLyrics = null;
+
+                // ── PARALLEL: Fire both API calls simultaneously ──
+                string url1 = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
+                string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
+
+                var task1 = _apiClient.GetStringAsync(url1);
+                var task2 = _apiClient.GetStringAsync(url2);
+
+                // Wait for Layer 1 first (exact match = higher quality)
                 try
                 {
-                    string lrcUrl = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
-                    var lrcResp = await _apiClient.GetStringAsync(lrcUrl);
+                    var resp1 = await task1;
                     token.ThrowIfCancellationRequested();
-                    var lrcArr = JArray.Parse(lrcResp);
-                    if (lrcArr.Count > 0)
+                    var arr1 = JArray.Parse(resp1);
+                    if (arr1.Count > 0)
                     {
-                        // Prefer result with synced lyrics
-                        foreach (var item in lrcArr)
+                        foreach (var item in arr1)
                         {
                             string s = item["syncedLyrics"]?.ToString();
-                            if (!string.IsNullOrWhiteSpace(s))
-                            {
-                                syncedLyrics = s;
-                                plainLyrics = item["plainLyrics"]?.ToString();
-                                break;
-                            }
+                            if (!string.IsNullOrWhiteSpace(s)) { syncedLyrics = s; plainLyrics = item["plainLyrics"]?.ToString(); break; }
                         }
                         if (string.IsNullOrWhiteSpace(syncedLyrics))
-                        {
-                            syncedLyrics = lrcArr[0]["syncedLyrics"]?.ToString();
-                            plainLyrics = lrcArr[0]["plainLyrics"]?.ToString();
-                        }
+                        { syncedLyrics = arr1[0]["syncedLyrics"]?.ToString(); plainLyrics = arr1[0]["plainLyrics"]?.ToString(); }
                     }
                 }
-                catch { System.Diagnostics.Debug.WriteLine("Lyrics Lớp 1 lỗi, chuyển sang Lớp 2."); }
+                catch { }
 
-                // --- LỚP 2 (DỰ PHÒNG): LRCLIB.NET q= broad search ---
+                // If Layer 1 didn't find synced, use Layer 2 result (already in flight)
                 if (string.IsNullOrWhiteSpace(syncedLyrics))
                 {
                     try
                     {
-                        string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
-                        var response2 = await _apiClient.GetStringAsync(url2);
+                        var resp2 = await task2;
                         token.ThrowIfCancellationRequested();
-                        var jsonArray2 = JArray.Parse(response2);
-                        if (jsonArray2.Count > 0)
+                        var arr2 = JArray.Parse(resp2);
+                        if (arr2.Count > 0)
                         {
-                            // Prefer result with synced lyrics
-                            foreach (var item in jsonArray2)
+                            foreach (var item in arr2)
                             {
                                 string s = item["syncedLyrics"]?.ToString();
-                                if (!string.IsNullOrWhiteSpace(s))
-                                {
-                                    syncedLyrics = s;
-                                    if (string.IsNullOrWhiteSpace(plainLyrics))
-                                        plainLyrics = item["plainLyrics"]?.ToString();
-                                    break;
-                                }
+                                if (!string.IsNullOrWhiteSpace(s)) { syncedLyrics = s; if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = item["plainLyrics"]?.ToString(); break; }
                             }
                             if (string.IsNullOrWhiteSpace(syncedLyrics) && string.IsNullOrWhiteSpace(plainLyrics))
-                            {
-                                plainLyrics = jsonArray2[0]["plainLyrics"]?.ToString();
-                            }
+                                plainLyrics = arr2[0]["plainLyrics"]?.ToString();
                         }
                     }
                     catch { }
@@ -181,36 +181,15 @@ namespace YTMusicWP
 
                 if (!string.IsNullOrWhiteSpace(syncedLyrics))
                 {
-                    var lines = syncedLyrics.Split('\n');
-                    var parsedLines = new List<LyricLine>(lines.Length);
-
-                    foreach (var line in lines)
-                    {
-                        string tempLine = line.Trim();
-                        var times = new List<TimeSpan>(2);
-
-                        while (tempLine.StartsWith("[") && tempLine.IndexOf(']') > 0)
-                        {
-                            int bracketEnd = tempLine.IndexOf(']');
-                            string timeStr = tempLine.Substring(1, bracketEnd - 1);
-                            times.Add(ParseLrcTime(timeStr));
-                            tempLine = tempLine.Substring(bracketEnd + 1).Trim();
-                        }
-
-                        if (times.Count > 0)
-                        {
-                            string text = string.IsNullOrWhiteSpace(tempLine) ? "♪" : tempLine;
-                            foreach (var t in times)
-                                parsedLines.Add(new LyricLine { Time = t, Text = text });
-                        }
-                    }
-
-                    parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
-                    foreach (var p in parsedLines) currentLyrics.Add(p);
-                    currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "" });
+                    // Cache for later
+                    if (_lyricsCache.Count >= MAX_LYRICS_CACHE) _lyricsCache.Remove(_lyricsCache.Keys.First());
+                    _lyricsCache[cacheKey] = syncedLyrics;
+                    ParseAndDisplaySyncedLyrics(syncedLyrics);
                 }
                 else if (!string.IsNullOrWhiteSpace(plainLyrics))
                 {
+                    if (_plainLyricsCache.Count >= MAX_LYRICS_CACHE) _plainLyricsCache.Remove(_plainLyricsCache.Keys.First());
+                    _plainLyricsCache[cacheKey] = plainLyrics;
                     LyricsFallbackText.Text = plainLyrics;
                     LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
                     LyricsListView.Visibility = Visibility.Collapsed;
@@ -222,11 +201,7 @@ namespace YTMusicWP
                     LyricsListView.Visibility = Visibility.Collapsed;
                 }
             }
-            catch (OperationCanceledException)
-            {
-                // Bài hát đã đổi — bỏ qua, Task mới sẽ lo
-                return;
-            }
+            catch (OperationCanceledException) { return; }
             catch
             {
                 LyricsFallbackText.Text = "Failed to load lyrics. Please check your connection.";
@@ -237,6 +212,37 @@ namespace YTMusicWP
             {
                 LyricsLoadingBar.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void ParseAndDisplaySyncedLyrics(string syncedLyrics)
+        {
+            var lines = syncedLyrics.Split('\n');
+            var parsedLines = new List<LyricLine>(lines.Length);
+
+            foreach (var line in lines)
+            {
+                string tempLine = line.Trim();
+                var times = new List<TimeSpan>(2);
+
+                while (tempLine.StartsWith("[") && tempLine.IndexOf(']') > 0)
+                {
+                    int bracketEnd = tempLine.IndexOf(']');
+                    string timeStr = tempLine.Substring(1, bracketEnd - 1);
+                    times.Add(ParseLrcTime(timeStr));
+                    tempLine = tempLine.Substring(bracketEnd + 1).Trim();
+                }
+
+                if (times.Count > 0)
+                {
+                    string text = string.IsNullOrWhiteSpace(tempLine) ? "♪" : tempLine;
+                    foreach (var t in times)
+                        parsedLines.Add(new LyricLine { Time = t, Text = text });
+                }
+            }
+
+            parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
+            foreach (var p in parsedLines) currentLyrics.Add(p);
+            currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "" });
         }
 
         private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
