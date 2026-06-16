@@ -397,15 +397,11 @@ namespace YTMusicWP
                         System.Globalization.CultureInfo.InvariantCulture, out startSeconds))
                     {
                         int ms = (int)(startSeconds * 1000);
-                        int min = ms / 60000;
-                        int sec = (ms % 60000) / 1000;
-                        int centis = (ms % 1000) / 10;
 
                         lines.Add(new LyricLine
                         {
                             Time = TimeSpan.FromMilliseconds(ms),
                             Text = content.Trim(),
-                            TimeTag = string.Format("[{0:D2}:{1:D2}.{2:D2}]", min, sec, centis),
                             FontSize = 22
                         });
                     }
