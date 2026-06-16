@@ -1232,8 +1232,8 @@
                 </Border.RenderTransform>
                 <StackPanel>
                     <!-- Drag handle -->
-                    <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,10,0,10" HorizontalAlignment="Center"/>
-                    <Grid Margin="20,0,20,20">
+                    <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,10,0,8" HorizontalAlignment="Center"/>
+                    <Grid Margin="20,0,20,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="50"/>
                             <ColumnDefinition Width="*"/>
@@ -1252,50 +1252,49 @@
                             <TextBlock x:Name="MenuArtist" Text="Artist" FontSize="14" Foreground="#B3B3B3" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </Grid>
-                    <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="350">
-                        <StackPanel>
-                            <Button Click="MenuAddToPlaylistNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
-                                <Grid Margin="20,0">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE109;" Foreground="White" FontSize="22" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Column="1" Text="Add to Playlist" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                </Grid>
-                            </Button>
-                            <Button Click="MenuGoToArtistNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
-                                <Grid Margin="20,0">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE13D;" Foreground="White" FontSize="22" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Column="1" Text="Go to Artist" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                </Grid>
-                            </Button>
-                            <Button Click="MenuSleepTimerNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
-                                <Grid Margin="20,0">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE121;" Foreground="White" FontSize="22" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Column="1" Text="Sleep timer" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                    <TextBlock x:Name="MenuSleepTimerStatus" Grid.Column="2" Text="Off" FontSize="16" Foreground="#1DB954" VerticalAlignment="Center"/>
-                                </Grid>
-                            </Button>
-                            <Button Click="MenuShareNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
-                                <Grid Margin="20,0">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <SymbolIcon Grid.Column="0" Symbol="Send" Foreground="White" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Column="1" Text="Share" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                </Grid>
-                            </Button>
-                            <Button x:Name="NowPlayingDownloadBtn" Click="MenuDownloadNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="60" HorizontalContentAlignment="Stretch">
-                                <Grid Margin="20,0">
-                                    <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <SymbolIcon Grid.Column="0" Symbol="Download" Foreground="White" HorizontalAlignment="Left"/>
-                                    <TextBlock Grid.Column="1" Text="Download" FontSize="18" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                                </Grid>
-                            </Button>
-                            <Button Click="CloseNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Height="60" Margin="0,10,0,10">
-                                <TextBlock Text="Close" FontSize="18" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Button>
-                        </StackPanel>
-                    </ScrollViewer>
+                    <Rectangle Height="1" Fill="#333333" Margin="0,0,0,5"/>
+                    <!-- Menu items - compact height -->
+                    <Button Click="MenuAddToPlaylistNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE109;" Foreground="White" FontSize="20" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="Add to Playlist" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </Button>
+                    <Button Click="MenuGoToArtistNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE13D;" Foreground="White" FontSize="20" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="Go to Artist" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </Button>
+                    <Button Click="MenuSleepTimerNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE121;" Foreground="White" FontSize="20" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="Sleep timer" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="MenuSleepTimerStatus" Grid.Column="2" Text="Off" FontSize="14" Foreground="#1DB954" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Button Click="MenuShareNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <SymbolIcon Grid.Column="0" Symbol="Send" Foreground="White" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="Share" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </Button>
+                    <Button x:Name="NowPlayingDownloadBtn" Click="MenuDownloadNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <SymbolIcon Grid.Column="0" Symbol="Download" Foreground="White" HorizontalAlignment="Left"/>
+                            <TextBlock Grid.Column="1" Text="Download" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </Button>
+                    <!-- Close button - always visible, outside scroll -->
+                    <Rectangle Height="1" Fill="#333333" Margin="0,5,0,0"/>
+                    <Button Click="CloseNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Height="50" Margin="0,0,0,10">
+                        <TextBlock Text="Close" FontSize="16" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Button>
                 </StackPanel>
             </Border>
         </Grid>
