@@ -107,7 +107,7 @@ namespace YTMusicWP
             // Save playback settings
             var qualityItem = AudioQualityComboBox.SelectedItem as ComboBoxItem;
             ApplicationData.Current.LocalSettings.Values["AudioQuality"] = AudioQualityComboBox.SelectedIndex;
-            ApplicationData.Current.LocalSettings.Values["AudioQualityKbps"] = qualityItem?.Tag?.ToString() ?? "128";
+            ApplicationData.Current.LocalSettings.Values["AudioQualityKbps"] = (qualityItem != null && qualityItem.Tag != null) ? qualityItem.Tag.ToString() : "128";
             ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = (int)CrossfadeSlider.Value;
             ApplicationData.Current.LocalSettings.Values["Autoplay"] = AutoplayToggle.IsOn;
             ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = GaplessToggle.IsOn;
