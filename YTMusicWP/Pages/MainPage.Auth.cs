@@ -72,6 +72,16 @@ namespace YTMusicWP
             ShuffleIcon.Foreground = isShuffle ? _greenBrush : _whiteBrush;
             int repeatMode = settings.ContainsKey("RepeatMode") ? (int)settings["RepeatMode"] : 0;
             UpdateRepeatUI(repeatMode);
+
+            // Playback settings
+            int quality = settings.ContainsKey("AudioQuality") ? (int)settings["AudioQuality"] : 1;
+            AudioQualityComboBox.SelectedIndex = quality;
+            int crossfade = settings.ContainsKey("CrossfadeSeconds") ? (int)settings["CrossfadeSeconds"] : 0;
+            CrossfadeSlider.Value = crossfade;
+            CrossfadeValueText.Text = crossfade + "s";
+            AutoplayToggle.IsOn = settings.ContainsKey("Autoplay") ? (bool)settings["Autoplay"] : true;
+            GaplessToggle.IsOn = settings.ContainsKey("GaplessPlayback") ? (bool)settings["GaplessPlayback"] : true;
+            NormalizeVolumeToggle.IsOn = settings.ContainsKey("NormalizeVolume") ? (bool)settings["NormalizeVolume"] : false;
         }
 
         private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
@@ -94,6 +104,15 @@ namespace YTMusicWP
                 ApplicationData.Current.LocalSettings.Values["TrendingRegion"] = regionTag;
             }
 
+            // Save playback settings
+            var qualityItem = AudioQualityComboBox.SelectedItem as ComboBoxItem;
+            ApplicationData.Current.LocalSettings.Values["AudioQuality"] = AudioQualityComboBox.SelectedIndex;
+            ApplicationData.Current.LocalSettings.Values["AudioQualityKbps"] = qualityItem?.Tag?.ToString() ?? "128";
+            ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = (int)CrossfadeSlider.Value;
+            ApplicationData.Current.LocalSettings.Values["Autoplay"] = AutoplayToggle.IsOn;
+            ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = GaplessToggle.IsOn;
+            ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
+
             ShowToast("Settings Saved!");
 
             if (IsInternetAvailable())
@@ -104,6 +123,52 @@ namespace YTMusicWP
                 workoutTracks.Clear();
                 await LoadHomeRecommendations();
             }
+        }
+
+        private void CrossfadeSlider_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+        {
+            if (CrossfadeValueText != null)
+                CrossfadeValueText.Text = (int)e.NewValue + "s";
+        }
+
+        private async void ClearCache_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var folder = ApplicationData.Current.LocalFolder;
+                var files = await folder.GetFilesAsync();
+                int count = 0;
+                foreach (var file in files)
+                {
+                    if (file.Name.EndsWith(".jpg") || file.Name.EndsWith(".png") || file.Name.EndsWith(".webp"))
+                    {
+                        await file.DeleteAsync();
+                        count++;
+                    }
+                }
+                ShowToast("Cleared " + count + " cached files");
+            }
+            catch { ShowToast("Error clearing cache"); }
+        }
+
+        private void LogoutGoogle_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            settings.Remove("GoogleAccessToken");
+            settings.Remove("GoogleRefreshToken");
+            settings.Remove("GoogleClientId");
+            settings.Remove("GoogleClientSecret");
+            settings.Remove("GoogleTokenExpiry");
+
+            _youtubeUserPlaylists.Clear();
+            _youtubeSubscriptions.Clear();
+
+            LoginStatusText.Text = "Status: Not Logged In";
+            LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Gray);
+            ClientIdTextBox.Text = "";
+            ClientSecretTextBox.Text = "";
+
+            ShowToast("Logged out successfully");
         }
 
         private async void CopyAuthLink_Click(object sender, RoutedEventArgs e)

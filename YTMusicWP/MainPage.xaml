@@ -963,12 +963,111 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
+
+                    <!-- ═══════ PLAYBACK SETTINGS ═══════ -->
+                    <TextBlock Text="PLAYBACK" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
+                    
+                    <!-- Audio Quality -->
+                    <Grid Margin="5,10,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Audio Quality" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            <TextBlock Text="Higher quality uses more data" Foreground="#666666" FontSize="12"/>
+                        </StackPanel>
+                        <ComboBox x:Name="AudioQualityComboBox" Grid.Column="1" Background="#333333" Foreground="White" BorderThickness="0" Width="130" VerticalAlignment="Center">
+                            <ComboBoxItem Content="Low (48kbps)" Tag="48"/>
+                            <ComboBoxItem Content="Normal (128kbps)" Tag="128"/>
+                            <ComboBoxItem Content="High (256kbps)" Tag="256"/>
+                        </ComboBox>
+                    </Grid>
+                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
+
+                    <!-- Crossfade -->
+                    <Grid Margin="5,10,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Crossfade" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            <TextBlock Text="Smooth transition between songs" Foreground="#666666" FontSize="12"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="CrossfadeValueText" Text="0s" Foreground="#1DB954" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Slider x:Name="CrossfadeSlider" Minimum="0" Maximum="12" StepFrequency="1" Value="0" Width="100" ValueChanged="CrossfadeSlider_ValueChanged" Foreground="#1DB954"/>
+                        </StackPanel>
+                    </Grid>
+                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
+
+                    <!-- Autoplay -->
+                    <Grid Margin="5,10,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Autoplay" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            <TextBlock Text="Play similar songs when your music ends" Foreground="#666666" FontSize="12"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="AutoplayToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
+
+                    <!-- Gapless Playback -->
+                    <Grid Margin="5,10,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Gapless Playback" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            <TextBlock Text="No silence between tracks" Foreground="#666666" FontSize="12"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="GaplessToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
+
+                    <!-- Normalize Volume -->
+                    <Grid Margin="5,10,0,25">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Normalize Volume" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            <TextBlock Text="Set the same volume for all songs" Foreground="#666666" FontSize="12"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="NormalizeVolumeToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- ═══════ DATA MANAGEMENT ═══════ -->
                     <TextBlock Text="DATA MANAGEMENT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
                         <Border Background="#8C1932" CornerRadius="8">
                             <TextBlock Text="Clear Recent History" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Button>
+                    <Button Click="ClearCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
+                        <Border Background="#333333" CornerRadius="8">
+                            <TextBlock Text="Clear Image Cache" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Button>
+                    <Button Click="LogoutGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,25" Height="45">
+                        <Border Background="#333333" CornerRadius="8">
+                            <TextBlock Text="Logout Google Account" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="#FF6B6B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Button>
+
+                    <!-- ═══════ ABOUT ═══════ -->
+                    <TextBlock Text="ABOUT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
+                    <StackPanel Margin="5,10,0,20">
+                        <TextBlock Text="Youtify" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954"/>
+                        <TextBlock Text="Version 1.0.0" FontSize="13" Foreground="#666666" Margin="0,3,0,0"/>
+                        <TextBlock Text="A YouTube Music client for Windows Phone 8.1" FontSize="13" Foreground="#666666" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
