@@ -1033,7 +1033,7 @@
                     </PivotItem>
                     <!-- Lyrics page -->
                     <PivotItem>
-                        <Grid Background="#121212">
+                        <Grid>
                             <ProgressBar x:Name="LyricsLoadingBar" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="White"/>
                             <ScrollViewer x:Name="LyricsFallbackScrollViewer" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
                                 <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#B3B3B3" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
@@ -1048,14 +1048,6 @@
                                     <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
-                            <Rectangle Height="60" VerticalAlignment="Top" IsHitTestVisible="False">
-                                <Rectangle.Fill>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#121212" Offset="0"/>
-                                        <GradientStop Color="#00121212" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
                             <Rectangle Height="60" VerticalAlignment="Bottom" IsHitTestVisible="False">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
