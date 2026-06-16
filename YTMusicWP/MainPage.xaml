@@ -1090,7 +1090,7 @@
                         <Viewbox Width="22" Height="22"><Path Data="M7.41,8.58L12,13.17 16.59,8.58 18,10 12,16 6,10Z" Fill="White"/></Viewbox>
                     </Button>
                     <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="NOW PLAYING" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="#666666" CharacterSpacing="150" HorizontalAlignment="Center"/>
+                        <TextBlock Text="NOW PLAYING" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="#AAFFFFFF" CharacterSpacing="150" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
                             <Ellipse x:Name="DotPlayer" Width="7" Height="7" Fill="#1DB954" Margin="0,0,4,0" Opacity="1.0"/>
                             <Ellipse x:Name="DotLyrics" Width="7" Height="7" Fill="White" Margin="4,0,4,0" Opacity="0.3"/>
