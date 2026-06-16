@@ -286,14 +286,14 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
                         <Grid Margin="0,15" Background="Transparent">
-                            <Grid x:Name="HorizontalTemplate">
+                            <Grid x:Name="HorizontalTemplate" Margin="7,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="4" Fill="{TemplateBinding Background}" VerticalAlignment="Center" Margin="0" RadiusX="2" RadiusY="2"/>
-                                <Rectangle x:Name="HorizontalDecreaseRect" Grid.Column="0" Height="4" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" Margin="0" RadiusX="2" RadiusY="2"/>
+                                <Rectangle x:Name="HorizontalTrackRect" Grid.ColumnSpan="3" Height="4" Fill="{TemplateBinding Background}" VerticalAlignment="Center" RadiusX="2" RadiusY="2"/>
+                                <Rectangle x:Name="HorizontalDecreaseRect" Grid.Column="0" Height="4" Fill="{TemplateBinding Foreground}" VerticalAlignment="Center" RadiusX="2" RadiusY="2"/>
                                 <Thumb x:Name="HorizontalThumb" Grid.Column="1" Margin="-7,0,-7,0" Padding="0" Background="White">
                                     <Thumb.Template>
                                         <ControlTemplate TargetType="Thumb">
