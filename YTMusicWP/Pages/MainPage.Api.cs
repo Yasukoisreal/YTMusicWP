@@ -62,15 +62,32 @@ namespace YTMusicWP
 
         public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "")
         {
-            var list = new List<YouTubeTrack>(8);
+            var list = new List<YouTubeTrack>(20);
+
+            // --- CONTINUATION: Load more using token ---
+            if (!string.IsNullOrEmpty(pageToken) && pageToken != "NEW")
+            {
+                try
+                {
+                    var contResult = await InnerTubeClient.SearchContinueAsync(pageToken);
+                    if (contResult != null && contResult.Tracks != null)
+                    {
+                        list.AddRange(contResult.Tracks);
+                        _nextSearchToken = contResult.ContinuationToken ?? "";
+                    }
+                    return list;
+                }
+                catch { return list; }
+            }
 
             // --- LỚP 1 (ƯU TIÊN): INNERTUBE TRỰC TIẾP (không cần proxy) ---
             try
             {
-                var innerResults = await InnerTubeClient.SearchAsync(query, 12);
-                if (innerResults != null && innerResults.Count > 0)
+                var innerResult = await InnerTubeClient.SearchWithContinuationAsync(query, 20);
+                if (innerResult != null && innerResult.Tracks != null && innerResult.Tracks.Count > 0)
                 {
-                    list.AddRange(innerResults);
+                    list.AddRange(innerResult.Tracks);
+                    _nextSearchToken = innerResult.ContinuationToken ?? "";
                     return list;
                 }
             }
@@ -80,7 +97,6 @@ namespace YTMusicWP
             string apiKey = ApiKeyTextBox.Text.Trim();
             if (!string.IsNullOrEmpty(apiKey))
             {
-                // Nếu Lớp 1 đã có dữ liệu (có pageToken hay không), lấy thêm channel/playlist ở trang đầu
                 if (list.Count > 0 && !string.IsNullOrEmpty(pageToken)) return list; 
 
                 string ytUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=" + (list.Count > 0 ? "3" : "8") + "&q=" + Uri.EscapeDataString(query) + "&type=" + (list.Count > 0 ? "channel,playlist" : "video,channel,playlist") + "&key=" + apiKey;
@@ -96,6 +112,11 @@ namespace YTMusicWP
                 {
                     var response = await _apiClient.GetStringAsync(ytUrl);
                     var json = JObject.Parse(response);
+                    
+                    // Extract nextPageToken for YouTube API v3
+                    string nextPage = json["nextPageToken"]?.ToString();
+                    if (!string.IsNullOrEmpty(nextPage)) _nextSearchToken = nextPage;
+
                     var items = json["items"];
                     if (items != null)
                     {

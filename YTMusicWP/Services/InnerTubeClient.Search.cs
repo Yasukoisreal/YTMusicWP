@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +9,23 @@ namespace YTMusicWP
 {
     public static partial class InnerTubeClient
     {
+        // Search result with continuation token for pagination
+        public class SearchResult
+        {
+            public List<YouTubeTrack> Tracks { get; set; }
+            public string ContinuationToken { get; set; }
+        }
+
         public static async Task<List<YouTubeTrack>> SearchAsync(string query, int maxResults = 20)
         {
+            var result = await SearchWithContinuationAsync(query, maxResults);
+            return result?.Tracks ?? new List<YouTubeTrack>();
+        }
+
+        public static async Task<SearchResult> SearchWithContinuationAsync(string query, int maxResults = 20)
+        {
             var results = new List<YouTubeTrack>();
+            string continuationToken = null;
             try
             {
                 string vd = await GetVisitorDataAsync();
@@ -19,22 +33,19 @@ namespace YTMusicWP
                 {
                     ["context"] = BuildMusicContext(vd),
                     ["query"] = query
-                    // Không dùng params filter → trả cả songs, playlists, artists
                 };
 
                 var data = await PostInnerTubeAsync(
                     "https://music.youtube.com/youtubei/v1/search?prettyPrint=false", body, true);
 
-                // Path: contents.tabbedSearchResultsRenderer.tabs[0].tabRenderer.content.sectionListRenderer.contents[]
                 var tabs = data?["contents"]?["tabbedSearchResultsRenderer"]?["tabs"];
-                if (tabs == null || !tabs.HasValues) return results;
+                if (tabs == null || !tabs.HasValues) return new SearchResult { Tracks = results };
 
                 var sections = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
-                if (sections == null) return results;
+                if (sections == null) return new SearchResult { Tracks = results };
 
                 foreach (var sec in sections)
                 {
-                    // musicShelfRenderer — danh sách bài hát
                     var shelf = sec["musicShelfRenderer"];
                     if (shelf != null)
                     {
@@ -49,16 +60,21 @@ namespace YTMusicWP
                                     if (track != null && !string.IsNullOrEmpty(track.VideoId))
                                     {
                                         results.Add(track);
-                                        if (results.Count >= maxResults) return results;
+                                        if (results.Count >= maxResults) break;
                                     }
                                 }
                                 catch { continue; }
                             }
                         }
+                        // Extract continuation token
+                        var conts = shelf["continuations"];
+                        if (conts != null && conts.HasValues)
+                        {
+                            continuationToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString();
+                        }
                         continue;
                     }
 
-                    // itemSectionRenderer — playlist/artist items
                     var isr = sec["itemSectionRenderer"];
                     if (isr != null)
                     {
@@ -73,7 +89,7 @@ namespace YTMusicWP
                                     if (track != null && !string.IsNullOrEmpty(track.VideoId))
                                     {
                                         results.Add(track);
-                                        if (results.Count >= maxResults) return results;
+                                        if (results.Count >= maxResults) break;
                                     }
                                 }
                                 catch { continue; }
@@ -82,7 +98,6 @@ namespace YTMusicWP
                         continue;
                     }
 
-                    // musicCardShelfRenderer — top result card
                     var card = sec["musicCardShelfRenderer"];
                     if (card != null)
                     {
@@ -94,7 +109,6 @@ namespace YTMusicWP
                             var cardThumbs = card["thumbnail"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
                             string cardThumb = cardThumbs != null && cardThumbs.HasValues ? cardThumbs.Last?["url"]?.ToString() : "";
 
-                            // Subtitle for artist name — take first non-label/non-separator text
                             string cardSub = "";
                             var subRuns = card["subtitle"]?["runs"];
                             if (subRuns != null)
@@ -104,11 +118,10 @@ namespace YTMusicWP
                                     string t = r["text"]?.ToString();
                                     if (t != null && t != " • " && t != " · " && t != "Song" && t != "Video" && t != "Artist" && t != "Playlist" && t != "Album" && t != "EP" && t != "Single")
                                     {
-                                        // Skip view counts and durations
                                         if (t.Contains(" views") || t.Contains(" view")) continue;
-                                        if (t.Length <= 6 && t.Contains(":")) continue; // e.g. "3:57"
+                                        if (t.Length <= 6 && t.Contains(":")) continue;
                                         cardSub = t;
-                                        break; // Take FIRST valid text (= artist name)
+                                        break;
                                     }
                                 }
                             }
@@ -137,7 +150,54 @@ namespace YTMusicWP
                 }
             }
             catch { }
-            return results;
+            return new SearchResult { Tracks = results, ContinuationToken = continuationToken };
+        }
+
+        /// <summary>
+        /// Load more search results using continuation token
+        /// </summary>
+        public static async Task<SearchResult> SearchContinueAsync(string continuationToken)
+        {
+            var results = new List<YouTubeTrack>();
+            string nextToken = null;
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                var body = new JObject
+                {
+                    ["context"] = BuildMusicContext(vd)
+                };
+
+                var data = await PostInnerTubeAsync(
+                    "https://music.youtube.com/youtubei/v1/search?ctoken=" + Uri.EscapeDataString(continuationToken) + "&continuation=" + Uri.EscapeDataString(continuationToken) + "&prettyPrint=false", body, true);
+
+                // Continuation response: continuationContents.musicShelfContinuation
+                var shelf = data?["continuationContents"]?["musicShelfContinuation"];
+                if (shelf != null)
+                {
+                    var items = shelf["contents"];
+                    if (items != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            try
+                            {
+                                var track = ParseMusicListItem(item);
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    results.Add(track);
+                            }
+                            catch { continue; }
+                        }
+                    }
+                    var conts = shelf["continuations"];
+                    if (conts != null && conts.HasValues)
+                    {
+                        nextToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString();
+                    }
+                }
+            }
+            catch { }
+            return new SearchResult { Tracks = results, ContinuationToken = nextToken };
         }
 
         /// <summary>
