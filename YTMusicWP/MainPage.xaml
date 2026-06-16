@@ -437,16 +437,16 @@
             <!-- Filter chips -->
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,5,0,10">
                 <StackPanel Orientation="Horizontal">
-                    <Border Background="#333333" CornerRadius="20" Padding="14,6" Margin="0,0,8,0">
+                    <Border Background="#333333" CornerRadius="10" Padding="14,6" Margin="0,0,8,0">
                         <TextBlock Text="All" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border Background="#1DB954" CornerRadius="20" Padding="14,6" Margin="0,0,8,0">
+                    <Border Background="#1DB954" CornerRadius="10" Padding="14,6" Margin="0,0,8,0">
                         <TextBlock Text="Music" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border Background="#333333" CornerRadius="20" Padding="14,6" Margin="0,0,8,0">
+                    <Border Background="#333333" CornerRadius="10" Padding="14,6" Margin="0,0,8,0">
                         <TextBlock Text="Podcasts" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border Background="#333333" CornerRadius="20" Padding="14,6">
+                    <Border Background="#333333" CornerRadius="10" Padding="14,6">
                         <TextBlock Text="Audiobooks" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
@@ -557,19 +557,19 @@
             <!-- Filter Buttons -->
             <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,0,0,10">
                 <StackPanel Orientation="Horizontal">
-                    <Border x:Name="FilterAllBtn" Background="#1DB954" CornerRadius="20" Padding="14,6" Margin="0,0,8,0" Tapped="FilterAllBtn_Tapped">
+                    <Border x:Name="FilterAllBtn" Background="#1DB954" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterAllBtn_Tapped">
                         <TextBlock Text="All" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterSongsBtn" Background="#232323" CornerRadius="20" Padding="14,6" Margin="0,0,8,0" Tapped="FilterSongsBtn_Tapped">
+                    <Border x:Name="FilterSongsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterSongsBtn_Tapped">
                         <TextBlock Text="♪ Songs" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterPlaylistsBtn" Background="#232323" CornerRadius="20" Padding="14,6" Margin="0,0,8,0" Tapped="FilterPlaylistsBtn_Tapped">
+                    <Border x:Name="FilterPlaylistsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterPlaylistsBtn_Tapped">
                         <TextBlock Text="Playlists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterArtistsBtn" Background="#232323" CornerRadius="20" Padding="14,6" Margin="0,0,8,0" Tapped="FilterArtistsBtn_Tapped">
+                    <Border x:Name="FilterArtistsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterArtistsBtn_Tapped">
                         <TextBlock Text="Artists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterVideosBtn" Background="#232323" CornerRadius="20" Padding="14,6" Tapped="FilterAllBtn_Tapped">
+                    <Border x:Name="FilterVideosBtn" Background="#232323" CornerRadius="10" Padding="14,6" Tapped="FilterAllBtn_Tapped">
                         <TextBlock Text="Videos" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
