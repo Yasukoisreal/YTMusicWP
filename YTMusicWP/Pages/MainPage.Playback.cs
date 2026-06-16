@@ -226,31 +226,64 @@ namespace YTMusicWP
                         int oldIndex = currentLyricIndex;
                         currentLyricIndex = newIndex;
 
-                        // Animate OLD lyric → smooth fade out
+                        // Animate OLD lyric → smooth fade out + scale down
                         if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                         {
                             currentLyrics[oldIndex].ColorBrush  = _lyricInactiveBrush;
-                            currentLyrics[oldIndex].FontSize    = _baseLyricSize;
                             currentLyrics[oldIndex].FontWeight  = Windows.UI.Text.FontWeights.Normal;
 
                             var oldContainer = LyricsListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                             if (oldContainer != null)
                             {
+                                // Ensure ScaleTransform exists
+                                var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                if (oldScale == null)
+                                {
+                                    oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
+                                    oldContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                    oldContainer.RenderTransform = oldScale;
+                                }
+
+                                var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
                                 var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
+
+                                // Opacity fade out
                                 var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
                                 {
                                     To = 0.35, Duration = new Duration(TimeSpan.FromMilliseconds(500)),
-                                    EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
+                                    EasingFunction = easeInOut
                                 };
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, oldContainer);
                                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
+
+                                // Scale down X
+                                var sxAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                {
+                                    To = 0.97, Duration = new Duration(TimeSpan.FromMilliseconds(400)),
+                                    EasingFunction = easeInOut
+                                };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxAnim, oldScale);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxAnim, "ScaleX");
+
+                                // Scale down Y
+                                var syAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                {
+                                    To = 0.97, Duration = new Duration(TimeSpan.FromMilliseconds(400)),
+                                    EasingFunction = easeInOut
+                                };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syAnim, oldScale);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syAnim, "ScaleY");
+
                                 fadeOut.Children.Add(opAnim);
+                                fadeOut.Children.Add(sxAnim);
+                                fadeOut.Children.Add(syAnim);
                                 fadeOut.Begin();
                             }
                             else
                             {
                                 currentLyrics[oldIndex].Opacity = 0.35;
                             }
+                            currentLyrics[oldIndex].FontSize = _baseLyricSize;
                         }
 
                         // Animate NEW lyric → smooth scale + fade in
