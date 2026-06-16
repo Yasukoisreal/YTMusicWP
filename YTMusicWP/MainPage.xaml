@@ -312,14 +312,16 @@
 
         <!-- NowPlaying Storyboards -->
         <Storyboard x:Name="SlideUpStoryboard">
-            <DoubleAnimation Storyboard.TargetName="NowPlayingTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+            <DoubleAnimation Storyboard.TargetName="NowPlayingTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.35">
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
             </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="NowPlayingView" Storyboard.TargetProperty="Opacity" From="0.5" To="1" Duration="0:0:0.2"/>
         </Storyboard>
         <Storyboard x:Name="SlideDownStoryboard" Completed="SlideDownStoryboard_Completed">
             <DoubleAnimation Storyboard.TargetName="NowPlayingTransform" Storyboard.TargetProperty="Y" To="1000" Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseIn"/></DoubleAnimation.EasingFunction>
+                <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseIn"/></DoubleAnimation.EasingFunction>
             </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="NowPlayingView" Storyboard.TargetProperty="Opacity" From="1" To="0.3" Duration="0:0:0.25"/>
         </Storyboard>
         <Storyboard x:Name="MenuSlideUpStoryboard">
             <DoubleAnimation Storyboard.TargetName="MenuTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.25">
