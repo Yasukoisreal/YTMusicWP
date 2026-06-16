@@ -1129,7 +1129,7 @@
                             <ListView x:Name="LyricsListView" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="10,0" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Text}" FontSize="24" Foreground="{Binding ColorBrush}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,8" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left"/>
+                                        <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,8" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left"/>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>
