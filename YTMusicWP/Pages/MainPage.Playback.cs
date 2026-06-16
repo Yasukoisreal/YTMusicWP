@@ -78,6 +78,8 @@ namespace YTMusicWP
             else if (popTracks.Contains(track)) activeList = popTracks;
             else if (lofiTracks.Contains(track)) activeList = lofiTracks;
             else if (workoutTracks.Contains(track)) activeList = workoutTracks;
+            else if (podcastTracks.Contains(track)) activeList = podcastTracks;
+            else if (audiobookTracks.Contains(track)) activeList = audiobookTracks;
             else if (historyTracks.Contains(track)) activeList = historyTracks;
             else if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Contains(track)) activeList = _currentViewingPlaylist.Tracks;
             else if (ArtistSongsList.ItemsSource != null) { var artistList = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>; if (artistList != null && artistList.Contains(track)) activeList = artistList; }
