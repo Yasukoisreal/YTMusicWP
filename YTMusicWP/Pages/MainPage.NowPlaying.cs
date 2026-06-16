@@ -105,10 +105,19 @@ namespace YTMusicWP
             }
         }
 
+        private void DismissKeyboard()
+        {
+            // WP8.1: Only way to reliably dismiss keyboard is disable+enable the TextBox
+            if (SearchBox != null && SearchBox.FocusState != FocusState.Unfocused)
+            {
+                SearchBox.IsEnabled = false;
+                SearchBox.IsEnabled = true;
+            }
+        }
+
         private void CloseNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            // Prevent SearchBox from auto-focusing and showing keyboard
-            this.Focus(FocusState.Programmatic);
+            DismissKeyboard();
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"];
@@ -151,7 +160,7 @@ namespace YTMusicWP
         private void MenuSlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
-            this.Focus(FocusState.Programmatic);
+            DismissKeyboard();
         }
 
         private async void MenuDownloadNowPlaying_Click(object sender, RoutedEventArgs e)
@@ -171,7 +180,7 @@ namespace YTMusicWP
         private void SlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingView.Visibility = Visibility.Collapsed;
-            this.Focus(FocusState.Programmatic);
+            DismissKeyboard();
         }
 
         private void SongItem_Holding(object sender, HoldingRoutedEventArgs e)
