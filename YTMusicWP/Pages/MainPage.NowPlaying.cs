@@ -105,13 +105,17 @@ namespace YTMusicWP
             }
         }
 
-        private void DismissKeyboard()
+        private async void DismissKeyboard()
         {
-            // WP8.1: Only way to reliably dismiss keyboard is disable+enable the TextBox
-            if (SearchBox != null && SearchBox.FocusState != FocusState.Unfocused)
+            // WP8.1: Block SearchBox from receiving auto-focus when panels close
+            if (SearchBox != null)
             {
+                SearchBox.IsTabStop = false;
                 SearchBox.IsEnabled = false;
                 SearchBox.IsEnabled = true;
+                // Restore after focus system settles
+                await Task.Delay(300);
+                SearchBox.IsTabStop = true;
             }
         }
 
