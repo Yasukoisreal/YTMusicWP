@@ -1417,9 +1417,6 @@
                     </Grid>
                 </Border>
             </StackPanel>
-
-            <!-- Independent audio player for Shorts (NOT BackgroundMediaPlayer) -->
-            <MediaElement x:Name="ShortsMediaPlayer" AutoPlay="True" AudioCategory="ForegroundOnlyMedia" Visibility="Collapsed" Volume="1.0"/>
         </Grid>
 
         <!-- ═══════════════════════════════════ ARTIST PROFILE VIEW ═══════════════════════════════════ -->

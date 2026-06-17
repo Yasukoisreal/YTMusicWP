@@ -124,16 +124,18 @@ namespace YTMusicWP
             _shortsCategoryIndex = categoryIndex;
             _shortsIsOpen = true;
 
-            // Pause main player to avoid conflict
+            // Save current main player state to restore on exit
             try
             {
-                if (_appMediaPlayer != null)
-                {
-                    _shortsWasMainPlaying = _appMediaPlayer.CurrentState == Windows.Media.Playback.MediaPlayerState.Playing;
-                    if (_shortsWasMainPlaying) _appMediaPlayer.Pause();
-                }
+                _shortsSavedTrack = currentTrack;
+                _shortsSavedPosition = _appMediaPlayer != null ? _appMediaPlayer.Position : TimeSpan.Zero;
+                _shortsWasMainPlaying = _appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing;
             }
-            catch { _shortsWasMainPlaying = false; }
+            catch
+            {
+                _shortsSavedTrack = null;
+                _shortsWasMainPlaying = false;
+            }
 
             // Smart category ordering based on listening history
             BuildSmartCategoryOrder();
@@ -171,17 +173,31 @@ namespace YTMusicWP
         {
             _shortsIsOpen = false;
 
-            // Stop waveform + audio + loop timer
+            // Stop waveform + loop timer
             if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
             StopShortsLoop();
-            try { ShortsMediaPlayer.Stop(); ShortsMediaPlayer.Source = null; } catch { }
 
-            // Resume main player if it was playing before Shorts
-            try
+            // Stop shorts audio
+            try { if (_appMediaPlayer != null) _appMediaPlayer.Pause(); } catch { }
+
+            // Restore previous track if it was playing
+            if (_shortsWasMainPlaying && _shortsSavedTrack != null)
             {
-                if (_shortsWasMainPlaying && _appMediaPlayer != null) _appMediaPlayer.Play();
+                try
+                {
+                    PlayTrack(_shortsSavedTrack);
+                    // Restore position after a brief delay
+                    var restoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
+                    var savedPos = _shortsSavedPosition;
+                    restoreTimer.Tick += (ts, te) =>
+                    {
+                        restoreTimer.Stop();
+                        try { if (_appMediaPlayer != null) _appMediaPlayer.Position = savedPos; } catch { }
+                    };
+                    restoreTimer.Start();
+                }
+                catch { }
             }
-            catch { }
 
             var sb = new Storyboard();
             var anim = new DoubleAnimation
@@ -526,27 +542,28 @@ namespace YTMusicWP
         }
 
         // ==========================================
-        // INDEPENDENT AUDIO PLAYER — 15s LOOP
+        // SHORTS AUDIO — uses BackgroundMediaPlayer via PlayTrack
+        // (WP8.1 does NOT support MediaElement + BackgroundMediaPlayer simultaneously)
         // ==========================================
         private DispatcherTimer _shortsLoopTimer;
         private static readonly double ShortsClipSeconds = 15.0;
+        private YouTubeTrack _shortsSavedTrack;
+        private TimeSpan _shortsSavedPosition;
 
-        private async void PlayShortsAudio(string videoId)
+        private void PlayShortsAudio(string videoId)
         {
             try
             {
-                // Stop current + timer
                 StopShortsLoop();
-                ShortsMediaPlayer.Stop();
 
-                string streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId);
-                if (!string.IsNullOrEmpty(streamUrl) && _shortsIsOpen)
-                {
-                    ShortsMediaPlayer.Source = new Uri(streamUrl, UriKind.Absolute);
-                    ShortsMediaPlayer.Play();
-                    // Start loop timer (plays 15s from start, then loops)
-                    StartShortsLoop();
-                }
+                if (_shortsSongs == null || _shortsSongIndex >= _shortsSongs.Count) return;
+                var track = _shortsSongs[_shortsSongIndex];
+
+                // Play through main BackgroundMediaPlayer
+                PlayTrack(track);
+
+                // Start 15s loop timer
+                StartShortsLoop();
             }
             catch { }
         }
@@ -573,12 +590,13 @@ namespace YTMusicWP
         {
             try
             {
-                if (ShortsMediaPlayer.CurrentState != Windows.UI.Xaml.Media.MediaElementState.Playing) return;
+                if (_appMediaPlayer == null) return;
+                if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing) return;
 
                 // Loop back to start after 15 seconds
-                if (ShortsMediaPlayer.Position.TotalSeconds >= ShortsClipSeconds)
+                if (_appMediaPlayer.Position.TotalSeconds >= ShortsClipSeconds)
                 {
-                    ShortsMediaPlayer.Position = TimeSpan.Zero;
+                    _appMediaPlayer.Position = TimeSpan.Zero;
                 }
             }
             catch { }
@@ -596,14 +614,15 @@ namespace YTMusicWP
         {
             try
             {
-                if (ShortsMediaPlayer.CurrentState == Windows.UI.Xaml.Media.MediaElementState.Playing)
+                if (_appMediaPlayer == null) return;
+                if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
                 {
-                    ShortsMediaPlayer.Pause();
+                    _appMediaPlayer.Pause();
                     UpdateShortsPauseIcon(false);
                 }
                 else
                 {
-                    ShortsMediaPlayer.Play();
+                    _appMediaPlayer.Play();
                     UpdateShortsPauseIcon(true);
                 }
             }
@@ -641,16 +660,12 @@ namespace YTMusicWP
         private void ShortsSongBar_Tapped(object sender, TappedRoutedEventArgs e)
         {
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
-            var track = _shortsSongs[_shortsSongIndex];
 
-            // Don't resume old main player track — PlayTrack will start fresh
+            // Track is already playing via BackgroundMediaPlayer
+            // Just close Shorts without restoring the previous track
             _shortsWasMainPlaying = false;
-
-            // Close Shorts first (stops shorts audio)
+            _shortsSavedTrack = null;
             CloseShortsView();
-
-            // Play in main player
-            PlayTrack(track);
         }
     }
 }
