@@ -487,11 +487,10 @@ namespace YTMusicWP
         }
 
         // ==========================================
-        // INDEPENDENT AUDIO PLAYER — 15s LOOP AT BEST PART
+        // INDEPENDENT AUDIO PLAYER — 15s LOOP
         // ==========================================
         private DispatcherTimer _shortsLoopTimer;
-        private TimeSpan _shortsLoopStart;
-        private static readonly TimeSpan ShortsClipDuration = TimeSpan.FromSeconds(15);
+        private static readonly double ShortsClipSeconds = 15.0;
 
         private async void PlayShortsAudio(string videoId)
         {
@@ -504,38 +503,11 @@ namespace YTMusicWP
                 string streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId);
                 if (!string.IsNullOrEmpty(streamUrl) && _shortsIsOpen)
                 {
-                    ShortsMediaPlayer.MediaOpened -= ShortsMedia_Opened;
-                    ShortsMediaPlayer.MediaOpened += ShortsMedia_Opened;
                     ShortsMediaPlayer.Source = new Uri(streamUrl, UriKind.Absolute);
                     ShortsMediaPlayer.Play();
+                    // Start loop timer (plays 15s from start, then loops)
+                    StartShortsLoop();
                 }
-            }
-            catch { }
-        }
-
-        private void ShortsMedia_Opened(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Seek to ~30% of the song (skip intro → chorus area)
-                var duration = ShortsMediaPlayer.NaturalDuration;
-                if (duration.HasTimeSpan && duration.TimeSpan.TotalSeconds > 30)
-                {
-                    _shortsLoopStart = TimeSpan.FromSeconds(duration.TimeSpan.TotalSeconds * 0.30);
-                }
-                else if (duration.HasTimeSpan && duration.TimeSpan.TotalSeconds > 15)
-                {
-                    // Short song: start at 25%
-                    _shortsLoopStart = TimeSpan.FromSeconds(duration.TimeSpan.TotalSeconds * 0.25);
-                }
-                else
-                {
-                    // Very short: start from beginning
-                    _shortsLoopStart = TimeSpan.Zero;
-                }
-
-                ShortsMediaPlayer.Position = _shortsLoopStart;
-                StartShortsLoop();
             }
             catch { }
         }
@@ -564,10 +536,10 @@ namespace YTMusicWP
             {
                 if (ShortsMediaPlayer.CurrentState != Windows.UI.Xaml.Media.MediaElementState.Playing) return;
 
-                // If played 15 seconds from start point → loop back
-                if (ShortsMediaPlayer.Position >= _shortsLoopStart + ShortsClipDuration)
+                // Loop back to start after 15 seconds
+                if (ShortsMediaPlayer.Position.TotalSeconds >= ShortsClipSeconds)
                 {
-                    ShortsMediaPlayer.Position = _shortsLoopStart;
+                    ShortsMediaPlayer.Position = TimeSpan.Zero;
                 }
             }
             catch { }
