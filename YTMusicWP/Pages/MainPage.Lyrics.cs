@@ -427,8 +427,39 @@ namespace YTMusicWP
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, FullscreenLyricsView);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
             fadeOut.Children.Add(anim);
-            fadeOut.Completed += (s, a) => { FullscreenLyricsView.Visibility = Visibility.Collapsed; };
+            fadeOut.Completed += (s, a) =>
+            {
+                FullscreenLyricsView.Visibility = Visibility.Collapsed;
+                // Refresh regular lyrics containers to match current sync state
+                RefreshRegularLyricsContainers();
+            };
             fadeOut.Begin();
+        }
+
+        private void RefreshRegularLyricsContainers()
+        {
+            for (int i = 0; i < currentLyrics.Count; i++)
+            {
+                var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                if (container == null) continue;
+
+                if (i == currentLyricIndex)
+                {
+                    container.Opacity = 1.0;
+                    var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                    if (st != null) { st.ScaleX = 1.0; st.ScaleY = 1.0; }
+                }
+                else
+                {
+                    container.Opacity = 0.35;
+                    var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                    if (st != null) { st.ScaleX = 0.85; st.ScaleY = 0.85; }
+                }
+            }
+
+            // Scroll to current lyric
+            if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
+                LyricsListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
         }
 
         private void FullscreenLyricsListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
