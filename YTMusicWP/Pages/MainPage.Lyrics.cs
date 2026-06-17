@@ -177,14 +177,14 @@ namespace YTMusicWP
                     return new string[] { null, arr[0]["plainLyrics"]?.ToString() };
                 };
 
-                // ── Fire search requests IMMEDIATELY (no duration needed) ──
+                // ── Fire ALL search requests IMMEDIATELY ──
                 string url1 = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
                 string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
                 var searchTask1 = _apiClient.GetStringAsync(url1);
                 var searchTask2 = _apiClient.GetStringAsync(url2);
 
-                // ── In parallel: wait for player duration (max 1.5s, 100ms polling) ──
-                for (int attempt = 0; attempt < 15; attempt++)
+                // ── Quick duration poll (max 500ms) — in parallel with searches ──
+                for (int attempt = 0; attempt < 5; attempt++)
                 {
                     try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
                     if (trackDurationSec > 10) break;
@@ -192,24 +192,31 @@ namespace YTMusicWP
                     token.ThrowIfCancellationRequested();
                 }
 
-                // ── LAYER 0: /api/get with exact duration (best match) ──
+                // ── Fire /api/get with duration in parallel too ──
+                Task<string> getTask = null;
                 if (trackDurationSec > 10)
+                {
+                    string getUrl = "https://lrclib.net/api/get?track_name=" + Uri.EscapeDataString(cleanTitle)
+                        + "&artist_name=" + Uri.EscapeDataString(cleanArtist)
+                        + "&duration=" + ((int)Math.Round(trackDurationSec)).ToString();
+                    getTask = _apiClient.GetStringAsync(getUrl);
+                }
+
+                // ── LAYER 0: /api/get with exact duration (best, fastest) ──
+                if (getTask != null)
                 {
                     try
                     {
-                        string getUrl = "https://lrclib.net/api/get?track_name=" + Uri.EscapeDataString(cleanTitle) 
-                            + "&artist_name=" + Uri.EscapeDataString(cleanArtist)
-                            + "&duration=" + ((int)Math.Round(trackDurationSec)).ToString();
-                        var getResp = await _apiClient.GetStringAsync(getUrl);
+                        var getResp = await getTask;
                         token.ThrowIfCancellationRequested();
-                        var getJson = Newtonsoft.Json.Linq.JObject.Parse(getResp);
+                        var getJson = JObject.Parse(getResp);
                         syncedLyrics = getJson["syncedLyrics"]?.ToString();
                         plainLyrics = getJson["plainLyrics"]?.ToString();
                     }
                     catch { }
                 }
 
-                // ── LAYER 1: Use search results (already started in parallel) ──
+                // ── LAYER 1: Use search results (already running in parallel) ──
                 if (string.IsNullOrWhiteSpace(syncedLyrics))
                 {
                     try
