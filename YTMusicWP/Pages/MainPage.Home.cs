@@ -194,35 +194,32 @@ namespace YTMusicWP
 
             _currentHomeQuery = queries[0];
 
-            // Use music filter for better results
-            string musicFilter = "EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D";
-
-            // Load all sections (first 4 eagerly, last 4 lazily after first batch)
-            var trending = await FetchMusicList(queries[0]);
+            // Load all sections with "songs" filter for individual tracks (not video compilations)
+            var trending = await FetchMusicList(queries[0], "", "songs");
             if (trending != null) foreach (var t in trending) { if (IsMusicTrack(t)) homeTracks.Add(t); }
 
-            var pop = await FetchMusicList(queries[1]);
+            var pop = await FetchMusicList(queries[1], "", "songs");
             if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
 
-            var chill = await FetchMusicList(queries[2]);
+            var chill = await FetchMusicList(queries[2], "", "songs");
             if (chill != null) foreach (var t in chill) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
 
-            var workout = await FetchMusicList(queries[3]);
+            var workout = await FetchMusicList(queries[3], "", "songs");
             if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
 
             // Load remaining 4 sections in background (don't block UI)
-            var g5 = await FetchMusicList(queries[4]);
+            var g5 = await FetchMusicList(queries[4], "", "songs");
             if (g5 != null) foreach (var t in g5) { if (IsMusicTrack(t)) genre5Tracks.Add(t); }
 
-            var g6 = await FetchMusicList(queries[5]);
+            var g6 = await FetchMusicList(queries[5], "", "songs");
             if (g6 != null) foreach (var t in g6) { if (IsMusicTrack(t)) genre6Tracks.Add(t); }
 
-            var g7 = await FetchMusicList(queries[6]);
+            var g7 = await FetchMusicList(queries[6], "", "songs");
             if (g7 != null) foreach (var t in g7) { if (IsMusicTrack(t)) genre7Tracks.Add(t); }
 
-            var g8 = await FetchMusicList(queries[7]);
+            var g8 = await FetchMusicList(queries[7], "", "songs");
             if (g8 != null) foreach (var t in g8) { if (IsMusicTrack(t)) genre8Tracks.Add(t); }
         }
 
