@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Media.Playback;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -251,6 +252,10 @@ namespace YTMusicWP
 
             // Update hashtags
             UpdateShortsHashtags();
+
+            // Auto-play this track
+            PlayTrack(track);
+            UpdateShortsPauseIcon(true);
         }
 
         private void StartWaveformAnimation()
@@ -419,9 +424,25 @@ namespace YTMusicWP
 
         private void ShortsPlayCurrent_Click(object sender, RoutedEventArgs e)
         {
-            if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
-            var track = _shortsSongs[_shortsSongIndex];
-            PlayTrack(track);
+            try
+            {
+                if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                {
+                    _appMediaPlayer.Pause();
+                    UpdateShortsPauseIcon(false);
+                }
+                else
+                {
+                    _appMediaPlayer.Play();
+                    UpdateShortsPauseIcon(true);
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateShortsPauseIcon(bool isPlaying)
+        {
+            ShortsPauseBtn.Text = isPlaying ? "❚❚" : "▶";
         }
 
         private void ShortsAddToQueue_Click(object sender, RoutedEventArgs e)

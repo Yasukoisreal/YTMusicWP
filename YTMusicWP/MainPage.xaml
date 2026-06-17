@@ -1364,7 +1364,7 @@
                 </Button>
                 <TextBlock x:Name="ShortsCategoryTitle" Grid.Column="1" Text="#edm" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <Button Grid.Column="2" Click="ShortsPlayCurrent_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,5,0">
-                    <TextBlock Text="▶" FontSize="18" Foreground="White"/>
+                    <TextBlock x:Name="ShortsPauseBtn" Text="❚❚" FontSize="18" Foreground="White"/>
                 </Button>
             </Grid>
 
