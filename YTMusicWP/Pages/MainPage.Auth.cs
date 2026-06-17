@@ -57,10 +57,8 @@ namespace YTMusicWP
             try
             {
                 var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                ApiKeyTextBox.Text = SafeGetString(settings, "YouTubeApiKey", "");
                 ClientIdTextBox.Text = SafeGetString(settings, "GoogleClientId", "");
                 ClientSecretTextBox.Text = SafeGetString(settings, "GoogleClientSecret", "");
-                ProxyUrlTextBox.Text = SafeGetString(settings, "CustomProxyUrl", "");
 
                 if (settings.ContainsKey("TrendingRegion"))
                 {
@@ -113,11 +111,8 @@ namespace YTMusicWP
 
         private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            string newKey = ApiKeyTextBox.Text.Trim();
-            Windows.Storage.ApplicationData.Current.LocalSettings.Values["YouTubeApiKey"] = newKey;
             Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientId"] = ClientIdTextBox.Text.Trim();
             Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientSecret"] = ClientSecretTextBox.Text.Trim();
-            Windows.Storage.ApplicationData.Current.LocalSettings.Values["CustomProxyUrl"] = ProxyUrlTextBox.Text.Trim();
 
             var selectedRegion = RegionComboBox.SelectedItem as ComboBoxItem;
             if (selectedRegion != null && selectedRegion.Tag != null)

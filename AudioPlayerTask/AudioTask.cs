@@ -111,33 +111,11 @@ namespace AudioPlayerTask
         }
 
         // ==========================================
-        // RESOLVE AUDIO URL — DUAL MODE
-        // Layer 1: InnerTube ANDROID_VR trực tiếp từ phone (giống MetroTube)
-        // Layer 2: Render server /api/stream (fallback)
+        // RESOLVE AUDIO URL — InnerTube direct
+        // Layer 1: InnerTube ANDROID_VR trực tiếp từ phone
+        // Layer 2: Invidious API fallback
+        // Layer 3: Invidious Embed proxy
         // ==========================================
-        private const string DEFAULT_PROXY_URL = "https://summer-fire-6e3f.adianhseng.workers.dev";
-        private const string API_SECRET_KEY = "LumiaWP81-An";
-
-        private string GetProxyBaseUrl()
-        {
-            try
-            {
-                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                if (ls.ContainsKey("CustomProxyUrl"))
-                {
-                    string custom = ls["CustomProxyUrl"]?.ToString();
-                    if (!string.IsNullOrEmpty(custom)) return custom;
-                }
-            }
-            catch { }
-            return DEFAULT_PROXY_URL;
-        }
-
-        /// <summary>
-        /// LAYER 1: InnerTube ANDROID_VR trực tiếp từ phone (giống MetroTube).
-        /// Phone có residential IP → YouTube chấp nhận.
-        /// Trả về googlevideo URL trực tiếp (thử phát không cần proxy).
-        /// </summary>
         private string _innerTubeDebug = "";
 
         /// <summary>
@@ -546,16 +524,6 @@ namespace AudioPlayerTask
             return null;
         }
 
-        /// <summary>
-        /// LAYER 2: Proxy stream qua CF Worker /stream (fallback).
-        /// CF Worker forward sang Render yt-dlp.
-        /// </summary>
-        private Task<string> ResolveViaProxyStreamAsync(string videoId)
-        {
-            string baseUrl = GetProxyBaseUrl();
-            string streamUrl = baseUrl + "/stream?v=" + videoId + "&key=" + API_SECRET_KEY;
-            return Task.FromResult(streamUrl);
-        }
 
         // ==========================================
         // MAIN PLAYBACK — InnerTube direct only
@@ -713,7 +681,7 @@ namespace AudioPlayerTask
 
         private void ReportErrorToUI(string errorDetail)
         {
-            string title = (_currentTrackIndex >= 0 && _currentTrackIndex < _titleList.Count) ? _titleList[_currentTrackIndex] : "Youtify";
+            string title = (_currentTrackIndex >= 0 && _currentTrackIndex < _titleList.Count) ? _titleList[_currentTrackIndex] : "SpotMusic";
             try
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;

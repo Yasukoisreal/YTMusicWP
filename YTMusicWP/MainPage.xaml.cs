@@ -98,22 +98,7 @@ namespace YTMusicWP
         private UserPlaylist _currentViewingPlaylist = null;
         private YouTubeTrack _trackPendingForPlaylist = null;
 
-        private string ProxyBaseUrl
-        {
-            get
-            {
-                if (Windows.Storage.ApplicationData.Current.LocalSettings.Values.ContainsKey("CustomProxyUrl"))
-                {
-                    string url = Windows.Storage.ApplicationData.Current.LocalSettings.Values["CustomProxyUrl"]?.ToString();
-                    if (!string.IsNullOrWhiteSpace(url))
-                    {
-                        if (url.EndsWith("/")) url = url.TrimEnd('/');
-                        return url;
-                    }
-                }
-                return "https://summer-fire-6e3f.adianhseng.workers.dev";
-            }
-        }
+
 
         private ObservableCollection<YouTubeTrack> currentQueueTracks = new ObservableCollection<YouTubeTrack>();
 
@@ -152,8 +137,7 @@ namespace YTMusicWP
         private static readonly SolidColorBrush _greenBrush = new SolidColorBrush(Windows.UI.Colors.Green);
         private static readonly SolidColorBrush _whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
 
-        // Secret key cho Render server API authentication
-        private const string _apiSecretKey = "LumiaWP81-An";
+
 
         public MainPage()
         {

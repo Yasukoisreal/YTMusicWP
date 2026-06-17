@@ -170,7 +170,7 @@ namespace YTMusicWP
         {
             if (_trackToShare != null)
             {
-                args.Request.Data.Properties.Title = "Youtify - Share Music";
+                args.Request.Data.Properties.Title = "SpotMusic - Share Music";
                 args.Request.Data.Properties.Description = "Listen to " + _trackToShare.Title;
                 string url = "https://www.youtube.com/watch?v=" + _trackToShare.VideoId;
                 args.Request.Data.SetWebLink(new Uri(url));

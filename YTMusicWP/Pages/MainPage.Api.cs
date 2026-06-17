@@ -1,34 +1,11 @@
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using Windows.Storage;
 
 namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
-        private static YouTubeTrack ParseTrackItem(JToken item)
-        {
-            string vidId = item["id"]?["videoId"]?.ToString();
-            if (string.IsNullOrEmpty(vidId)) vidId = item["id"]?["channelId"]?.ToString() != null ? "CHANNEL:" + item["id"]["channelId"].ToString() : null;
-            if (string.IsNullOrEmpty(vidId)) vidId = item["id"]?["playlistId"]?.ToString() != null ? "PLAYLIST:" + item["id"]["playlistId"].ToString() : null;
-            if (string.IsNullOrEmpty(vidId)) return null;
-
-            string title   = System.Net.WebUtility.HtmlDecode(item["snippet"]?["title"]?.ToString() ?? "");
-            string channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(item["snippet"]?["channelTitle"]?.ToString() ?? ""));
-            string channelId = item["snippet"]?["channelId"]?.ToString() ?? item["id"]?["channelId"]?.ToString();
-            var    thumbs  = item["snippet"]?["thumbnails"];
-            string thumbUrl = thumbs?["maxres"]?["url"]?.ToString()
-                           ?? thumbs?["standard"]?["url"]?.ToString()
-                           ?? thumbs?["high"]?["url"]?.ToString()
-                           ?? thumbs?["medium"]?["url"]?.ToString()
-                           ?? thumbs?["default"]?["url"]?.ToString();
-            return new YouTubeTrack { VideoId = vidId, Title = title, ChannelName = channel, ChannelId = channelId, ThumbnailUrl = thumbUrl };
-        }
 
         private static string CleanChannelName(string channel)
         {
@@ -50,7 +27,7 @@ namespace YTMusicWP
             if (url.Contains("=w226-h226"))
                 return url.Replace("=w226-h226", "=w480-h480");
             if (url.Contains("hqdefault.jpg"))
-                return url.Replace("hqdefault.jpg", "hqdefault.jpg"); // giữ hqdefault (480x360), ko dùng maxresdefault (1280x720)
+                return url; // giữ hqdefault (480x360), ko dùng maxresdefault (1280x720)
             if (url.Contains("mqdefault.jpg"))
                 return url.Replace("mqdefault.jpg", "hqdefault.jpg");
             if (url.Contains("-s120-"))
