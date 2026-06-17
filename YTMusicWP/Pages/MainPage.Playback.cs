@@ -291,7 +291,7 @@ namespace YTMusicWP
                             else
                             {
                                 var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
-                                if (oldContainer != null) oldContainer.Opacity = 0.3;
+                                if (oldContainer != null) oldContainer.Opacity = 0.5;
                             }
                         }
 

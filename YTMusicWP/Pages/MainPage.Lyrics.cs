@@ -436,7 +436,7 @@ namespace YTMusicWP
             if (args.ItemContainer != null)
             {
                 // Set all non-active lines to dim, active line to bright
-                args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.3;
+                args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.5;
             }
         }
 
