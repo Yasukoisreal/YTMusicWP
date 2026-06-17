@@ -455,15 +455,14 @@ namespace YTMusicWP
         {
             try
             {
-                // FIX: Đánh thức background task nếu nó đã chết thay vì gửi message mù
-                if (_appMediaPlayer.CurrentState == MediaPlayerState.Closed && currentTrack != null)
-                {
-                    PlayTrack(currentTrack);
-                    return;
-                }
+                // Always send NextTrackMessage — AudioTask handles Closed state internally
                 BackgroundMediaPlayer.SendMessageToBackground(new ValueSet { { "NextTrackMessage", "" } });
             }
-            catch { }
+            catch
+            {
+                // If background task is truly dead, re-play current track to wake it up
+                try { if (currentTrack != null) PlayTrack(currentTrack); } catch { }
+            }
         }
 
 
@@ -583,6 +582,12 @@ namespace YTMusicWP
 
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist);
+
+                        // Restart marquee if NowPlaying is visible
+                        if (NowPlayingView.Visibility == Visibility.Visible)
+                        {
+                            var ignored2 = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
+                        }
                     }
                 });
             }

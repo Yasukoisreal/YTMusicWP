@@ -317,9 +317,7 @@ namespace YTMusicWP
             PodcastLoading.Visibility = Visibility.Visible;
             try
             {
-                string region = "US";
-                if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
-                    region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+                string region = InnerTubeClient.CurrentRegion;
 
                 string query = "popular podcasts";
                 switch (region)
@@ -351,9 +349,7 @@ namespace YTMusicWP
             AudiobookLoading.Visibility = Visibility.Visible;
             try
             {
-                string region = "US";
-                if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
-                    region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+                string region = InnerTubeClient.CurrentRegion;
 
                 string query = "audiobook full length";
                 switch (region)

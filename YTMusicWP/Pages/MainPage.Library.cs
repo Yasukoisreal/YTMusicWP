@@ -170,10 +170,19 @@ namespace YTMusicWP
         {
             if (_trackToShare != null)
             {
-                args.Request.Data.Properties.Title = "SpotMusic - Share Music";
-                args.Request.Data.Properties.Description = "Listen to " + _trackToShare.Title;
-                string url = "https://www.youtube.com/watch?v=" + _trackToShare.VideoId;
-                args.Request.Data.SetWebLink(new Uri(url));
+                if (_trackToShare.VideoId.StartsWith("LOCAL:"))
+                {
+                    args.Request.Data.Properties.Title = "SpotMusic";
+                    args.Request.Data.Properties.Description = _trackToShare.Title;
+                    args.Request.Data.SetText("🎵 " + _trackToShare.Title + " — " + _trackToShare.ChannelName);
+                }
+                else
+                {
+                    args.Request.Data.Properties.Title = "SpotMusic - Share Music";
+                    args.Request.Data.Properties.Description = "Listen to " + _trackToShare.Title;
+                    string url = "https://www.youtube.com/watch?v=" + _trackToShare.VideoId;
+                    args.Request.Data.SetWebLink(new Uri(url));
+                }
             }
         }
 

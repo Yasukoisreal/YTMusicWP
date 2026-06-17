@@ -313,6 +313,10 @@ namespace YTMusicWP
         {
             base.OnNavigatedFrom(e);
             DataTransferManager.GetForCurrentView().DataRequested -= MainPage_DataRequested;
+            // Dispose timer to prevent leaks
+            if (_bgTimer != null) { _bgTimer.Change(Timeout.Infinite, Timeout.Infinite); _bgTimer.Dispose(); _bgTimer = null; }
+            // Stop gradient pulse
+            if (_gradientPulseTimer != null) { _gradientPulseTimer.Stop(); }
         }
 
         private YouTubeTrack _trackToShare;

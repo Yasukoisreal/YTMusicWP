@@ -111,6 +111,10 @@ namespace YTMusicWP
             // Block SearchBox focus BEFORE any panel changes
             if (SearchBox != null) SearchBox.IsTabStop = false;
             
+            // Stop gradient animation timer
+            if (_gradientPulseTimer != null) { _gradientPulseTimer.Stop(); }
+            StopTitleMarquee();
+
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"];
@@ -206,9 +210,12 @@ namespace YTMusicWP
             _bottomSheetTrack = track;
             BottomSheetTitle.Text = track.Title;
             BottomSheetArtist.Text = track.ChannelName;
-            try {
-                BottomSheetCover.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl)) { DecodePixelWidth = 100 };
-            } catch {}
+            if (!string.IsNullOrEmpty(track.ThumbnailUrl))
+            {
+                try {
+                    BottomSheetCover.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl)) { DecodePixelWidth = 100 };
+                } catch {}
+            }
 
             CustomBottomSheet.Visibility = Visibility.Visible;
             BottomSheetSlideUpStoryboard.Begin();
@@ -248,7 +255,15 @@ namespace YTMusicWP
         private void BottomSheetGoToArtist_Click(object sender, RoutedEventArgs e)
         {
             CloseBottomSheet_Click(null, null);
-            if (_bottomSheetTrack != null) OpenArtistProfile(_bottomSheetTrack.ChannelId, _bottomSheetTrack.ChannelName);
+            if (_bottomSheetTrack != null)
+            {
+                if (string.IsNullOrEmpty(_bottomSheetTrack.ChannelId) && string.IsNullOrEmpty(_bottomSheetTrack.ChannelName))
+                {
+                    ShowToast("Artist info not available");
+                    return;
+                }
+                OpenArtistProfile(_bottomSheetTrack.ChannelId, _bottomSheetTrack.ChannelName);
+            }
         }
 
         private void BottomSheetSleepTimer_Click(object sender, RoutedEventArgs e)

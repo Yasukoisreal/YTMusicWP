@@ -23,6 +23,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseSettings_Click(null, null);
             }
+            else if (FullscreenLyricsView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseFullscreenLyrics_Tapped(null, null);
+            }
             else if (ShortsView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
