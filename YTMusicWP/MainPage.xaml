@@ -7,7 +7,7 @@
     Background="#121212">
 
     <Page.Resources>
-        <!-- ═══════ SPOTIFY FONT SYSTEM ═══════ -->
+        <!-- â•â•â•â•â•â•â• SPOTIFY FONT SYSTEM â•â•â•â•â•â•â• -->
         <FontFamily x:Key="MontserratRegular">/Assets/Fonts/Montserrat-Regular.ttf#Montserrat</FontFamily>
         <FontFamily x:Key="MontserratMedium">/Assets/Fonts/Montserrat-Medium.ttf#Montserrat</FontFamily>
         <FontFamily x:Key="MontserratSemiBold">/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat</FontFamily>
@@ -102,12 +102,12 @@
             <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="♡ Toggle Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
-                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
-                        <MenuFlyoutItem Text="✛ Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="â™¡ Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="ðŸŽµ Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="ðŸ”— Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem Text="â¬‡ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="âœ› Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -131,7 +131,7 @@
                     <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+                <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
             </Grid>
         </DataTemplate>
 
@@ -139,11 +139,11 @@
             <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="♡ Toggle Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="✛ Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
-                        <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
-                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="â™¡ Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="âœ› Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
+                        <MenuFlyoutItem Text="ðŸ”— Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem Text="â¬‡ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -167,7 +167,7 @@
                     <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+                <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
             </Grid>
         </DataTemplate>
 
@@ -175,10 +175,10 @@
             <Grid Width="140" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="♡ Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="â™¡ Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="ðŸŽµ Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="â¬‡ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <StackPanel>
@@ -204,7 +204,7 @@
             <Border Background="#1E1E1E" CornerRadius="8" Margin="0,0,10,10" Height="56" HorizontalAlignment="Stretch" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid>
@@ -412,7 +412,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ═══════════════════════════════════ HOME PANEL ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HOME PANEL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="HomePanel" Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -483,25 +483,25 @@
                             <StackPanel Orientation="Horizontal">
                                 <Border Background="#1A1DB954" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodChill_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="☕" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="â˜•" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Chill Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="#1A509BF5" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodFocus_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="🎯" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="ðŸŽ¯" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Focus Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="#1AE13300" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodEnergy_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="⚡" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="âš¡" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Energy Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="#1AAF2896" CornerRadius="12" Width="150" Height="100" Tapped="MoodSad_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="💜" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="ðŸ’œ" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Sad Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
@@ -539,7 +539,7 @@
             </Grid>
         </Grid>
 
-        <!-- ═══════════════════════════════════ SEARCH PANEL ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SEARCH PANEL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="SearchPanel" Grid.Row="0" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -570,7 +570,7 @@
                         <TextBlock Text="All" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border x:Name="FilterSongsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterSongsBtn_Tapped">
-                        <TextBlock Text="♪ Songs" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="â™ª Songs" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border x:Name="FilterPlaylistsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterPlaylistsBtn_Tapped">
                         <TextBlock Text="Playlists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
@@ -590,11 +590,11 @@
 
                 <ScrollViewer x:Name="DefaultSearchUI" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,15,15,0">
-                        <!-- ═══════ DISCOVER SECTION ═══════ -->
+                        <!-- â•â•â•â•â•â•â• DISCOVER SECTION â•â•â•â•â•â•â• -->
                         <Grid Margin="0,0,0,12">
                             <TextBlock Text="Discover" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
                             <Button Click="OpenShortsBtn_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="8,4">
-                                <TextBlock Text="Shorts ▶" FontSize="12" Foreground="#1DB954" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock Text="Shorts â–¶" FontSize="12" Foreground="#1DB954" FontFamily="{StaticResource MontserratSemiBold}"/>
                             </Button>
                         </Grid>
                         <ListView x:Name="DiscoverListView" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled">
@@ -648,9 +648,7 @@
                             <Button Grid.Row="0" Grid.Column="0" Tag="Global Top 50 Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E13300" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85">
-                                            <Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform>
-                                        </Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Global 50" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -658,7 +656,7 @@
                             <Button Grid.Row="0" Grid.Column="1" Tag="Billboard Hot 100" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#1DB954" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/RgKAFK5djSk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/RgKAFK5djSk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Billboard" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -666,7 +664,7 @@
                             <Button Grid.Row="1" Grid.Column="0" Tag="Pop Music Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#509BF5" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/fRh_vgS2dFE/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/fRh_vgS2dFE/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -674,7 +672,7 @@
                             <Button Grid.Row="1" Grid.Column="1" Tag="EDM Dance House Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#8C1932" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/IcrbM1l_BoI/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/IcrbM1l_BoI/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="EDM" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -682,7 +680,7 @@
                             <Button Grid.Row="2" Grid.Column="0" Tag="K-Pop Trending Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#148A08" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/9bZkp7q19f0/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="K-Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -690,7 +688,7 @@
                             <Button Grid.Row="2" Grid.Column="1" Tag="J-Pop Trending Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#E1118C" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ZRtdQ81jPUQ/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ZRtdQ81jPUQ/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="J-Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -698,7 +696,7 @@
                             <Button Grid.Row="3" Grid.Column="0" Tag="Hip-Hop Rap Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#BC5900" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/_Yhyp-_hX2s/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/_Yhyp-_hX2s/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Hip-Hop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -706,7 +704,7 @@
                             <Button Grid.Row="3" Grid.Column="1" Tag="R&amp;B Soul Classics" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#503750" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/XXYlFuWEuKI/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/XXYlFuWEuKI/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="R&amp;B" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -714,7 +712,7 @@
                             <Button Grid.Row="4" Grid.Column="0" Tag="Lofi Hip Hop Chill Beats" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#AF2896" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/jfKfPfyJRdk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/jfKfPfyJRdk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Lofi Chill" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -722,7 +720,7 @@
                             <Button Grid.Row="4" Grid.Column="1" Tag="Viral TikTok Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#477D95" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/nYh-n7EOtMA/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/nYh-n7EOtMA/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Viral" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -730,7 +728,7 @@
                             <Button Grid.Row="5" Grid.Column="0" Tag="Indie Pop Folk" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E91429" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/pstVCGyaUBM/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/pstVCGyaUBM/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Indie" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -738,7 +736,7 @@
                             <Button Grid.Row="5" Grid.Column="1" Tag="Acoustic Chill Covers" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#B49BC8" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/2Vv-BfVoq4g/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/2Vv-BfVoq4g/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Acoustic" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -746,7 +744,7 @@
                             <Button Grid.Row="6" Grid.Column="0" Tag="Rock Music Classics" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#777777" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/fJ9rUzIMcZQ/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/fJ9rUzIMcZQ/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Rock" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -754,7 +752,7 @@
                             <Button Grid.Row="6" Grid.Column="1" Tag="Heavy Metal Core" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#212121" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/cd-go0oBF4Y/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/cd-go0oBF4Y/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Metal" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -762,7 +760,7 @@
                             <Button Grid.Row="7" Grid.Column="0" Tag="Jazz Relaxing Vibes" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E13300" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/vmDDOFXSgAs/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/vmDDOFXSgAs/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Jazz" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -770,7 +768,7 @@
                             <Button Grid.Row="7" Grid.Column="1" Tag="Classical Piano Relax" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#006450" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/4Tr0otuiQuU/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/4Tr0otuiQuU/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Classical" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -778,7 +776,7 @@
                             <Button Grid.Row="8" Grid.Column="0" Tag="Workout Gym Motivation" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#8D67AB" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/btPJPFnesV4/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/btPJPFnesV4/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Workout" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -786,7 +784,7 @@
                             <Button Grid.Row="8" Grid.Column="1" Tag="Gaming Music NCS" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#1DB954" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/K4DyBUG242c/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/K4DyBUG242c/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Gaming" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -794,7 +792,7 @@
                             <Button Grid.Row="9" Grid.Column="0" Tag="Latin Pop Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#509BF5" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Latin" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -802,7 +800,7 @@
                             <Button Grid.Row="9" Grid.Column="1" Tag="Reggaeton Top Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#8C1932" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/kJQP7kiw5Fk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Reggaeton" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -810,7 +808,7 @@
                             <Button Grid.Row="10" Grid.Column="0" Tag="Synthwave Retrowave Chill" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#AF2896" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/4xDzrJKXOOY/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/4xDzrJKXOOY/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Synthwave" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -818,7 +816,7 @@
                             <Button Grid.Row="10" Grid.Column="1" Tag="Phonk Drift Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#477D95" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/pVHKp6ffURY/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/pVHKp6ffURY/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Phonk" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -826,7 +824,7 @@
                             <Button Grid.Row="11" Grid.Column="0" Tag="Anime OST Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#148A08" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/tLQLa6lM3Us/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/tLQLa6lM3Us/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Anime OST" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -834,7 +832,7 @@
                             <Button Grid.Row="11" Grid.Column="1" Tag="K-Drama OST Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#E1118C" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/CcGE6Iul-bI/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/CcGE6Iul-bI/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="K-Drama" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -842,7 +840,7 @@
                             <Button Grid.Row="12" Grid.Column="0" Tag="Afrobeats Top Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#BC5900" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/U2FSoS4RuDc/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/U2FSoS4RuDc/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Afrobeats" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -850,7 +848,7 @@
                             <Button Grid.Row="12" Grid.Column="1" Tag="Reggae Roots Relax" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#503750" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/GjEsAEsYEJ8/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/GjEsAEsYEJ8/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Reggae" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -858,7 +856,7 @@
                             <Button Grid.Row="13" Grid.Column="0" Tag="Epic Orchestral Soundtracks" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E91429" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ASj81daun5Q/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ASj81daun5Q/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Epic Music" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -866,7 +864,7 @@
                             <Button Grid.Row="13" Grid.Column="1" Tag="V-Pop Vietnamese Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#B49BC8" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" CornerRadius="6" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ZC1qjiGSwOk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ZC1qjiGSwOk/default.jpg" DecodePixelWidth="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="V-Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -889,7 +887,7 @@
             </Grid>
         </Grid>
 
-        <!-- ═══════════════════════════════════ LIBRARY PANEL ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LIBRARY PANEL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="LibraryPanel" Grid.Row="0" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -922,7 +920,7 @@
                         </Grid.RowDefinitions>
                         <Button Click="OpenCreatePlaylistDialog_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,5,15,15" Height="50">
                             <Border Background="#1A1DB954" CornerRadius="10" BorderThickness="1" BorderBrush="#1DB954">
-                                <TextBlock Text="➕ Create New Playlist" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="#1DB954" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Text="âž• Create New Playlist" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="#1DB954" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Button>
                         <ListView x:Name="PlaylistsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="PlaylistsListView_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
@@ -931,7 +929,7 @@
                                     <Grid Margin="0,0,0,15" Background="Transparent" Holding="PlaylistItem_Holding">
                                         <FlyoutBase.AttachedFlyout>
                                             <MenuFlyout>
-                                                <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylist_Click"/>
+                                                <MenuFlyoutItem Text="âœ– Delete Playlist" Click="MenuDeletePlaylist_Click"/>
                                             </MenuFlyout>
                                         </FlyoutBase.AttachedFlyout>
                                         <Grid.ColumnDefinitions>
@@ -946,7 +944,7 @@
                                             <TextBlock Text="{Binding Name}" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4"/>
                                             <TextBlock Text="Custom Playlist" FontSize="14" Foreground="#B3B3B3"/>
                                         </StackPanel>
-                                        <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+                                        <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -1007,7 +1005,7 @@
             </Pivot>
         </Grid>
 
-        <!-- ═══════════════════════════════════ SETTINGS PANEL (overlay) ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SETTINGS PANEL (overlay) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="SettingsPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -1140,7 +1138,7 @@
                         </Button.Template>
                     </Button>
 
-                    <!-- ═══════ PLAYBACK SETTINGS ═══════ -->
+                    <!-- â•â•â•â•â•â•â• PLAYBACK SETTINGS â•â•â•â•â•â•â• -->
                     <TextBlock Text="PLAYBACK" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     
                     <!-- Audio Quality -->
@@ -1219,7 +1217,7 @@
                         <ToggleSwitch x:Name="NormalizeVolumeToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
                     </Grid>
 
-                    <!-- ═══════ DATA MANAGEMENT ═══════ -->
+                    <!-- â•â•â•â•â•â•â• DATA MANAGEMENT â•â•â•â•â•â•â• -->
                     <TextBlock Text="DATA MANAGEMENT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
                         <Border Background="#8C1932" CornerRadius="8">
@@ -1237,7 +1235,7 @@
                         </Border>
                     </Button>
 
-                    <!-- ═══════ ABOUT ═══════ -->
+                    <!-- â•â•â•â•â•â•â• ABOUT â•â•â•â•â•â•â• -->
                     <TextBlock Text="ABOUT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <StackPanel Margin="5,10,0,20">
                         <TextBlock Text="SpotMusic" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954"/>
@@ -1248,7 +1246,7 @@
             </ScrollViewer>
         </Grid>
 
-        <!-- ═══════════════════════════════════ PLAYLIST DETAILS ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PLAYLIST DETAILS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="PlaylistDetailsView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="PlaylistTransform" Y="1000"/>
@@ -1279,7 +1277,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="▶ Play All" Click="PlayAllPlaylist_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="140" Height="45">
+                    <Button Grid.Column="0" Content="â–¶ Play All" Click="PlayAllPlaylist_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="140" Height="45">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="22">
@@ -1288,10 +1286,10 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
-                    <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
+                    <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
                         <Button.Flyout>
                             <MenuFlyout>
-                                <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
+                                <MenuFlyoutItem Text="âœ– Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
                             </MenuFlyout>
                         </Button.Flyout>
                     </Button>
@@ -1300,7 +1298,7 @@
             <ListView x:Name="PlaylistSongsList" Grid.Row="2" Margin="20,0,20,0" Padding="0" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource PlaylistSongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
         </Grid>
 
-        <!-- ═══════════════════════════════════ MUSIC SHORTS VIEW ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MUSIC SHORTS VIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="ShortsView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="55" Background="#0A0A0A"
               ManipulationMode="TranslateX,TranslateY" ManipulationDelta="Shorts_ManipulationDelta" ManipulationCompleted="Shorts_ManipulationCompleted">
             <Grid.RenderTransform>
@@ -1320,11 +1318,11 @@
                     <ColumnDefinition Width="60"/>
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="0" Click="ShortsBack_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="12,0,0,0" Padding="8">
-                    <TextBlock Text="←" FontSize="26" Foreground="White"/>
+                    <TextBlock Text="â†" FontSize="26" Foreground="White"/>
                 </Button>
                 <TextBlock x:Name="ShortsCategoryTitle" Grid.Column="1" Text="#edm" FontSize="17" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <Button Grid.Column="2" Click="ShortsPlayCurrent_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" Padding="8">
-                    <TextBlock x:Name="ShortsPauseBtn" Text="❚❚" FontSize="22" Foreground="White"/>
+                    <TextBlock x:Name="ShortsPauseBtn" Text="âšâš" FontSize="22" Foreground="White"/>
                 </Button>
             </Grid>
 
@@ -1342,7 +1340,7 @@
                 <!-- Dark frost overlay on top of blurred bg -->
                 <Border Background="#88000000"/>
 
-                <!-- Cover Art (music-only mode) — centered with waveform bars -->
+                <!-- Cover Art (music-only mode) â€” centered with waveform bars -->
                 <Grid x:Name="ShortsCoverArtPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <!-- Fake waveform bars left -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-65,0,0,0" Opacity="0.5">
@@ -1396,7 +1394,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <!-- Tappable song info → play in main player -->
+                        <!-- Tappable song info â†’ play in main player -->
                         <Grid Grid.Column="0" Tapped="ShortsSongBar_Tapped">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="45"/>
@@ -1412,14 +1410,14 @@
                         </Grid>
                         <!-- Heart/Favorite button -->
                         <Button Grid.Column="1" Click="ShortsHeart_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center">
-                            <TextBlock x:Name="ShortsHeartBtn" Text="♡" FontSize="22" Foreground="White"/>
+                            <TextBlock x:Name="ShortsHeartBtn" Text="â™¡" FontSize="22" Foreground="White"/>
                         </Button>
                     </Grid>
                 </Border>
             </StackPanel>
         </Grid>
 
-        <!-- ═══════════════════════════════════ ARTIST PROFILE VIEW ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ARTIST PROFILE VIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="ArtistProfileView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="45" Background="#121212">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="ArtistTransform" Y="1000"/>
@@ -1459,7 +1457,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="▶ Play" Click="ArtistPlayAll_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="100" Height="40">
+                <Button Grid.Column="0" Content="â–¶ Play" Click="ArtistPlayAll_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="100" Height="40">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" CornerRadius="20">
@@ -1468,7 +1466,7 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <Button Grid.Column="1" Content="⟳ Shuffle" Click="ArtistShuffle_Click" Foreground="White" FontWeight="SemiBold" Background="#2A2A2A" Width="110" Height="40" Margin="10,0,0,0">
+                <Button Grid.Column="1" Content="âŸ³ Shuffle" Click="ArtistShuffle_Click" Foreground="White" FontWeight="SemiBold" Background="#2A2A2A" Width="110" Height="40" Margin="10,0,0,0">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" CornerRadius="20">
@@ -1493,7 +1491,7 @@
             </ScrollViewer>
         </Grid>
 
-        <!-- ═══════════════════════════════════ MINI PLAYER (Row 1) ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MINI PLAYER (Row 1) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid Grid.Row="1">
             <!-- Mini player green accent top line -->
             <Rectangle Height="2" VerticalAlignment="Top" Canvas.ZIndex="5">
@@ -1542,7 +1540,7 @@
             <ProgressBar x:Name="MiniProgressBar" VerticalAlignment="Bottom" Height="2" Minimum="0" Maximum="100" Value="0" Foreground="#1DB954" Background="#333333" BorderThickness="0" IsHitTestVisible="False"/>
         </Grid>
 
-        <!-- ═══════════════════════════════════ BOTTOM NAV (Row 2) ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BOTTOM NAV (Row 2) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Border Grid.Row="2" Background="#0D0D0D" BorderBrush="#1F1F1F" BorderThickness="0,1,0,0" Padding="0,8,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -1577,7 +1575,7 @@
             </Grid>
         </Border>
 
-        <!-- ═══════════════════════════════════ NOW PLAYING VIEW ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• NOW PLAYING VIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="NowPlayingView" Visibility="Collapsed" Canvas.ZIndex="100" Grid.RowSpan="3">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="NowPlayingTransform" Y="1000"/>
@@ -1701,7 +1699,7 @@
                             </Canvas>
                             <TextBlock x:Name="BigArtist" Text="Artist" FontSize="16" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
                         </StackPanel>
-                        <Button x:Name="BigHeartBtn" Grid.Column="2" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0"/>
+                        <Button x:Name="BigHeartBtn" Grid.Column="2" Content="â™¡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0"/>
                     </Grid>
                     <StackPanel Margin="0,0,0,5">
                         <Slider x:Name="MusicSlider" Minimum="0" Maximum="100" Value="0" Margin="-5,-5,-5,-5" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Foreground="#1DB954" Background="#404040" Style="{StaticResource ModernSliderStyle}"/>
@@ -1746,7 +1744,7 @@
             </Grid>
         </Grid>
 
-        <!-- ═══════════════════════════════════ NOW PLAYING MENU ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• NOW PLAYING MENU â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="NowPlayingMenuDialog" Visibility="Collapsed" Canvas.ZIndex="250" Background="#A0000000" Grid.RowSpan="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -1833,7 +1831,7 @@
             </Border>
         </Grid>
 
-        <!-- ═══════════════════════════════════ CUSTOM BOTTOM SHEET ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CUSTOM BOTTOM SHEET â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="CustomBottomSheet" Visibility="Collapsed" Canvas.ZIndex="200" Background="#A0000000" Grid.RowSpan="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -1904,7 +1902,7 @@
             </Border>
         </Grid>
 
-        <!-- ═══════════════════════════════════ DIALOGS ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DIALOGS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="AddToPlaylistDialog" Visibility="Collapsed" Canvas.ZIndex="150" Background="#AA000000" Grid.RowSpan="3">
             <Border Background="#252525" CornerRadius="16" Width="300" MaxHeight="400" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
                 <StackPanel>
@@ -1933,7 +1931,7 @@
             </Border>
         </Grid>
 
-        <!-- ═══════════════════════════════════ LOGIN WEB ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LOGIN WEB â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Grid x:Name="LoginWebContainer" Visibility="Collapsed" Canvas.ZIndex="300" Background="#121212" Grid.RowSpan="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -1942,19 +1940,19 @@
             <Border Grid.Row="0" Background="#282828" Padding="15">
                 <Grid>
                     <TextBlock Text="Google Sign-In" Foreground="White" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <Button Content="✕" Click="CloseLoginWeb_Click" Foreground="White" FontSize="20" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="0" MinWidth="0"/>
+                    <Button Content="âœ•" Click="CloseLoginWeb_Click" Foreground="White" FontSize="20" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="0" MinWidth="0"/>
                 </Grid>
             </Border>
             <WebView x:Name="LoginWebView" Grid.Row="1" NavigationStarting="LoginWebView_NavigationStarting" NavigationCompleted="LoginWebView_NavigationCompleted" NavigationFailed="LoginWebView_NavigationFailed"/>
             <ProgressBar x:Name="LoginWebLoading" Grid.Row="1" VerticalAlignment="Top" IsIndeterminate="True" Foreground="#1DB954" Visibility="Collapsed"/>
         </Grid>
 
-        <!-- ═══════════════════════════════════ TOAST ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TOAST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Border x:Name="ToastNotification" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Padding="14,10" Margin="15,0,15,75" CornerRadius="12" Grid.RowSpan="3">
             <TextBlock x:Name="ToastText" Text="Message" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" TextAlignment="Center"/>
         </Border>
 
-        <!-- ═══════════════════════════════════ DOWNLOAD STATUS ═══════════════════════════════════ -->
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DOWNLOAD STATUS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <Border x:Name="DownloadStatusBar" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Top" HorizontalAlignment="Stretch" Padding="15,10" Margin="0,0,0,0" Grid.RowSpan="3">
             <Grid>
                 <Grid.RowDefinitions>
@@ -1967,3 +1965,4 @@
         </Border>
     </Grid>
 </Page>
+
