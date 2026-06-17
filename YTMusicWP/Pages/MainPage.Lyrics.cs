@@ -420,6 +420,21 @@ namespace YTMusicWP
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, FullscreenLyricsView);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
             fadeIn.Children.Add(anim);
+            fadeIn.Completed += (s, a) =>
+            {
+                // Set correct opacity on all containers after layout is ready
+                _cachedFullscreenLyricsScrollViewer = null;
+                FullscreenLyricsListView.UpdateLayout();
+                for (int i = 0; i < currentLyrics.Count; i++)
+                {
+                    var container = FullscreenLyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                    if (container != null)
+                        container.Opacity = (i == currentLyricIndex) ? 1.0 : 0.5;
+                }
+                // Scroll to current lyric
+                if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
+                    FullscreenLyricsListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
+            };
             fadeIn.Begin();
         }
 
