@@ -169,7 +169,7 @@ namespace YTMusicWP
             await LoadShortsCategoryAsync(GetRealCategoryIndex(_shortsCategoryIndex));
         }
 
-        private void CloseShortsView()
+        private void CloseShortsView(bool keepPlaying = false)
         {
             _shortsIsOpen = false;
 
@@ -177,8 +177,11 @@ namespace YTMusicWP
             if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
             StopShortsLoop();
 
-            // Stop shorts audio
-            try { if (_appMediaPlayer != null) _appMediaPlayer.Pause(); } catch { }
+            // Stop shorts audio (unless keeping current track playing)
+            if (!keepPlaying)
+            {
+                try { if (_appMediaPlayer != null) _appMediaPlayer.Pause(); } catch { }
+            }
 
             // Restore previous track if it was playing
             if (_shortsWasMainPlaying && _shortsSavedTrack != null)
@@ -665,7 +668,7 @@ namespace YTMusicWP
             // Just close Shorts without restoring the previous track
             _shortsWasMainPlaying = false;
             _shortsSavedTrack = null;
-            CloseShortsView();
+            CloseShortsView(true); // keepPlaying = true, music continues
         }
     }
 }
