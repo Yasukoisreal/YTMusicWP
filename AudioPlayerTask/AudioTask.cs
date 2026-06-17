@@ -609,8 +609,6 @@ namespace AudioPlayerTask
             if (string.IsNullOrEmpty(fallbackUrl))
             {
                 fallbackUrl = await ResolveViaInnerTubeDirectAsync(vidId);
-                if (!string.IsNullOrEmpty(fallbackUrl))
-                    fallbackUrl = PrepareStreamUrl(fallbackUrl);
             }
             if (!string.IsNullOrEmpty(fallbackUrl))
                 PlayUrl(PrepareStreamUrl(fallbackUrl), vidId);
