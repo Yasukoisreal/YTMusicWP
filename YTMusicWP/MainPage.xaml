@@ -578,7 +578,7 @@
                     <Border x:Name="FilterArtistsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterArtistsBtn_Tapped">
                         <TextBlock Text="Artists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterVideosBtn" Background="#232323" CornerRadius="10" Padding="14,6" Tapped="FilterAllBtn_Tapped">
+                    <Border x:Name="FilterVideosBtn" Background="#232323" CornerRadius="10" Padding="14,6" Tapped="FilterVideosBtn_Tapped">
                         <TextBlock Text="Videos" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>

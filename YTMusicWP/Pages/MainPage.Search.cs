@@ -247,6 +247,7 @@ namespace YTMusicWP
             FilterSongsBtn.Background = _filterInactiveBg;
             FilterPlaylistsBtn.Background = _filterInactiveBg;
             FilterArtistsBtn.Background = _filterInactiveBg;
+            FilterVideosBtn.Background = _filterInactiveBg;
         }
 
         private void FilterAllBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
@@ -274,6 +275,13 @@ namespace YTMusicWP
         {
             ResetFilters();
             FilterArtistsBtn.Background = _filterActiveBg;
+            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+        }
+
+        private void FilterVideosBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            ResetFilters();
+            FilterVideosBtn.Background = _filterActiveBg;
             if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
         }
 
