@@ -597,7 +597,7 @@
                                 <TextBlock Text="Shorts ▶" FontSize="12" Foreground="#1DB954" FontFamily="{StaticResource MontserratSemiBold}"/>
                             </Button>
                         </Grid>
-                        <ListView x:Name="DiscoverListView" Height="160" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled">
+                        <ListView x:Name="DiscoverListView" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled">
                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
@@ -609,31 +609,25 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Width="150">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="105"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <Border CornerRadius="8" Grid.Row="0">
+                                    <Border Width="115" Height="195" CornerRadius="8">
+                                        <Border.Background>
+                                            <ImageBrush Stretch="UniformToFill">
+                                                <ImageBrush.ImageSource>
+                                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
+                                                </ImageBrush.ImageSource>
+                                            </ImageBrush>
+                                        </Border.Background>
+                                        <!-- Title overlay at bottom -->
+                                        <Border CornerRadius="0,0,8,8" VerticalAlignment="Bottom" Padding="8,15,8,8">
                                             <Border.Background>
-                                                <ImageBrush Stretch="UniformToFill">
-                                                    <ImageBrush.ImageSource>
-                                                        <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
-                                                    </ImageBrush.ImageSource>
-                                                </ImageBrush>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                    <GradientStop Color="Transparent" Offset="0"/>
+                                                    <GradientStop Color="#CC000000" Offset="1"/>
+                                                </LinearGradientBrush>
                                             </Border.Background>
-                                            <!-- Dark gradient overlay at bottom -->
-                                            <Border CornerRadius="0,0,8,8" VerticalAlignment="Bottom" Height="40">
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                        <GradientStop Color="Transparent" Offset="0"/>
-                                                        <GradientStop Color="#99000000" Offset="1"/>
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                            </Border>
+                                            <TextBlock Text="{Binding Title}" Foreground="White" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
                                         </Border>
-                                        <TextBlock Grid.Row="1" Text="{Binding Title}" Foreground="White" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" Margin="2,6,2,0"/>
-                                    </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>

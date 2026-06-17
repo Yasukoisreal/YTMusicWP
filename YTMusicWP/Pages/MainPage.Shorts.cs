@@ -157,8 +157,9 @@ namespace YTMusicWP
         {
             _shortsIsOpen = false;
 
-            // Stop waveform + audio
+            // Stop waveform + audio + loop timer
             if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
+            StopShortsLoop();
             try { ShortsMediaPlayer.Stop(); ShortsMediaPlayer.Source = null; } catch { }
 
             var sb = new Storyboard();
@@ -486,20 +487,87 @@ namespace YTMusicWP
         }
 
         // ==========================================
-        // INDEPENDENT AUDIO PLAYER (MediaElement, NOT BackgroundMediaPlayer)
+        // INDEPENDENT AUDIO PLAYER — 15s LOOP AT BEST PART
         // ==========================================
+        private DispatcherTimer _shortsLoopTimer;
+        private TimeSpan _shortsLoopStart;
+        private static readonly TimeSpan ShortsClipDuration = TimeSpan.FromSeconds(15);
+
         private async void PlayShortsAudio(string videoId)
         {
             try
             {
-                // Stop current
+                // Stop current + timer
+                StopShortsLoop();
                 ShortsMediaPlayer.Stop();
 
                 string streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId);
                 if (!string.IsNullOrEmpty(streamUrl) && _shortsIsOpen)
                 {
+                    ShortsMediaPlayer.MediaOpened -= ShortsMedia_Opened;
+                    ShortsMediaPlayer.MediaOpened += ShortsMedia_Opened;
                     ShortsMediaPlayer.Source = new Uri(streamUrl, UriKind.Absolute);
                     ShortsMediaPlayer.Play();
+                }
+            }
+            catch { }
+        }
+
+        private void ShortsMedia_Opened(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Seek to ~30% of the song (skip intro → chorus area)
+                var duration = ShortsMediaPlayer.NaturalDuration;
+                if (duration.HasTimeSpan && duration.TimeSpan.TotalSeconds > 30)
+                {
+                    _shortsLoopStart = TimeSpan.FromSeconds(duration.TimeSpan.TotalSeconds * 0.30);
+                }
+                else if (duration.HasTimeSpan && duration.TimeSpan.TotalSeconds > 15)
+                {
+                    // Short song: start at 25%
+                    _shortsLoopStart = TimeSpan.FromSeconds(duration.TimeSpan.TotalSeconds * 0.25);
+                }
+                else
+                {
+                    // Very short: start from beginning
+                    _shortsLoopStart = TimeSpan.Zero;
+                }
+
+                ShortsMediaPlayer.Position = _shortsLoopStart;
+                StartShortsLoop();
+            }
+            catch { }
+        }
+
+        private void StartShortsLoop()
+        {
+            StopShortsLoop();
+            _shortsLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _shortsLoopTimer.Tick += ShortsLoop_Tick;
+            _shortsLoopTimer.Start();
+        }
+
+        private void StopShortsLoop()
+        {
+            if (_shortsLoopTimer != null)
+            {
+                _shortsLoopTimer.Stop();
+                _shortsLoopTimer.Tick -= ShortsLoop_Tick;
+                _shortsLoopTimer = null;
+            }
+        }
+
+        private void ShortsLoop_Tick(object sender, object e)
+        {
+            try
+            {
+                if (ShortsMediaPlayer.CurrentState != Windows.UI.Xaml.Media.MediaElementState.Playing) return;
+
+                // If played 15 seconds from start point → loop back
+                if (ShortsMediaPlayer.Position >= _shortsLoopStart + ShortsClipDuration)
+                {
+                    ShortsMediaPlayer.Position = _shortsLoopStart;
                 }
             }
             catch { }
