@@ -44,12 +44,74 @@ namespace YTMusicWP
             "#vpop|#vietnam|#nhạc việt"
         };
 
+        // Genre keywords for matching history tracks
+        private static readonly string[][] _shortsCategoryKeywords = {
+            new[] { "edm", "dance", "house", "electronic", "dj", "remix", "trance", "dubstep" },
+            new[] { "kpop", "k-pop", "korean", "bts", "blackpink", "twice", "stray kids", "aespa", "ive", "newjeans" },
+            new[] { "pop", "hit", "billboard", "top 40", "chart", "taylor swift", "ed sheeran", "ariana", "bruno mars" },
+            new[] { "lofi", "lo-fi", "chill", "relax", "study", "beats", "ambient" },
+            new[] { "hip hop", "hip-hop", "rap", "trap", "drake", "kendrick", "eminem", "kanye", "21 savage" },
+            new[] { "rock", "metal", "punk", "alternative", "indie rock", "guitar", "linkin park" },
+            new[] { "anime", "ost", "opening", "ending", "japanese", "naruto", "one piece", "jujutsu" },
+            new[] { "vpop", "v-pop", "vietnam", "nhạc", "sơn tùng", "jack", "bích phương", "đen vâu", "hoàng thùy linh" }
+        };
+
+        // Category display order (reordered by history analysis)
+        private int[] _shortsCategoryOrder;
+
         private int _shortsCategoryIndex = 0;
         private int _shortsSongIndex = 0;
         private List<YouTubeTrack> _shortsSongs = new List<YouTubeTrack>();
         private Dictionary<int, List<YouTubeTrack>> _shortsCategoryCache = new Dictionary<int, List<YouTubeTrack>>();
         private DateTime _shortsCacheTime = DateTime.MinValue;
         private bool _shortsIsOpen = false;
+
+        /// <summary>
+        /// Analyze historyTracks to score each category and reorder
+        /// </summary>
+        private void BuildSmartCategoryOrder()
+        {
+            var scores = new int[_shortsCategories.Length];
+
+            if (historyTracks != null && historyTracks.Count > 0)
+            {
+                foreach (var track in historyTracks)
+                {
+                    string title = (track.Title ?? "").ToLowerInvariant();
+                    string channel = (track.ChannelName ?? "").ToLowerInvariant();
+                    string combined = title + " " + channel;
+
+                    for (int i = 0; i < _shortsCategoryKeywords.Length; i++)
+                    {
+                        foreach (var keyword in _shortsCategoryKeywords[i])
+                        {
+                            if (combined.Contains(keyword))
+                            {
+                                scores[i]++;
+                                break; // One match per track per category
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Build ordered index array
+            _shortsCategoryOrder = new int[_shortsCategories.Length];
+            for (int i = 0; i < _shortsCategories.Length; i++) _shortsCategoryOrder[i] = i;
+
+            // Sort by score descending (categories with most matches first)
+            // If no history (all scores 0), use default trending order: Pop, K-Pop, EDM, Lofi, Hip-Hop, V-Pop, Rock, Anime
+            bool hasHistory = scores.Any(s => s > 0);
+            if (hasHistory)
+            {
+                Array.Sort(_shortsCategoryOrder, (a, b) => scores[b].CompareTo(scores[a]));
+            }
+            else
+            {
+                // Default trending order
+                _shortsCategoryOrder = new[] { 2, 1, 0, 3, 4, 7, 5, 6 }; // Pop, K-Pop, EDM, Lofi, Hip-Hop, V-Pop, Rock, Anime
+            }
+        }
 
         // ==========================================
         // OPEN / CLOSE
@@ -58,6 +120,9 @@ namespace YTMusicWP
         {
             _shortsCategoryIndex = categoryIndex;
             _shortsIsOpen = true;
+
+            // Smart category ordering based on listening history
+            BuildSmartCategoryOrder();
 
             // Build category dots
             BuildCategoryDots();
@@ -85,7 +150,7 @@ namespace YTMusicWP
                 _shortsCacheTime = DateTime.Now;
             }
 
-            await LoadShortsCategoryAsync(_shortsCategoryIndex);
+            await LoadShortsCategoryAsync(GetRealCategoryIndex(_shortsCategoryIndex));
         }
 
         private void CloseShortsView()
@@ -117,12 +182,19 @@ namespace YTMusicWP
         // ==========================================
         // CATEGORY DOTS
         // ==========================================
+        private int GetRealCategoryIndex(int displayIndex)
+        {
+            if (_shortsCategoryOrder != null && displayIndex < _shortsCategoryOrder.Length)
+                return _shortsCategoryOrder[displayIndex];
+            return displayIndex;
+        }
+
         private void BuildCategoryDots()
         {
             ShortsCategoryDots.Children.Clear();
             for (int i = 0; i < _shortsCategories.Length; i++)
             {
-                int idx = i; // closure capture
+                int idx = i;
                 var dot = new Border
                 {
                     Width = i == _shortsCategoryIndex ? 20 : 8,
@@ -136,7 +208,7 @@ namespace YTMusicWP
                 ShortsCategoryDots.Children.Add(dot);
             }
 
-            ShortsCategoryTitle.Text = "#" + _shortsCategories[_shortsCategoryIndex].ToLower();
+            ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
         }
 
         private void UpdateCategoryDots()
@@ -149,7 +221,7 @@ namespace YTMusicWP
                 dot.Background = new SolidColorBrush(
                     i == _shortsCategoryIndex ? Colors.White : Color.FromArgb(120, 255, 255, 255));
             }
-            ShortsCategoryTitle.Text = "#" + _shortsCategories[_shortsCategoryIndex].ToLower();
+            ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
         }
 
         private async void SwitchShortsCategory(int index)
@@ -158,7 +230,7 @@ namespace YTMusicWP
             _shortsCategoryIndex = index;
             _shortsSongIndex = 0;
             UpdateCategoryDots();
-            await LoadShortsCategoryAsync(index);
+            await LoadShortsCategoryAsync(GetRealCategoryIndex(index));
         }
 
         // ==========================================
@@ -319,7 +391,7 @@ namespace YTMusicWP
         private void UpdateShortsHashtags()
         {
             ShortsHashtags.Children.Clear();
-            string[] tags = _shortsCategoryHashtags[_shortsCategoryIndex].Split('|');
+            string[] tags = _shortsCategoryHashtags[GetRealCategoryIndex(_shortsCategoryIndex)].Split('|');
             var semiBoldFont = new FontFamily("/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat");
             foreach (var tag in tags)
             {
