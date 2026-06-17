@@ -277,5 +277,53 @@ namespace YTMusicWP
             if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
         }
 
+        // ==========================================
+        // DISCOVER SECTION — Trending music from YouTube Music Explore
+        // ==========================================
+        private bool _discoverLoaded = false;
+
+        private async void LoadDiscoverSection()
+        {
+            if (_discoverLoaded && DiscoverListView.Items != null && DiscoverListView.Items.Count > 0) return;
+            
+            try
+            {
+                var items = await InnerTubeClient.BrowseExploreAsync();
+                if (items != null && items.Count > 0)
+                {
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    {
+                        DiscoverListView.ItemsSource = items;
+                        _discoverLoaded = true;
+                    });
+                }
+            }
+            catch { }
+        }
+
+        private void DiscoverItem_Click(object sender, ItemClickEventArgs e)
+        {
+            var item = e.ClickedItem as DiscoverItem;
+            if (item == null) return;
+
+            // If has videoId, play directly
+            if (!string.IsNullOrEmpty(item.VideoId))
+            {
+                var track = new YouTubeTrack
+                {
+                    VideoId = item.VideoId,
+                    Title = item.Title,
+                    ChannelName = item.Subtitle,
+                    ThumbnailUrl = item.ThumbnailUrl
+                };
+                PlayTrack(track);
+                return;
+            }
+
+            // Otherwise search by title
+            SearchBox.Text = item.SearchQuery;
+            SearchButton_Click(null, null);
+        }
+
     }
 }

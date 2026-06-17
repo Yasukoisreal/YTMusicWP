@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -313,12 +313,109 @@ namespace YTMusicWP
         }
 
         // ==========================================
-        // RESOLVE STREAM URL (for playback)
+        // BROWSE EXPLORE — Trending/Discover content
         // ==========================================
-        /// <summary>
-        /// Resolve audio stream URL qua InnerTube API.
-        /// Thử nhiều client: ANDROID_VR → ANDROID_MUSIC → ANDROID.
-        /// Gọi từ foreground vì HttpClient mạnh hơn AudioTask.
-        /// </summary>
+        private static List<DiscoverItem> _cachedDiscover = null;
+        private static DateTime _discoverCacheTime = DateTime.MinValue;
+
+        public static async Task<List<DiscoverItem>> BrowseExploreAsync()
+        {
+            // Cache 24 hours
+            if (_cachedDiscover != null && _cachedDiscover.Count > 0 
+                && (DateTime.Now - _discoverCacheTime).TotalHours < 24)
+                return _cachedDiscover;
+
+            var items = new List<DiscoverItem>();
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                var body = new JObject
+                {
+                    ["context"] = BuildMusicContext(vd),
+                    ["browseId"] = "FEmusic_explore"
+                };
+
+                var data = await PostInnerTubeAsync(
+                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+
+                // Parse sections from singleColumnBrowseResultsRenderer
+                var tabs = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
+                if (tabs != null && tabs.HasValues)
+                {
+                    var sections = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
+                    if (sections != null)
+                    {
+                        foreach (var sec in sections)
+                        {
+                            // musicCarouselShelfRenderer = trending carousels
+                            var carousel = sec["musicCarouselShelfRenderer"];
+                            if (carousel == null) continue;
+
+                            var cItems = carousel["contents"];
+                            if (cItems == null) continue;
+
+                            foreach (var cItem in cItems)
+                            {
+                                try
+                                {
+                                    var twoRow = cItem["musicTwoRowItemRenderer"];
+                                    if (twoRow == null) continue;
+
+                                    string title = twoRow["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                    if (string.IsNullOrEmpty(title)) continue;
+
+                                    // Subtitle (artist/type)
+                                    string subtitle = "";
+                                    var subRuns = twoRow["subtitle"]?["runs"];
+                                    if (subRuns != null)
+                                    {
+                                        foreach (var sr in subRuns)
+                                        {
+                                            string st = sr["text"]?.ToString();
+                                            if (!string.IsNullOrEmpty(st)) subtitle += st;
+                                        }
+                                    }
+
+                                    // Thumbnail
+                                    string thumbUrl = "";
+                                    var thumbs = twoRow["thumbnailRenderer"]?["musicThumbnailRenderer"]
+                                        ?["thumbnail"]?["thumbnails"];
+                                    if (thumbs != null && thumbs.HasValues)
+                                        thumbUrl = thumbs.Last?["url"]?.ToString() ?? "";
+
+                                    // VideoId or PlaylistId from navigation
+                                    string videoId = twoRow["navigationEndpoint"]
+                                        ?["watchEndpoint"]?["videoId"]?.ToString();
+                                    string playlistId = twoRow["navigationEndpoint"]
+                                        ?["browseEndpoint"]?["browseId"]?.ToString();
+
+                                    items.Add(new DiscoverItem
+                                    {
+                                        Title = title,
+                                        Subtitle = subtitle,
+                                        ThumbnailUrl = thumbUrl,
+                                        VideoId = videoId ?? "",
+                                        PlaylistId = playlistId ?? "",
+                                        SearchQuery = title
+                                    });
+
+                                    if (items.Count >= 12) break; // Max 12 items
+                                }
+                                catch { continue; }
+                            }
+                            if (items.Count >= 12) break;
+                        }
+                    }
+                }
+
+                if (items.Count > 0)
+                {
+                    _cachedDiscover = items;
+                    _discoverCacheTime = DateTime.Now;
+                }
+            }
+            catch { }
+            return items;
+        }
     }
 }

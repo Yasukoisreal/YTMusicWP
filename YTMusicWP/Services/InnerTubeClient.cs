@@ -176,4 +176,14 @@ namespace YTMusicWP
         public string BrowseId { get; set; } = "";
         public string SectionTitle { get; set; } = "";
     }
+
+    public class DiscoverItem
+    {
+        public string Title { get; set; } = "";
+        public string Subtitle { get; set; } = "";
+        public string ThumbnailUrl { get; set; } = "";
+        public string VideoId { get; set; } = "";
+        public string PlaylistId { get; set; } = "";
+        public string SearchQuery { get; set; } = "";
+    }
 }

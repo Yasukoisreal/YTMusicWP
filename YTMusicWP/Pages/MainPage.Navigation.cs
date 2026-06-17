@@ -67,7 +67,7 @@ namespace YTMusicWP
 
         private void NavHome_Click(object sender, RoutedEventArgs e) { SwitchTab(0); }
 
-        private void NavSearch_Click(object sender, RoutedEventArgs e) { SwitchTab(1); }
+        private void NavSearch_Click(object sender, RoutedEventArgs e) { SwitchTab(1); LoadDiscoverSection(); }
 
         private void NavLibrary_Click(object sender, RoutedEventArgs e)
         {
