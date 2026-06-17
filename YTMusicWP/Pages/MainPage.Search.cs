@@ -306,23 +306,8 @@ namespace YTMusicWP
             var item = e.ClickedItem as DiscoverItem;
             if (item == null) return;
 
-            // If has videoId, play directly
-            if (!string.IsNullOrEmpty(item.VideoId))
-            {
-                var track = new YouTubeTrack
-                {
-                    VideoId = item.VideoId,
-                    Title = item.Title,
-                    ChannelName = item.Subtitle,
-                    ThumbnailUrl = item.ThumbnailUrl
-                };
-                PlayTrack(track);
-                return;
-            }
-
-            // Otherwise search by title
-            SearchBox.Text = item.SearchQuery;
-            SearchButton_Click(null, null);
+            // Open Shorts view (discover items are part of Shorts feed)
+            OpenShortsView(0);
         }
 
         private void OpenShortsFromDiscover()
