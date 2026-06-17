@@ -431,5 +431,14 @@ namespace YTMusicWP
             fadeOut.Begin();
         }
 
+        private void FullscreenLyricsListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.ItemContainer != null)
+            {
+                // Set all non-active lines to dim, active line to bright
+                args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.3;
+            }
+        }
+
     }
 }
