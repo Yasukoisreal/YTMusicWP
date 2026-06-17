@@ -287,13 +287,24 @@ namespace YTMusicWP
                                 }
                                 else { currentLyrics[oldIndex].Opacity = 0.35; }
                             }
-                            // Fullscreen: only color change, no opacity/scale
+                            // Fullscreen: set opacity directly (no animation, no scale)
+                            else
+                            {
+                                var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                                if (oldContainer != null) oldContainer.Opacity = 0.3;
+                            }
                         }
 
                         // Animate NEW lyric
                         currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
 
-                        if (!isFullscreen)
+                        if (isFullscreen)
+                        {
+                            // Fullscreen: set opacity directly
+                            var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                            if (fsContainer != null) fsContainer.Opacity = 1.0;
+                        }
+                        else
                         {
                             // Regular lyrics: opacity + scale animation
                             var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
@@ -327,7 +338,6 @@ namespace YTMusicWP
                             }
                             else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
                         }
-                        // Fullscreen: only color change, no opacity/scale
 
                         targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
 

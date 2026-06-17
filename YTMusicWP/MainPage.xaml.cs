@@ -134,7 +134,7 @@ namespace YTMusicWP
 
         // [OPT-M6] Cache static brushes — avoid creating new objects every second/click (512MB RAM)
         private static readonly SolidColorBrush _lyricActiveBrush   = new SolidColorBrush(Windows.UI.Colors.White);
-        private static readonly SolidColorBrush _lyricInactiveBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 68, 68, 68)); // #444 — darker for better contrast
+        private static readonly SolidColorBrush _lyricInactiveBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
         private static readonly SolidColorBrush _greenBrush = new SolidColorBrush(Windows.UI.Colors.Green);
         private static readonly SolidColorBrush _whiteBrush = new SolidColorBrush(Windows.UI.Colors.White);
 
