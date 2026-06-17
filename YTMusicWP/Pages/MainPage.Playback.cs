@@ -287,11 +287,21 @@ namespace YTMusicWP
                                 }
                                 else { currentLyrics[oldIndex].Opacity = 0.35; }
                             }
-                            // Fullscreen: set opacity directly (no animation, no scale)
+                            // Fullscreen: animate opacity only (no scale)
                             else
                             {
                                 var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
-                                if (oldContainer != null) oldContainer.Opacity = 0.5;
+                                if (oldContainer != null)
+                                {
+                                    var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                                    var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                    { To = 0.5, Duration = new Duration(TimeSpan.FromMilliseconds(400)),
+                                      EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut } };
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, oldContainer);
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
+                                    sb.Children.Add(anim);
+                                    sb.Begin();
+                                }
                             }
                         }
 
@@ -300,9 +310,19 @@ namespace YTMusicWP
 
                         if (isFullscreen)
                         {
-                            // Fullscreen: set opacity directly
+                            // Fullscreen: animate opacity to 1.0
                             var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                            if (fsContainer != null) fsContainer.Opacity = 1.0;
+                            if (fsContainer != null)
+                            {
+                                var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                                var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                { To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(400)),
+                                  EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut } };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, fsContainer);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
+                                sb.Children.Add(anim);
+                                sb.Begin();
+                            }
                         }
                         else
                         {
