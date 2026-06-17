@@ -1352,24 +1352,24 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Header: Back + Category + Speaker -->
+            <!-- Header: Back + Category + Pause -->
             <Grid Grid.Row="0" Margin="0,30,0,0" Canvas.ZIndex="10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="60"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="60"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Click="ShortsBack_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0">
-                    <TextBlock Text="←" FontSize="22" Foreground="White"/>
+                <Button Grid.Column="0" Click="ShortsBack_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="12,0,0,0" Padding="8">
+                    <TextBlock Text="←" FontSize="26" Foreground="White"/>
                 </Button>
-                <TextBlock x:Name="ShortsCategoryTitle" Grid.Column="1" Text="#edm" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Button Grid.Column="2" Click="ShortsPlayCurrent_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,5,0">
-                    <TextBlock x:Name="ShortsPauseBtn" Text="❚❚" FontSize="18" Foreground="White"/>
+                <TextBlock x:Name="ShortsCategoryTitle" Grid.Column="1" Text="#edm" FontSize="17" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Click="ShortsPlayCurrent_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" Padding="8">
+                    <TextBlock x:Name="ShortsPauseBtn" Text="❚❚" FontSize="22" Foreground="White"/>
                 </Button>
             </Grid>
 
             <!-- Category Dots -->
-            <StackPanel x:Name="ShortsCategoryDots" Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,68,0,5">
+            <StackPanel x:Name="ShortsCategoryDots" Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,72,0,5">
                 <!-- Dots populated dynamically -->
             </StackPanel>
 
@@ -1385,12 +1385,13 @@
                 <!-- Cover Art (music-only mode) — centered with waveform bars -->
                 <Grid x:Name="ShortsCoverArtPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <!-- Fake waveform bars left -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-50,0,0,0" Opacity="0.5">
-                        <Border Width="4" Height="20" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="15" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="25" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-65,0,0,0" Opacity="0.5">
+                        <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="55" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="25" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="65" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="50" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
                     </StackPanel>
                     <!-- Cover Art -->
                     <Border Width="220" Height="220" CornerRadius="12">
@@ -1399,12 +1400,13 @@
                         </Border.Background>
                     </Border>
                     <!-- Fake waveform bars right -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-50,0" Opacity="0.5">
-                        <Border Width="4" Height="30" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="15" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="20" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
-                        <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-65,0" Opacity="0.5">
+                        <Border Width="4" Height="45" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="25" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="60" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="55" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                        <Border Width="4" Height="30" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
                     </StackPanel>
                 </Grid>
             </Grid>

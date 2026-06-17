@@ -267,7 +267,6 @@ namespace YTMusicWP
             }
 
             _waveformStoryboard = new Storyboard();
-            _waveformStoryboard.RepeatBehavior = RepeatBehavior.Forever;
 
             var rand = new Random();
 
@@ -291,11 +290,11 @@ namespace YTMusicWP
 
                     var scaleTransform = border.RenderTransform as ScaleTransform;
 
-                    // Random animation per bar
-                    double minScale = 0.3 + rand.NextDouble() * 0.3;
-                    double maxScale = 0.8 + rand.NextDouble() * 0.7;
-                    double durationMs = 300 + rand.Next(400);
-                    double beginMs = rand.Next(200);
+                    // Smooth animation: longer duration + easing
+                    double minScale = 0.2 + rand.NextDouble() * 0.3;
+                    double maxScale = 0.9 + rand.NextDouble() * 0.6;
+                    double durationMs = 600 + rand.Next(600); // 600-1200ms (slower = smoother)
+                    double beginMs = rand.Next(500); // More staggered
 
                     var anim = new DoubleAnimation
                     {
@@ -304,7 +303,8 @@ namespace YTMusicWP
                         Duration = new Duration(TimeSpan.FromMilliseconds(durationMs)),
                         AutoReverse = true,
                         RepeatBehavior = RepeatBehavior.Forever,
-                        BeginTime = TimeSpan.FromMilliseconds(beginMs)
+                        BeginTime = TimeSpan.FromMilliseconds(beginMs),
+                        EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
                     };
                     Storyboard.SetTarget(anim, scaleTransform);
                     Storyboard.SetTargetProperty(anim, "ScaleY");
