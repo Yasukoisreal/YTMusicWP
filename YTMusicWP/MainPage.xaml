@@ -1302,7 +1302,7 @@
 
         <!-- ═══════════════════════════════════ MUSIC SHORTS VIEW ═══════════════════════════════════ -->
         <Grid x:Name="ShortsView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="55" Background="#0A0A0A"
-              ManipulationMode="TranslateY" ManipulationDelta="Shorts_ManipulationDelta" ManipulationCompleted="Shorts_ManipulationCompleted">
+              ManipulationMode="TranslateX,TranslateY" ManipulationDelta="Shorts_ManipulationDelta" ManipulationCompleted="Shorts_ManipulationCompleted">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="ShortsTransform" Y="1000"/>
             </Grid.RenderTransform>

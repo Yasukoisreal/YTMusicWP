@@ -409,50 +409,63 @@ namespace YTMusicWP
         }
 
         // ==========================================
-        // SWIPE NAVIGATION (Vertical = next/prev song, detect horizontal for category)
+        // SWIPE NAVIGATION (Vertical = next/prev song, Horizontal = next/prev category)
         // ==========================================
         private double _shortsSwipeDeltaY = 0;
+        private double _shortsSwipeDeltaX = 0;
 
         private void Shorts_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
             _shortsSwipeDeltaY += e.Delta.Translation.Y;
+            _shortsSwipeDeltaX += e.Delta.Translation.X;
         }
 
         private void Shorts_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
             double totalY = _shortsSwipeDeltaY;
+            double totalX = _shortsSwipeDeltaX;
             _shortsSwipeDeltaY = 0;
+            _shortsSwipeDeltaX = 0;
 
-            if (Math.Abs(totalY) < 50) return; // Threshold
+            // Determine dominant axis
+            bool isHorizontal = Math.Abs(totalX) > Math.Abs(totalY);
 
-            if (totalY < -50)
+            if (isHorizontal && Math.Abs(totalX) >= 50)
             {
-                // Swipe up → next song
-                if (_shortsSongIndex < _shortsSongs.Count - 1)
+                // Horizontal swipe → switch category
+                if (totalX < -50)
                 {
-                    _shortsSongIndex++;
-                    AnimateShortTransition(true);
-                }
-                else
-                {
-                    // Wrap to next category
+                    // Swipe left → next category
                     int nextCat = (_shortsCategoryIndex + 1) % _shortsCategories.Length;
                     SwitchShortsCategory(nextCat);
                 }
-            }
-            else if (totalY > 50)
-            {
-                // Swipe down → prev song
-                if (_shortsSongIndex > 0)
+                else if (totalX > 50)
                 {
-                    _shortsSongIndex--;
-                    AnimateShortTransition(false);
-                }
-                else
-                {
-                    // Wrap to prev category
+                    // Swipe right → prev category
                     int prevCat = (_shortsCategoryIndex - 1 + _shortsCategories.Length) % _shortsCategories.Length;
                     SwitchShortsCategory(prevCat);
+                }
+            }
+            else if (!isHorizontal && Math.Abs(totalY) >= 50)
+            {
+                // Vertical swipe → switch song
+                if (totalY < -50)
+                {
+                    // Swipe up → next song
+                    if (_shortsSongIndex < _shortsSongs.Count - 1)
+                    {
+                        _shortsSongIndex++;
+                        AnimateShortTransition(true);
+                    }
+                }
+                else if (totalY > 50)
+                {
+                    // Swipe down → prev song
+                    if (_shortsSongIndex > 0)
+                    {
+                        _shortsSongIndex--;
+                        AnimateShortTransition(false);
+                    }
                 }
             }
         }
