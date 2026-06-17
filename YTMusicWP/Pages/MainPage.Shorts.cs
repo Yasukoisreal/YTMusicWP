@@ -170,6 +170,72 @@ namespace YTMusicWP
             await LoadShortsCategoryAsync(GetRealCategoryIndex(_shortsCategoryIndex));
         }
 
+        /// <summary>
+        /// Open Shorts with a specific track (from Discover click).
+        /// Injects the track at position 0, then loads the rest from the category.
+        /// </summary>
+        private async void OpenShortsWithTrack(YouTubeTrack track)
+        {
+            _shortsCategoryIndex = 0;
+            _shortsIsOpen = true;
+
+            // Save current main player state to restore on exit
+            try
+            {
+                _shortsSavedTrack = currentTrack;
+                _shortsSavedPosition = _appMediaPlayer != null ? _appMediaPlayer.Position : TimeSpan.Zero;
+                _shortsWasMainPlaying = _appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing;
+            }
+            catch
+            {
+                _shortsSavedTrack = null;
+                _shortsWasMainPlaying = false;
+            }
+
+            BuildSmartCategoryOrder();
+            BuildCategoryDots();
+
+            ShortsView.Visibility = Visibility.Visible;
+
+            // Slide-in animation
+            var sb = new Storyboard();
+            var anim = new DoubleAnimation
+            {
+                From = 1000,
+                To = 0,
+                Duration = new Duration(TimeSpan.FromMilliseconds(250)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            Storyboard.SetTarget(anim, ShortsTransform);
+            Storyboard.SetTargetProperty(anim, "Y");
+            sb.Children.Add(anim);
+            sb.Begin();
+
+            // Pre-load this specific track as the first item
+            _shortsSongs = new List<YouTubeTrack> { track };
+            _shortsSongIndex = 0;
+            _shortsLoadGeneration++;
+            DisplayCurrentShort();
+
+            // Then load more tracks from category in background
+            try
+            {
+                int realCat = GetRealCategoryIndex(0);
+                var result = await InnerTubeClient.SearchWithContinuationAsync(
+                    _shortsCategoryQueries[realCat], 10);
+                if (result != null && result.Tracks != null)
+                {
+                    var moreTracks = result.Tracks
+                        .Where(t => !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:")
+                                    && t.VideoId != track.VideoId)
+                        .Take(9)
+                        .ToList();
+                    _shortsSongs.AddRange(moreTracks);
+                }
+            }
+            catch { }
+        }
+
         private void CloseShortsView(bool keepPlaying = false)
         {
             _shortsIsOpen = false;

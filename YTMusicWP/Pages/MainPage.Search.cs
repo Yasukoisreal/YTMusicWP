@@ -306,11 +306,10 @@ namespace YTMusicWP
             var item = e.ClickedItem as DiscoverItem;
             if (item == null) return;
 
-            // Play the actual discover item
             if (!string.IsNullOrEmpty(item.VideoId))
             {
-                // Play directly as a track
-                PlayTrack(new YouTubeTrack
+                // Open Shorts starting with this specific track
+                OpenShortsWithTrack(new YouTubeTrack
                 {
                     VideoId = item.VideoId,
                     Title = item.Title,
@@ -318,15 +317,9 @@ namespace YTMusicWP
                     ThumbnailUrl = item.ThumbnailUrl
                 });
             }
-            else if (!string.IsNullOrEmpty(item.PlaylistId))
+            else
             {
-                OpenYouTubePlaylist(item.PlaylistId, item.Title, item.ThumbnailUrl);
-            }
-            else if (!string.IsNullOrEmpty(item.SearchQuery))
-            {
-                SwitchTab(1);
-                SearchBox.Text = item.SearchQuery;
-                SearchButton_Click(null, null);
+                OpenShortsView(0);
             }
         }
 
