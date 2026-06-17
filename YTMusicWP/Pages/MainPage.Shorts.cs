@@ -92,6 +92,9 @@ namespace YTMusicWP
         {
             _shortsIsOpen = false;
 
+            // Stop waveform
+            if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
+
             var sb = new Storyboard();
             var anim = new DoubleAnimation
             {
@@ -206,6 +209,8 @@ namespace YTMusicWP
         // ==========================================
         // DISPLAY CURRENT SHORT
         // ==========================================
+        private Storyboard _waveformStoryboard;
+
         private void DisplayCurrentShort()
         {
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
@@ -224,41 +229,87 @@ namespace YTMusicWP
             {
                 try
                 {
-                    var bmp = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 400 };
-
-                    // Video-style: full background + cover art visible
-                    ShortsBackgroundImage.Source = bmp;
+                    // Background: dimmed ambient thumbnail
+                    ShortsBackgroundImage.Source = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 400 };
+                    ShortsBackgroundImage.Opacity = 0.3;
 
                     // Cover art in center
                     ShortsCoverArt.ImageSource = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 240 };
+                    ShortsCoverArtPanel.Visibility = Visibility.Visible;
 
                     // Mini cover
                     ShortsMiniCover.ImageSource = new BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute)) { DecodePixelWidth = 50 };
 
-                    // Artist avatar (use thumbnail as fallback)
+                    // Artist avatar
                     ShortsArtistAvatarBrush.ImageSource = new BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute)) { DecodePixelWidth = 40 };
                 }
                 catch { }
             }
 
-            // Decide display mode: video-style (full bg) vs music-only (centered cover)
-            // Use heuristic: ytimg.com thumbnails with hqdefault/maxres = video → show full bg
-            bool isVideoStyle = !string.IsNullOrEmpty(thumbUrl) && thumbUrl.Contains("ytimg.com");
-            if (isVideoStyle)
-            {
-                // Video style: show background, hide centered cover
-                ShortsBackgroundImage.Opacity = 0.7;
-                ShortsCoverArtPanel.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                // Music only: dark bg, show centered cover with waveform
-                ShortsBackgroundImage.Opacity = 0;
-                ShortsCoverArtPanel.Visibility = Visibility.Visible;
-            }
+            // Start waveform animation
+            StartWaveformAnimation();
 
             // Update hashtags
             UpdateShortsHashtags();
+        }
+
+        private void StartWaveformAnimation()
+        {
+            // Stop previous
+            if (_waveformStoryboard != null)
+            {
+                _waveformStoryboard.Stop();
+                _waveformStoryboard = null;
+            }
+
+            _waveformStoryboard = new Storyboard();
+            _waveformStoryboard.RepeatBehavior = RepeatBehavior.Forever;
+
+            var rand = new Random();
+
+            // Animate all waveform bars (children of the two StackPanels in ShortsCoverArtPanel)
+            foreach (var child in ShortsCoverArtPanel.Children)
+            {
+                var panel = child as StackPanel;
+                if (panel == null) continue;
+
+                foreach (var bar in panel.Children)
+                {
+                    var border = bar as Border;
+                    if (border == null) continue;
+
+                    // Ensure each bar has a ScaleTransform
+                    if (border.RenderTransform == null || !(border.RenderTransform is ScaleTransform))
+                    {
+                        border.RenderTransform = new ScaleTransform { ScaleY = 1, CenterY = 0.5 };
+                        border.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
+                    }
+
+                    var scaleTransform = border.RenderTransform as ScaleTransform;
+
+                    // Random animation per bar
+                    double minScale = 0.3 + rand.NextDouble() * 0.3;
+                    double maxScale = 0.8 + rand.NextDouble() * 0.7;
+                    double durationMs = 300 + rand.Next(400);
+                    double beginMs = rand.Next(200);
+
+                    var anim = new DoubleAnimation
+                    {
+                        From = minScale,
+                        To = maxScale,
+                        Duration = new Duration(TimeSpan.FromMilliseconds(durationMs)),
+                        AutoReverse = true,
+                        RepeatBehavior = RepeatBehavior.Forever,
+                        BeginTime = TimeSpan.FromMilliseconds(beginMs)
+                    };
+                    Storyboard.SetTarget(anim, scaleTransform);
+                    Storyboard.SetTargetProperty(anim, "ScaleY");
+                    _waveformStoryboard.Children.Add(anim);
+                }
+            }
+
+            if (_waveformStoryboard.Children.Count > 0)
+                _waveformStoryboard.Begin();
         }
 
         private void UpdateShortsHashtags()
