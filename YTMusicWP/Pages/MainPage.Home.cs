@@ -41,7 +41,7 @@ namespace YTMusicWP
             }
         }
 
-        private void RefreshRecentArtists()
+        private async void RefreshRecentArtists()
         {
             try
             {
@@ -71,6 +71,21 @@ namespace YTMusicWP
                 {
                     HomeArtistsSection.Visibility = Visibility.Visible;
                     HomeArtistsCarousel.ItemsSource = artistItems;
+
+                    // Fetch real artist avatars in background
+                    foreach (var artist in artistItems)
+                    {
+                        if (string.IsNullOrEmpty(artist.ChannelId)) continue;
+                        try
+                        {
+                            var artistResult = await InnerTubeClient.BrowseArtistAsync(artist.ChannelId);
+                            if (!string.IsNullOrEmpty(artistResult.AvatarUrl))
+                            {
+                                artist.ThumbnailUrl = artistResult.AvatarUrl;
+                            }
+                        }
+                        catch { }
+                    }
                 }
                 else
                 {
