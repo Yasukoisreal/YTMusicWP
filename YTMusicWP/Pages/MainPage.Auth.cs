@@ -128,16 +128,24 @@ namespace YTMusicWP
                 if (regionTag == "AUTO")
                     regionTag = DetectOsRegion();
                 ApplicationData.Current.LocalSettings.Values["TrendingRegion"] = regionTag;
+
+                // Update InnerTube region immediately
+                InnerTubeClient.SetRegion(regionTag);
             }
 
             ShowToast("Settings Saved!");
 
             if (IsInternetAvailable())
             {
+                // Clear all home sections
                 homeTracks.Clear();
                 popTracks.Clear();
                 lofiTracks.Clear();
                 workoutTracks.Clear();
+                genre5Tracks.Clear();
+                genre6Tracks.Clear();
+                genre7Tracks.Clear();
+                genre8Tracks.Clear();
                 await LoadHomeRecommendations();
             }
         }
