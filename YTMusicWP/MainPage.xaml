@@ -1375,31 +1375,17 @@
 
             <!-- Main Content Area -->
             <Grid Grid.Row="1" Margin="0">
-                <!-- Background image (for video-style shorts) -->
-                <Image x:Name="ShortsBackgroundImage" Stretch="UniformToFill" Opacity="0.7" VerticalAlignment="Stretch"/>
-
-                <!-- Dark overlay gradient at top and bottom -->
-                <Border VerticalAlignment="Top" Height="120">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="#CC0A0A0A" Offset="0"/>
-                            <GradientStop Color="Transparent" Offset="1"/>
-                        </LinearGradientBrush>
-                    </Border.Background>
-                </Border>
-                <Border VerticalAlignment="Bottom" Height="200">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="Transparent" Offset="0"/>
-                            <GradientStop Color="#DD0A0A0A" Offset="1"/>
-                        </LinearGradientBrush>
-                    </Border.Background>
-                </Border>
+                <!-- Blurred background: very low-res image stretched = natural blur -->
+                <Grid.Background>
+                    <ImageBrush x:Name="ShortsBlurBg" Stretch="UniformToFill" Opacity="0.6"/>
+                </Grid.Background>
+                <!-- Dark frost overlay on top of blurred bg -->
+                <Border Background="#88000000"/>
 
                 <!-- Cover Art (music-only mode) — centered with waveform bars -->
                 <Grid x:Name="ShortsCoverArtPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <!-- Fake waveform bars left -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-45,0,0,0" Opacity="0.4">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-50,0,0,0" Opacity="0.5">
                         <Border Width="4" Height="20" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
                         <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
                         <Border Width="4" Height="15" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
@@ -1413,7 +1399,7 @@
                         </Border.Background>
                     </Border>
                     <!-- Fake waveform bars right -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-45,0" Opacity="0.4">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-50,0" Opacity="0.5">
                         <Border Width="4" Height="30" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
                         <Border Width="4" Height="15" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
                         <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
@@ -1462,6 +1448,9 @@
                     </Grid>
                 </Border>
             </StackPanel>
+
+            <!-- Independent audio player for Shorts (NOT BackgroundMediaPlayer) -->
+            <MediaElement x:Name="ShortsMediaPlayer" AutoPlay="True" AudioCategory="BackgroundCapableMedia" Visibility="Collapsed"/>
         </Grid>
 
         <!-- ═══════════════════════════════════ ARTIST PROFILE VIEW ═══════════════════════════════════ -->

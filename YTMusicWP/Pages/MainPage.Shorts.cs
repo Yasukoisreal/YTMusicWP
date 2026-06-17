@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.Media.Playback;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -93,8 +92,9 @@ namespace YTMusicWP
         {
             _shortsIsOpen = false;
 
-            // Stop waveform
+            // Stop waveform + audio
             if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
+            try { ShortsMediaPlayer.Stop(); ShortsMediaPlayer.Source = null; } catch { }
 
             var sb = new Storyboard();
             var anim = new DoubleAnimation
@@ -230,11 +230,10 @@ namespace YTMusicWP
             {
                 try
                 {
-                    // Background: dimmed ambient thumbnail
-                    ShortsBackgroundImage.Source = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 400 };
-                    ShortsBackgroundImage.Opacity = 0.3;
+                    // Blurred background: 30px decode → pixelated/blurred when stretched
+                    ShortsBlurBg.ImageSource = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 30 };
 
-                    // Cover art in center
+                    // Cover art in center (crisp)
                     ShortsCoverArt.ImageSource = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 240 };
                     ShortsCoverArtPanel.Visibility = Visibility.Visible;
 
@@ -253,8 +252,8 @@ namespace YTMusicWP
             // Update hashtags
             UpdateShortsHashtags();
 
-            // Auto-play this track
-            PlayTrack(track);
+            // Auto-play via independent MediaElement (not BackgroundMediaPlayer)
+            PlayShortsAudio(track.VideoId);
             UpdateShortsPauseIcon(true);
         }
 
@@ -415,6 +414,26 @@ namespace YTMusicWP
         }
 
         // ==========================================
+        // INDEPENDENT AUDIO PLAYER (MediaElement, NOT BackgroundMediaPlayer)
+        // ==========================================
+        private async void PlayShortsAudio(string videoId)
+        {
+            try
+            {
+                // Stop current
+                ShortsMediaPlayer.Stop();
+
+                string streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId);
+                if (!string.IsNullOrEmpty(streamUrl) && _shortsIsOpen)
+                {
+                    ShortsMediaPlayer.Source = new Uri(streamUrl, UriKind.Absolute);
+                    ShortsMediaPlayer.Play();
+                }
+            }
+            catch { }
+        }
+
+        // ==========================================
         // EVENT HANDLERS
         // ==========================================
         private void ShortsBack_Click(object sender, RoutedEventArgs e)
@@ -426,14 +445,14 @@ namespace YTMusicWP
         {
             try
             {
-                if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                if (ShortsMediaPlayer.CurrentState == Windows.UI.Xaml.Media.MediaElementState.Playing)
                 {
-                    _appMediaPlayer.Pause();
+                    ShortsMediaPlayer.Pause();
                     UpdateShortsPauseIcon(false);
                 }
                 else
                 {
-                    _appMediaPlayer.Play();
+                    ShortsMediaPlayer.Play();
                     UpdateShortsPauseIcon(true);
                 }
             }
