@@ -1359,8 +1359,8 @@
                         <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
                         <Border Width="4" Height="50" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
                     </StackPanel>
-                    <!-- Cover Art -->
-                    <Border Width="240" Height="160" CornerRadius="10">
+                    <!-- Cover Art (9:16 portrait) -->
+                    <Border Width="160" Height="260" CornerRadius="10">
                         <Border.Background>
                             <ImageBrush x:Name="ShortsCoverArt" Stretch="UniformToFill"/>
                         </Border.Background>
