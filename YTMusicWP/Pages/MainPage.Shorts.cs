@@ -9,6 +9,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
+using Windows.Media.Playback;
 
 namespace YTMusicWP
 {
@@ -116,10 +117,20 @@ namespace YTMusicWP
         // ==========================================
         // OPEN / CLOSE
         // ==========================================
+        private bool _shortsWasMainPlaying = false;
+
         private async void OpenShortsView(int categoryIndex = 0)
         {
             _shortsCategoryIndex = categoryIndex;
             _shortsIsOpen = true;
+
+            // Pause main player to avoid conflict
+            try
+            {
+                _shortsWasMainPlaying = BackgroundMediaPlayer.Current.CurrentState == Windows.Media.Playback.MediaPlayerState.Playing;
+                if (_shortsWasMainPlaying) BackgroundMediaPlayer.Current.Pause();
+            }
+            catch { _shortsWasMainPlaying = false; }
 
             // Smart category ordering based on listening history
             BuildSmartCategoryOrder();
@@ -161,6 +172,13 @@ namespace YTMusicWP
             if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
             StopShortsLoop();
             try { ShortsMediaPlayer.Stop(); ShortsMediaPlayer.Source = null; } catch { }
+
+            // Resume main player if it was playing before Shorts
+            try
+            {
+                if (_shortsWasMainPlaying) BackgroundMediaPlayer.Current.Play();
+            }
+            catch { }
 
             var sb = new Storyboard();
             var anim = new DoubleAnimation
@@ -621,6 +639,9 @@ namespace YTMusicWP
         {
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
             var track = _shortsSongs[_shortsSongIndex];
+
+            // Don't resume old main player track — PlayTrack will start fresh
+            _shortsWasMainPlaying = false;
 
             // Close Shorts first (stops shorts audio)
             CloseShortsView();
