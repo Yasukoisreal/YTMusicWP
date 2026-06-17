@@ -306,8 +306,28 @@ namespace YTMusicWP
             var item = e.ClickedItem as DiscoverItem;
             if (item == null) return;
 
-            // Open Shorts view (discover items are part of Shorts feed)
-            OpenShortsView(0);
+            // Play the actual discover item
+            if (!string.IsNullOrEmpty(item.VideoId))
+            {
+                // Play directly as a track
+                PlayTrack(new YouTubeTrack
+                {
+                    VideoId = item.VideoId,
+                    Title = item.Title,
+                    ChannelName = item.Subtitle,
+                    ThumbnailUrl = item.ThumbnailUrl
+                });
+            }
+            else if (!string.IsNullOrEmpty(item.PlaylistId))
+            {
+                OpenYouTubePlaylist(item.PlaylistId, item.Title, item.ThumbnailUrl);
+            }
+            else if (!string.IsNullOrEmpty(item.SearchQuery))
+            {
+                SwitchTab(1);
+                SearchBox.Text = item.SearchQuery;
+                SearchButton_Click(null, null);
+            }
         }
 
         private void OpenShortsFromDiscover()
