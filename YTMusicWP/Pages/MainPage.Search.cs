@@ -40,7 +40,26 @@ namespace YTMusicWP
             SearchSongList.ItemsSource = searchResults;
 
             searchResults.Clear();
-            var tracks = await FetchMusicList(query, "", requireApiKey: true);
+
+            // Detect active filter
+            var songBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterSongsBtn.Background).Color;
+            var playlistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterPlaylistsBtn.Background).Color;
+            var artistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterArtistsBtn.Background).Color;
+            var videoBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterVideosBtn.Background).Color;
+            var activeColor = Windows.UI.Color.FromArgb(255, 29, 185, 84); // #1DB954
+
+            // YouTube Music search params for filtered search
+            // Songs: EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D
+            // Videos: EgWKAQIQAWoKEAMQBBAKEAkQBQ%3D%3D  
+            // Playlists: EgeKAQQoAEABagoQAxAEEAoQCRAF
+            // Artists: EgWKAQIgAWoKEAMQBBAKEAkQBQ%3D%3D
+            string searchFilter = null;
+            if (songBg == activeColor) searchFilter = "songs";
+            else if (videoBg == activeColor) searchFilter = "videos";
+            else if (playlistBg == activeColor) searchFilter = "playlists";
+            else if (artistBg == activeColor) searchFilter = "artists";
+
+            var tracks = await FetchMusicList(query, "", requireApiKey: true, searchFilter: searchFilter);
 
             // API key missing → show prompt
             if (tracks == null)
@@ -53,14 +72,14 @@ namespace YTMusicWP
             if (tracks.Count > 0)
             {
                 var filteredTracks = tracks.AsEnumerable();
-                var songBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterSongsBtn.Background).Color;
-                var playlistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterPlaylistsBtn.Background).Color;
-                var artistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterArtistsBtn.Background).Color;
-                var activeColor = Windows.UI.Color.FromArgb(255, 29, 185, 84); // #1DB954
                 
-                if (songBg == activeColor) filteredTracks = filteredTracks.Where(t => !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:"));
-                else if (playlistBg == activeColor) filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("PLAYLIST:"));
-                else if (artistBg == activeColor) filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("CHANNEL:"));
+                // Additional client-side filter as safety net
+                if (searchFilter == "songs" || searchFilter == "videos")
+                    filteredTracks = filteredTracks.Where(t => !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:"));
+                else if (searchFilter == "playlists")
+                    filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("PLAYLIST:"));
+                else if (searchFilter == "artists")
+                    filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("CHANNEL:"));
 
                 foreach (var t in filteredTracks) searchResults.Add(t);
             }

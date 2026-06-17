@@ -16,13 +16,13 @@ namespace YTMusicWP
             public string ContinuationToken { get; set; }
         }
 
-        public static async Task<List<YouTubeTrack>> SearchAsync(string query, int maxResults = 20)
+        public static async Task<List<YouTubeTrack>> SearchAsync(string query, int maxResults = 20, string searchParams = null)
         {
-            var result = await SearchWithContinuationAsync(query, maxResults);
+            var result = await SearchWithContinuationAsync(query, maxResults, searchParams);
             return result?.Tracks ?? new List<YouTubeTrack>();
         }
 
-        public static async Task<SearchResult> SearchWithContinuationAsync(string query, int maxResults = 20)
+        public static async Task<SearchResult> SearchWithContinuationAsync(string query, int maxResults = 20, string searchParams = null)
         {
             var results = new List<YouTubeTrack>();
             string continuationToken = null;
@@ -34,6 +34,10 @@ namespace YTMusicWP
                     ["context"] = BuildMusicContext(vd),
                     ["query"] = query
                 };
+
+                // Add params for filtered search (songs, videos, playlists, artists)
+                if (!string.IsNullOrEmpty(searchParams))
+                    body["params"] = searchParams;
 
                 var data = await PostInnerTubeAsync(
                     "https://music.youtube.com/youtubei/v1/search?prettyPrint=false", body, true);

@@ -60,7 +60,7 @@ namespace YTMusicWP
             return url;
         }
 
-        public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "", bool requireApiKey = false)
+        public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "", bool requireApiKey = false, string searchFilter = null)
         {
             var list = new List<YouTubeTrack>(20);
 
@@ -113,37 +113,75 @@ namespace YTMusicWP
             // ═══════════════════════════════════════════════════
             if (requireApiKey)
             {
-                string apiKey = GetApiKey();
-                if (string.IsNullOrEmpty(apiKey))
-                    return null; // Caller sẽ hiện thông báo yêu cầu key
-
-                // LAYER 1: YouTube Data API v3 (primary)
-                try
+                // LAYER 1: If filter active, use InnerTube YouTube Music search (returns proper music results)
+                if (!string.IsNullOrEmpty(searchFilter))
                 {
-                    string ytUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=" + Uri.EscapeDataString(query) + "&type=video,channel,playlist&key=" + apiKey;
-                    if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
+                    try
                     {
-                        string region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
-                        if (region != "US") ytUrl += "&regionCode=" + region;
-                    }
-
-                    var response = await _apiClient.GetStringAsync(ytUrl);
-                    var json = JObject.Parse(response);
-                    _nextSearchToken = json["nextPageToken"]?.ToString() ?? "";
-                    var items = json["items"];
-                    if (items != null)
-                    {
-                        foreach (var item in items)
+                        // YouTube Music search params for each filter type
+                        string ytmParams = null;
+                        switch (searchFilter)
                         {
-                            try { var track = ParseTrackItem(item); if (track != null) list.Add(track); }
-                            catch { continue; }
+                            case "songs": ytmParams = "EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D"; break;
+                            case "videos": ytmParams = "EgWKAQIQAWoKEAMQBBAKEAkQBQ%3D%3D"; break;
+                            case "playlists": ytmParams = "EgeKAQQoAEABagoQAxAEEAoQCRAF"; break;
+                            case "artists": ytmParams = "EgWKAQIgAWoKEAMQBBAKEAkQBQ%3D%3D"; break;
+                        }
+                        var innerResult = await InnerTubeClient.SearchWithContinuationAsync(query, 20, ytmParams);
+                        if (innerResult != null && innerResult.Tracks != null && innerResult.Tracks.Count > 0)
+                        {
+                            list.AddRange(innerResult.Tracks);
+                            _nextSearchToken = innerResult.ContinuationToken ?? "";
+                            return list;
                         }
                     }
-                    if (list.Count > 0) return list;
+                    catch { System.Diagnostics.Debug.WriteLine("[API] InnerTube filtered search failed, falling back to API v3"); }
                 }
-                catch { System.Diagnostics.Debug.WriteLine("[API] YouTube API v3 failed, trying InnerTube fallback"); }
 
-                // LAYER 2: InnerTube fallback (nếu API v3 lỗi)
+                // LAYER 2: YouTube Data API v3 (primary for unfiltered)
+                string apiKey = GetApiKey();
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    try
+                    {
+                        string searchType = "video,channel,playlist";
+                        if (searchFilter == "songs" || searchFilter == "videos") searchType = "video";
+                        else if (searchFilter == "playlists") searchType = "playlist";
+                        else if (searchFilter == "artists") searchType = "channel";
+
+                        string ytUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=20&q=" + Uri.EscapeDataString(query) + "&type=" + searchType + "&key=" + apiKey;
+                        
+                        // Add music category filter for songs
+                        if (searchFilter == "songs") ytUrl += "&videoCategoryId=10";
+                        
+                        if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
+                        {
+                            string region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+                            if (region != "US") ytUrl += "&regionCode=" + region;
+                        }
+
+                        var response = await _apiClient.GetStringAsync(ytUrl);
+                        var json = JObject.Parse(response);
+                        _nextSearchToken = json["nextPageToken"]?.ToString() ?? "";
+                        var items = json["items"];
+                        if (items != null)
+                        {
+                            foreach (var item in items)
+                            {
+                                try { var track = ParseTrackItem(item); if (track != null) list.Add(track); }
+                                catch { continue; }
+                            }
+                        }
+                        if (list.Count > 0) return list;
+                    }
+                    catch { System.Diagnostics.Debug.WriteLine("[API] YouTube API v3 failed, trying InnerTube fallback"); }
+                }
+                else
+                {
+                    return null; // Caller sẽ hiện thông báo yêu cầu key
+                }
+
+                // LAYER 3: InnerTube fallback (nếu API v3 lỗi)
                 try
                 {
                     var innerResult = await InnerTubeClient.SearchWithContinuationAsync(query, 20);
