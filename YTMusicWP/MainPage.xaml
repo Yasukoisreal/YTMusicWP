@@ -7,7 +7,7 @@
     Background="#121212">
 
     <Page.Resources>
-        <!-- â•â•â•â•â•â•â• SPOTIFY FONT SYSTEM â•â•â•â•â•â•â• -->
+        <!-- ═══════ SPOTIFY FONT SYSTEM ═══════ -->
         <FontFamily x:Key="MontserratRegular">/Assets/Fonts/Montserrat-Regular.ttf#Montserrat</FontFamily>
         <FontFamily x:Key="MontserratMedium">/Assets/Fonts/Montserrat-Medium.ttf#Montserrat</FontFamily>
         <FontFamily x:Key="MontserratSemiBold">/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat</FontFamily>
@@ -102,12 +102,12 @@
             <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="â™¡ Toggle Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="ðŸŽµ Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="ðŸ”— Share" Click="MenuShare_Click"/>
-                        <MenuFlyoutItem Text="â¬‡ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
-                        <MenuFlyoutItem Text="âœ› Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♡ Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="✛ Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -131,7 +131,7 @@
                     <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+                <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
             </Grid>
         </DataTemplate>
 
@@ -139,11 +139,11 @@
             <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="â™¡ Toggle Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="âœ› Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
-                        <MenuFlyoutItem Text="ðŸ”— Share" Click="MenuShare_Click"/>
-                        <MenuFlyoutItem Text="â¬‡ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♡ Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="✛ Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
+                        <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -167,7 +167,7 @@
                     <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+                <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
             </Grid>
         </DataTemplate>
 
@@ -175,10 +175,10 @@
             <Grid Width="140" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="â™¡ Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="ðŸŽµ Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="â¬‡ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♡ Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <StackPanel>
@@ -204,7 +204,7 @@
             <Border Background="#1E1E1E" CornerRadius="8" Margin="0,0,10,10" Height="56" HorizontalAlignment="Stretch" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="â–¶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid>
@@ -412,7 +412,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HOME PANEL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ HOME PANEL ═══════════════════════════════════ -->
         <Grid x:Name="HomePanel" Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -483,25 +483,25 @@
                             <StackPanel Orientation="Horizontal">
                                 <Border Background="#1A1DB954" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodChill_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="â˜•" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="☕" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Chill Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="#1A509BF5" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodFocus_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="ðŸŽ¯" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="🎯" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Focus Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="#1AE13300" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodEnergy_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="âš¡" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="⚡" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Energy Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Background="#1AAF2896" CornerRadius="12" Width="150" Height="100" Tapped="MoodSad_Tapped">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="ðŸ’œ" FontSize="28" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="💜" FontSize="28" HorizontalAlignment="Center"/>
                                         <TextBlock Text="Sad Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
@@ -539,7 +539,7 @@
             </Grid>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SEARCH PANEL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ SEARCH PANEL ═══════════════════════════════════ -->
         <Grid x:Name="SearchPanel" Grid.Row="0" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -570,7 +570,7 @@
                         <TextBlock Text="All" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border x:Name="FilterSongsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterSongsBtn_Tapped">
-                        <TextBlock Text="â™ª Songs" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="♪ Songs" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border x:Name="FilterPlaylistsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterPlaylistsBtn_Tapped">
                         <TextBlock Text="Playlists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
@@ -590,11 +590,11 @@
 
                 <ScrollViewer x:Name="DefaultSearchUI" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,15,15,0">
-                        <!-- â•â•â•â•â•â•â• DISCOVER SECTION â•â•â•â•â•â•â• -->
+                        <!-- ═══════ DISCOVER SECTION ═══════ -->
                         <Grid Margin="0,0,0,12">
                             <TextBlock Text="Discover" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
                             <Button Click="OpenShortsBtn_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="8,4">
-                                <TextBlock Text="Shorts â–¶" FontSize="12" Foreground="#1DB954" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock Text="Shorts ▶" FontSize="12" Foreground="#1DB954" FontFamily="{StaticResource MontserratSemiBold}"/>
                             </Button>
                         </Grid>
                         <ListView x:Name="DiscoverListView" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled">
@@ -887,7 +887,7 @@
             </Grid>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LIBRARY PANEL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ LIBRARY PANEL ═══════════════════════════════════ -->
         <Grid x:Name="LibraryPanel" Grid.Row="0" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -920,7 +920,7 @@
                         </Grid.RowDefinitions>
                         <Button Click="OpenCreatePlaylistDialog_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,5,15,15" Height="50">
                             <Border Background="#1A1DB954" CornerRadius="10" BorderThickness="1" BorderBrush="#1DB954">
-                                <TextBlock Text="âž• Create New Playlist" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="#1DB954" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Text="➕ Create New Playlist" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="#1DB954" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Button>
                         <ListView x:Name="PlaylistsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="PlaylistsListView_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
@@ -929,7 +929,7 @@
                                     <Grid Margin="0,0,0,15" Background="Transparent" Holding="PlaylistItem_Holding">
                                         <FlyoutBase.AttachedFlyout>
                                             <MenuFlyout>
-                                                <MenuFlyoutItem Text="âœ– Delete Playlist" Click="MenuDeletePlaylist_Click"/>
+                                                <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylist_Click"/>
                                             </MenuFlyout>
                                         </FlyoutBase.AttachedFlyout>
                                         <Grid.ColumnDefinitions>
@@ -944,7 +944,7 @@
                                             <TextBlock Text="{Binding Name}" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4"/>
                                             <TextBlock Text="Custom Playlist" FontSize="14" Foreground="#B3B3B3"/>
                                         </StackPanel>
-                                        <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+                                        <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
@@ -1005,7 +1005,7 @@
             </Pivot>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SETTINGS PANEL (overlay) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ SETTINGS PANEL (overlay) ═══════════════════════════════════ -->
         <Grid x:Name="SettingsPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -1138,7 +1138,7 @@
                         </Button.Template>
                     </Button>
 
-                    <!-- â•â•â•â•â•â•â• PLAYBACK SETTINGS â•â•â•â•â•â•â• -->
+                    <!-- ═══════ PLAYBACK SETTINGS ═══════ -->
                     <TextBlock Text="PLAYBACK" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     
                     <!-- Audio Quality -->
@@ -1217,7 +1217,7 @@
                         <ToggleSwitch x:Name="NormalizeVolumeToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
                     </Grid>
 
-                    <!-- â•â•â•â•â•â•â• DATA MANAGEMENT â•â•â•â•â•â•â• -->
+                    <!-- ═══════ DATA MANAGEMENT ═══════ -->
                     <TextBlock Text="DATA MANAGEMENT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
                         <Border Background="#8C1932" CornerRadius="8">
@@ -1235,7 +1235,7 @@
                         </Border>
                     </Button>
 
-                    <!-- â•â•â•â•â•â•â• ABOUT â•â•â•â•â•â•â• -->
+                    <!-- ═══════ ABOUT ═══════ -->
                     <TextBlock Text="ABOUT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
                     <StackPanel Margin="5,10,0,20">
                         <TextBlock Text="SpotMusic" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954"/>
@@ -1246,7 +1246,7 @@
             </ScrollViewer>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• PLAYLIST DETAILS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ PLAYLIST DETAILS ═══════════════════════════════════ -->
         <Grid x:Name="PlaylistDetailsView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="PlaylistTransform" Y="1000"/>
@@ -1277,7 +1277,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="â–¶ Play All" Click="PlayAllPlaylist_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="140" Height="45">
+                    <Button Grid.Column="0" Content="▶ Play All" Click="PlayAllPlaylist_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="140" Height="45">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="22">
@@ -1286,10 +1286,10 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
-                    <Button Grid.Column="2" Content="â‹®" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
+                    <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
                         <Button.Flyout>
                             <MenuFlyout>
-                                <MenuFlyoutItem Text="âœ– Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
+                                <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
                             </MenuFlyout>
                         </Button.Flyout>
                     </Button>
@@ -1298,7 +1298,7 @@
             <ListView x:Name="PlaylistSongsList" Grid.Row="2" Margin="20,0,20,0" Padding="0" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource PlaylistSongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MUSIC SHORTS VIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ MUSIC SHORTS VIEW ═══════════════════════════════════ -->
         <Grid x:Name="ShortsView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="55" Background="#0A0A0A"
               ManipulationMode="TranslateX,TranslateY" ManipulationDelta="Shorts_ManipulationDelta" ManipulationCompleted="Shorts_ManipulationCompleted">
             <Grid.RenderTransform>
@@ -1318,11 +1318,11 @@
                     <ColumnDefinition Width="60"/>
                 </Grid.ColumnDefinitions>
                 <Button Grid.Column="0" Click="ShortsBack_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="12,0,0,0" Padding="8">
-                    <TextBlock Text="â†" FontSize="26" Foreground="White"/>
+                    <TextBlock Text="←" FontSize="26" Foreground="White"/>
                 </Button>
                 <TextBlock x:Name="ShortsCategoryTitle" Grid.Column="1" Text="#edm" FontSize="17" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <Button Grid.Column="2" Click="ShortsPlayCurrent_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" Padding="8">
-                    <TextBlock x:Name="ShortsPauseBtn" Text="âšâš" FontSize="22" Foreground="White"/>
+                    <TextBlock x:Name="ShortsPauseBtn" Text="❚❚" FontSize="22" Foreground="White"/>
                 </Button>
             </Grid>
 
@@ -1340,7 +1340,7 @@
                 <!-- Dark frost overlay on top of blurred bg -->
                 <Border Background="#88000000"/>
 
-                <!-- Cover Art (music-only mode) â€” centered with waveform bars -->
+                <!-- Cover Art (music-only mode) — centered with waveform bars -->
                 <Grid x:Name="ShortsCoverArtPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <!-- Fake waveform bars left -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-65,0,0,0" Opacity="0.5">
@@ -1394,7 +1394,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <!-- Tappable song info â†’ play in main player -->
+                        <!-- Tappable song info → play in main player -->
                         <Grid Grid.Column="0" Tapped="ShortsSongBar_Tapped">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="45"/>
@@ -1410,14 +1410,14 @@
                         </Grid>
                         <!-- Heart/Favorite button -->
                         <Button Grid.Column="1" Click="ShortsHeart_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center">
-                            <TextBlock x:Name="ShortsHeartBtn" Text="â™¡" FontSize="22" Foreground="White"/>
+                            <TextBlock x:Name="ShortsHeartBtn" Text="♡" FontSize="22" Foreground="White"/>
                         </Button>
                     </Grid>
                 </Border>
             </StackPanel>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• ARTIST PROFILE VIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ ARTIST PROFILE VIEW ═══════════════════════════════════ -->
         <Grid x:Name="ArtistProfileView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="45" Background="#121212">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="ArtistTransform" Y="1000"/>
@@ -1457,7 +1457,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="â–¶ Play" Click="ArtistPlayAll_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="100" Height="40">
+                <Button Grid.Column="0" Content="▶ Play" Click="ArtistPlayAll_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="100" Height="40">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" CornerRadius="20">
@@ -1466,7 +1466,7 @@
                         </ControlTemplate>
                     </Button.Template>
                 </Button>
-                <Button Grid.Column="1" Content="âŸ³ Shuffle" Click="ArtistShuffle_Click" Foreground="White" FontWeight="SemiBold" Background="#2A2A2A" Width="110" Height="40" Margin="10,0,0,0">
+                <Button Grid.Column="1" Content="⟳ Shuffle" Click="ArtistShuffle_Click" Foreground="White" FontWeight="SemiBold" Background="#2A2A2A" Width="110" Height="40" Margin="10,0,0,0">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" CornerRadius="20">
@@ -1491,7 +1491,7 @@
             </ScrollViewer>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MINI PLAYER (Row 1) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ MINI PLAYER (Row 1) ═══════════════════════════════════ -->
         <Grid Grid.Row="1">
             <!-- Mini player green accent top line -->
             <Rectangle Height="2" VerticalAlignment="Top" Canvas.ZIndex="5">
@@ -1540,7 +1540,7 @@
             <ProgressBar x:Name="MiniProgressBar" VerticalAlignment="Bottom" Height="2" Minimum="0" Maximum="100" Value="0" Foreground="#1DB954" Background="#333333" BorderThickness="0" IsHitTestVisible="False"/>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BOTTOM NAV (Row 2) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ BOTTOM NAV (Row 2) ═══════════════════════════════════ -->
         <Border Grid.Row="2" Background="#0D0D0D" BorderBrush="#1F1F1F" BorderThickness="0,1,0,0" Padding="0,8,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -1575,7 +1575,7 @@
             </Grid>
         </Border>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• NOW PLAYING VIEW â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ NOW PLAYING VIEW ═══════════════════════════════════ -->
         <Grid x:Name="NowPlayingView" Visibility="Collapsed" Canvas.ZIndex="100" Grid.RowSpan="3">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="NowPlayingTransform" Y="1000"/>
@@ -1699,7 +1699,7 @@
                             </Canvas>
                             <TextBlock x:Name="BigArtist" Text="Artist" FontSize="16" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
                         </StackPanel>
-                        <Button x:Name="BigHeartBtn" Grid.Column="2" Content="â™¡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0"/>
+                        <Button x:Name="BigHeartBtn" Grid.Column="2" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0"/>
                     </Grid>
                     <StackPanel Margin="0,0,0,5">
                         <Slider x:Name="MusicSlider" Minimum="0" Maximum="100" Value="0" Margin="-5,-5,-5,-5" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Foreground="#1DB954" Background="#404040" Style="{StaticResource ModernSliderStyle}"/>
@@ -1744,7 +1744,7 @@
             </Grid>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• NOW PLAYING MENU â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ NOW PLAYING MENU ═══════════════════════════════════ -->
         <Grid x:Name="NowPlayingMenuDialog" Visibility="Collapsed" Canvas.ZIndex="250" Background="#A0000000" Grid.RowSpan="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -1831,7 +1831,7 @@
             </Border>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CUSTOM BOTTOM SHEET â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ CUSTOM BOTTOM SHEET ═══════════════════════════════════ -->
         <Grid x:Name="CustomBottomSheet" Visibility="Collapsed" Canvas.ZIndex="200" Background="#A0000000" Grid.RowSpan="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -1902,7 +1902,7 @@
             </Border>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DIALOGS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ DIALOGS ═══════════════════════════════════ -->
         <Grid x:Name="AddToPlaylistDialog" Visibility="Collapsed" Canvas.ZIndex="150" Background="#AA000000" Grid.RowSpan="3">
             <Border Background="#252525" CornerRadius="16" Width="300" MaxHeight="400" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
                 <StackPanel>
@@ -1931,7 +1931,7 @@
             </Border>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• LOGIN WEB â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ LOGIN WEB ═══════════════════════════════════ -->
         <Grid x:Name="LoginWebContainer" Visibility="Collapsed" Canvas.ZIndex="300" Background="#121212" Grid.RowSpan="3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -1940,19 +1940,19 @@
             <Border Grid.Row="0" Background="#282828" Padding="15">
                 <Grid>
                     <TextBlock Text="Google Sign-In" Foreground="White" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                    <Button Content="âœ•" Click="CloseLoginWeb_Click" Foreground="White" FontSize="20" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="0" MinWidth="0"/>
+                    <Button Content="✕" Click="CloseLoginWeb_Click" Foreground="White" FontSize="20" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="0" MinWidth="0"/>
                 </Grid>
             </Border>
             <WebView x:Name="LoginWebView" Grid.Row="1" NavigationStarting="LoginWebView_NavigationStarting" NavigationCompleted="LoginWebView_NavigationCompleted" NavigationFailed="LoginWebView_NavigationFailed"/>
             <ProgressBar x:Name="LoginWebLoading" Grid.Row="1" VerticalAlignment="Top" IsIndeterminate="True" Foreground="#1DB954" Visibility="Collapsed"/>
         </Grid>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TOAST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ TOAST ═══════════════════════════════════ -->
         <Border x:Name="ToastNotification" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Padding="14,10" Margin="15,0,15,75" CornerRadius="12" Grid.RowSpan="3">
             <TextBlock x:Name="ToastText" Text="Message" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" TextAlignment="Center"/>
         </Border>
 
-        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• DOWNLOAD STATUS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+        <!-- ═══════════════════════════════════ DOWNLOAD STATUS ═══════════════════════════════════ -->
         <Border x:Name="DownloadStatusBar" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Top" HorizontalAlignment="Stretch" Padding="15,10" Margin="0,0,0,0" Grid.RowSpan="3">
             <Grid>
                 <Grid.RowDefinitions>
@@ -1965,4 +1965,3 @@
         </Border>
     </Grid>
 </Page>
-
