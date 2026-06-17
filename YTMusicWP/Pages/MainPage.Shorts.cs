@@ -378,9 +378,9 @@ namespace YTMusicWP
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
             var track = _shortsSongs[_shortsSongIndex];
 
-            if (!playQueue.Any(t => t.VideoId == track.VideoId))
+            if (!currentQueueTracks.Any(t => t.VideoId == track.VideoId))
             {
-                playQueue.Add(track);
+                currentQueueTracks.Add(track);
                 ShowToast("Added to queue");
             }
             else
