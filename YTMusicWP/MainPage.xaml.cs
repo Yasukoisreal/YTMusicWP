@@ -91,6 +91,10 @@ namespace YTMusicWP
         private ObservableCollection<YouTubeTrack> popTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> lofiTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> workoutTracks = new ObservableCollection<YouTubeTrack>();
+        private ObservableCollection<YouTubeTrack> genre5Tracks = new ObservableCollection<YouTubeTrack>();
+        private ObservableCollection<YouTubeTrack> genre6Tracks = new ObservableCollection<YouTubeTrack>();
+        private ObservableCollection<YouTubeTrack> genre7Tracks = new ObservableCollection<YouTubeTrack>();
+        private ObservableCollection<YouTubeTrack> genre8Tracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> podcastTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> audiobookTracks = new ObservableCollection<YouTubeTrack>();
 
@@ -154,6 +158,10 @@ namespace YTMusicWP
             HomePopCarousel.ItemsSource = popTracks;
             HomeLofiCarousel.ItemsSource = lofiTracks;
             HomeWorkoutCarousel.ItemsSource = workoutTracks;
+            HomeGenre5Carousel.ItemsSource = genre5Tracks;
+            HomeGenre6Carousel.ItemsSource = genre6Tracks;
+            HomeGenre7Carousel.ItemsSource = genre7Tracks;
+            HomeGenre8Carousel.ItemsSource = genre8Tracks;
 
             FavoriteSongList.ItemsSource = favoriteTracks;
             DownloadedSongList.ItemsSource = downloadedTracks;
@@ -272,6 +280,12 @@ namespace YTMusicWP
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
+
+            // Set InnerTube region from settings (affects all API calls)
+            string region = "US";
+            if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
+                region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+            InnerTubeClient.SetRegion(region);
 
             DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
 

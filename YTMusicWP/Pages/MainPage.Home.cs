@@ -106,61 +106,124 @@ namespace YTMusicWP
         {
             HomeLoading.Visibility = Visibility.Visible;
 
+            string region = InnerTubeClient.CurrentRegion;
             string year = DateTime.Now.Year.ToString();
-            string region = "US";
-            if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
-            {
-                region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
-            }
 
-            string trendingQuery = "top hits " + year + " \"Topic\"";
-            string popQuery = "pop music hits \"Topic\"";
-            string lofiQuery = "lofi chill beats \"Topic\"";
-            string workoutQuery = "workout gym music \"Topic\"";
+            // Query definitions per region: [trending, pop, chill, workout, genre5, genre6, genre7, genre8]
+            // Title definitions: [trendingTitle, popTitle, chillTitle, workoutTitle, g5Title, g6Title, g7Title, g8Title]
+            string[] queries;
+            string[] titles;
 
             switch (region)
             {
                 case "VN":
-                    trendingQuery = "V-pop top hits " + year + " \"Topic\"";
-                    popQuery = "V-pop remix \"Topic\"";
-                    lofiQuery = "V-pop lofi chill \"Topic\"";
-                    workoutQuery = "V-pop EDM \"Topic\"";
+                    queries = new[] {
+                        "nhạc Việt hot " + year,
+                        "nhạc trẻ hay nhất " + year,
+                        "bolero trữ tình chọn lọc",
+                        "rap Việt " + year,
+                        "V-pop acoustic",
+                        "nhạc phim Việt hay nhất",
+                        "EDM Việt mix",
+                        "nhạc indie Việt"
+                    };
+                    titles = new[] {
+                        "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt",
+                        "Acoustic Việt", "Nhạc phim Việt", "EDM Việt Mix", "Indie Việt"
+                    };
                     break;
                 case "KR":
-                    trendingQuery = "K-pop trending hits " + year + " \"Topic\"";
-                    popQuery = "K-drama OST \"Topic\"";
-                    lofiQuery = "K-pop aesthetic vibes \"Topic\"";
-                    workoutQuery = "K-pop gym workout \"Topic\"";
+                    queries = new[] {
+                        "K-pop trending " + year,
+                        "K-pop girl group hits",
+                        "K-drama OST " + year,
+                        "K-pop boy group hits",
+                        "K-R&B chill",
+                        "K-pop dance hits",
+                        "Korean indie",
+                        "K-hip hop " + year
+                    };
+                    titles = new[] {
+                        "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits",
+                        "K-R&B Chill", "K-Pop Dance", "Korean Indie", "K-Hip Hop"
+                    };
                     break;
                 case "JP":
-                    trendingQuery = "J-pop trending hits " + year + " \"Topic\"";
-                    popQuery = "Anime OST \"Topic\"";
-                    lofiQuery = "J-pop chill vibes \"Topic\"";
-                    workoutQuery = "J-rock hits \"Topic\"";
+                    queries = new[] {
+                        "J-pop trending " + year,
+                        "Anime OST " + year,
+                        "J-pop chill vibes",
+                        "J-rock hits",
+                        "Vocaloid popular",
+                        "city pop Japanese",
+                        "anime opening " + year,
+                        "Japanese lofi hip hop"
+                    };
+                    titles = new[] {
+                        "Made for you", "Anime OST", "Chill vibes", "J-Rock",
+                        "Vocaloid", "City Pop", "Anime Opening", "Japanese Lofi"
+                    };
                     break;
-                case "GB":
-                    trendingQuery = "UK top hits " + year + " \"Topic\"";
-                    popQuery = "UK drill rap \"Topic\"";
-                    lofiQuery = "UK indie rock \"Topic\"";
-                    workoutQuery = "UK dance hits \"Topic\"";
+                default: // US/GB/International
+                    queries = new[] {
+                        "top hits " + year,
+                        "pop hits " + year,
+                        "lofi chill beats relax",
+                        "workout gym motivation music",
+                        "hip hop rap hits " + year,
+                        "R&B soul hits",
+                        "rock classics greatest hits",
+                        "indie alternative " + year
+                    };
+                    titles = new[] {
+                        "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation",
+                        "Hip-Hop & Rap", "R&B & Soul", "Rock Classics", "Indie & Alt"
+                    };
                     break;
             }
 
-            // [OPT-Q4] Lưu vào biến riêng, KHÔNG ghi đè _currentSearchQuery của Search
-            _currentHomeQuery = trendingQuery;
-            var trending = await FetchMusicList(trendingQuery);
+            // Set section titles
+            HomeTrendingTitle.Text = titles[0];
+            HomePopTitle.Text = titles[1];
+            HomeChillTitle.Text = titles[2];
+            HomeWorkoutTitle.Text = titles[3];
+            HomeGenre5Title.Text = titles[4];
+            HomeGenre6Title.Text = titles[5];
+            HomeGenre7Title.Text = titles[6];
+            HomeGenre8Title.Text = titles[7];
+
+            _currentHomeQuery = queries[0];
+
+            // Use music filter for better results
+            string musicFilter = "EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D";
+
+            // Load all sections (first 4 eagerly, last 4 lazily after first batch)
+            var trending = await FetchMusicList(queries[0]);
             if (trending != null) foreach (var t in trending) { if (IsMusicTrack(t)) homeTracks.Add(t); }
 
-            var pop = await FetchMusicList(popQuery);
+            var pop = await FetchMusicList(queries[1]);
             if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
 
-            var lofi = await FetchMusicList(lofiQuery);
-            if (lofi != null) foreach (var t in lofi) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
+            var chill = await FetchMusicList(queries[2]);
+            if (chill != null) foreach (var t in chill) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
 
-            var workout = await FetchMusicList(workoutQuery);
+            var workout = await FetchMusicList(queries[3]);
             if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
+
+            // Load remaining 4 sections in background (don't block UI)
+            var g5 = await FetchMusicList(queries[4]);
+            if (g5 != null) foreach (var t in g5) { if (IsMusicTrack(t)) genre5Tracks.Add(t); }
+
+            var g6 = await FetchMusicList(queries[5]);
+            if (g6 != null) foreach (var t in g6) { if (IsMusicTrack(t)) genre6Tracks.Add(t); }
+
+            var g7 = await FetchMusicList(queries[6]);
+            if (g7 != null) foreach (var t in g7) { if (IsMusicTrack(t)) genre7Tracks.Add(t); }
+
+            var g8 = await FetchMusicList(queries[7]);
+            if (g8 != null) foreach (var t in g8) { if (IsMusicTrack(t)) genre8Tracks.Add(t); }
         }
 
         private static bool IsMusicTrack(YouTubeTrack t)

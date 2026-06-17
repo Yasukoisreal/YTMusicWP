@@ -17,6 +17,30 @@ namespace YTMusicWP
         private static string _cachedVisitorData = null;
         private static DateTime _vdCacheTime = DateTime.MinValue;
 
+        // Region & Language — set from app settings on startup
+        public static string CurrentRegion { get; set; } = "US";
+        public static string CurrentLanguage { get; set; } = "en";
+
+        public static void SetRegion(string regionCode)
+        {
+            CurrentRegion = regionCode ?? "US";
+            switch (CurrentRegion)
+            {
+                case "VN": CurrentLanguage = "vi"; break;
+                case "KR": CurrentLanguage = "ko"; break;
+                case "JP": CurrentLanguage = "ja"; break;
+                case "TW": CurrentLanguage = "zh-TW"; break;
+                case "TH": CurrentLanguage = "th"; break;
+                case "ID": CurrentLanguage = "id"; break;
+                case "FR": CurrentLanguage = "fr"; break;
+                case "DE": CurrentLanguage = "de"; break;
+                case "ES": CurrentLanguage = "es"; break;
+                case "BR": CurrentLanguage = "pt"; break;
+                case "RU": CurrentLanguage = "ru"; break;
+                default: CurrentLanguage = "en"; break;
+            }
+        }
+
         // ==========================================
         // VISITOR DATA
         // ==========================================
@@ -101,8 +125,8 @@ namespace YTMusicWP
             {
                 ["clientName"] = "WEB_REMIX",
                 ["clientVersion"] = "1.20241016.01.00",
-                ["hl"] = "en",
-                ["gl"] = "US"
+                ["hl"] = CurrentLanguage,
+                ["gl"] = CurrentRegion
             };
             if (!string.IsNullOrEmpty(visitorData))
                 client["visitorData"] = visitorData;
@@ -116,8 +140,8 @@ namespace YTMusicWP
             {
                 ["clientName"] = "WEB",
                 ["clientVersion"] = "2.20241016.00.00",
-                ["hl"] = "en",
-                ["gl"] = "US"
+                ["hl"] = CurrentLanguage,
+                ["gl"] = CurrentRegion
             };
             if (!string.IsNullOrEmpty(visitorData))
                 client["visitorData"] = visitorData;
