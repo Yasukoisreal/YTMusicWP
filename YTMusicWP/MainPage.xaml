@@ -1393,19 +1393,26 @@
                 <Border Background="#2A2A2A" CornerRadius="12" Margin="0,0,0,15" Padding="10">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="45"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <Border Width="40" Height="40" CornerRadius="6">
-                            <Border.Background><ImageBrush x:Name="ShortsMiniCover" Stretch="UniformToFill"/></Border.Background>
-                        </Border>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
-                            <TextBlock x:Name="ShortsSongTitle" Text="Song Title" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock x:Name="ShortsSongArtist" Text="Artist" FontSize="11" Foreground="#999999" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
-                        <Button Grid.Column="2" Click="ShortsAddToQueue_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center">
-                            <TextBlock Text="⊕" FontSize="24" Foreground="#1DB954"/>
+                        <!-- Tappable song info → play in main player -->
+                        <Grid Grid.Column="0" Tapped="ShortsSongBar_Tapped">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="45"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="40" Height="40" CornerRadius="6">
+                                <Border.Background><ImageBrush x:Name="ShortsMiniCover" Stretch="UniformToFill"/></Border.Background>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                <TextBlock x:Name="ShortsSongTitle" Text="Song Title" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="ShortsSongArtist" Text="Artist" FontSize="11" Foreground="#999999" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Grid>
+                        <!-- Heart/Favorite button -->
+                        <Button Grid.Column="1" Click="ShortsHeart_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center">
+                            <TextBlock x:Name="ShortsHeartBtn" Text="♡" FontSize="22" Foreground="White"/>
                         </Button>
                     </Grid>
                 </Border>

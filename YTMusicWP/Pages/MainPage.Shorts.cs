@@ -327,6 +327,11 @@ namespace YTMusicWP
 
             // Auto-play via independent MediaElement (not BackgroundMediaPlayer)
             PlayShortsAudio(track.VideoId);
+
+            // Update heart state
+            bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
+            ShortsHeartBtn.Text = isFav ? "♥" : "♡";
+            ShortsHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
             UpdateShortsPauseIcon(true);
         }
 
@@ -589,20 +594,39 @@ namespace YTMusicWP
             ShortsPauseBtn.Text = isPlaying ? "❚❚" : "▶";
         }
 
-        private void ShortsAddToQueue_Click(object sender, RoutedEventArgs e)
+        private void ShortsHeart_Click(object sender, RoutedEventArgs e)
         {
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
             var track = _shortsSongs[_shortsSongIndex];
 
-            if (!currentQueueTracks.Any(t => t.VideoId == track.VideoId))
+            var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+            if (existing != null)
             {
-                currentQueueTracks.Add(track);
-                ShowToast("Added to queue");
+                favoriteTracks.Remove(existing);
+                ShortsHeartBtn.Text = "♡";
+                ShortsHeartBtn.Foreground = _whiteBrush;
+                ShowToast("Removed from Favorites");
             }
             else
             {
-                ShowToast("Already in queue");
+                favoriteTracks.Insert(0, track);
+                ShortsHeartBtn.Text = "♥";
+                ShortsHeartBtn.Foreground = _greenBrush;
+                ShowToast("Added to Favorites");
             }
+            SaveFavoritesAsync();
+        }
+
+        private void ShortsSongBar_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
+            var track = _shortsSongs[_shortsSongIndex];
+
+            // Close Shorts first (stops shorts audio)
+            CloseShortsView();
+
+            // Play in main player
+            PlayTrack(track);
         }
     }
 }
