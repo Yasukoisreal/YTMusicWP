@@ -500,7 +500,7 @@
                                                 <Ellipse.Fill>
                                                     <ImageBrush Stretch="UniformToFill">
                                                         <ImageBrush.ImageSource>
-                                                            <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                                                            <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="100"/>
                                                         </ImageBrush.ImageSource>
                                                     </ImageBrush>
                                                 </Ellipse.Fill>
