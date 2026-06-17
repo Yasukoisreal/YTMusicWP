@@ -457,9 +457,26 @@ namespace YTMusicWP
                 }
             }
 
-            // Scroll to current lyric
+            // Scroll to current lyric (center it)
             if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
+            {
                 LyricsListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
+
+                // Delay slightly to let layout update, then center-scroll
+                LyricsListView.UpdateLayout();
+                if (_cachedLyricsScrollViewer == null)
+                    _cachedLyricsScrollViewer = GetScrollViewer(LyricsListView);
+                var activeContainer = LyricsListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                if (_cachedLyricsScrollViewer != null && activeContainer != null)
+                {
+                    var transform = activeContainer.TransformToVisual(_cachedLyricsScrollViewer);
+                    var lyricPos = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
+                    double targetOff = _cachedLyricsScrollViewer.VerticalOffset + lyricPos.Y
+                                    - (_cachedLyricsScrollViewer.ViewportHeight / 2.0)
+                                    + (activeContainer.ActualHeight / 2.0);
+                    _cachedLyricsScrollViewer.ChangeView(null, targetOff, null, false);
+                }
+            }
         }
 
         private void FullscreenLyricsListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
