@@ -89,10 +89,11 @@ namespace YTMusicWP
                     }
                 }
 
-                // Xóa các track đã bị xóa khỏi ổ đĩa
+                // Xóa các track đã bị xóa khỏi ổ đĩa (chỉ xử lý LOCAL: tracks)
                 for (int i = downloadedTracks.Count - 1; i >= 0; i--)
                 {
-                    string fileName = downloadedTracks[i].VideoId.Replace("LOCAL:", "");
+                    if (!downloadedTracks[i].VideoId.StartsWith("LOCAL:")) continue;
+                    string fileName = downloadedTracks[i].VideoId.Substring(6); // "LOCAL:".Length = 6
                     if (!currentFileNames.Contains(fileName))
                     {
                         downloadedTracks.RemoveAt(i);

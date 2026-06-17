@@ -205,12 +205,15 @@ namespace YTMusicWP
 
         private void SleepTimer_Click(object sender, RoutedEventArgs e)
         {
+            // Stop existing timer BEFORE changing mode to prevent stale tick
+            _sleepTimer.Stop();
+
             _sleepTimerMode++;
             if (_sleepTimerMode > 3) _sleepTimerMode = 0;
 
             if (_sleepTimerMode == 0)
             {
-                _sleepTimer.Stop();
+                _sleepMinutesLeft = 0;
                 MenuSleepTimerStatus.Text = "Off";
                 ShowToast("Sleep Timer: Off");
             }
