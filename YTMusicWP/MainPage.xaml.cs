@@ -303,11 +303,6 @@ namespace YTMusicWP
             }
             else
             {
-                if (string.IsNullOrEmpty(ApiKeyTextBox.Text.Trim()))
-                {
-                    ShowToast("Swipe to Settings and add API Key.");
-                }
-                
                 if (homeTracks.Count == 0) 
                 {
                     await LoadHomeRecommendations();

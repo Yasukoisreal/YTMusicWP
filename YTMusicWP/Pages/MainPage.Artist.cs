@@ -52,48 +52,14 @@ namespace YTMusicWP
 
                 if (useFallback || tracks.Count == 0)
                 {
-                    string apiKey = GetApiKey();
-                    if (string.IsNullOrEmpty(apiKey))
+                    // Fallback: search by playlist name
+                    var searchResults = await FetchMusicList(playlistName);
+                    if (searchResults != null)
                     {
-                        ShowToast("API Key required! Set it in Settings.");
-                        return;
-                    }
-
-                    string url = $"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={playlistId}&key={apiKey}";
-                    var response = await _apiClient.GetStringAsync(url);
-                    var json = Newtonsoft.Json.Linq.JObject.Parse(response);
-                    
-                    var items = json["items"];
-                    if (items != null)
-                    {
-                        foreach (var item in items)
+                        foreach (var t in searchResults)
                         {
-                            try
-                            {
-                                var snippet = item["snippet"];
-                                string title = snippet["title"]?.ToString();
-                                if (title == "Private video" || title == "Deleted video") continue;
-                                
-                                string vidId = snippet["resourceId"]?["videoId"]?.ToString();
-                                string channel = snippet["videoOwnerChannelTitle"]?.ToString() ?? snippet["channelTitle"]?.ToString();
-                                string channelId = snippet["videoOwnerChannelId"]?.ToString() ?? snippet["channelId"]?.ToString();
-                                var thumbs = snippet["thumbnails"];
-                                string thumbUrl = thumbs?["maxres"]?["url"]?.ToString()
-                                   ?? thumbs?["standard"]?["url"]?.ToString()
-                                   ?? thumbs?["high"]?["url"]?.ToString()
-                                   ?? thumbs?["medium"]?["url"]?.ToString()
-                                   ?? thumbs?["default"]?["url"]?.ToString();
-                                   
-                                tracks.Add(new YouTubeTrack
-                                {
-                                    VideoId = vidId,
-                                    Title = title,
-                                    ChannelName = CleanChannelName(channel),
-                                    ChannelId = channelId,
-                                    ThumbnailUrl = thumbUrl
-                                });
-                            }
-                            catch { continue; }
+                            if (t.VideoId != null && !t.VideoId.StartsWith("CHANNEL:") && !t.VideoId.StartsWith("PLAYLIST:"))
+                                tracks.Add(t);
                         }
                     }
                 }
@@ -140,38 +106,7 @@ namespace YTMusicWP
             List<ArtistAlbum> albums = null;
             bool hasCustomAvatar = false;
 
-            // --- LẤY AVATAR THẬT TỪ YOUTUBE API (NẾU CÓ API KEY) ---
-            string apiKey = GetApiKey();
-            if (!string.IsNullOrEmpty(apiKey))
-            {
-                try
-                {
-                    string ytUrl = string.IsNullOrEmpty(channelId) 
-                        ? "https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=1&q=" + Uri.EscapeDataString(channelName) + "&type=channel&key=" + apiKey
-                        : "https://www.googleapis.com/youtube/v3/channels?part=snippet&id=" + Uri.EscapeDataString(channelId) + "&key=" + apiKey;
-                    
-                    var response = await _apiClient.GetStringAsync(ytUrl);
-                    var json = Newtonsoft.Json.Linq.JObject.Parse(response);
-                    var items = json["items"];
-                    if (items != null && items.Any())
-                    {
-                        var snippet = items[0]["snippet"];
-                        if (string.IsNullOrEmpty(channelId)) 
-                        {
-                            channelId = snippet["channelId"]?.ToString() ?? items[0]["id"]?["channelId"]?.ToString();
-                        }
-                        var thumbUrl = snippet["thumbnails"]?["high"]?["url"]?.ToString() ?? snippet["thumbnails"]?["default"]?["url"]?.ToString();
-                        if (thumbUrl != null)
-                        {
-                            ArtistProfileAvatar.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(thumbUrl))) { DecodePixelWidth = 200 };
-                            hasCustomAvatar = true;
-                        }
-                        var titleStr = snippet["title"]?.ToString();
-                        if (!string.IsNullOrEmpty(titleStr)) ArtistProfileTitle.Text = titleStr;
-                    }
-                }
-                catch { }
-            }
+            // InnerTube artist profile (không cần API key)
 
             // Lớp 1: InnerTube trực tiếp (không cần proxy)
             if (!string.IsNullOrEmpty(channelId))
