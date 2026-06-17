@@ -289,10 +289,9 @@ namespace YTMusicWP
 
             DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
 
-            await LoadFavoritesAsync();
-            await LoadDownloadsAsync();
-            await LoadHistoryAsync();
-            await LoadPlaylistsAsync();
+            // [OPT-8] Parallel file I/O — independent operations run concurrently
+            await Task.WhenAll(LoadFavoritesAsync(), LoadHistoryAsync(), LoadPlaylistsAsync());
+            await LoadDownloadsAsync(); // depends on filesystem scan, runs after
 
             SyncBackgroundPlayer();
 

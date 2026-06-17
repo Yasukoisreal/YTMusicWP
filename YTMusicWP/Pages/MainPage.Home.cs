@@ -72,19 +72,32 @@ namespace YTMusicWP
                     HomeArtistsSection.Visibility = Visibility.Visible;
                     HomeArtistsCarousel.ItemsSource = artistItems;
 
-                    // Fetch real artist avatars in background
-                    foreach (var artist in artistItems)
+                    // [OPT-4] Fetch real artist avatars in parallel (batch 3 concurrent)
+                    for (int i = 0; i < artistItems.Count; i += 3)
                     {
-                        if (string.IsNullOrEmpty(artist.ChannelId)) continue;
-                        try
+                        var batch = new System.Collections.Generic.List<Task>(3);
+                        for (int j = i; j < Math.Min(i + 3, artistItems.Count); j++)
                         {
-                            var artistResult = await InnerTubeClient.BrowseArtistAsync(artist.ChannelId);
-                            if (!string.IsNullOrEmpty(artistResult.AvatarUrl))
+                            var artist = artistItems[j];
+                            if (string.IsNullOrEmpty(artist.ChannelId)) continue;
+                            int idx = j; // capture for closure
+                            batch.Add(Task.Run(async () =>
                             {
-                                artist.ThumbnailUrl = artistResult.AvatarUrl;
-                            }
+                                try
+                                {
+                                    var result = await InnerTubeClient.BrowseArtistAsync(artist.ChannelId);
+                                    if (!string.IsNullOrEmpty(result.AvatarUrl))
+                                    {
+                                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
+                                        {
+                                            artistItems[idx].ThumbnailUrl = result.AvatarUrl;
+                                        });
+                                    }
+                                }
+                                catch { }
+                            }));
                         }
-                        catch { }
+                        await Task.WhenAll(batch);
                     }
                 }
                 else
@@ -194,32 +207,38 @@ namespace YTMusicWP
 
             _currentHomeQuery = queries[0];
 
-            // Load all sections with "songs" filter for individual tracks (not video compilations)
-            var trending = await FetchMusicList(queries[0], "", "songs");
+            // [OPT-3] Load sections in parallel batches of 2 — reduces ~8-24s → ~4-12s
+            // Batch 1: trending + pop (show above-fold content fast)
+            var batch1a = FetchMusicList(queries[0], "", "songs");
+            var batch1b = FetchMusicList(queries[1], "", "songs");
+            var trending = await batch1a;
             if (trending != null) foreach (var t in trending) { if (IsMusicTrack(t)) homeTracks.Add(t); }
-
-            var pop = await FetchMusicList(queries[1], "", "songs");
+            var pop = await batch1b;
             if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
 
-            var chill = await FetchMusicList(queries[2], "", "songs");
+            // Batch 2: chill + workout
+            var batch2a = FetchMusicList(queries[2], "", "songs");
+            var batch2b = FetchMusicList(queries[3], "", "songs");
+            var chill = await batch2a;
             if (chill != null) foreach (var t in chill) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
-
-            var workout = await FetchMusicList(queries[3], "", "songs");
+            var workout = await batch2b;
             if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
 
-            // Load remaining 4 sections in background (don't block UI)
-            var g5 = await FetchMusicList(queries[4], "", "songs");
+            // Batch 3+4: remaining 4 sections in background (2 concurrent each)
+            var batch3a = FetchMusicList(queries[4], "", "songs");
+            var batch3b = FetchMusicList(queries[5], "", "songs");
+            var g5 = await batch3a;
             if (g5 != null) foreach (var t in g5) { if (IsMusicTrack(t)) genre5Tracks.Add(t); }
-
-            var g6 = await FetchMusicList(queries[5], "", "songs");
+            var g6 = await batch3b;
             if (g6 != null) foreach (var t in g6) { if (IsMusicTrack(t)) genre6Tracks.Add(t); }
 
-            var g7 = await FetchMusicList(queries[6], "", "songs");
+            var batch4a = FetchMusicList(queries[6], "", "songs");
+            var batch4b = FetchMusicList(queries[7], "", "songs");
+            var g7 = await batch4a;
             if (g7 != null) foreach (var t in g7) { if (IsMusicTrack(t)) genre7Tracks.Add(t); }
-
-            var g8 = await FetchMusicList(queries[7], "", "songs");
+            var g8 = await batch4b;
             if (g8 != null) foreach (var t in g8) { if (IsMusicTrack(t)) genre8Tracks.Add(t); }
         }
 
