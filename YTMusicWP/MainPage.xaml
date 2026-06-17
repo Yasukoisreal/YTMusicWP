@@ -103,8 +103,10 @@
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="📋 Add to Queue" Click="MenuAddToQueue_Click"/>
                         <MenuFlyoutItem Text="♡ Toggle Favorite" Click="MenuFavorite_Click"/>
                         <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="📻 Go to Radio" Click="MenuGoToRadio_Click"/>
                         <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
                         <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                         <MenuFlyoutItem Text="✛ Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
@@ -140,8 +142,10 @@
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="📋 Add to Queue" Click="MenuAddToQueue_Click"/>
                         <MenuFlyoutItem Text="♡ Toggle Favorite" Click="MenuFavorite_Click"/>
                         <MenuFlyoutItem Text="✛ Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
+                        <MenuFlyoutItem Text="📻 Go to Radio" Click="MenuGoToRadio_Click"/>
                         <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
                         <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
@@ -389,18 +393,24 @@
         </Storyboard>
 
         <DataTemplate x:Key="QueueItemTemplate">
-            <Grid Margin="0,0,0,15" Background="Transparent">
+            <Grid Margin="0,0,0,10" Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Width="45" Height="45" CornerRadius="8" Margin="0,0,12,0" Background="#252525">
+                <Border Grid.Column="0" Width="45" Height="45" CornerRadius="8" Margin="0,0,10,0" Background="#252525">
                     <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
                 </Border>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
-                    <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
-                    <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,5,0">
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                    <TextBlock Text="{Binding ChannelName}" FontSize="13" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
+                <Button Grid.Column="2" Content="↑" Click="QueueMoveUp_Click" Foreground="#B3B3B3" FontSize="18" Background="Transparent" BorderThickness="0" MinWidth="36" MinHeight="36" Padding="0"/>
+                <Button Grid.Column="3" Content="↓" Click="QueueMoveDown_Click" Foreground="#B3B3B3" FontSize="18" Background="Transparent" BorderThickness="0" MinWidth="36" MinHeight="36" Padding="0"/>
+                <Button Grid.Column="4" Content="✕" Click="QueueRemove_Click" Foreground="#666666" FontSize="16" Background="Transparent" BorderThickness="0" MinWidth="36" MinHeight="36" Padding="0"/>
             </Grid>
         </DataTemplate>
     </Page.Resources>
@@ -469,6 +479,36 @@
                             <TextBlock Text="Jump back in" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
                             <ListView x:Name="HomeHistoryCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
                                 <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                            </ListView>
+                        </StackPanel>
+
+                        <!-- Recently Played Artists -->
+                        <StackPanel x:Name="HomeArtistsSection" Visibility="Collapsed">
+                            <TextBlock Text="Recently played artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                            <ListView x:Name="HomeArtistsCarousel" IsItemClickEnabled="True" ItemClick="RecentArtist_ItemClick" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
+                                <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="Margin" Value="0"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Width="90" Margin="0,0,12,0">
+                                            <Ellipse Width="72" Height="72" Margin="0,0,0,6">
+                                                <Ellipse.Fill>
+                                                    <ImageBrush Stretch="UniformToFill">
+                                                        <ImageBrush.ImageSource>
+                                                            <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                                                        </ImageBrush.ImageSource>
+                                                    </ImageBrush>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding Title}" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
                             </ListView>
                         </StackPanel>
 
@@ -570,7 +610,7 @@
                         <TextBlock Text="All" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border x:Name="FilterSongsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterSongsBtn_Tapped">
-                        <TextBlock Text="♪ Songs" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Music" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border x:Name="FilterPlaylistsBtn" Background="#232323" CornerRadius="10" Padding="14,6" Margin="0,0,8,0" Tapped="FilterPlaylistsBtn_Tapped">
                         <TextBlock Text="Playlists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
@@ -712,7 +752,7 @@
                             <Button Grid.Row="4" Grid.Column="0" Tag="Lofi Hip Hop Chill Beats" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#AF2896" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/5qap5aO4i9A/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Lofi Chill" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -832,7 +872,7 @@
                             <Button Grid.Row="11" Grid.Column="1" Tag="K-Drama OST Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#E1118C" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/CcGE6Iul-bI/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="K-Drama" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -840,7 +880,7 @@
                             <Button Grid.Row="12" Grid.Column="0" Tag="Afrobeats Top Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#BC5900" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/U2FSoS4RuDc/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/JGwWNGJdvx8/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Afrobeats" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -848,7 +888,7 @@
                             <Button Grid.Row="12" Grid.Column="1" Tag="Reggae Roots Relax" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#503750" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/GjEsAEsYEJ8/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/n1WpP7iowLc/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Reggae" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -856,7 +896,7 @@
                             <Button Grid.Row="13" Grid.Column="0" Tag="Epic Orchestral Soundtracks" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,5,10">
                                 <Border Background="#E91429" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ASj81daun5Q/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="Epic Music" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -864,7 +904,7 @@
                             <Button Grid.Row="13" Grid.Column="1" Tag="V-Pop Vietnamese Hits" Click="Category_Click" Style="{StaticResource CategoryButtonStyle}" Margin="5,0,0,10">
                                 <Border Background="#B49BC8" CornerRadius="8">
                                     <Grid>
-                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/ZC1qjiGSwOk/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
+                                        <Border Width="65" Height="65" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,5" Opacity="0.85"><Border.Background><ImageBrush Stretch="UniformToFill"><ImageBrush.ImageSource><BitmapImage UriSource="https://i.ytimg.com/vi/knW7-x7Y7RE/hqdefault.jpg" DecodePixelWidth="80" DecodePixelHeight="80"/></ImageBrush.ImageSource></ImageBrush></Border.Background><Border.RenderTransform><RotateTransform Angle="15" CenterX="32" CenterY="32"/></Border.RenderTransform></Border>
                                         <TextBlock Text="V-Pop" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" Margin="12,10,8,0" TextWrapping="Wrap"/>
                                     </Grid>
                                 </Border>
@@ -1274,10 +1314,11 @@
                 <Grid Margin="0,20,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="▶ Play All" Click="PlayAllPlaylist_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="140" Height="45">
+                    <Button Grid.Column="0" Content="▶ Play All" Click="PlayAllPlaylist_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="130" Height="45">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="22">
@@ -1286,7 +1327,10 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
-                    <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
+                    <Button Grid.Column="1" Click="EnhancePlaylist_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="10,0,0,0">
+                        <TextBlock Text="✨" FontSize="22" Foreground="#1DB954"/>
+                    </Button>
+                    <Button Grid.Column="3" Content="⋮" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
                         <Button.Flyout>
                             <MenuFlyout>
                                 <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
@@ -1670,7 +1714,8 @@
                             </Rectangle>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,15" Canvas.ZIndex="10">
                                 <Button Content="A-" Click="DecreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0" Margin="0,0,10,0"/>
-                                <Button Content="A+" Click="IncreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0"/>
+                                <Button Content="A+" Click="IncreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0" Margin="0,0,10,0"/>
+                                <Button Content="⛶" Click="ToggleFullscreenLyrics_Click" FontSize="16" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0"/>
                             </StackPanel>
                         </Grid>
                     </PivotItem>
@@ -1744,6 +1789,43 @@
             </Grid>
         </Grid>
 
+        <!-- ═══════════════════════════════════ FULLSCREEN LYRICS ═══════════════════════════════════ -->
+        <Grid x:Name="FullscreenLyricsView" Visibility="Collapsed" Canvas.ZIndex="120" Grid.RowSpan="3" Tapped="CloseFullscreenLyrics_Tapped">
+            <Rectangle>
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop x:Name="FullscreenLyricsGradientTop" Color="#1A1A2E" Offset="0"/>
+                        <GradientStop Color="#0A0A0A" Offset="0.5"/>
+                        <GradientStop Color="#121212" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Grid Margin="20,60,20,80">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <!-- Song info at top -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                    <TextBlock x:Name="FullscreenLyricsTitle" Text="" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="FullscreenLyricsArtist" Text="" FontSize="14" Foreground="#B3B3B3" TextAlignment="Center" Margin="0,4,0,0"/>
+                </StackPanel>
+                <!-- Lyrics content -->
+                <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Text}" FontSize="22" Foreground="{Binding ColorBrush}" TextWrapping="Wrap" TextAlignment="Center" Margin="5,12" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center"/>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+            <!-- Tap hint -->
+            <TextBlock Text="Tap to close" FontSize="12" Foreground="#666666" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,25"/>
+        </Grid>
+
         <!-- ═══════════════════════════════════ NOW PLAYING MENU ═══════════════════════════════════ -->
         <Grid x:Name="NowPlayingMenuDialog" Visibility="Collapsed" Canvas.ZIndex="250" Background="#A0000000" Grid.RowSpan="3">
             <Grid.RowDefinitions>
@@ -1791,6 +1873,13 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" Fill="White"/></Viewbox>
                             <TextBlock Grid.Column="1" Text="Go to Artist" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </Button>
+                    <Button Click="MenuGoToRadioNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M9.5,16.5V7.5L16.5,12L9.5,16.5Z" Fill="White"/></Viewbox>
+                            <TextBlock Grid.Column="1" Text="Go to Radio" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                         </Grid>
                     </Button>
                     <Button Click="MenuSleepTimerNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
@@ -1869,6 +1958,18 @@
                         <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White"/></Viewbox>
                             <TextBlock Grid.Column="1" Text="Play" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Button Click="BottomSheetAddToQueue_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M15,6H3V8H15V6M15,10H3V12H15V10M3,16H11V14H3V16M17,6V14.18C16.69,14.07 16.35,14 16,14A3,3 0 0,0 13,17A3,3 0 0,0 16,20A3,3 0 0,0 19,17V8H22V6H17Z" Fill="White"/></Viewbox>
+                            <TextBlock Grid.Column="1" Text="Add to Queue" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Button Click="BottomSheetGoToRadio_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M9.5,16.5V7.5L16.5,12L9.5,16.5Z" Fill="White"/></Viewbox>
+                            <TextBlock Grid.Column="1" Text="Go to Radio" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
                     <Button Click="BottomSheetAddToPlaylist_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">

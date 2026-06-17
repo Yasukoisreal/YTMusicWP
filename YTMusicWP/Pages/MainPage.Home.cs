@@ -30,11 +30,61 @@ namespace YTMusicWP
                 {
                     homeHistoryCarouselTracks.Add(historyTracks[i]);
                 }
+
+                // Recently Played Artists — extract unique artists from history
+                RefreshRecentArtists();
             }
             else
             {
                 HomeHistorySection.Visibility = Visibility.Collapsed;
+                HomeArtistsSection.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void RefreshRecentArtists()
+        {
+            try
+            {
+                var seenArtists = new System.Collections.Generic.HashSet<string>();
+                var artistItems = new System.Collections.Generic.List<YouTubeTrack>();
+
+                foreach (var track in historyTracks)
+                {
+                    if (string.IsNullOrEmpty(track.ChannelName) || track.ChannelName == "Unknown") continue;
+                    string key = track.ChannelName.ToLowerInvariant();
+                    if (seenArtists.Contains(key)) continue;
+                    seenArtists.Add(key);
+
+                    artistItems.Add(new YouTubeTrack
+                    {
+                        VideoId = !string.IsNullOrEmpty(track.ChannelId) ? "CHANNEL:" + track.ChannelId : "",
+                        Title = track.ChannelName,
+                        ChannelName = track.ChannelName,
+                        ChannelId = track.ChannelId,
+                        ThumbnailUrl = track.ThumbnailUrl
+                    });
+
+                    if (artistItems.Count >= 10) break;
+                }
+
+                if (artistItems.Count >= 2)
+                {
+                    HomeArtistsSection.Visibility = Visibility.Visible;
+                    HomeArtistsCarousel.ItemsSource = artistItems;
+                }
+                else
+                {
+                    HomeArtistsSection.Visibility = Visibility.Collapsed;
+                }
+            }
+            catch { HomeArtistsSection.Visibility = Visibility.Collapsed; }
+        }
+
+        private void RecentArtist_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var track = e.ClickedItem as YouTubeTrack;
+            if (track == null) return;
+            OpenArtistProfile(track.ChannelId, track.Title);
         }
 
         private async Task LoadHomeRecommendations()

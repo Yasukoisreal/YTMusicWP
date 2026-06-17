@@ -66,6 +66,7 @@ namespace YTMusicWP
         private Dictionary<int, List<YouTubeTrack>> _shortsCategoryCache = new Dictionary<int, List<YouTubeTrack>>();
         private DateTime _shortsCacheTime = DateTime.MinValue;
         private bool _shortsIsOpen = false;
+        private int _shortsLoadGeneration = 0; // Cancel stale loads
 
         /// <summary>
         /// Analyze historyTracks to score each category and reorder
@@ -271,6 +272,15 @@ namespace YTMusicWP
             _shortsCategoryIndex = index;
             _shortsSongIndex = 0;
             UpdateCategoryDots();
+
+            // Stop current audio immediately so old category song doesn't keep playing
+            StopShortsLoop();
+            if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
+            try { if (_appMediaPlayer != null) _appMediaPlayer.Pause(); } catch { }
+
+            // Increment generation to cancel any in-flight PlayTrack from old category
+            _shortsLoadGeneration++;
+
             await LoadShortsCategoryAsync(GetRealCategoryIndex(index));
         }
 
@@ -279,12 +289,14 @@ namespace YTMusicWP
         // ==========================================
         private async Task LoadShortsCategoryAsync(int categoryIndex)
         {
+            int myGeneration = _shortsLoadGeneration;
+
             // Check cache
             if (_shortsCategoryCache.ContainsKey(categoryIndex) && _shortsCategoryCache[categoryIndex].Count > 0)
             {
                 _shortsSongs = _shortsCategoryCache[categoryIndex];
                 _shortsSongIndex = 0;
-                DisplayCurrentShort();
+                if (myGeneration == _shortsLoadGeneration) DisplayCurrentShort();
                 return;
             }
 
@@ -296,6 +308,9 @@ namespace YTMusicWP
             {
                 var result = await InnerTubeClient.SearchWithContinuationAsync(
                     _shortsCategoryQueries[categoryIndex], 10);
+
+                // Check if user already switched to another category
+                if (myGeneration != _shortsLoadGeneration) return;
 
                 if (result != null && result.Tracks != null && result.Tracks.Count > 0)
                 {
@@ -309,15 +324,18 @@ namespace YTMusicWP
                     {
                         _shortsCategoryCache[categoryIndex] = _shortsSongs;
                         _shortsSongIndex = 0;
-                        DisplayCurrentShort();
+                        if (myGeneration == _shortsLoadGeneration) DisplayCurrentShort();
                         return;
                     }
                 }
             }
             catch { }
 
-            ShortsSongTitle.Text = "No results";
-            ShortsSongArtist.Text = "Try another category";
+            if (myGeneration == _shortsLoadGeneration)
+            {
+                ShortsSongTitle.Text = "No results";
+                ShortsSongArtist.Text = "Try another category";
+            }
         }
 
         // ==========================================
@@ -329,6 +347,7 @@ namespace YTMusicWP
         {
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
 
+            int myGen = _shortsLoadGeneration;
             var track = _shortsSongs[_shortsSongIndex];
 
             // Song info
@@ -365,8 +384,11 @@ namespace YTMusicWP
             // Update hashtags
             UpdateShortsHashtags();
 
-            // Auto-play via independent MediaElement (not BackgroundMediaPlayer)
-            PlayShortsAudio(track.VideoId);
+            // Only play if this is still the active generation (not overridden by a newer category switch)
+            if (myGen == _shortsLoadGeneration)
+            {
+                PlayShortsAudio(track.VideoId, myGen);
+            }
 
             // Update heart state
             bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
@@ -553,7 +575,7 @@ namespace YTMusicWP
         private YouTubeTrack _shortsSavedTrack;
         private TimeSpan _shortsSavedPosition;
 
-        private void PlayShortsAudio(string videoId)
+        private async void PlayShortsAudio(string videoId, int generation)
         {
             try
             {
@@ -562,11 +584,51 @@ namespace YTMusicWP
                 if (_shortsSongs == null || _shortsSongIndex >= _shortsSongs.Count) return;
                 var track = _shortsSongs[_shortsSongIndex];
 
-                // Play through main BackgroundMediaPlayer
-                PlayTrack(track);
+                // Resolve stream URL first (this is the slow async part)
+                string streamUrl = "";
+                try
+                {
+                    streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId) ?? "";
+                }
+                catch { }
+
+                // CHECK: Has user already switched to another category while we were resolving?
+                if (generation != _shortsLoadGeneration) return;
+
+                if (string.IsNullOrEmpty(streamUrl)) return;
+
+                // Now it's safe to play - send directly to BackgroundMediaPlayer
+                var message = new Windows.Foundation.Collections.ValueSet {
+                    { "UpdatePlaylist", "" },
+                    { "Urls", new string[] { streamUrl } },
+                    { "Titles", new string[] { track.Title } },
+                    { "Artists", new string[] { track.ChannelName } },
+                    { "VideoIds", new string[] { track.VideoId } },
+                    { "Thumbnails", new string[] { track.ThumbnailUrl ?? "" } },
+                    { "StartIndex", 0 },
+                    { "FastUrl", streamUrl }
+                };
+                try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
+
+                // Update UI
+                currentTrack = track;
+                MiniTitle.Text = track.Title;
+                MiniArtist.Text = track.ChannelName;
+
+                if (!string.IsNullOrEmpty(track.ThumbnailUrl))
+                {
+                    try
+                    {
+                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute));
+                        miniBmp.DecodePixelWidth = 100;
+                        MiniCoverImage.ImageSource = miniBmp;
+                    }
+                    catch { }
+                }
 
                 // Start 15s loop timer
-                StartShortsLoop();
+                if (generation == _shortsLoadGeneration)
+                    StartShortsLoop();
             }
             catch { }
         }
@@ -610,6 +672,7 @@ namespace YTMusicWP
         // ==========================================
         private void ShortsBack_Click(object sender, RoutedEventArgs e)
         {
+            if (!_shortsIsOpen) return;
             CloseShortsView();
         }
 

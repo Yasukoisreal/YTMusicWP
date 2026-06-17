@@ -116,6 +116,7 @@ namespace YTMusicWP
         private CancellationTokenSource _lyricsCts;
 
         private ScrollViewer _cachedLyricsScrollViewer = null;
+        private ScrollViewer _cachedFullscreenLyricsScrollViewer = null;
 
         private string _nextSearchToken = "";
         private bool _isLoadingMoreSearch = false;

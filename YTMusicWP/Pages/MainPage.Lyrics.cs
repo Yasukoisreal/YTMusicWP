@@ -61,6 +61,7 @@ namespace YTMusicWP
             currentLyrics.Clear();
             currentLyricIndex = -1;
             _cachedLyricsScrollViewer = null;
+            _cachedFullscreenLyricsScrollViewer = null;
 
             LyricsFallbackScrollViewer.Visibility = Visibility.Collapsed;
             LyricsListView.Visibility = Visibility.Visible;
@@ -138,16 +139,58 @@ namespace YTMusicWP
                 string syncedLyrics = null;
                 string plainLyrics = null;
 
-                // Wait for player duration to be available (max 3s with 200ms polling)
+                // Helper: pick best synced lyrics match, preferring duration match
                 double trackDurationSec = 0;
+                Func<JArray, double, string[]> pickBestMatch = (arr, dur) =>
+                {
+                    if (arr == null || arr.Count == 0) return new string[] { null, null };
+                    
+                    JToken bestItem = null;
+                    double bestDiff = double.MaxValue;
+                    
+                    foreach (var item in arr)
+                    {
+                        string s = item["syncedLyrics"]?.ToString();
+                        if (string.IsNullOrWhiteSpace(s)) continue;
+                        
+                        double itemDuration = item["duration"]?.Value<double>() ?? 0;
+                        
+                        if (dur > 10 && itemDuration > 10)
+                        {
+                            double diff = Math.Abs(itemDuration - dur);
+                            if (diff < bestDiff)
+                            {
+                                bestDiff = diff;
+                                bestItem = item;
+                            }
+                        }
+                        else if (bestItem == null)
+                        {
+                            bestItem = item;
+                            bestDiff = 999;
+                        }
+                    }
+                    
+                    if (bestItem != null)
+                        return new string[] { bestItem["syncedLyrics"]?.ToString(), bestItem["plainLyrics"]?.ToString() };
+                    
+                    return new string[] { null, arr[0]["plainLyrics"]?.ToString() };
+                };
+
+                // ── Fire search requests IMMEDIATELY (no duration needed) ──
+                string url1 = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
+                string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
+                var searchTask1 = _apiClient.GetStringAsync(url1);
+                var searchTask2 = _apiClient.GetStringAsync(url2);
+
+                // ── In parallel: wait for player duration (max 1.5s, 100ms polling) ──
                 for (int attempt = 0; attempt < 15; attempt++)
                 {
                     try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
                     if (trackDurationSec > 10) break;
-                    await Task.Delay(200);
+                    await Task.Delay(100);
                     token.ThrowIfCancellationRequested();
                 }
-                System.Diagnostics.Debug.WriteLine("[Lyrics] Track duration: " + trackDurationSec + "s");
 
                 // ── LAYER 0: /api/get with exact duration (best match) ──
                 if (trackDurationSec > 10)
@@ -162,68 +205,21 @@ namespace YTMusicWP
                         var getJson = Newtonsoft.Json.Linq.JObject.Parse(getResp);
                         syncedLyrics = getJson["syncedLyrics"]?.ToString();
                         plainLyrics = getJson["plainLyrics"]?.ToString();
-                        System.Diagnostics.Debug.WriteLine("[Lyrics] /api/get hit: synced=" + (!string.IsNullOrWhiteSpace(syncedLyrics)) + ", duration=" + trackDurationSec);
                     }
-                    catch { System.Diagnostics.Debug.WriteLine("[Lyrics] /api/get miss, falling back to search"); }
+                    catch { }
                 }
 
-                // ── LAYER 1+2: /api/search (parallel fallback) ──
+                // ── LAYER 1: Use search results (already started in parallel) ──
                 if (string.IsNullOrWhiteSpace(syncedLyrics))
                 {
-                    string url1 = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
-                    string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
-
-                    var task1 = _apiClient.GetStringAsync(url1);
-                    var task2 = _apiClient.GetStringAsync(url2);
-
-                    // Helper: pick best synced lyrics match, preferring duration match
-                    Func<JArray, string[]> pickBestMatch = (arr) =>
-                    {
-                        if (arr == null || arr.Count == 0) return new string[] { null, null };
-                        
-                        JToken bestItem = null;
-                        double bestDiff = double.MaxValue;
-                        
-                        foreach (var item in arr)
-                        {
-                            string s = item["syncedLyrics"]?.ToString();
-                            if (string.IsNullOrWhiteSpace(s)) continue;
-                            
-                            double itemDuration = item["duration"]?.Value<double>() ?? 0;
-                            
-                            if (trackDurationSec > 10 && itemDuration > 10)
-                            {
-                                double diff = Math.Abs(itemDuration - trackDurationSec);
-                                if (diff < bestDiff)
-                                {
-                                    bestDiff = diff;
-                                    bestItem = item;
-                                }
-                            }
-                            else if (bestItem == null)
-                            {
-                                bestItem = item;
-                                bestDiff = 999;
-                            }
-                        }
-                        
-                        if (bestItem != null)
-                        {
-                            System.Diagnostics.Debug.WriteLine("[Lyrics] Search match: duration diff=" + bestDiff + "s");
-                            return new string[] { bestItem["syncedLyrics"]?.ToString(), bestItem["plainLyrics"]?.ToString() };
-                        }
-                        
-                        return new string[] { null, arr[0]["plainLyrics"]?.ToString() };
-                    };
-
                     try
                     {
-                        var resp1 = await task1;
+                        var resp1 = await searchTask1;
                         token.ThrowIfCancellationRequested();
                         var arr1 = JArray.Parse(resp1);
                         if (arr1.Count > 0)
                         {
-                            var match1 = pickBestMatch(arr1);
+                            var match1 = pickBestMatch(arr1, trackDurationSec);
                             syncedLyrics = match1[0];
                             plainLyrics = match1[1];
                         }
@@ -234,12 +230,12 @@ namespace YTMusicWP
                     {
                         try
                         {
-                            var resp2 = await task2;
+                            var resp2 = await searchTask2;
                             token.ThrowIfCancellationRequested();
                             var arr2 = JArray.Parse(resp2);
                             if (arr2.Count > 0)
                             {
-                                var match2 = pickBestMatch(arr2);
+                                var match2 = pickBestMatch(arr2, trackDurationSec);
                                 if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0];
                                 if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1];
                             }
@@ -376,6 +372,63 @@ namespace YTMusicWP
                 args.ItemContainer.RenderTransformOrigin = new Point(0, 0.5);
                 args.ItemContainer.RenderTransform = st;
             }
+        }
+
+        // ══════════════════════════════════════════
+        // FULLSCREEN LYRICS
+        // ══════════════════════════════════════════
+        private void ToggleFullscreenLyrics_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentLyrics == null || currentLyrics.Count == 0)
+            {
+                ShowToast("No lyrics available");
+                return;
+            }
+
+            // Set track info
+            if (currentTrack != null)
+            {
+                FullscreenLyricsTitle.Text = currentTrack.Title;
+                FullscreenLyricsArtist.Text = currentTrack.ChannelName;
+            }
+
+            // Copy gradient from Now Playing
+            try
+            {
+                FullscreenLyricsGradientTop.Color = NowPlayingGradientTop.Color;
+            }
+            catch { }
+
+            // Bind same lyrics data
+            FullscreenLyricsListView.ItemsSource = currentLyrics;
+
+            // Show with fade-in
+            FullscreenLyricsView.Visibility = Visibility.Visible;
+            FullscreenLyricsView.Opacity = 0;
+            var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
+            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                From = 0, To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(300))
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, FullscreenLyricsView);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
+            fadeIn.Children.Add(anim);
+            fadeIn.Begin();
+        }
+
+        private void CloseFullscreenLyrics_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            // Fade out
+            var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
+            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                From = 1, To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(200))
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, FullscreenLyricsView);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
+            fadeOut.Children.Add(anim);
+            fadeOut.Completed += (s, a) => { FullscreenLyricsView.Visibility = Visibility.Collapsed; };
+            fadeOut.Begin();
         }
 
     }

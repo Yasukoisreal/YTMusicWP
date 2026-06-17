@@ -53,6 +53,7 @@ namespace YTMusicWP
                         VideoId = item["VideoId"]?.ToString(),
                         Title = item["Title"]?.ToString(),
                         ChannelName = item["ChannelName"]?.ToString(),
+                        ChannelId = item["ChannelId"]?.ToString(),
                         ThumbnailUrl = item["ThumbnailUrl"]?.ToString()
                     });
                 }

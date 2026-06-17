@@ -278,5 +278,159 @@ namespace YTMusicWP
             }
         }
 
+        // ══════════════════════════════════════════
+        // ADD TO QUEUE — Insert after current track
+        // ══════════════════════════════════════════
+        private void BottomSheetAddToQueue_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            if (_bottomSheetTrack == null) return;
+
+            // Find current track index in queue
+            int currentIdx = -1;
+            for (int i = 0; i < currentQueueTracks.Count; i++)
+            {
+                if (currentTrack != null && currentQueueTracks[i].VideoId == currentTrack.VideoId)
+                {
+                    currentIdx = i;
+                    break;
+                }
+            }
+
+            // Insert after current track (or at end if not found)
+            int insertIdx = currentIdx >= 0 ? currentIdx + 1 : currentQueueTracks.Count;
+            
+            // Avoid duplicates in queue
+            var existing = currentQueueTracks.FirstOrDefault(t => t.VideoId == _bottomSheetTrack.VideoId);
+            if (existing != null) currentQueueTracks.Remove(existing);
+
+            if (insertIdx > currentQueueTracks.Count) insertIdx = currentQueueTracks.Count;
+            currentQueueTracks.Insert(insertIdx, _bottomSheetTrack);
+
+            ShowToast("Added to queue: " + _bottomSheetTrack.Title);
+        }
+
+        // ══════════════════════════════════════════
+        // GO TO RADIO — Search similar songs & auto-play
+        // ══════════════════════════════════════════
+        private async void BottomSheetGoToRadio_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            var track = _bottomSheetTrack;
+            if (track == null || track.VideoId.StartsWith("LOCAL:")) return;
+
+            ShowToast("Loading radio for " + track.Title + "...");
+
+            try
+            {
+                // Search with Music filter for similar songs
+                string query = track.Title + " " + track.ChannelName + " similar songs";
+                // Use Music/Songs filter param
+                var results = await InnerTubeClient.SearchAsync(query, 25, "EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D");
+                
+                if (results == null || results.Count == 0)
+                {
+                    // Fallback: search without filter
+                    results = await InnerTubeClient.SearchAsync(track.Title + " " + track.ChannelName, 25);
+                }
+
+                if (results != null && results.Count > 0)
+                {
+                    // Filter out non-music results
+                    var musicResults = results.Where(t => !t.VideoId.StartsWith("CHANNEL:") && !t.VideoId.StartsWith("PLAYLIST:")).ToList();
+                    
+                    if (musicResults.Count > 0)
+                    {
+                        // Put the original track first, then radio results (excluding duplicates)
+                        searchResults.Clear();
+                        searchResults.Add(track);
+                        foreach (var t in musicResults)
+                        {
+                            if (t.VideoId != track.VideoId)
+                                searchResults.Add(t);
+                        }
+
+                        // Auto-play from the original track
+                        PlayTrack(track);
+                        ShowToast("Radio: " + searchResults.Count + " songs");
+                    }
+                    else
+                    {
+                        ShowToast("No radio results found");
+                    }
+                }
+                else
+                {
+                    ShowToast("No radio results found");
+                }
+            }
+            catch
+            {
+                ShowToast("Failed to load radio");
+            }
+        }
+
+        // ══════════════════════════════════════════
+        // Now Playing Radio — from Now Playing menu
+        // ══════════════════════════════════════════
+        private void MenuGoToRadioNowPlaying_Click(object sender, RoutedEventArgs e)
+        {
+            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            if (currentTrack != null)
+            {
+                _bottomSheetTrack = currentTrack;
+                BottomSheetGoToRadio_Click(null, null);
+            }
+        }
+
+        // ══════════════════════════════════════════
+        // QUEUE MANAGEMENT — Move Up / Move Down / Remove
+        // ══════════════════════════════════════════
+        private void QueueMoveUp_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null) return;
+            var track = btn.DataContext as YouTubeTrack;
+            if (track == null) return;
+
+            int idx = currentQueueTracks.IndexOf(track);
+            if (idx > 0)
+            {
+                currentQueueTracks.Move(idx, idx - 1);
+            }
+        }
+
+        private void QueueMoveDown_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null) return;
+            var track = btn.DataContext as YouTubeTrack;
+            if (track == null) return;
+
+            int idx = currentQueueTracks.IndexOf(track);
+            if (idx >= 0 && idx < currentQueueTracks.Count - 1)
+            {
+                currentQueueTracks.Move(idx, idx + 1);
+            }
+        }
+
+        private void QueueRemove_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null) return;
+            var track = btn.DataContext as YouTubeTrack;
+            if (track == null) return;
+
+            // Don't remove currently playing track
+            if (currentTrack != null && track.VideoId == currentTrack.VideoId)
+            {
+                ShowToast("Can't remove current track");
+                return;
+            }
+
+            currentQueueTracks.Remove(track);
+            ShowToast("Removed from queue");
+        }
+
     }
 }

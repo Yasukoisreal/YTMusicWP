@@ -228,9 +228,10 @@ namespace YTMusicWP
                         MiniProgressBar.Maximum = dur.TotalSeconds;
                         MiniProgressBar.Value   = pos.TotalSeconds;
 
-                        if (NowPlayingView.Visibility != Visibility.Visible) return;
-                        if (NowPlayingPivot.SelectedIndex != 1) return;
-                        if (currentLyrics.Count == 0 || LyricsListView.Visibility != Visibility.Visible) return;
+                        if (NowPlayingView.Visibility != Visibility.Visible && FullscreenLyricsView.Visibility != Visibility.Visible) return;
+                        bool isFullscreen = FullscreenLyricsView.Visibility == Visibility.Visible;
+                        if (!isFullscreen && NowPlayingPivot.SelectedIndex != 1) return;
+                        if (currentLyrics.Count == 0 || (!isFullscreen && LyricsListView.Visibility != Visibility.Visible)) return;
 
                         int newIndex = -1;
                         for (int i = 0; i < currentLyrics.Count; i++)
@@ -244,101 +245,116 @@ namespace YTMusicWP
                         int oldIndex = currentLyricIndex;
                         currentLyricIndex = newIndex;
 
-                        // Animate OLD lyric → smooth fade out + scale down
+                        // Target ListView = fullscreen or regular
+                        var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
+
+                        // Animate OLD lyric
                         if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                         {
                             currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
 
-                            var oldContainer = LyricsListView.ContainerFromIndex(oldIndex) as FrameworkElement;
-                            if (oldContainer != null)
+                            if (!isFullscreen)
                             {
-                                var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                if (oldScale == null)
+                                // Regular lyrics: opacity + scale animation
+                                var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                                if (oldContainer != null)
                                 {
-                                    oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
-                                    oldContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                    oldContainer.RenderTransform = oldScale;
+                                    var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                    if (oldScale == null)
+                                    {
+                                        oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
+                                        oldContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                        oldContainer.RenderTransform = oldScale;
+                                    }
+                                    var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
+                                    var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                                    var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                    { To = 0.35, Duration = new Duration(TimeSpan.FromMilliseconds(500)), EasingFunction = easeInOut };
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, oldContainer);
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
+                                    var sxOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                    { To = 0.85, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxOut, oldScale);
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxOut, "ScaleX");
+                                    var syOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                    { To = 0.85, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syOut, oldScale);
+                                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syOut, "ScaleY");
+                                    fadeOut.Children.Add(opAnim);
+                                    fadeOut.Children.Add(sxOut);
+                                    fadeOut.Children.Add(syOut);
+                                    fadeOut.Begin();
                                 }
-
-                                var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
-                                var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
-
-                                var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                { To = 0.35, Duration = new Duration(TimeSpan.FromMilliseconds(500)), EasingFunction = easeInOut };
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, oldContainer);
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
-
-                                var sxOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                { To = 0.85, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxOut, oldScale);
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxOut, "ScaleX");
-
-                                var syOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                                { To = 0.85, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeInOut };
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syOut, oldScale);
-                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syOut, "ScaleY");
-
-                                fadeOut.Children.Add(opAnim);
-                                fadeOut.Children.Add(sxOut);
-                                fadeOut.Children.Add(syOut);
-                                fadeOut.Begin();
+                                else { currentLyrics[oldIndex].Opacity = 0.35; }
                             }
-                            else { currentLyrics[oldIndex].Opacity = 0.35; }
+                            // Fullscreen: only color change, no opacity/scale
                         }
 
-                        // Animate NEW lyric → smooth scale up + fade in (NO FontSize/FontWeight change)
+                        // Animate NEW lyric
                         currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
 
-                        var newContainer = LyricsListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                        if (newContainer != null)
+                        if (!isFullscreen)
                         {
-                            var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                            if (scaleTransform == null)
+                            // Regular lyrics: opacity + scale animation
+                            var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                            if (newContainer != null)
                             {
-                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                                newContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                newContainer.RenderTransform = scaleTransform;
+                                var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                if (scaleTransform == null)
+                                {
+                                    scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                                    newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                    newContainer.RenderTransform = scaleTransform;
+                                }
+                                var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
+                                var entrance = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                                var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                { From = 0.35, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeOut };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opIn, newContainer);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
+                                var sxIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                { To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxIn, scaleTransform);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxIn, "ScaleX");
+                                var syIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                                { To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syIn, scaleTransform);
+                                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syIn, "ScaleY");
+                                entrance.Children.Add(opIn);
+                                entrance.Children.Add(sxIn);
+                                entrance.Children.Add(syIn);
+                                entrance.Begin();
                             }
-
-                            var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
-                            var entrance = new Windows.UI.Xaml.Media.Animation.Storyboard();
-
-                            var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            { From = 0.35, To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(450)), EasingFunction = easeOut };
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opIn, newContainer);
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
-
-                            var sxIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            { To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxIn, scaleTransform);
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxIn, "ScaleX");
-
-                            var syIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                            { To = 1.0, Duration = new Duration(TimeSpan.FromMilliseconds(400)), EasingFunction = easeOut };
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syIn, scaleTransform);
-                            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syIn, "ScaleY");
-
-                            entrance.Children.Add(opIn);
-                            entrance.Children.Add(sxIn);
-                            entrance.Children.Add(syIn);
-                            entrance.Begin();
+                            else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
                         }
-                        else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+                        // Fullscreen: only color change, no opacity/scale
 
-                        LyricsListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
+                        targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
 
-                        if (_cachedLyricsScrollViewer == null)
-                            _cachedLyricsScrollViewer = GetScrollViewer(LyricsListView);
-
-                        var activeContainer = (newContainer ?? LyricsListView.ContainerFromIndex(currentLyricIndex)) as FrameworkElement;
-                        if (_cachedLyricsScrollViewer != null && activeContainer != null)
+                        // Smooth center-scroll
+                        ScrollViewer scrollViewer;
+                        if (isFullscreen)
                         {
-                            var transform    = activeContainer.TransformToVisual(_cachedLyricsScrollViewer);
+                            if (_cachedFullscreenLyricsScrollViewer == null)
+                                _cachedFullscreenLyricsScrollViewer = GetScrollViewer(FullscreenLyricsListView);
+                            scrollViewer = _cachedFullscreenLyricsScrollViewer;
+                        }
+                        else
+                        {
+                            if (_cachedLyricsScrollViewer == null)
+                                _cachedLyricsScrollViewer = GetScrollViewer(LyricsListView);
+                            scrollViewer = _cachedLyricsScrollViewer;
+                        }
+
+                        var activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                        if (scrollViewer != null && activeContainer != null)
+                        {
+                            var transform    = activeContainer.TransformToVisual(scrollViewer);
                             var lyricPos     = transform.TransformPoint(new Point(0, 0));
-                            double targetOff = _cachedLyricsScrollViewer.VerticalOffset + lyricPos.Y
-                                            - (_cachedLyricsScrollViewer.ViewportHeight / 2.0)
+                            double targetOff = scrollViewer.VerticalOffset + lyricPos.Y
+                                            - (scrollViewer.ViewportHeight / 2.0)
                                             + (activeContainer.ActualHeight / 2.0);
-                            _cachedLyricsScrollViewer.ChangeView(null, targetOff, null, false);
+                            scrollViewer.ChangeView(null, targetOff, null, false);
                         }
                     }
                     catch { }
@@ -538,7 +554,11 @@ namespace YTMusicWP
             }
         }
 
-        // ── Genre-Based Gradient for Now Playing ──
+        // ── Genre-Based Animated Gradient for Now Playing ──
+        private DispatcherTimer _gradientPulseTimer;
+        private Windows.UI.Color _currentGradientColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);
+        private bool _gradientPulseUp = true;
+
         private void UpdateNowPlayingGradient(string title, string artist)
         {
             // Detect genre from title/artist keywords → Spotify-like gradient colors
@@ -572,9 +592,65 @@ namespace YTMusicWP
             else
                 topColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);     // Default dark blue-gray
 
+            _currentGradientColor = topColor;
+
             try
             {
-                NowPlayingGradientTop.Color = topColor;
+                // Smooth color transition animation
+                var storyboard = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                var colorAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
+                {
+                    To = topColor,
+                    Duration = new Duration(TimeSpan.FromMilliseconds(800)),
+                    EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
+                };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(colorAnim, NowPlayingGradientTop);
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(colorAnim, "Color");
+                storyboard.Children.Add(colorAnim);
+                storyboard.Begin();
+
+                // Start ambient pulse animation
+                StartGradientPulse();
+            }
+            catch { }
+        }
+
+        private void StartGradientPulse()
+        {
+            if (_gradientPulseTimer != null)
+            {
+                _gradientPulseTimer.Stop();
+            }
+            _gradientPulseTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            _gradientPulseTimer.Tick += GradientPulse_Tick;
+            _gradientPulseTimer.Start();
+        }
+
+        private void GradientPulse_Tick(object sender, object e)
+        {
+            try
+            {
+                // Subtle brightness oscillation for "breathing" effect
+                var baseColor = _currentGradientColor;
+                int shift = _gradientPulseUp ? 15 : -15;
+                byte r = (byte)Math.Max(0, Math.Min(255, baseColor.R + shift));
+                byte g = (byte)Math.Max(0, Math.Min(255, baseColor.G + shift));
+                byte b = (byte)Math.Max(0, Math.Min(255, baseColor.B + shift));
+                var targetColor = Windows.UI.Color.FromArgb(255, r, g, b);
+
+                var storyboard = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                var colorAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
+                {
+                    To = targetColor,
+                    Duration = new Duration(TimeSpan.FromSeconds(3)),
+                    EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
+                };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(colorAnim, NowPlayingGradientTop);
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(colorAnim, "Color");
+                storyboard.Children.Add(colorAnim);
+                storyboard.Begin();
+
+                _gradientPulseUp = !_gradientPulseUp;
             }
             catch { }
         }

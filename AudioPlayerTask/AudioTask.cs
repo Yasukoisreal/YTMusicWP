@@ -605,6 +605,8 @@ namespace AudioPlayerTask
             _mediaPlayer.AutoPlay = false;
             try
             {
+                StopCrossfadeMonitor();
+
                 // Normalize Volume: set consistent volume level
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
@@ -615,6 +617,10 @@ namespace AudioPlayerTask
                 _currentLoadedVidId = vidId;
                 _mediaPlayer.Play();
                 _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+
+                // Start crossfade monitoring and gapless pre-resolve
+                StartCrossfadeMonitor();
+                PreResolveNextTrack();
             }
             catch (Exception ex)
             {
@@ -726,6 +732,118 @@ namespace AudioPlayerTask
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }
         }
 
+        // ── Crossfade & Gapless ──
+        private Windows.System.Threading.ThreadPoolTimer _crossfadeTimer;
+        private bool _isCrossfading = false;
+        private string _preResolvedNextUrl = null;
+
+        private void StartCrossfadeMonitor()
+        {
+            StopCrossfadeMonitor();
+            // Poll every 500ms to check if we're near end of track
+            _crossfadeTimer = Windows.System.Threading.ThreadPoolTimer.CreatePeriodicTimer(
+                CrossfadeTimer_Tick, TimeSpan.FromMilliseconds(500));
+        }
+
+        private void StopCrossfadeMonitor()
+        {
+            if (_crossfadeTimer != null) { _crossfadeTimer.Cancel(); _crossfadeTimer = null; }
+            _isCrossfading = false;
+        }
+
+        private void CrossfadeTimer_Tick(Windows.System.Threading.ThreadPoolTimer timer)
+        {
+            try
+            {
+                if (_mediaPlayer == null || _mediaPlayer.CurrentState != MediaPlayerState.Playing) return;
+                if (_isCrossfading) return;
+
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                int crossfadeSec = ls.ContainsKey("CrossfadeSeconds") ? (int)ls["CrossfadeSeconds"] : 0;
+                if (crossfadeSec <= 0) return;
+
+                double pos = _mediaPlayer.Position.TotalSeconds;
+                double dur = _mediaPlayer.NaturalDuration.TotalSeconds;
+                if (dur <= 0) return;
+
+                double remaining = dur - pos;
+                if (remaining <= crossfadeSec && remaining > 0.5)
+                {
+                    _isCrossfading = true;
+                    // Start volume fade out
+                    StartVolumeFade(crossfadeSec);
+                }
+            }
+            catch { }
+        }
+
+        private async void StartVolumeFade(int fadeDurationSec)
+        {
+            try
+            {
+                double startVol = _mediaPlayer.Volume;
+                int steps = fadeDurationSec * 5; // 5 steps per second (200ms each)
+                double volStep = startVol / steps;
+
+                for (int i = 0; i < steps; i++)
+                {
+                    await Task.Delay(200);
+                    try
+                    {
+                        double newVol = startVol - (volStep * (i + 1));
+                        if (newVol < 0) newVol = 0;
+                        _mediaPlayer.Volume = newVol;
+                    }
+                    catch { break; }
+                }
+
+                // Crossfade complete → move to next
+                _isCrossfading = false;
+                MoveNext();
+            }
+            catch { _isCrossfading = false; }
+        }
+
+        private async void PreResolveNextTrack()
+        {
+            _preResolvedNextUrl = null;
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                bool gapless = ls.ContainsKey("GaplessPlayback") ? (bool)ls["GaplessPlayback"] : true;
+                if (!gapless) return;
+                if (_trackList.Count <= 1) return;
+
+                bool shuffle = ls.ContainsKey("ShuffleMode") ? (bool)ls["ShuffleMode"] : false;
+                int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;
+
+                int nextIdx;
+                if (repeat == 2) nextIdx = _currentTrackIndex;
+                else if (shuffle) nextIdx = _rand.Next(0, _trackList.Count);
+                else
+                {
+                    nextIdx = _currentTrackIndex + 1;
+                    if (nextIdx >= _trackList.Count)
+                    {
+                        if (repeat == 1) nextIdx = 0;
+                        else return;
+                    }
+                }
+
+                string nextVidId = _videoIdList[nextIdx];
+                if (nextVidId.StartsWith("LOCAL:"))
+                {
+                    _preResolvedNextUrl = _trackList[nextIdx];
+                    return;
+                }
+
+                string url = await ResolveViaInnerTubeDirectAsync(nextVidId);
+                if (!string.IsNullOrEmpty(url))
+                    _preResolvedNextUrl = PrepareStreamUrl(url);
+            }
+            catch { }
+        }
+
         private void MoveNext()
         {
             if (_trackList.Count == 0) return;
@@ -735,6 +853,11 @@ namespace AudioPlayerTask
             bool autoplay = ls.ContainsKey("Autoplay") ? (bool)ls["Autoplay"] : true;
             if (repeat == 2) { ResetRetryState(); StartPlaybackAsync(); return; }
             ResetRetryState();
+
+            // Use pre-resolved URL if available (gapless)
+            string preUrl = _preResolvedNextUrl;
+            _preResolvedNextUrl = null;
+
             if (shuffle) _currentTrackIndex = _rand.Next(0, _trackList.Count);
             else
             {
@@ -746,6 +869,14 @@ namespace AudioPlayerTask
                     else { _currentTrackIndex = _trackList.Count - 1; return; }
                 }
             }
+
+            // If we have a pre-resolved URL, use it directly for gapless transition
+            if (!string.IsNullOrEmpty(preUrl))
+            {
+                _trackList[_currentTrackIndex] = preUrl;
+                _innerTubeAttempted = true;
+            }
+
             StartPlaybackAsync();
         }
 
@@ -763,7 +894,13 @@ namespace AudioPlayerTask
             StartPlaybackAsync();
         }
 
-        private void MediaPlayer_MediaEnded(MediaPlayer sender, object args) => MoveNext();
+        private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
+        {
+            // If crossfade already triggered MoveNext, skip
+            if (_isCrossfading) return;
+            StopCrossfadeMonitor();
+            MoveNext();
+        }
 
         private void MediaPlayer_CurrentStateChanged(MediaPlayer sender, object args)
         {

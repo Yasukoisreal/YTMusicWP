@@ -237,6 +237,7 @@ namespace YTMusicWP
                     JObject obj = new JObject();
                     obj["VideoId"] = t.VideoId; obj["Title"] = t.Title;
                     obj["ChannelName"] = t.ChannelName; obj["ThumbnailUrl"] = t.ThumbnailUrl;
+                    if (!string.IsNullOrEmpty(t.ChannelId)) obj["ChannelId"] = t.ChannelId;
                     array.Add(obj);
                 }
                 StorageFile file = await ApplicationData.Current.LocalFolder.CreateFileAsync("history.json", CreationCollisionOption.ReplaceExisting);
@@ -267,6 +268,24 @@ namespace YTMusicWP
         {
             var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
             if (track != null) PlayTrack(track);
+        }
+
+        private void MenuAddToQueue_Click(object sender, RoutedEventArgs e)
+        {
+            var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
+            if (track == null) return;
+
+            _bottomSheetTrack = track;
+            BottomSheetAddToQueue_Click(null, null);
+        }
+
+        private void MenuGoToRadio_Click(object sender, RoutedEventArgs e)
+        {
+            var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
+            if (track == null) return;
+
+            _bottomSheetTrack = track;
+            BottomSheetGoToRadio_Click(null, null);
         }
 
         private async void MenuDownload_Click(object sender, RoutedEventArgs e)
@@ -413,6 +432,74 @@ namespace YTMusicWP
             if (sub != null && !string.IsNullOrEmpty(sub.ChannelId))
             {
                 OpenArtistProfile(sub.ChannelId, sub.Title);
+            }
+        }
+
+        // ══════════════════════════════════════════
+        // ENHANCE PLAYLIST — Add similar songs
+        // ══════════════════════════════════════════
+        private async void EnhancePlaylist_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentViewingPlaylist == null || _currentViewingPlaylist.Tracks.Count == 0)
+            {
+                ShowToast("Add some songs first!");
+                return;
+            }
+
+            ShowToast("✨ Enhancing playlist...");
+
+            try
+            {
+                // Pick a random track from playlist as seed
+                var random = new Random();
+                var seedTrack = _currentViewingPlaylist.Tracks[random.Next(_currentViewingPlaylist.Tracks.Count)];
+
+                // Search for similar songs with Music filter
+                string query = seedTrack.Title + " " + seedTrack.ChannelName;
+                var results = await InnerTubeClient.SearchAsync(query, 15, "EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D");
+
+                if (results == null || results.Count == 0)
+                {
+                    // Fallback without filter
+                    results = await InnerTubeClient.SearchAsync(query, 15);
+                }
+
+                if (results != null && results.Count > 0)
+                {
+                    int added = 0;
+                    var existingIds = new System.Collections.Generic.HashSet<string>();
+                    foreach (var t in _currentViewingPlaylist.Tracks) existingIds.Add(t.VideoId);
+
+                    foreach (var t in results)
+                    {
+                        if (t.VideoId.StartsWith("CHANNEL:") || t.VideoId.StartsWith("PLAYLIST:")) continue;
+                        if (existingIds.Contains(t.VideoId)) continue;
+
+                        _currentViewingPlaylist.Tracks.Add(t);
+                        existingIds.Add(t.VideoId);
+                        added++;
+                        if (added >= 5) break; // Add up to 5 songs
+                    }
+
+                    if (added > 0)
+                    {
+                        SavePlaylistsAsync();
+                        PlaylistDetailsTrackCount.Text = _currentViewingPlaylist.Tracks.Count + " tracks";
+                        ShowToast("✨ Added " + added + " songs!");
+                    }
+                    else
+                    {
+                        ShowToast("No new songs found to add");
+                    }
+                }
+                else
+                {
+                    ShowToast("No similar songs found");
+                }
+            }
+            catch
+            {
+                ShowToast("Enhance failed");
             }
         }
 

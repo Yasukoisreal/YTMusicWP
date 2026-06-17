@@ -94,23 +94,30 @@ namespace YTMusicWP
                 int repeatMode = SafeGetInt(settings, "RepeatMode", 0);
                 UpdateRepeatUI(repeatMode);
 
-                // Playback settings
+                // Playback settings — set values BEFORE attaching handlers to avoid triggering saves on load
                 int quality = SafeGetInt(settings, "AudioQuality", 1);
                 if (quality >= 0 && quality < AudioQualityComboBox.Items.Count)
                     AudioQualityComboBox.SelectedIndex = quality;
                 int crossfade = SafeGetInt(settings, "CrossfadeSeconds", 0);
                 CrossfadeSlider.Value = crossfade;
                 CrossfadeValueText.Text = crossfade + "s";
-                CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
                 AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
                 GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
                 NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
+
+                // Now attach handlers — changes will save & apply immediately
+                AudioQualityComboBox.SelectionChanged += AudioQualityComboBox_SelectionChanged;
+                CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
+                AutoplayToggle.Toggled += AutoplayToggle_Toggled;
+                GaplessToggle.Toggled += GaplessToggle_Toggled;
+                NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
             }
             catch { }
         }
 
         private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
         {
+            // Save Settings only handles OAuth + Region
             Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientId"] = ClientIdTextBox.Text.Trim();
             Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientSecret"] = ClientSecretTextBox.Text.Trim();
 
@@ -119,21 +126,9 @@ namespace YTMusicWP
             {
                 string regionTag = selectedRegion.Tag.ToString();
                 if (regionTag == "AUTO")
-                {
-                    // Auto-detect from OS
                     regionTag = DetectOsRegion();
-                }
                 ApplicationData.Current.LocalSettings.Values["TrendingRegion"] = regionTag;
             }
-
-            // Save playback settings
-            var qualityItem = AudioQualityComboBox.SelectedItem as ComboBoxItem;
-            ApplicationData.Current.LocalSettings.Values["AudioQuality"] = AudioQualityComboBox.SelectedIndex;
-            ApplicationData.Current.LocalSettings.Values["AudioQualityKbps"] = (qualityItem != null && qualityItem.Tag != null) ? qualityItem.Tag.ToString() : "128";
-            ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = (int)CrossfadeSlider.Value;
-            ApplicationData.Current.LocalSettings.Values["Autoplay"] = AutoplayToggle.IsOn;
-            ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = GaplessToggle.IsOn;
-            ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
 
             ShowToast("Settings Saved!");
 
@@ -151,6 +146,30 @@ namespace YTMusicWP
         {
             if (CrossfadeValueText != null)
                 CrossfadeValueText.Text = (int)e.NewValue + "s";
+            ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = (int)e.NewValue;
+        }
+
+        private void AudioQualityComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var qualityItem = AudioQualityComboBox.SelectedItem as ComboBoxItem;
+            ApplicationData.Current.LocalSettings.Values["AudioQuality"] = AudioQualityComboBox.SelectedIndex;
+            ApplicationData.Current.LocalSettings.Values["AudioQualityKbps"] = (qualityItem != null && qualityItem.Tag != null) ? qualityItem.Tag.ToString() : "128";
+        }
+
+        private void AutoplayToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            ApplicationData.Current.LocalSettings.Values["Autoplay"] = AutoplayToggle.IsOn;
+        }
+
+        private void GaplessToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = GaplessToggle.IsOn;
+        }
+
+        private void NormalizeVolumeToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
+            try { _appMediaPlayer.Volume = NormalizeVolumeToggle.IsOn ? 0.75 : 1.0; } catch { }
         }
 
         private async void ClearCache_Click(object sender, RoutedEventArgs e)
