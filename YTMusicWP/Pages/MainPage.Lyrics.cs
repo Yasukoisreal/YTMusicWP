@@ -431,9 +431,25 @@ namespace YTMusicWP
                     if (container != null)
                         container.Opacity = (i == currentLyricIndex) ? 1.0 : 0.5;
                 }
-                // Scroll to current lyric
+                // Center-scroll to current lyric
                 if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
+                {
                     FullscreenLyricsListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
+                    FullscreenLyricsListView.UpdateLayout();
+
+                    if (_cachedFullscreenLyricsScrollViewer == null)
+                        _cachedFullscreenLyricsScrollViewer = GetScrollViewer(FullscreenLyricsListView);
+                    var activeContainer = FullscreenLyricsListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                    if (_cachedFullscreenLyricsScrollViewer != null && activeContainer != null)
+                    {
+                        var transform = activeContainer.TransformToVisual(_cachedFullscreenLyricsScrollViewer);
+                        var lyricPos = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
+                        double targetOff = _cachedFullscreenLyricsScrollViewer.VerticalOffset + lyricPos.Y
+                                        - (_cachedFullscreenLyricsScrollViewer.ViewportHeight / 2.0)
+                                        + (activeContainer.ActualHeight / 2.0);
+                        _cachedFullscreenLyricsScrollViewer.ChangeView(null, targetOff, null, false);
+                    }
+                }
             };
             fadeIn.Begin();
         }
