@@ -23,6 +23,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseSettings_Click(null, null);
             }
+            else if (ShortsView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseShortsView();
+            }
             else if (ArtistProfileView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;

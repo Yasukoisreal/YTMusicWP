@@ -129,6 +129,9 @@
     <Compile Include="Pages\MainPage.Navigation.cs">
       <DependentUpon>..\MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\MainPage.Shorts.cs">
+      <DependentUpon>..\MainPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Services\InnerTubeClient.cs" />
     <Compile Include="Services\InnerTubeClient.Search.cs" />
     <Compile Include="Services\InnerTubeClient.Browse.cs" />

@@ -591,7 +591,12 @@
                 <ScrollViewer x:Name="DefaultSearchUI" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,15,15,0">
                         <!-- ═══════ DISCOVER SECTION ═══════ -->
-                        <TextBlock Text="Discover" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,12"/>
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="Discover" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                            <Button Click="OpenShortsBtn_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="8,4">
+                                <TextBlock Text="Shorts ▶" FontSize="12" Foreground="#1DB954" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            </Button>
+                        </Grid>
                         <ListView x:Name="DiscoverListView" Height="185" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled">
                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                             <ListView.ItemContainerStyle>
@@ -1333,6 +1338,130 @@
                 </Grid>
             </StackPanel>
             <ListView x:Name="PlaylistSongsList" Grid.Row="2" Margin="20,0,20,0" Padding="0" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource PlaylistSongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
+        </Grid>
+
+        <!-- ═══════════════════════════════════ MUSIC SHORTS VIEW ═══════════════════════════════════ -->
+        <Grid x:Name="ShortsView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="55" Background="#0A0A0A"
+              ManipulationMode="TranslateY" ManipulationDelta="Shorts_ManipulationDelta" ManipulationCompleted="Shorts_ManipulationCompleted">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="ShortsTransform" Y="1000"/>
+            </Grid.RenderTransform>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header: Back + Category + Speaker -->
+            <Grid Grid.Row="0" Margin="0,30,0,0" Canvas.ZIndex="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Click="ShortsBack_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="5,0,0,0">
+                    <TextBlock Text="←" FontSize="22" Foreground="White"/>
+                </Button>
+                <TextBlock x:Name="ShortsCategoryTitle" Grid.Column="1" Text="#edm" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Click="ShortsPlayCurrent_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,5,0">
+                    <TextBlock Text="▶" FontSize="18" Foreground="White"/>
+                </Button>
+            </Grid>
+
+            <!-- Category Dots -->
+            <StackPanel x:Name="ShortsCategoryDots" Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,68,0,5">
+                <!-- Dots populated dynamically -->
+            </StackPanel>
+
+            <!-- Main Content Area -->
+            <Grid Grid.Row="1" Margin="0">
+                <!-- Background image (for video-style shorts) -->
+                <Image x:Name="ShortsBackgroundImage" Stretch="UniformToFill" Opacity="0.7" VerticalAlignment="Stretch"/>
+
+                <!-- Dark overlay gradient at top and bottom -->
+                <Border VerticalAlignment="Top" Height="120">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#CC0A0A0A" Offset="0"/>
+                            <GradientStop Color="Transparent" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+                <Border VerticalAlignment="Bottom" Height="200">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="Transparent" Offset="0"/>
+                            <GradientStop Color="#DD0A0A0A" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+
+                <!-- Cover Art (music-only mode) — centered with waveform bars -->
+                <Grid x:Name="ShortsCoverArtPanel" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <!-- Fake waveform bars left -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-45,0,0,0" Opacity="0.4">
+                        <Border Width="4" Height="20" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="15" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="25" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                    </StackPanel>
+                    <!-- Cover Art -->
+                    <Border Width="220" Height="220" CornerRadius="12">
+                        <Border.Background>
+                            <ImageBrush x:Name="ShortsCoverArt" Stretch="UniformToFill"/>
+                        </Border.Background>
+                    </Border>
+                    <!-- Fake waveform bars right -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-45,0" Opacity="0.4">
+                        <Border Width="4" Height="30" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="15" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="20" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                        <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="2,0"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <!-- Bottom Info Panel -->
+            <StackPanel Grid.Row="2" Margin="15,0,15,0">
+                <!-- Artist info -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Ellipse x:Name="ShortsArtistAvatar" Width="36" Height="36" VerticalAlignment="Center">
+                        <Ellipse.Fill><ImageBrush x:Name="ShortsArtistAvatarBrush" Stretch="UniformToFill"/></Ellipse.Fill>
+                    </Ellipse>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="ShortsArtistName" Text="Artist" FontSize="15" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                        <TextBlock x:Name="ShortsArtistSub" Text="" FontSize="11" Foreground="#999999"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Hashtags -->
+                <StackPanel x:Name="ShortsHashtags" Orientation="Horizontal" Margin="0,0,0,10">
+                    <!-- Populated dynamically -->
+                </StackPanel>
+
+                <!-- Mini player bar -->
+                <Border Background="#2A2A2A" CornerRadius="12" Margin="0,0,0,15" Padding="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="45"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="40" Height="40" CornerRadius="6">
+                            <Border.Background><ImageBrush x:Name="ShortsMiniCover" Stretch="UniformToFill"/></Border.Background>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                            <TextBlock x:Name="ShortsSongTitle" Text="Song Title" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="ShortsSongArtist" Text="Artist" FontSize="11" Foreground="#999999" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Click="ShortsAddToQueue_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center">
+                            <TextBlock Text="⊕" FontSize="24" Foreground="#1DB954"/>
+                        </Button>
+                    </Grid>
+                </Border>
+            </StackPanel>
         </Grid>
 
         <!-- ═══════════════════════════════════ ARTIST PROFILE VIEW ═══════════════════════════════════ -->
