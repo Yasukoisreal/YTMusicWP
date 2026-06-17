@@ -127,8 +127,11 @@ namespace YTMusicWP
             // Pause main player to avoid conflict
             try
             {
-                _shortsWasMainPlaying = BackgroundMediaPlayer.Current.CurrentState == Windows.Media.Playback.MediaPlayerState.Playing;
-                if (_shortsWasMainPlaying) BackgroundMediaPlayer.Current.Pause();
+                if (_appMediaPlayer != null)
+                {
+                    _shortsWasMainPlaying = _appMediaPlayer.CurrentState == Windows.Media.Playback.MediaPlayerState.Playing;
+                    if (_shortsWasMainPlaying) _appMediaPlayer.Pause();
+                }
             }
             catch { _shortsWasMainPlaying = false; }
 
@@ -176,7 +179,7 @@ namespace YTMusicWP
             // Resume main player if it was playing before Shorts
             try
             {
-                if (_shortsWasMainPlaying) BackgroundMediaPlayer.Current.Play();
+                if (_shortsWasMainPlaying && _appMediaPlayer != null) _appMediaPlayer.Play();
             }
             catch { }
 
