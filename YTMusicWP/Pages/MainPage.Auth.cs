@@ -91,6 +91,8 @@ namespace YTMusicWP
                 {
                     LoginStatusText.Text = "Status: Logged In & Synced!";
                     LoginStatusText.Foreground = _greenBrush;
+                    // Load cached avatar
+                    LoadHomeAvatar();
                 }
 
                 bool isShuffle = SafeGetBool(settings, "ShuffleMode", false);
@@ -220,6 +222,13 @@ namespace YTMusicWP
             LoginStatusText.Foreground = _authGrayBrush;
             ClientIdTextBox.Text = "";
             ClientSecretTextBox.Text = "";
+
+            // Reset avatar to default
+            HomeAvatarImage.Visibility = Visibility.Collapsed;
+            HomeAvatarFallback.Visibility = Visibility.Visible;
+            HomeAvatarLetter.Text = "Y";
+            settings.Remove("GoogleAvatarUrl");
+            settings.Remove("GoogleUserName");
 
             ShowToast("Logged out successfully");
         }
@@ -471,6 +480,8 @@ namespace YTMusicWP
             await SyncLikedVideosAsync(accessToken);
             await SyncUserPlaylistsAsync(accessToken);
             await SyncSubscriptionsAsync(accessToken);
+            // Fetch YouTube profile avatar
+            await FetchAndCacheAvatarAsync(accessToken);
         }
 
         // ══════════════════════════════════════════
@@ -699,6 +710,72 @@ namespace YTMusicWP
             string token = await RefreshGoogleTokenAsync();
             if (!string.IsNullOrEmpty(token))
                 await SyncAllAsync(token);
+        }
+
+        // ══════════════════════════════════════════
+        // YOUTUBE PROFILE AVATAR
+        // ══════════════════════════════════════════
+        private void LoadHomeAvatar()
+        {
+            try
+            {
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                string avatarUrl = SafeGetString(settings, "GoogleAvatarUrl", "");
+                string userName = SafeGetString(settings, "GoogleUserName", "");
+
+                if (!string.IsNullOrEmpty(avatarUrl))
+                {
+                    var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    bmp.DecodePixelWidth = 64; // 32dp × 2 for sharp rendering
+                    bmp.UriSource = new Uri(avatarUrl, UriKind.Absolute);
+                    HomeAvatarBrush.ImageSource = bmp;
+                    HomeAvatarImage.Visibility = Visibility.Visible;
+                    HomeAvatarFallback.Visibility = Visibility.Collapsed;
+                }
+
+                // Show user's first initial instead of "Y"
+                if (!string.IsNullOrEmpty(userName))
+                {
+                    HomeAvatarLetter.Text = userName.Substring(0, 1).ToUpper();
+                }
+            }
+            catch { }
+        }
+
+        private async Task FetchAndCacheAvatarAsync(string accessToken)
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get,
+                    "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&fields=items(snippet(title,thumbnails))");
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                var response = await _apiClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return;
+
+                string json = await response.Content.ReadAsStringAsync();
+                var data = JObject.Parse(json);
+                var channel = data["items"]?.First;
+                if (channel == null) return;
+
+                string name = channel["snippet"]?["title"]?.ToString() ?? "";
+                // Prefer medium (88px) or default (88px) thumbnail
+                string avatarUrl = channel["snippet"]?["thumbnails"]?["medium"]?["url"]?.ToString()
+                    ?? channel["snippet"]?["thumbnails"]?["default"]?["url"]?.ToString()
+                    ?? "";
+
+                if (!string.IsNullOrEmpty(avatarUrl))
+                {
+                    var settings = ApplicationData.Current.LocalSettings.Values;
+                    settings["GoogleAvatarUrl"] = avatarUrl;
+                    if (!string.IsNullOrEmpty(name))
+                        settings["GoogleUserName"] = name;
+
+                    // Update UI
+                    LoadHomeAvatar();
+                }
+            }
+            catch { }
         }
 
     }
