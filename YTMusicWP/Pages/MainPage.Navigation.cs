@@ -10,6 +10,8 @@ namespace YTMusicWP
     {
         // ── Bottom Navigation ──
         private int _currentTab = 0; // 0=Home, 1=Search, 2=Library
+        private static readonly SolidColorBrush _navActiveBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
+        private static readonly SolidColorBrush _navInactiveBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
 
         private void HardwareButtons_BackPressed(object sender, BackPressedEventArgs e)
         {
@@ -126,20 +128,16 @@ namespace YTMusicWP
                 }
             }
 
-            // Active tab = White, inactive = #B3B3B3
-            var activeBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
-            var inactiveBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
-
-            NavHomeIcon.Fill = (tab == 0) ? activeBrush : inactiveBrush;
-            NavHomeText.Foreground = (tab == 0) ? activeBrush : inactiveBrush;
+            NavHomeIcon.Fill = (tab == 0) ? _navActiveBrush : _navInactiveBrush;
+            NavHomeText.Foreground = (tab == 0) ? _navActiveBrush : _navInactiveBrush;
             NavHomeText.FontWeight = (tab == 0) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
 
-            NavSearchIcon.Fill = (tab == 1) ? activeBrush : inactiveBrush;
-            NavSearchText.Foreground = (tab == 1) ? activeBrush : inactiveBrush;
+            NavSearchIcon.Fill = (tab == 1) ? _navActiveBrush : _navInactiveBrush;
+            NavSearchText.Foreground = (tab == 1) ? _navActiveBrush : _navInactiveBrush;
             NavSearchText.FontWeight = (tab == 1) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
 
-            NavLibraryIcon.Fill = (tab == 2) ? activeBrush : inactiveBrush;
-            NavLibraryText.Foreground = (tab == 2) ? activeBrush : inactiveBrush;
+            NavLibraryIcon.Fill = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
+            NavLibraryText.Foreground = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
             NavLibraryText.FontWeight = (tab == 2) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
         }
 
@@ -306,7 +304,7 @@ namespace YTMusicWP
             // Show text, hide circle, icon → gray
             NavCreateText.Visibility = Visibility.Visible;
             NavCreateCircle.Visibility = Visibility.Collapsed;
-            NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
+            NavCreateIcon.Fill = _navInactiveBrush;
         }
 
         private void CloseCreateSheet_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)

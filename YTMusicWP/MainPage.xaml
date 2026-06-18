@@ -1473,7 +1473,7 @@
         </Grid>
 
         <!-- ═══════════════════════════════════ ARTIST PROFILE VIEW ═══════════════════════════════════ -->
-        <Grid x:Name="ArtistProfileView" Grid.Row="0" Visibility="Collapsed" Canvas.ZIndex="45" Background="#121212">
+        <Grid x:Name="ArtistProfileView" Grid.Row="0" Grid.RowSpan="2" Visibility="Collapsed" Canvas.ZIndex="45" Background="#121212">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="ArtistTransform" Y="1000"/>
             </Grid.RenderTransform>

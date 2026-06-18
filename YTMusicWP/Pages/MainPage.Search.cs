@@ -332,15 +332,5 @@ namespace YTMusicWP
             }
         }
 
-        private void OpenShortsFromDiscover()
-        {
-            OpenShortsView(0);
-        }
-
-        private void OpenShortsBtn_Click(object sender, RoutedEventArgs e)
-        {
-            OpenShortsView(0);
-        }
-
     }
 }

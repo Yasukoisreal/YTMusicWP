@@ -204,7 +204,7 @@ namespace YTMusicWP
             if (albums != null && albums.Count > 0)
             {
                 var firstSection = albums[0].SectionTitle;
-                ArtistAlbumsTitle.Text = firstSection;
+                ArtistAlbumsTitle.Text = !string.IsNullOrEmpty(firstSection) ? firstSection : "Releases";
                 ArtistAlbumsList.ItemsSource = albums;
                 ArtistAlbumsSection.Visibility = Visibility.Visible;
             }
@@ -236,10 +236,11 @@ namespace YTMusicWP
             try
             {
                 string accessToken = settings["GoogleAccessToken"].ToString();
-                var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
-                var response = await client.GetAsync(
+                var request = new HttpRequestMessage(HttpMethod.Get,
                     "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&forChannelId=" + channelId);
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+                var response = await _apiClient.SendAsync(
+                    request);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -261,12 +262,12 @@ namespace YTMusicWP
             if (_isFollowingArtist)
             {
                 ArtistFollowBtn.Content = "Following";
-                ArtistFollowBtn.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84)); // #1DB954
+                ArtistFollowBtn.Foreground = _greenBrush;
             }
             else
             {
                 ArtistFollowBtn.Content = "Follow";
-                ArtistFollowBtn.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+                ArtistFollowBtn.Foreground = _whiteBrush;
             }
         }
 
@@ -294,7 +295,6 @@ namespace YTMusicWP
                 if (!_isFollowingArtist)
                 {
                     // Subscribe via YouTube Data API
-                    var client = new HttpClient();
                     var requestBody = new JObject
                     {
                         ["snippet"] = new JObject
@@ -308,10 +308,10 @@ namespace YTMusicWP
                     };
 
                     var content = new StringContent(requestBody.ToString(), System.Text.Encoding.UTF8, "application/json");
-                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
-                    var response = await client.PostAsync(
-                        "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet",
-                        content);
+                    var subRequest = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet") { Content = content };
+                    subRequest.Headers.Add("Authorization", "Bearer " + accessToken);
+                    var response = await _apiClient.SendAsync(
+                        subRequest);
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -331,10 +331,10 @@ namespace YTMusicWP
                     // Unsubscribe
                     if (!string.IsNullOrEmpty(_currentSubscriptionId))
                     {
-                        var client = new HttpClient();
-                        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
-                        var response = await client.DeleteAsync(
+                        var delRequest = new HttpRequestMessage(HttpMethod.Delete,
                             "https://www.googleapis.com/youtube/v3/subscriptions?id=" + _currentSubscriptionId);
+                        delRequest.Headers.Add("Authorization", "Bearer " + accessToken);
+                        var response = await _apiClient.SendAsync(delRequest);
 
                         if (response.IsSuccessStatusCode)
                         {
