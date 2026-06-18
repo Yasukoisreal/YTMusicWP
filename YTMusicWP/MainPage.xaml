@@ -2187,7 +2187,7 @@
         </Grid>
 
         <!-- ═══════════════════════════════════ TOAST ═══════════════════════════════════ -->
-        <Border x:Name="ToastNotification" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Padding="14,10" Margin="15,0,15,75" CornerRadius="12" Grid.RowSpan="3">
+        <Border x:Name="ToastNotification" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Padding="14,10" Margin="15,0,15,130" CornerRadius="12" Grid.RowSpan="3">
             <TextBlock x:Name="ToastText" Text="Message" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" TextAlignment="Center"/>
         </Border>
 
