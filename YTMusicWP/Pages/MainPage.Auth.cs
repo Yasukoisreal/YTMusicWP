@@ -286,7 +286,6 @@ namespace YTMusicWP
         {
             LoginWebContainer.Visibility = Visibility.Collapsed;
             _deviceCodePolling = false;
-            _isAuthProcessing = false;
         }
 
         private async Task StartDeviceCodeFlow()

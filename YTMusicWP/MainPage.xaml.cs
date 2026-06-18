@@ -128,7 +128,6 @@ namespace YTMusicWP
         private string _currentSearchQuery = "";
         private string _currentHomeQuery = "";
 
-        private bool _isAuthProcessing = false;
 
         private DispatcherTimer _sleepTimer;
         private int _sleepMinutesLeft = 0;
