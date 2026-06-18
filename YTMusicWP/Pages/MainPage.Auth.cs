@@ -483,6 +483,47 @@ namespace YTMusicWP
         }
 
         // ══════════════════════════════════════════
+        // AUTHENTICATED INNERTUBE HELPER
+        // ══════════════════════════════════════════
+        private async Task<JObject> AuthInnerTubePostAsync(string endpoint, JObject extraParams, string accessToken)
+        {
+            string visitorData = await InnerTubeClient.GetVisitorDataAsync();
+            var clientObj = new JObject
+            {
+                ["clientName"] = "WEB",
+                ["clientVersion"] = "2.20241016.00.00",
+                ["hl"] = InnerTubeClient.CurrentLanguage,
+                ["gl"] = InnerTubeClient.CurrentRegion
+            };
+            if (!string.IsNullOrEmpty(visitorData))
+                clientObj["visitorData"] = visitorData;
+
+            var body = new JObject
+            {
+                ["context"] = new JObject { ["client"] = clientObj }
+            };
+            // Merge extra parameters
+            foreach (var prop in extraParams.Properties())
+                body[prop.Name] = prop.Value;
+
+            string url = "https://www.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8&prettyPrint=false";
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+            request.Headers.Add("Origin", "https://www.youtube.com");
+            request.Headers.Add("Referer", "https://www.youtube.com/");
+            request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+            var response = await _apiClient.SendAsync(request);
+            string resultJson = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+                return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
+            
+            return JObject.Parse(resultJson);
+        }
+
+        // ══════════════════════════════════════════
         // SYNC LIKED VIDEOS
         // ══════════════════════════════════════════
         private async Task SyncLikedVideosAsync(string accessToken)
@@ -491,85 +532,52 @@ namespace YTMusicWP
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
 
-                // Use InnerTube API — browse liked music playlist (LM)
-                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-                var context = InnerTubeClient.BuildMusicContext(visitorData);
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
 
-                var body = new JObject
+                if (json["_error"] != null)
                 {
-                    ["context"] = context,
-                    ["browseId"] = "FEmusic_liked_videos"
-                };
-
-                string url = "https://music.youtube.com/youtubei/v1/browse?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (response.IsSuccessStatusCode)
-                {
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    var json = JObject.Parse(resultJson);
-
-                    bool hasNew = false;
-                    // Navigate InnerTube response structure for liked videos
-                    var contents = json.SelectTokens("$..musicResponsiveListItemRenderer");
-                    foreach (var item in contents)
-                    {
-                        try
-                        {
-                            // Extract video ID from playlistItemData or overlay
-                            string vidId = item.SelectToken("..playNavigationEndpoint..videoId")?.ToString()
-                                ?? item.SelectToken("..watchEndpoint..videoId")?.ToString();
-                            if (string.IsNullOrEmpty(vidId)) continue;
-                            if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
-
-                            // Extract title
-                            var flexColumns = item["flexColumns"];
-                            string title = "";
-                            string channel = "";
-                            if (flexColumns != null && flexColumns.Count() > 0)
-                            {
-                                title = flexColumns[0]?.SelectToken("..text")?.ToString() ?? "";
-                                if (flexColumns.Count() > 1)
-                                    channel = CleanChannelName(flexColumns[1]?.SelectToken("..text")?.ToString() ?? "");
-                            }
-
-                            // Extract thumbnail
-                            string thumbUrl = item.SelectToken("..thumbnails[-1:].url")?.ToString()
-                                ?? item.SelectToken("..thumbnail..url")?.ToString();
-
-                            if (!string.IsNullOrEmpty(title))
-                            {
-                                favoriteTracks.Insert(0, new YouTubeTrack
-                                {
-                                    VideoId = vidId,
-                                    Title = System.Net.WebUtility.HtmlDecode(title),
-                                    ChannelName = System.Net.WebUtility.HtmlDecode(channel),
-                                    ThumbnailUrl = thumbUrl
-                                });
-                                hasNew = true;
-                            }
-                        }
-                        catch { continue; }
-                    }
-
-                    if (hasNew) SaveFavoritesAsync();
-
-                    LoginStatusText.Text = "Status: Logged In & Synced!";
-                    LoginStatusText.Foreground = _greenBrush;
-                }
-                else
-                {
-                    string errBody = await response.Content.ReadAsStringAsync();
-                    string errSnippet = errBody.Length > 80 ? errBody.Substring(0, 80) : errBody;
-                    LoginStatusText.Text = "Sync " + (int)response.StatusCode + ": " + errSnippet;
+                    LoginStatusText.Text = "Sync " + json["_error"] + ": " + (json["_body"]?.ToString() ?? "");
                     LoginStatusText.Foreground = _authOrangeBrush;
+                    return;
                 }
+
+                bool hasNew = false;
+                // Parse playlist items from InnerTube response
+                var contents = json.SelectTokens("$..playlistVideoRenderer");
+                foreach (var item in contents)
+                {
+                    try
+                    {
+                        string vidId = item["videoId"]?.ToString();
+                        if (string.IsNullOrEmpty(vidId)) continue;
+                        if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
+
+                        string title = item.SelectToken("title..text")?.ToString() ?? item["title"]?["simpleText"]?.ToString() ?? "";
+                        string channel = item.SelectToken("shortBylineText..text")?.ToString() ?? "";
+                        channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
+
+                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+
+                        if (!string.IsNullOrEmpty(title))
+                        {
+                            favoriteTracks.Insert(0, new YouTubeTrack
+                            {
+                                VideoId = vidId,
+                                Title = System.Net.WebUtility.HtmlDecode(title),
+                                ChannelName = channel,
+                                ThumbnailUrl = thumbUrl
+                            });
+                            hasNew = true;
+                        }
+                    }
+                    catch { continue; }
+                }
+
+                if (hasNew) SaveFavoritesAsync();
+
+                LoginStatusText.Text = "Status: Logged In & Synced!";
+                LoginStatusText.Foreground = _greenBrush;
             }
             catch (Exception ex)
             {
@@ -654,56 +662,31 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
+                if (json["_error"] != null) return;
 
-                // Use InnerTube — browse library playlists
-                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-                var context = InnerTubeClient.BuildMusicContext(visitorData);
-
-                var body = new JObject
-                {
-                    ["context"] = context,
-                    ["browseId"] = "FEmusic_liked_playlists"
-                };
-
-                string url = "https://music.youtube.com/youtubei/v1/browse?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode) return;
-
-                string resultJson = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(resultJson);
-
-                var items = json.SelectTokens("$..musicTwoRowItemRenderer");
+                // Try to find playlists in the library response
+                var items = json.SelectTokens("$..gridPlaylistRenderer");
                 foreach (var item in items)
                 {
                     try
                     {
-                        string plId = item.SelectToken("..browseId")?.ToString()
-                            ?? item.SelectToken("..playlistId")?.ToString();
+                        string plId = item["playlistId"]?.ToString();
                         if (string.IsNullOrEmpty(plId)) continue;
 
-                        string title = item["title"]?.SelectToken("..text")?.ToString() ?? "";
-                        string subtitle = item["subtitle"]?.SelectToken("..text")?.ToString() ?? "";
-                        string thumbUrl = item.SelectToken("..thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("..thumbnail..url")?.ToString();
-
-                        // Try to parse track count from subtitle (e.g. "50 songs")
+                        string title = item.SelectToken("title..text")?.ToString() ?? item["title"]?["simpleText"]?.ToString() ?? "";
+                        string countText = item.SelectToken("videoCountShortText..text")?.ToString()
+                            ?? item.SelectToken("videoCountText..text")?.ToString() ?? "0";
                         int count = 0;
-                        if (!string.IsNullOrEmpty(subtitle))
-                        {
-                            var match = System.Text.RegularExpressions.Regex.Match(subtitle, @"(\d+)");
-                            if (match.Success) int.TryParse(match.Value, out count);
-                        }
+                        var match = System.Text.RegularExpressions.Regex.Match(countText, @"(\d+)");
+                        if (match.Success) int.TryParse(match.Value, out count);
+
+                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
-                            PlaylistId = plId.StartsWith("VL") ? plId.Substring(2) : plId,
+                            PlaylistId = plId,
                             Title = title,
                             TrackCount = count,
                             ThumbnailUrl = thumbUrl
@@ -727,43 +710,20 @@ namespace YTMusicWP
             try
             {
                 _youtubeSubscriptions.Clear();
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
+                if (json["_error"] != null) return;
 
-                // Use InnerTube — browse library artists (subscriptions)
-                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-                var context = InnerTubeClient.BuildMusicContext(visitorData);
-
-                var body = new JObject
-                {
-                    ["context"] = context,
-                    ["browseId"] = "FEmusic_library_corpus_artists"
-                };
-
-                string url = "https://music.youtube.com/youtubei/v1/browse?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode) return;
-
-                string resultJson = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(resultJson);
-
-                var items = json.SelectTokens("$..musicResponsiveListItemRenderer");
+                var items = json.SelectTokens("$..gridChannelRenderer");
                 foreach (var item in items)
                 {
                     try
                     {
-                        string channelId = item.SelectToken("..browseId")?.ToString();
+                        string channelId = item["channelId"]?.ToString();
                         if (string.IsNullOrEmpty(channelId)) continue;
 
-                        string title = item.SelectToken("..flexColumns[0]..text")?.ToString()
-                            ?? item.SelectToken("..text")?.ToString() ?? "";
-                        string thumbUrl = item.SelectToken("..thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("..thumbnail..url")?.ToString();
+                        string title = item.SelectToken("title..text")?.ToString() ?? item["title"]?["simpleText"]?.ToString() ?? "";
+                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
 
                         _youtubeSubscriptions.Add(new YouTubeSubscription
                         {
@@ -790,28 +750,9 @@ namespace YTMusicWP
 
             try
             {
-                // Use InnerTube like/dislike endpoint
-                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-                var context = InnerTubeClient.BuildMusicContext(visitorData);
-
                 string endpoint = rating == "like" ? "like/like" : (rating == "dislike" ? "like/dislike" : "like/removelike");
-                string url = "https://music.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
-
-                var body = new JObject
-                {
-                    ["context"] = context,
-                    ["target"] = new JObject { ["videoId"] = videoId }
-                };
-
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
+                var json = await AuthInnerTubePostAsync(endpoint, new JObject { ["target"] = new JObject { ["videoId"] = videoId } }, token);
+                return json["_error"] == null;
             }
             catch { return false; }
         }
@@ -826,13 +767,8 @@ namespace YTMusicWP
 
             try
             {
-                // Use InnerTube — add to watch later playlist
-                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-                var context = InnerTubeClient.BuildMusicContext(visitorData);
-
-                var body = new JObject
+                var extra = new JObject
                 {
-                    ["context"] = context,
                     ["playlistId"] = "WL",
                     ["actions"] = new JArray
                     {
@@ -843,17 +779,8 @@ namespace YTMusicWP
                         }
                     }
                 };
-
-                string url = "https://music.youtube.com/youtubei/v1/browse/edit_playlist?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                return json["_error"] == null;
             }
             catch { return false; }
         }
@@ -899,29 +826,8 @@ namespace YTMusicWP
         {
             try
             {
-                // Use InnerTube — browse account menu to get avatar
-                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-                var context = InnerTubeClient.BuildMusicContext(visitorData);
-
-                var body = new JObject
-                {
-                    ["context"] = context,
-                    ["browseId"] = "FEmusic_home"
-                };
-
-                string url = "https://music.youtube.com/youtubei/v1/account/account_menu?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode) return;
-
-                string resultJson = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(resultJson);
+                var json = await AuthInnerTubePostAsync("account/account_menu", new JObject(), accessToken);
+                if (json["_error"] != null) return;
 
                 // Extract name and avatar from account menu response
                 string name = json.SelectToken("$..accountName..text")?.ToString()
