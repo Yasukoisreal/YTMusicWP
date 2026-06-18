@@ -217,8 +217,9 @@ namespace YTMusicWP
             sb.Children.Add(slideAnim);
             sb.Begin();
 
-            // Hide text, change color to white
+            // Hide text, show circle, change color to white
             NavCreateText.Visibility = Visibility.Collapsed;
+            NavCreateCircle.Visibility = Visibility.Visible;
             NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Colors.White);
         }
 
@@ -273,8 +274,9 @@ namespace YTMusicWP
             sb.Completed += (s, a) => CreateBottomSheet.Visibility = Visibility.Collapsed;
             sb.Begin();
 
-            // Show text, reset color
+            // Show text, hide circle, reset color
             NavCreateText.Visibility = Visibility.Visible;
+            NavCreateCircle.Visibility = Visibility.Collapsed;
             NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
         }
 

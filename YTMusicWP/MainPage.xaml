@@ -1648,12 +1648,15 @@
                 <!-- Create -->
                 <Button Grid.Column="3" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
-                        <Viewbox x:Name="NavCreateViewbox" Width="22" Height="22" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                            <Viewbox.RenderTransform>
-                                <RotateTransform x:Name="NavCreateRotate" Angle="0"/>
-                            </Viewbox.RenderTransform>
-                            <Path x:Name="NavCreateIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z"/>
-                        </Viewbox>
+                        <Grid HorizontalAlignment="Center" Width="30" Height="30">
+                            <Ellipse x:Name="NavCreateCircle" Width="30" Height="30" Stroke="White" StrokeThickness="2" Visibility="Collapsed"/>
+                            <Viewbox x:Name="NavCreateViewbox" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <Viewbox.RenderTransform>
+                                    <RotateTransform x:Name="NavCreateRotate" Angle="0"/>
+                                </Viewbox.RenderTransform>
+                                <Path x:Name="NavCreateIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z"/>
+                            </Viewbox>
+                        </Grid>
                         <TextBlock x:Name="NavCreateText" Text="Create" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
