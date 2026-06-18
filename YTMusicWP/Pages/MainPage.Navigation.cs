@@ -147,5 +147,11 @@ namespace YTMusicWP
             SettingsPanel.Visibility = Visibility.Collapsed;
         }
 
+        private void NavCreate_Click(object sender, RoutedEventArgs e)
+        {
+            // Open the create playlist dialog (same as Library's + button)
+            OpenCreatePlaylistDialog_Click(sender, e);
+        }
+
     }
 }

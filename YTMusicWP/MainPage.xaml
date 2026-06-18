@@ -1616,6 +1616,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <!-- Home -->
                 <Button Grid.Column="0" Click="NavHome_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
@@ -1642,6 +1643,15 @@
                             <Path x:Name="NavLibraryIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M3,21 L3,3 L6,3 L6,21 Z M10,21 L10,3 L13,3 L13,21 Z M17,21 L17,7 L20,7 L20,21 Z"/>
                         </Viewbox>
                         <TextBlock x:Name="NavLibraryText" Text="Library" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </Button>
+                <!-- Create -->
+                <Button Grid.Column="3" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
+                            <Path x:Name="NavCreateIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M10,2 L14,2 L14,10 L22,10 L22,14 L14,14 L14,22 L10,22 L10,14 L2,14 L2,10 L10,10 Z"/>
+                        </Viewbox>
+                        <TextBlock x:Name="NavCreateText" Text="Create" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
             </Grid>
