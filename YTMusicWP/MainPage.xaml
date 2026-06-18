@@ -1519,17 +1519,15 @@
                         <Border Grid.Column="0" CornerRadius="4" BorderBrush="White" BorderThickness="1" Padding="14,6" VerticalAlignment="Center">
                             <TextBlock Text="Đăng ký" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </Border>
-                        <!-- Play button (green filled circle) -->
+                        <!-- Play button (green filled circle - same as Now Playing) -->
                         <Button Grid.Column="1" Click="ArtistPlayAll_Click" Style="{StaticResource IconButtonStyle}" Width="46" Height="46" Margin="16,0,0,0">
                             <Border Width="46" Height="46" CornerRadius="23" Background="#1DB954">
-                                <Viewbox Width="18" Height="18" Margin="2,0,0,0">
-                                    <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="Black"/>
-                                </Viewbox>
+                                <SymbolIcon Symbol="Play" Foreground="Black"/>
                             </Border>
                         </Button>
-                        <!-- Shuffle button -->
+                        <!-- Shuffle button (same icon as Now Playing) -->
                         <Button Grid.Column="2" Click="ArtistShuffle_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" Margin="6,0,0,0">
-                            <TextBlock Text="⟳" FontSize="22" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE14B;" Foreground="White" FontSize="20"/>
                         </Button>
                         <!-- Loading bar -->
                         <ProgressBar x:Name="ArtistLoadingBar" Grid.Column="3" IsIndeterminate="True" Visibility="Collapsed" Foreground="#1DB954" VerticalAlignment="Center" Margin="10,0,0,0"/>
