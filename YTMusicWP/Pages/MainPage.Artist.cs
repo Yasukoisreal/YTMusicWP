@@ -235,21 +235,16 @@ namespace YTMusicWP
                 string accessToken = await GetAccessTokenAsync();
                 if (string.IsNullOrEmpty(accessToken)) return;
 
-                var request = new HttpRequestMessage(HttpMethod.Get,
-                    "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&forChannelId=" + channelId);
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-                var response = await _apiClient.SendAsync(request);
+                // Use InnerTube browse to check channel page for subscribe button state
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = channelId }, accessToken);
+                if (json["_error"] != null) return;
 
-                if (response.IsSuccessStatusCode)
+                // Check if "subscribed" appears in subscribe button
+                var subBtn = json.SelectToken("$..subscribeButton..subscribed");
+                if (subBtn != null && subBtn.Value<bool>())
                 {
-                    var json = JObject.Parse(await response.Content.ReadAsStringAsync());
-                    var items = json["items"] as JArray;
-                    if (items != null && items.Count > 0)
-                    {
-                        _isFollowingArtist = true;
-                        _currentSubscriptionId = items[0]["id"]?.ToString();
-                        UpdateFollowButton();
-                    }
+                    _isFollowingArtist = true;
+                    UpdateFollowButton();
                 }
             }
             catch { }
@@ -293,28 +288,16 @@ namespace YTMusicWP
             {
                 if (!_isFollowingArtist)
                 {
-                    // Subscribe via YouTube Data API
-                    var requestBody = new JObject
+                    // Subscribe via InnerTube
+                    var extra = new JObject
                     {
-                        ["snippet"] = new JObject
-                        {
-                            ["resourceId"] = new JObject
-                            {
-                                ["kind"] = "youtube#channel",
-                                ["channelId"] = _currentArtistChannelId
-                            }
-                        }
+                        ["channelIds"] = new JArray { _currentArtistChannelId },
+                        ["params"] = "EgIIAhgA" // Standard subscribe params
                     };
+                    var json = await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
 
-                    var content = new StringContent(requestBody.ToString(), System.Text.Encoding.UTF8, "application/json");
-                    var subRequest = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet") { Content = content };
-                    subRequest.Headers.Add("Authorization", "Bearer " + accessToken);
-                    var response = await _apiClient.SendAsync(subRequest);
-
-                    if (response.IsSuccessStatusCode)
+                    if (json["_error"] == null)
                     {
-                        var result = JObject.Parse(await response.Content.ReadAsStringAsync());
-                        _currentSubscriptionId = result["id"]?.ToString();
                         _isFollowingArtist = true;
                         UpdateFollowButton();
                         ShowToast("Following " + ArtistProfileTitle.Text);
@@ -326,48 +309,23 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    // Unsubscribe — if we don't have the subscriptionId, fetch it first
-                    if (string.IsNullOrEmpty(_currentSubscriptionId))
+                    // Unsubscribe via InnerTube
+                    var extra = new JObject
                     {
-                        try
-                        {
-                            var checkReq = new HttpRequestMessage(HttpMethod.Get,
-                                "https://www.googleapis.com/youtube/v3/subscriptions?part=id&mine=true&forChannelId=" + _currentArtistChannelId);
-                            checkReq.Headers.Add("Authorization", "Bearer " + accessToken);
-                            var checkResp = await _apiClient.SendAsync(checkReq);
-                            if (checkResp.IsSuccessStatusCode)
-                            {
-                                var checkJson = JObject.Parse(await checkResp.Content.ReadAsStringAsync());
-                                var checkItems = checkJson["items"] as JArray;
-                                if (checkItems != null && checkItems.Count > 0)
-                                    _currentSubscriptionId = checkItems[0]["id"]?.ToString();
-                            }
-                        }
-                        catch { }
-                    }
+                        ["channelIds"] = new JArray { _currentArtistChannelId }
+                    };
+                    var json = await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
 
-                    if (!string.IsNullOrEmpty(_currentSubscriptionId))
+                    if (json["_error"] == null)
                     {
-                        var delRequest = new HttpRequestMessage(HttpMethod.Delete,
-                            "https://www.googleapis.com/youtube/v3/subscriptions?id=" + _currentSubscriptionId);
-                        delRequest.Headers.Add("Authorization", "Bearer " + accessToken);
-                        var response = await _apiClient.SendAsync(delRequest);
-
-                        if (response.IsSuccessStatusCode)
-                        {
-                            _isFollowingArtist = false;
-                            _currentSubscriptionId = null;
-                            UpdateFollowButton();
-                            ShowToast("Unfollowed " + ArtistProfileTitle.Text);
-                        }
-                        else
-                        {
-                            ShowToast("Failed to unfollow");
-                        }
+                        _isFollowingArtist = false;
+                        _currentSubscriptionId = null;
+                        UpdateFollowButton();
+                        ShowToast("Unfollowed " + ArtistProfileTitle.Text);
                     }
                     else
                     {
-                        ShowToast("Could not unfollow, try again");
+                        ShowToast("Failed to unfollow");
                     }
                 }
             }
