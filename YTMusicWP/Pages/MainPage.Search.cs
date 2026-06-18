@@ -163,7 +163,10 @@ namespace YTMusicWP
         {
             _typingTimer.Stop();
 
-            if (string.IsNullOrWhiteSpace(SearchBox.Text))
+            bool hasText = !string.IsNullOrWhiteSpace(SearchBox.Text);
+            SearchClearBtn.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
+
+            if (!hasText)
             {
                 SuggestionPopup.Visibility = Visibility.Collapsed;
                 DefaultSearchUI.Visibility = Visibility.Visible;
@@ -174,6 +177,12 @@ namespace YTMusicWP
                 _typingTimer.Start();
                 DefaultSearchUI.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void SearchClear_Click(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            SearchBox.Text = "";
+            SearchBox.Focus(FocusState.Programmatic);
         }
 
         private void Category_Click(object sender, RoutedEventArgs e)

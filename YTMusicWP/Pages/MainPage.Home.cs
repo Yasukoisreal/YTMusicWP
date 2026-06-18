@@ -283,13 +283,18 @@ namespace YTMusicWP
         // ==========================================
         // HOME CHIP FILTERS
         // ==========================================
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _chipInactiveBrush =
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 51, 51, 51));
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _chipActiveBrush =
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84));
+
         private void SetHomeChipActive(Border active)
         {
-            HomeChipAll.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 51, 51, 51));
-            HomeChipMusic.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 51, 51, 51));
-            HomeChipPodcasts.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 51, 51, 51));
-            HomeChipAudiobooks.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 51, 51, 51));
-            active.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84)); // #1DB954
+            HomeChipAll.Background = _chipInactiveBrush;
+            HomeChipMusic.Background = _chipInactiveBrush;
+            HomeChipPodcasts.Background = _chipInactiveBrush;
+            HomeChipAudiobooks.Background = _chipInactiveBrush;
+            active.Background = _chipActiveBrush;
         }
 
         private void ShowHomePanel(string panel)

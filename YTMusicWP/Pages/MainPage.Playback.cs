@@ -603,35 +603,36 @@ namespace YTMusicWP
             if (_gradientPulseTimer != null)
             {
                 _gradientPulseTimer.Stop();
+                _gradientPulseTimer.Tick -= GradientPulse_Tick;
             }
+            // Invalidate cached gradient storyboard so it re-targets after color change
+            _gradientPulseSb = null;
             _gradientPulseTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
             _gradientPulseTimer.Tick += GradientPulse_Tick;
             _gradientPulseTimer.Start();
         }
 
         // ═══════════════════════════════════════════════════════
-        // [OPT-1] Cached animation helpers — eliminate GC pressure
-        // Reuse easing functions + create fresh storyboards (must be fresh per-target)
-        // but easing/duration objects are shared across all calls.
+        // Lyrics animation helpers
+        // WP8.1 requires each animation to own its EasingFunction instance —
+        // sharing a static CubicEase across concurrent storyboards causes silent failure.
+        // Duration is a value type, safe to share.
         // ═══════════════════════════════════════════════════════
-        private static readonly Windows.UI.Xaml.Media.Animation.CubicEase _easeInOut =
-            new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
-        private static readonly Windows.UI.Xaml.Media.Animation.CubicEase _easeOut =
-            new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
         private static readonly Duration _dur400 = new Duration(TimeSpan.FromMilliseconds(400));
         private static readonly Duration _dur450 = new Duration(TimeSpan.FromMilliseconds(450));
         private static readonly Duration _dur500 = new Duration(TimeSpan.FromMilliseconds(500));
 
         private void AnimateLyricOut(FrameworkElement container, Windows.UI.Xaml.Media.ScaleTransform scale)
         {
+            var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
             var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.35, Duration = _dur500, EasingFunction = _easeInOut };
+            var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.35, Duration = _dur500, EasingFunction = easeInOut };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, container);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
-            var sxOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = _easeInOut };
+            var sxOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = easeInOut };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxOut, scale);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxOut, "ScaleX");
-            var syOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = _easeInOut };
+            var syOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = easeInOut };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syOut, scale);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syOut, "ScaleY");
             sb.Children.Add(opAnim); sb.Children.Add(sxOut); sb.Children.Add(syOut);
@@ -640,14 +641,15 @@ namespace YTMusicWP
 
         private void AnimateLyricIn(FrameworkElement container, Windows.UI.Xaml.Media.ScaleTransform scale)
         {
+            var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
             var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { From = 0.35, To = 1.0, Duration = _dur450, EasingFunction = _easeOut };
+            var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { From = 0.35, To = 1.0, Duration = _dur450, EasingFunction = easeOut };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opIn, container);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
-            var sxIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = _easeOut };
+            var sxIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = easeOut };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxIn, scale);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxIn, "ScaleX");
-            var syIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = _easeOut };
+            var syIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = easeOut };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syIn, scale);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syIn, "ScaleY");
             sb.Children.Add(opIn); sb.Children.Add(sxIn); sb.Children.Add(syIn);
@@ -656,8 +658,9 @@ namespace YTMusicWP
 
         private void AnimateOpacity(FrameworkElement target, double toValue)
         {
+            var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
             var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = toValue, Duration = _dur400, EasingFunction = _easeInOut };
+            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = toValue, Duration = _dur400, EasingFunction = easeInOut };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, target);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
             sb.Children.Add(anim);
@@ -685,7 +688,7 @@ namespace YTMusicWP
                     _gradientPulseAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
                     {
                         Duration = new Duration(TimeSpan.FromSeconds(3)),
-                        EasingFunction = _easeInOut
+                        EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
                     };
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_gradientPulseAnim, NowPlayingGradientTop);
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_gradientPulseAnim, "Color");
