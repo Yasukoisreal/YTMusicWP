@@ -541,8 +541,25 @@ namespace YTMusicWP
                 }
 
                 bool hasNew = false;
-                // Parse playlist items from InnerTube response
-                var contents = json.SelectTokens("$..playlistVideoRenderer");
+                // Try multiple renderer types (TV vs Web format)
+                var contents = json.SelectTokens("$..playlistVideoRenderer").ToList();
+                if (contents.Count == 0)
+                    contents = json.SelectTokens("$..gridVideoRenderer").ToList();
+                if (contents.Count == 0)
+                    contents = json.SelectTokens("$..tileRenderer").ToList();
+                if (contents.Count == 0)
+                    contents = json.SelectTokens("$..pivotVideoRenderer").ToList();
+                
+                // Debug: show what we found
+                if (contents.Count == 0)
+                {
+                    // Dump first 200 chars of response to see the structure
+                    string dump = json.ToString().Length > 200 ? json.ToString().Substring(0, 200) : json.ToString();
+                    LoginStatusText.Text = "0 items. Keys: " + dump;
+                    LoginStatusText.Foreground = _authOrangeBrush;
+                    return;
+                }
+                
                 foreach (var item in contents)
                 {
                     try
