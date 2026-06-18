@@ -2197,7 +2197,7 @@
                     
                     <!-- User Code (big, prominent) -->
                     <Border Background="#282828" CornerRadius="12" Padding="20,15" Margin="0,0,0,15">
-                        <TextBlock x:Name="DeviceCodeText" Text="----" Foreground="White" FontSize="36" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" CharacterSpacing="250" IsTextSelectionEnabled="True"/>
+                        <TextBlock x:Name="DeviceCodeText" Text="----" Foreground="White" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" CharacterSpacing="80" IsTextSelectionEnabled="True"/>
                     </Border>
                     
                     <!-- Note -->
