@@ -559,7 +559,19 @@ namespace YTMusicWP
                     LoginStatusText.Foreground = _authOrangeBrush;
                     return;
                 }
-                
+                // Debug: dump first item keys
+                if (contents.Count > 0)
+                {
+                    var first = contents[0];
+                    string keys = string.Join(",", first.Children<JProperty>().Select(p => p.Name));
+                    string vid = first["videoId"]?.ToString() ?? "null";
+                    string tRuns = first.SelectToken("title.runs[0].text")?.ToString() ?? "null";
+                    string tSimple = first["title"]?["simpleText"]?.ToString() ?? "null";
+                    string tAccess = first.SelectToken("title.accessibility.accessibilityData.label")?.ToString() ?? "null";
+                    LoginStatusText.Text = "K:" + keys + " V:" + vid + " T:" + tRuns + "|" + tSimple + "|" + tAccess;
+                    LoginStatusText.Foreground = _authOrangeBrush;
+                }
+
                 foreach (var item in contents)
                 {
                     try
@@ -568,8 +580,16 @@ namespace YTMusicWP
                         if (string.IsNullOrEmpty(vidId)) continue;
                         if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
 
-                        string title = item.SelectToken("title..text")?.ToString() ?? item["title"]?["simpleText"]?.ToString() ?? "";
-                        string channel = item.SelectToken("shortBylineText..text")?.ToString() ?? "";
+                        // Try multiple title paths
+                        string title = item.SelectToken("title.runs[0].text")?.ToString()
+                            ?? item["title"]?["simpleText"]?.ToString()
+                            ?? item.SelectToken("title.accessibility.accessibilityData.label")?.ToString()
+                            ?? "";
+
+                        string channel = item.SelectToken("shortBylineText.runs[0].text")?.ToString()
+                            ?? item.SelectToken("shortBylineText.simpleText")?.ToString()
+                            ?? item.SelectToken("longBylineText.runs[0].text")?.ToString()
+                            ?? "";
                         channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
 
                         string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
@@ -592,7 +612,7 @@ namespace YTMusicWP
 
                 if (hasNew) SaveFavoritesAsync();
 
-                LoginStatusText.Text = "Synced! " + contents.Count + " found, " + favoriteTracks.Count + " total";
+                // Keep debug text showing
                 LoginStatusText.Foreground = _greenBrush;
             }
             catch (Exception ex)
