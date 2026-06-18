@@ -1516,10 +1516,10 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <!-- Follow button (outline) -->
-                        <Button x:Name="ArtistFollowBtn" Grid.Column="0" Click="ArtistFollow_Click" Content="Follow" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center">
+                        <Button x:Name="ArtistFollowBtn" Grid.Column="0" Click="ArtistFollow_Click" Content="Follow" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center" MinHeight="36" MinWidth="80">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border CornerRadius="4" BorderBrush="{TemplateBinding Foreground}" BorderThickness="1" Padding="14,6">
+                                    <Border CornerRadius="4" BorderBrush="{TemplateBinding Foreground}" BorderThickness="1" Padding="16,8" Background="Transparent">
                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </ControlTemplate>
