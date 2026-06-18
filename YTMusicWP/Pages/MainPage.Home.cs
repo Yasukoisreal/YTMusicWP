@@ -90,7 +90,7 @@ namespace YTMusicWP
                                     {
                                         await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                         {
-                                            artistItems[idx].ThumbnailUrl = result.AvatarUrl;
+                                            artistItems[idx].ThumbnailUrl = GetHighResThumbnail(result.AvatarUrl);
                                         });
                                     }
                                 }
