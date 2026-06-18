@@ -18,6 +18,10 @@ namespace YTMusicWP
         private static readonly SolidColorBrush _authGrayBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
         private static readonly SolidColorBrush _authOrangeBrush = new SolidColorBrush(Windows.UI.Colors.Orange);
         private static readonly SolidColorBrush _authRedBrush = new SolidColorBrush(Windows.UI.Colors.Red);
+
+        // Built-in OAuth credentials (YouTube TV public client — used by NewPipe, yt-dlp, etc.)
+        private const string _builtInClientId = "861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com";
+        private const string _builtInClientSecret = "SboVhoG9s0rNafixCSGGKXAT";
         private string DetectOsRegion()
         {
             try
@@ -255,14 +259,8 @@ namespace YTMusicWP
 
         private void LoginGoogle_Click(object sender, RoutedEventArgs e)
         {
-            string clientId = ClientIdTextBox.Text.Trim();
-            string clientSecret = ClientSecretTextBox.Text.Trim();
-
-            if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
-            {
-                ShowToast("Please enter Client ID and Secret first!");
-                return;
-            }
+            // Use built-in credentials — no user setup needed
+            string clientId = _builtInClientId;
 
             string authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
                              "client_id=" + Uri.EscapeDataString(clientId) +
@@ -357,8 +355,8 @@ namespace YTMusicWP
 
         private async Task ProcessGoogleAuthCode(string authCode)
         {
-            string clientId = ClientIdTextBox.Text.Trim();
-            string clientSecret = ClientSecretTextBox.Text.Trim();
+            string clientId = _builtInClientId;
+            string clientSecret = _builtInClientSecret;
 
             LoginStatusText.Text = "Status: Authenticating...";
             LoginStatusText.Foreground = _authOrangeBrush;
@@ -510,14 +508,14 @@ namespace YTMusicWP
         private async Task<string> RefreshGoogleTokenAsync()
         {
             var settings = ApplicationData.Current.LocalSettings.Values;
-            if (!settings.ContainsKey("GoogleRefreshToken") || !settings.ContainsKey("GoogleClientId") || !settings.ContainsKey("GoogleClientSecret")) return null;
+            if (!settings.ContainsKey("GoogleRefreshToken")) return null;
 
             try
             {
                 var content = new FormUrlEncodedContent(new[]
                 {
-                    new KeyValuePair<string, string>("client_id", settings["GoogleClientId"].ToString()),
-                    new KeyValuePair<string, string>("client_secret", settings["GoogleClientSecret"].ToString()),
+                    new KeyValuePair<string, string>("client_id", _builtInClientId),
+                    new KeyValuePair<string, string>("client_secret", _builtInClientSecret),
                     new KeyValuePair<string, string>("refresh_token", settings["GoogleRefreshToken"].ToString()),
                     new KeyValuePair<string, string>("grant_type", "refresh_token")
                 });
