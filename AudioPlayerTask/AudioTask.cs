@@ -17,6 +17,9 @@ namespace AudioPlayerTask
         private SystemMediaTransportControls _systemControls;
         private MediaPlayer _mediaPlayer;
 
+        // [OPT] Shared HttpClient — avoids socket leaks from creating new instances per resolve call
+        private Windows.Web.Http.HttpClient _httpClient = new Windows.Web.Http.HttpClient();
+
         private List<string> _trackList = new List<string>();
         private List<string> _titleList = new List<string>();
         private List<string> _artistList = new List<string>();
@@ -163,12 +166,12 @@ namespace AudioPlayerTask
         {
             try
             {
-                var httpClient = new Windows.Web.Http.HttpClient();
-                httpClient.DefaultRequestHeaders.Add("User-Agent",
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("User-Agent",
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
-                httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+                _httpClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
 
-                var response = await httpClient.GetAsync(new Uri("https://www.youtube.com/watch?v=" + videoId));
+                var response = await _httpClient.GetAsync(new Uri("https://www.youtube.com/watch?v=" + videoId));
                 if (!response.IsSuccessStatusCode) return null;
 
                 string html = await response.Content.ReadAsStringAsync();
@@ -181,12 +184,12 @@ namespace AudioPlayerTask
         {
             try
             {
-                var httpClient = new Windows.Web.Http.HttpClient();
-                httpClient.DefaultRequestHeaders.Add("User-Agent",
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("User-Agent",
                     "Mozilla/5.0 (Linux; Android 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36");
-                httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+                _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                var response = await httpClient.GetAsync(new Uri("https://www.youtube.com/sw.js_data"));
+                var response = await _httpClient.GetAsync(new Uri("https://www.youtube.com/sw.js_data"));
                 if (!response.IsSuccessStatusCode) return null;
 
                 string result = await response.Content.ReadAsStringAsync();
@@ -204,11 +207,11 @@ namespace AudioPlayerTask
         {
             try
             {
-                var httpClient = new Windows.Web.Http.HttpClient();
-                httpClient.DefaultRequestHeaders.Add("User-Agent",
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("User-Agent",
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
-                var response = await httpClient.GetAsync(new Uri("https://www.youtube.com/"));
+                var response = await _httpClient.GetAsync(new Uri("https://www.youtube.com/"));
                 if (!response.IsSuccessStatusCode) return null;
 
                 string html = await response.Content.ReadAsStringAsync();
@@ -287,11 +290,11 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    var httpClient = new Windows.Web.Http.HttpClient();
-                    httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                    _httpClient.DefaultRequestHeaders.Clear();
+                    _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
                     // Invidious API
                     var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                    var resp = await httpClient.GetAsync(new Uri("https://" + inst + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams")).AsTask(cts.Token);
+                    var resp = await _httpClient.GetAsync(new Uri("https://" + inst + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams")).AsTask(cts.Token);
                     if (resp.StatusCode != Windows.Web.Http.HttpStatusCode.Ok) continue;
                     
                     string json = await resp.Content.ReadAsStringAsync();
@@ -317,10 +320,10 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    var httpClient = new Windows.Web.Http.HttpClient();
-                    httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                    _httpClient.DefaultRequestHeaders.Clear();
+                    _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
                     var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                    var resp = await httpClient.GetAsync(new Uri("https://" + inst + "/embed/" + videoId + "?local=1")).AsTask(cts.Token);
+                    var resp = await _httpClient.GetAsync(new Uri("https://" + inst + "/embed/" + videoId + "?local=1")).AsTask(cts.Token);
                     if (resp.StatusCode != Windows.Web.Http.HttpStatusCode.Ok) continue;
                     
                     string html = await resp.Content.ReadAsStringAsync();
@@ -403,7 +406,7 @@ namespace AudioPlayerTask
                 string visitorData = await GetVisitorDataAsync(videoId);
                 string vdShort = visitorData != null ? visitorData.Substring(0, Math.Min(8, visitorData.Length)) : "NULL";
 
-                var httpClient = new Windows.Web.Http.HttpClient();
+                _httpClient.DefaultRequestHeaders.Clear();
 
                 string vdField = "";
                 if (!string.IsNullOrEmpty(visitorData))
@@ -433,12 +436,12 @@ namespace AudioPlayerTask
                     "application/json"
                 );
 
-                httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
-                httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Name", clientId);
-                httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Version", clientVersion);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", userAgent);
+                _httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Name", clientId);
+                _httpClient.DefaultRequestHeaders.Add("X-YouTube-Client-Version", clientVersion);
 
                 // Giống MetroTube: thêm &fields= để giảm response size
-                var response = await httpClient.PostAsync(
+                var response = await _httpClient.PostAsync(
                     new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData"),
                     content
                 );
@@ -687,7 +690,7 @@ namespace AudioPlayerTask
 
         private void ReportErrorToUI(string errorDetail)
         {
-            string title = (_currentTrackIndex >= 0 && _currentTrackIndex < _titleList.Count) ? _titleList[_currentTrackIndex] : "SpotMusic";
+            string title = (_currentTrackIndex >= 0 && _currentTrackIndex < _titleList.Count) ? _titleList[_currentTrackIndex] : "Beatora";
             try
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;

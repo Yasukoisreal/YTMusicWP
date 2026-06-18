@@ -119,7 +119,7 @@ namespace YTMusicWP
         // ==========================================
         // CONTEXT BUILDERS
         // ==========================================
-        private static JObject BuildMusicContext(string visitorData)
+        public static JObject BuildMusicContext(string visitorData)
         {
             var client = new JObject
             {
@@ -149,7 +149,7 @@ namespace YTMusicWP
             return new JObject { ["client"] = client };
         }
 
-        private static async Task<JObject> PostInnerTubeAsync(string url, JObject body, bool isMusic = true)
+        public static async Task<JObject> PostInnerTubeAsync(string url, JObject body, bool isMusic = true)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");

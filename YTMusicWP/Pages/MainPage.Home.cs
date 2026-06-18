@@ -119,13 +119,55 @@ namespace YTMusicWP
         {
             HomeLoading.Visibility = Visibility.Visible;
 
+            // ═══════════════════════════════════════════════════
+            // PRIMARY: YouTube Music Home (FE_music_home)
+            // Real recommendations, new releases, trending — all from YT Music algorithm
+            // ═══════════════════════════════════════════════════
+            try
+            {
+                var homeSections = await InnerTubeClient.BrowseHomeAsync();
+                if (homeSections != null && homeSections.Count > 0)
+                {
+                    // Map API sections to UI carousels (up to 8)
+                    var carousels = new[] { homeTracks, popTracks, lofiTracks, workoutTracks, genre5Tracks, genre6Tracks, genre7Tracks, genre8Tracks };
+                    var titles = new[] { HomeTrendingTitle, HomePopTitle, HomeChillTitle, HomeWorkoutTitle, HomeGenre5Title, HomeGenre6Title, HomeGenre7Title, HomeGenre8Title };
+
+                    for (int i = 0; i < Math.Min(homeSections.Count, 8); i++)
+                    {
+                        titles[i].Text = homeSections[i].Title;
+                        foreach (var t in homeSections[i].Tracks)
+                        {
+                            carousels[i].Add(t);
+                        }
+                    }
+
+                    // Hide unused sections
+                    var sectionPanels = new[] {
+                        HomeTrendingTitle.Parent as FrameworkElement,
+                        HomePopTitle.Parent as FrameworkElement,
+                        HomeChillTitle.Parent as FrameworkElement,
+                        HomeWorkoutTitle.Parent as FrameworkElement,
+                        HomeGenre5Title.Parent as FrameworkElement,
+                        HomeGenre6Title.Parent as FrameworkElement,
+                        HomeGenre7Title.Parent as FrameworkElement,
+                        HomeGenre8Title.Parent as FrameworkElement
+                    };
+
+                    if (homeSections.Count > 0) _currentHomeQuery = homeSections[0].Title;
+                    HomeLoading.Visibility = Visibility.Collapsed;
+                    return;
+                }
+            }
+            catch { }
+
+            // ═══════════════════════════════════════════════════
+            // FALLBACK: Search-based recommendations (if BrowseHome fails)
+            // ═══════════════════════════════════════════════════
             string region = InnerTubeClient.CurrentRegion;
             string year = DateTime.Now.Year.ToString();
 
-            // Query definitions per region: [trending, pop, chill, workout, genre5, genre6, genre7, genre8]
-            // Title definitions: [trendingTitle, popTitle, chillTitle, workoutTitle, g5Title, g6Title, g7Title, g8Title]
             string[] queries;
-            string[] titles;
+            string[] fallbackTitles;
 
             switch (region)
             {
@@ -140,7 +182,7 @@ namespace YTMusicWP
                         "EDM Việt mix",
                         "nhạc indie Việt"
                     };
-                    titles = new[] {
+                    fallbackTitles = new[] {
                         "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt",
                         "Acoustic Việt", "Nhạc phim Việt", "EDM Việt Mix", "Indie Việt"
                     };
@@ -156,7 +198,7 @@ namespace YTMusicWP
                         "Korean indie",
                         "K-hip hop " + year
                     };
-                    titles = new[] {
+                    fallbackTitles = new[] {
                         "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits",
                         "K-R&B Chill", "K-Pop Dance", "Korean Indie", "K-Hip Hop"
                     };
@@ -172,12 +214,12 @@ namespace YTMusicWP
                         "anime opening " + year,
                         "Japanese lofi hip hop"
                     };
-                    titles = new[] {
+                    fallbackTitles = new[] {
                         "Made for you", "Anime OST", "Chill vibes", "J-Rock",
                         "Vocaloid", "City Pop", "Anime Opening", "Japanese Lofi"
                     };
                     break;
-                default: // US/GB/International
+                default:
                     queries = new[] {
                         "top hits " + year,
                         "pop hits " + year,
@@ -188,27 +230,24 @@ namespace YTMusicWP
                         "rock classics greatest hits",
                         "indie alternative " + year
                     };
-                    titles = new[] {
+                    fallbackTitles = new[] {
                         "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation",
                         "Hip-Hop & Rap", "R&B & Soul", "Rock Classics", "Indie & Alt"
                     };
                     break;
             }
 
-            // Set section titles
-            HomeTrendingTitle.Text = titles[0];
-            HomePopTitle.Text = titles[1];
-            HomeChillTitle.Text = titles[2];
-            HomeWorkoutTitle.Text = titles[3];
-            HomeGenre5Title.Text = titles[4];
-            HomeGenre6Title.Text = titles[5];
-            HomeGenre7Title.Text = titles[6];
-            HomeGenre8Title.Text = titles[7];
+            HomeTrendingTitle.Text = fallbackTitles[0];
+            HomePopTitle.Text = fallbackTitles[1];
+            HomeChillTitle.Text = fallbackTitles[2];
+            HomeWorkoutTitle.Text = fallbackTitles[3];
+            HomeGenre5Title.Text = fallbackTitles[4];
+            HomeGenre6Title.Text = fallbackTitles[5];
+            HomeGenre7Title.Text = fallbackTitles[6];
+            HomeGenre8Title.Text = fallbackTitles[7];
 
             _currentHomeQuery = queries[0];
 
-            // [OPT-3] Load sections in parallel batches of 2 — reduces ~8-24s → ~4-12s
-            // Batch 1: trending + pop (show above-fold content fast)
             var batch1a = FetchMusicList(queries[0], "", "songs");
             var batch1b = FetchMusicList(queries[1], "", "songs");
             var trending = await batch1a;
@@ -216,7 +255,6 @@ namespace YTMusicWP
             var pop = await batch1b;
             if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
 
-            // Batch 2: chill + workout
             var batch2a = FetchMusicList(queries[2], "", "songs");
             var batch2b = FetchMusicList(queries[3], "", "songs");
             var chill = await batch2a;
@@ -226,7 +264,6 @@ namespace YTMusicWP
 
             HomeLoading.Visibility = Visibility.Collapsed;
 
-            // Batch 3+4: remaining 4 sections in background (2 concurrent each)
             var batch3a = FetchMusicList(queries[4], "", "songs");
             var batch3b = FetchMusicList(queries[5], "", "songs");
             var g5 = await batch3a;

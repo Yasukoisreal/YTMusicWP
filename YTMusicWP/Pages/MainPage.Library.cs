@@ -10,6 +10,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 
 namespace YTMusicWP
 {
@@ -17,6 +18,8 @@ namespace YTMusicWP
     {
         private string _libraryFilter = "all";
         private ObservableCollection<LibraryItem> _libraryItems = new ObservableCollection<LibraryItem>();
+
+        private static readonly SolidColorBrush _libChipActiveTextBrush = new SolidColorBrush(Windows.UI.Colors.Black);
 
         private void LibChip_Click(object sender, RoutedEventArgs e)
         {
@@ -28,13 +31,13 @@ namespace YTMusicWP
             var chips = new[] { LibChipAll, LibChipPlaylists, LibChipArtists, LibChipDownloads, LibChipRecent };
             foreach (var chip in chips)
             {
-                chip.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 51, 51, 51));
-                chip.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+                chip.Background = _chipInactiveBrush;
+                chip.Foreground = _whiteBrush;
             }
 
             // Set active chip
-            btn.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84));
-            btn.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.Black);
+            btn.Background = _chipActiveBrush;
+            btn.Foreground = _libChipActiveTextBrush;
 
             RefreshLibraryList();
         }
@@ -388,13 +391,13 @@ namespace YTMusicWP
             {
                 if (_trackToShare.VideoId.StartsWith("LOCAL:"))
                 {
-                    args.Request.Data.Properties.Title = "SpotMusic";
+                    args.Request.Data.Properties.Title = "Beatora";
                     args.Request.Data.Properties.Description = _trackToShare.Title;
                     args.Request.Data.SetText("🎵 " + _trackToShare.Title + " — " + _trackToShare.ChannelName);
                 }
                 else
                 {
-                    args.Request.Data.Properties.Title = "SpotMusic - Share Music";
+                    args.Request.Data.Properties.Title = "Beatora - Share Music";
                     args.Request.Data.Properties.Description = "Listen to " + _trackToShare.Title;
                     string url = "https://www.youtube.com/watch?v=" + _trackToShare.VideoId;
                     args.Request.Data.SetWebLink(new Uri(url));

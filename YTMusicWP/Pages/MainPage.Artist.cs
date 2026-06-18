@@ -229,18 +229,16 @@ namespace YTMusicWP
         private async Task CheckFollowStatusAsync(string channelId)
         {
             if (string.IsNullOrEmpty(channelId)) return;
-            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-            if (!settings.ContainsKey("GoogleAccessToken") || string.IsNullOrEmpty(settings["GoogleAccessToken"]?.ToString()))
-                return;
 
             try
             {
-                string accessToken = settings["GoogleAccessToken"].ToString();
+                string accessToken = await GetAccessTokenAsync();
+                if (string.IsNullOrEmpty(accessToken)) return;
+
                 var request = new HttpRequestMessage(HttpMethod.Get,
                     "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&forChannelId=" + channelId);
                 request.Headers.Add("Authorization", "Bearer " + accessToken);
-                var response = await _apiClient.SendAsync(
-                    request);
+                var response = await _apiClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -275,20 +273,21 @@ namespace YTMusicWP
 
         private async void ArtistFollow_Click(object sender, RoutedEventArgs e)
         {
-            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-            if (!settings.ContainsKey("GoogleAccessToken") || string.IsNullOrEmpty(settings["GoogleAccessToken"]?.ToString()))
-            {
-                ShowToast("Please sign in to follow artists");
-                return;
-            }
-
             if (string.IsNullOrEmpty(_currentArtistChannelId))
             {
                 ShowToast("Cannot follow this artist");
                 return;
             }
 
-            string accessToken = settings["GoogleAccessToken"].ToString();
+            string accessToken = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                ShowToast("Please sign in to follow artists");
+                return;
+            }
+
+            // Disable button during API call to prevent double-tap
+            ArtistFollowBtn.IsEnabled = false;
 
             try
             {
@@ -310,8 +309,7 @@ namespace YTMusicWP
                     var content = new StringContent(requestBody.ToString(), System.Text.Encoding.UTF8, "application/json");
                     var subRequest = new HttpRequestMessage(HttpMethod.Post, "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet") { Content = content };
                     subRequest.Headers.Add("Authorization", "Bearer " + accessToken);
-                    var response = await _apiClient.SendAsync(
-                        subRequest);
+                    var response = await _apiClient.SendAsync(subRequest);
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -328,7 +326,26 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    // Unsubscribe
+                    // Unsubscribe — if we don't have the subscriptionId, fetch it first
+                    if (string.IsNullOrEmpty(_currentSubscriptionId))
+                    {
+                        try
+                        {
+                            var checkReq = new HttpRequestMessage(HttpMethod.Get,
+                                "https://www.googleapis.com/youtube/v3/subscriptions?part=id&mine=true&forChannelId=" + _currentArtistChannelId);
+                            checkReq.Headers.Add("Authorization", "Bearer " + accessToken);
+                            var checkResp = await _apiClient.SendAsync(checkReq);
+                            if (checkResp.IsSuccessStatusCode)
+                            {
+                                var checkJson = JObject.Parse(await checkResp.Content.ReadAsStringAsync());
+                                var checkItems = checkJson["items"] as JArray;
+                                if (checkItems != null && checkItems.Count > 0)
+                                    _currentSubscriptionId = checkItems[0]["id"]?.ToString();
+                            }
+                        }
+                        catch { }
+                    }
+
                     if (!string.IsNullOrEmpty(_currentSubscriptionId))
                     {
                         var delRequest = new HttpRequestMessage(HttpMethod.Delete,
@@ -343,18 +360,24 @@ namespace YTMusicWP
                             UpdateFollowButton();
                             ShowToast("Unfollowed " + ArtistProfileTitle.Text);
                         }
+                        else
+                        {
+                            ShowToast("Failed to unfollow");
+                        }
                     }
                     else
                     {
-                        _isFollowingArtist = false;
-                        UpdateFollowButton();
-                        ShowToast("Unfollowed " + ArtistProfileTitle.Text);
+                        ShowToast("Could not unfollow, try again");
                     }
                 }
             }
             catch
             {
                 ShowToast("Network error");
+            }
+            finally
+            {
+                ArtistFollowBtn.IsEnabled = true;
             }
         }
 

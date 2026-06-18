@@ -102,6 +102,32 @@ namespace YTMusicWP
             if (_currentTab == tab) return;
             _currentTab = tab;
 
+            // [OPT] Stop background timers that animate offscreen elements
+            if (_gradientPulseTimer != null) _gradientPulseTimer.Stop();
+            StopTitleMarquee();
+            StopShortsLoop();
+
+            // Close overlay views when switching tabs
+            if (ArtistProfileView.Visibility == Visibility.Visible)
+            {
+                ArtistProfileView.Visibility = Visibility.Collapsed;
+                ArtistProfileCover.Source = null;
+                ArtistSongsList.ItemsSource = null;
+                ArtistAlbumsList.ItemsSource = null;
+                ArtistAlbumsSection.Visibility = Visibility.Collapsed;
+                ArtistAboutSection.Visibility = Visibility.Collapsed;
+                ArtistAboutImage.ImageSource = null;
+            }
+            if (PlaylistDetailsView.Visibility == Visibility.Visible)
+            {
+                PlaylistDetailsView.Visibility = Visibility.Collapsed;
+                PlaylistDetailsCoverBrush.ImageSource = null;
+                PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+            }
+            // Close Shorts if open
+            if (_shortsIsOpen) CloseShortsView();
+            // Also close Settings if open
+            SettingsPanel.Visibility = Visibility.Collapsed;
             // Fade-in animation for active panel
             var panels = new[] { HomePanel, SearchPanel, LibraryPanel };
             for (int i = 0; i < panels.Length; i++)
@@ -232,7 +258,7 @@ namespace YTMusicWP
             // Hide text, show circle, icon → black
             NavCreateText.Visibility = Visibility.Collapsed;
             NavCreateCircle.Visibility = Visibility.Visible;
-            NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Colors.Black);
+            NavCreateIcon.Fill = _libChipActiveTextBrush; // cached Black brush
         }
 
         private void CloseCreateSheet()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.UI.Xaml;
@@ -16,6 +16,14 @@ namespace YTMusicWP
         {
             this.InitializeComponent();
             this.Suspending += this.OnSuspending;
+            this.UnhandledException += App_UnhandledException;
+        }
+
+        private void App_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            // Prevent app crash — especially important for OOM on 512MB WP8.1 devices
+            e.Handled = true;
+            System.Diagnostics.Debug.WriteLine("[CRASH PREVENTED] " + (e.Exception?.Message ?? "Unknown error"));
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs e)

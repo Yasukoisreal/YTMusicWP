@@ -68,6 +68,10 @@ namespace YTMusicWP
         private bool _shortsIsOpen = false;
         private int _shortsLoadGeneration = 0; // Cancel stale loads
 
+        // [OPT] Cached brushes for dot indicators — avoid allocation on every swipe
+        private static readonly SolidColorBrush _dotActiveBrush = new SolidColorBrush(Colors.White);
+        private static readonly SolidColorBrush _dotInactiveBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
+
         /// <summary>
         /// Analyze historyTracks to score each category and reorder
         /// </summary>
@@ -308,8 +312,7 @@ namespace YTMusicWP
                     Width = i == _shortsCategoryIndex ? 20 : 8,
                     Height = 8,
                     CornerRadius = new CornerRadius(4),
-                    Background = new SolidColorBrush(
-                        i == _shortsCategoryIndex ? Colors.White : Color.FromArgb(120, 255, 255, 255)),
+                    Background = i == _shortsCategoryIndex ? _dotActiveBrush : _dotInactiveBrush,
                     Margin = new Thickness(3, 0, 3, 0)
                 };
                 dot.Tapped += (s, e) => SwitchShortsCategory(idx);
@@ -326,8 +329,7 @@ namespace YTMusicWP
                 var dot = ShortsCategoryDots.Children[i] as Border;
                 if (dot == null) continue;
                 dot.Width = i == _shortsCategoryIndex ? 20 : 8;
-                dot.Background = new SolidColorBrush(
-                    i == _shortsCategoryIndex ? Colors.White : Color.FromArgb(120, 255, 255, 255));
+                dot.Background = i == _shortsCategoryIndex ? _dotActiveBrush : _dotInactiveBrush;
             }
             ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
         }
@@ -533,7 +535,7 @@ namespace YTMusicWP
                 {
                     Text = tag,
                     FontSize = 12,
-                    Foreground = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255)),
+                    Foreground = _dotInactiveBrush, // reuse cached semi-transparent white
                     Margin = new Thickness(0, 0, 15, 0),
                     FontFamily = semiBoldFont
                 };

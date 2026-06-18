@@ -14,6 +14,10 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        // [OPT] Cached brushes for login status text
+        private static readonly SolidColorBrush _authGrayBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
+        private static readonly SolidColorBrush _authOrangeBrush = new SolidColorBrush(Windows.UI.Colors.Orange);
+        private static readonly SolidColorBrush _authRedBrush = new SolidColorBrush(Windows.UI.Colors.Red);
         private string DetectOsRegion()
         {
             try
@@ -213,7 +217,7 @@ namespace YTMusicWP
             _youtubeSubscriptions.Clear();
 
             LoginStatusText.Text = "Status: Not Logged In";
-            LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Gray);
+            LoginStatusText.Foreground = _authGrayBrush;
             ClientIdTextBox.Text = "";
             ClientSecretTextBox.Text = "";
 
@@ -348,7 +352,7 @@ namespace YTMusicWP
             string clientSecret = ClientSecretTextBox.Text.Trim();
 
             LoginStatusText.Text = "Status: Authenticating...";
-            LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Orange);
+            LoginStatusText.Foreground = _authOrangeBrush;
 
             try
             {
@@ -385,14 +389,14 @@ namespace YTMusicWP
                 else
                 {
                     LoginStatusText.Text = "Status: Auth Failed";
-                    LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Red);
+                    LoginStatusText.Foreground = _authRedBrush;
                     ShowToast("Auth Error! Please try again.");
                 }
             }
             catch
             {
                 LoginStatusText.Text = "Status: Network Error";
-                LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Red);
+                LoginStatusText.Foreground = _authRedBrush;
                 ShowToast("Network error. Please try again.");
             }
         }
@@ -449,13 +453,13 @@ namespace YTMusicWP
                 else
                 {
                     LoginStatusText.Text = "Status: Sync Failed";
-                    LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Orange);
+                    LoginStatusText.Foreground = _authOrangeBrush;
                 }
             }
             catch
             {
                 LoginStatusText.Text = "Status: Sync Error";
-                LoginStatusText.Foreground = new SolidColorBrush(Windows.UI.Colors.Red);
+                LoginStatusText.Foreground = _authRedBrush;
             }
         }
 
@@ -532,39 +536,49 @@ namespace YTMusicWP
         {
             try
             {
-                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50";
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode) return;
-
-                string resultJson = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(resultJson);
-                var items = json["items"];
-                if (items == null) return;
-
                 _youtubeUserPlaylists.Clear();
-                foreach (var item in items)
-                {
-                    try
-                    {
-                        var snippet = item["snippet"];
-                        string plId = item["id"]?.ToString();
-                        string title = snippet?["title"]?.ToString() ?? "";
-                        int count = item["contentDetails"]?["itemCount"]?.Value<int>() ?? 0;
-                        var thumbs = snippet?["thumbnails"];
-                        string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["medium"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
+                string nextPageToken = "";
 
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                // Paginate — YouTube API returns max 50 per page
+                while (true)
+                {
+                    string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50"
+                        + (string.IsNullOrEmpty(nextPageToken) ? "" : "&pageToken=" + nextPageToken);
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                    var response = await _apiClient.SendAsync(request);
+                    if (!response.IsSuccessStatusCode) break;
+
+                    string resultJson = await response.Content.ReadAsStringAsync();
+                    var json = JObject.Parse(resultJson);
+                    var items = json["items"];
+                    if (items == null) break;
+
+                    foreach (var item in items)
+                    {
+                        try
                         {
-                            PlaylistId = plId,
-                            Title = title,
-                            TrackCount = count,
-                            ThumbnailUrl = thumbUrl
-                        });
+                            var snippet = item["snippet"];
+                            string plId = item["id"]?.ToString();
+                            string title = snippet?["title"]?.ToString() ?? "";
+                            int count = item["contentDetails"]?["itemCount"]?.Value<int>() ?? 0;
+                            var thumbs = snippet?["thumbnails"];
+                            string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["medium"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
+
+                            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                            {
+                                PlaylistId = plId,
+                                Title = title,
+                                TrackCount = count,
+                                ThumbnailUrl = thumbUrl
+                            });
+                        }
+                        catch { continue; }
                     }
-                    catch { continue; }
+
+                    nextPageToken = json["nextPageToken"]?.ToString();
+                    if (string.IsNullOrEmpty(nextPageToken) || _youtubeUserPlaylists.Count >= 200) break; // Cap at 200 for RAM
                 }
             }
             catch { }
@@ -579,37 +593,47 @@ namespace YTMusicWP
         {
             try
             {
-                string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&order=alphabetical";
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode) return;
-
-                string resultJson = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(resultJson);
-                var items = json["items"];
-                if (items == null) return;
-
                 _youtubeSubscriptions.Clear();
-                foreach (var item in items)
-                {
-                    try
-                    {
-                        var snippet = item["snippet"];
-                        string channelId = snippet?["resourceId"]?["channelId"]?.ToString();
-                        string title = snippet?["title"]?.ToString() ?? "";
-                        var thumbs = snippet?["thumbnails"];
-                        string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
+                string nextPageToken = "";
 
-                        _youtubeSubscriptions.Add(new YouTubeSubscription
+                // Paginate — YouTube API returns max 50 per page
+                while (true)
+                {
+                    string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&order=alphabetical"
+                        + (string.IsNullOrEmpty(nextPageToken) ? "" : "&pageToken=" + nextPageToken);
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                    var response = await _apiClient.SendAsync(request);
+                    if (!response.IsSuccessStatusCode) break;
+
+                    string resultJson = await response.Content.ReadAsStringAsync();
+                    var json = JObject.Parse(resultJson);
+                    var items = json["items"];
+                    if (items == null) break;
+
+                    foreach (var item in items)
+                    {
+                        try
                         {
-                            ChannelId = channelId,
-                            Title = title,
-                            ThumbnailUrl = thumbUrl
-                        });
+                            var snippet = item["snippet"];
+                            string channelId = snippet?["resourceId"]?["channelId"]?.ToString();
+                            string title = snippet?["title"]?.ToString() ?? "";
+                            var thumbs = snippet?["thumbnails"];
+                            string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
+
+                            _youtubeSubscriptions.Add(new YouTubeSubscription
+                            {
+                                ChannelId = channelId,
+                                Title = title,
+                                ThumbnailUrl = thumbUrl
+                            });
+                        }
+                        catch { continue; }
                     }
-                    catch { continue; }
+
+                    nextPageToken = json["nextPageToken"]?.ToString();
+                    if (string.IsNullOrEmpty(nextPageToken) || _youtubeSubscriptions.Count >= 500) break; // Cap at 500 for RAM
                 }
             }
             catch { }

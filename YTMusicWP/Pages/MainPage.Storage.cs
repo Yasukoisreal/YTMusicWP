@@ -48,6 +48,7 @@ namespace YTMusicWP
                 historyTracks.Clear();
                 foreach (var item in array)
                 {
+                    if (historyTracks.Count >= 20) break; // Match PlayTrack cap — protect 512MB RAM
                     historyTracks.Add(new YouTubeTrack
                     {
                         VideoId = item["VideoId"]?.ToString(),
@@ -70,13 +71,17 @@ namespace YTMusicWP
 
                 // FIX #4: Smart diff — chỉ thêm/xóa item thay đổi, tránh UI flicker
                 var currentFileNames = new HashSet<string>();
+                // [OPT] Build existing-ID set once → O(1) lookup instead of O(n) .Any()
+                var existingIds = new HashSet<string>();
+                foreach (var t in downloadedTracks) existingIds.Add(t.VideoId);
+
                 foreach (var file in files)
                 {
                     if (file.Name.EndsWith(".m4a") && !file.Name.StartsWith("temp_play_"))
                     {
                         currentFileNames.Add(file.Name);
                         string localId = "LOCAL:" + file.Name;
-                        if (!downloadedTracks.Any(t => t.VideoId == localId))
+                        if (!existingIds.Contains(localId))
                         {
                             downloadedTracks.Add(new YouTubeTrack
                             {

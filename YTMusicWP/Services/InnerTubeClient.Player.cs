@@ -11,6 +11,15 @@ namespace YTMusicWP
     {
         public static string LastResolveDebug = "";
 
+        // Shared HttpClient for Invidious fallback — avoid socket leak from creating 8 instances per song
+        private static readonly HttpClient _invidiousClient = CreateInvidiousClient();
+        private static HttpClient CreateInvidiousClient()
+        {
+            var c = new HttpClient() { Timeout = TimeSpan.FromSeconds(5) };
+            c.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+            return c;
+        }
+
         public static async Task<string> ResolveStreamUrlAsync(string videoId)
         {
             LastResolveDebug = "";
@@ -137,19 +146,15 @@ namespace YTMusicWP
             try
             {
                 string[] invInstances = new[] { "yewtu.be", "iv.duti.dev", "invidious.schenkel.eti.br", "inv.nadeko.net" };
-                
-                var invClient = new HttpClient();
-                invClient.Timeout = TimeSpan.FromSeconds(5);
-                invClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
                 // Chạy song song: tất cả API + Embed requests cùng lúc
                 var tasks = new List<Task<string>>();
                 foreach (var inst in invInstances)
                 {
                     // Invidious API
-                    tasks.Add(TryInvidiousApiAsync(invClient, inst, videoId));
+                    tasks.Add(TryInvidiousApiAsync(_invidiousClient, inst, videoId));
                     // Invidious Embed (proxy qua server, bypass geo-block)
-                    tasks.Add(TryInvidiousEmbedAsync(invClient, inst, videoId));
+                    tasks.Add(TryInvidiousEmbedAsync(_invidiousClient, inst, videoId));
                 }
 
                 // Đợi task đầu tiên hoàn thành thành công

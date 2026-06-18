@@ -214,20 +214,58 @@ namespace YTMusicWP
         {
             try
             {
-                string url = "http://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=" + Uri.EscapeDataString(query);
-                var response = await _apiClient.GetStringAsync(url);
-                var jsonArray = JArray.Parse(response);
-                if (jsonArray.Count > 1)
+                // Use YouTube Music suggestion API for music-relevant results
+                string vd = await InnerTubeClient.GetVisitorDataAsync();
+                var body = new JObject
                 {
-                    var suggestions = jsonArray[1] as JArray;
-                    searchSuggestions.Clear();
-                    if (suggestions != null && suggestions.Count > 0)
+                    ["context"] = InnerTubeClient.BuildMusicContext(vd),
+                    ["input"] = query
+                };
+
+                var data = await InnerTubeClient.PostInnerTubeAsync(
+                    "https://music.youtube.com/youtubei/v1/music/get_search_suggestions?prettyPrint=false", body, true);
+
+                searchSuggestions.Clear();
+
+                var contents = data?["contents"];
+                if (contents != null && contents.HasValues)
+                {
+                    foreach (var section in contents)
                     {
-                        foreach (var item in suggestions.Take(5)) searchSuggestions.Add(item.ToString());
-                        SuggestionPopup.Visibility = Visibility.Visible;
+                        var items = section["searchSuggestionsSectionRenderer"]?["contents"];
+                        if (items == null) continue;
+                        foreach (var item in items)
+                        {
+                            // historySuggestionRenderer or searchSuggestionRenderer
+                            var renderer = item["searchSuggestionRenderer"] ?? item["historySuggestionRenderer"];
+                            if (renderer == null) continue;
+                            var runs = renderer["suggestion"]?["runs"];
+                            if (runs == null) continue;
+                            string text = "";
+                            foreach (var r in runs) text += r["text"]?.ToString();
+                            if (!string.IsNullOrEmpty(text) && searchSuggestions.Count < 7)
+                                searchSuggestions.Add(text);
+                        }
                     }
-                    else SuggestionPopup.Visibility = Visibility.Collapsed;
                 }
+
+                // Fallback: if YouTube Music API returns nothing, use Google Suggest
+                if (searchSuggestions.Count == 0)
+                {
+                    string url = "https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=" + Uri.EscapeDataString(query);
+                    var response = await _apiClient.GetStringAsync(url);
+                    var jsonArray = JArray.Parse(response);
+                    if (jsonArray.Count > 1)
+                    {
+                        var suggestions = jsonArray[1] as JArray;
+                        if (suggestions != null)
+                        {
+                            foreach (var item in suggestions.Take(5)) searchSuggestions.Add(item.ToString());
+                        }
+                    }
+                }
+
+                SuggestionPopup.Visibility = searchSuggestions.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
             catch { SuggestionPopup.Visibility = Visibility.Collapsed; }
         }
