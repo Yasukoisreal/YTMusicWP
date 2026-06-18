@@ -289,67 +289,57 @@ namespace YTMusicWP
                 return;
             }
 
-            string accessToken = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                ShowToast("Please sign in to follow artists");
-                return;
-            }
-
-            // Disable button during API call to prevent double-tap
             ArtistFollowBtn.IsEnabled = false;
 
             try
             {
                 if (!_isFollowingArtist)
                 {
-                    // Subscribe via InnerTube
-                    var extra = new JObject
+                    // Try to subscribe via InnerTube (best-effort)
+                    string accessToken = await GetAccessTokenAsync();
+                    if (!string.IsNullOrEmpty(accessToken))
                     {
-                        ["channelIds"] = new JArray { _currentArtistChannelId },
-                        ["params"] = "EgIIAhgA" // Standard subscribe params
-                    };
-                    var json = await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
+                        try
+                        {
+                            var extra = new JObject
+                            {
+                                ["channelIds"] = new JArray { _currentArtistChannelId },
+                                ["params"] = "EgIIAhgA"
+                            };
+                            await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
+                        }
+                        catch { }
+                    }
 
-                    if (json["_error"] == null)
-                    {
-                        _isFollowingArtist = true;
-                        SaveFollowState(_currentArtistChannelId, true);
-                        UpdateFollowButton();
-                        ShowToast("Following " + ArtistProfileTitle.Text);
-                    }
-                    else
-                    {
-                        ShowToast("Failed to follow artist");
-                    }
+                    _isFollowingArtist = true;
+                    SaveFollowState(_currentArtistChannelId, true);
+                    UpdateFollowButton();
+                    ShowToast("Following " + ArtistProfileTitle.Text);
                 }
                 else
                 {
-                    // Unsubscribe via InnerTube
-                    var extra = new JObject
+                    // Try to unsubscribe via InnerTube (best-effort)
+                    string accessToken = await GetAccessTokenAsync();
+                    if (!string.IsNullOrEmpty(accessToken))
                     {
-                        ["channelIds"] = new JArray { _currentArtistChannelId }
-                    };
-                    var json = await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
+                        try
+                        {
+                            var extra = new JObject
+                            {
+                                ["channelIds"] = new JArray { _currentArtistChannelId }
+                            };
+                            await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
+                        }
+                        catch { }
+                    }
 
-                    if (json["_error"] == null)
-                    {
-                        _isFollowingArtist = false;
-                        _currentSubscriptionId = null;
-                        SaveFollowState(_currentArtistChannelId, false);
-                        UpdateFollowButton();
-                        ShowToast("Unfollowed " + ArtistProfileTitle.Text);
-                    }
-                    else
-                    {
-                        ShowToast("Failed to unfollow");
-                    }
+                    _isFollowingArtist = false;
+                    SaveFollowState(_currentArtistChannelId, false);
+                    UpdateFollowButton();
+                    ShowToast("Unfollowed " + ArtistProfileTitle.Text);
                 }
             }
-            catch
-            {
-                ShowToast("Network error");
-            }
+            catch { }
             finally
             {
                 ArtistFollowBtn.IsEnabled = true;
