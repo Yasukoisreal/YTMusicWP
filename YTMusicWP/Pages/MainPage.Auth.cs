@@ -490,8 +490,8 @@ namespace YTMusicWP
             string visitorData = await InnerTubeClient.GetVisitorDataAsync();
             var clientObj = new JObject
             {
-                ["clientName"] = "WEB",
-                ["clientVersion"] = "2.20241016.00.00",
+                ["clientName"] = "TVHTML5",
+                ["clientVersion"] = "7.20241016.00.00",
                 ["hl"] = InnerTubeClient.CurrentLanguage,
                 ["gl"] = InnerTubeClient.CurrentRegion
             };
@@ -506,12 +506,11 @@ namespace YTMusicWP
             foreach (var prop in extraParams.Properties())
                 body[prop.Name] = prop.Value;
 
-            string url = "https://www.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8&prettyPrint=false";
+            // YouTube TV API key — matches the YouTube TV OAuth client
+            string url = "https://www.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyDCU8hByM-4DrUqRUYnGn-3llEO78bcxq8&prettyPrint=false";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-            request.Headers.Add("Origin", "https://www.youtube.com");
-            request.Headers.Add("Referer", "https://www.youtube.com/");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version");
             request.Headers.Add("Authorization", "Bearer " + accessToken);
 
             var response = await _apiClient.SendAsync(request);
