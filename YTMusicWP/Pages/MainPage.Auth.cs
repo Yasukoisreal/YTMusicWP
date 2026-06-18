@@ -502,7 +502,7 @@ namespace YTMusicWP
                     ["browseId"] = "FEmusic_liked_videos"
                 };
 
-                string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                string url = "https://music.youtube.com/youtubei/v1/browse?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
@@ -666,7 +666,7 @@ namespace YTMusicWP
                     ["browseId"] = "FEmusic_liked_playlists"
                 };
 
-                string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                string url = "https://music.youtube.com/youtubei/v1/browse?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
@@ -739,7 +739,7 @@ namespace YTMusicWP
                     ["browseId"] = "FEmusic_library_corpus_artists"
                 };
 
-                string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                string url = "https://music.youtube.com/youtubei/v1/browse?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
@@ -796,7 +796,7 @@ namespace YTMusicWP
                 var context = InnerTubeClient.BuildMusicContext(visitorData);
 
                 string endpoint = rating == "like" ? "like/like" : (rating == "dislike" ? "like/dislike" : "like/removelike");
-                string url = "https://music.youtube.com/youtubei/v1/" + endpoint + "?prettyPrint=false";
+                string url = "https://music.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
 
                 var body = new JObject
                 {
@@ -845,7 +845,7 @@ namespace YTMusicWP
                     }
                 };
 
-                string url = "https://music.youtube.com/youtubei/v1/browse/edit_playlist?prettyPrint=false";
+                string url = "https://music.youtube.com/youtubei/v1/browse/edit_playlist?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
@@ -910,7 +910,7 @@ namespace YTMusicWP
                     ["browseId"] = "FEmusic_home"
                 };
 
-                string url = "https://music.youtube.com/youtubei/v1/account/account_menu?prettyPrint=false";
+                string url = "https://music.youtube.com/youtubei/v1/account/account_menu?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
