@@ -178,9 +178,9 @@ namespace YTMusicWP
             UpdateRepeatUI(newMode);
         }
 
-        // Spotify-style repeat icon path data
-        private const string _repeatAllPathData = "M7,7 L17,7 L17,10 L19,10 L19,5 L7,5 L7,2 L3,6 L7,10 Z M17,17 L7,17 L7,14 L5,14 L5,19 L17,19 L17,22 L21,18 L17,14 Z";
-        private const string _repeatOnePathData = "M7,7 L17,7 L17,10 L19,10 L19,5 L7,5 L7,2 L3,6 L7,10 Z M17,17 L7,17 L7,14 L5,14 L5,19 L17,19 L17,22 L21,18 L17,14 Z M11,10 L13,10 L13,16 L11,16 Z M10,10 L12,10 L12,11.5 L10,11.5 Z";
+        // Material Design repeat icon path data (matches Spotify)
+        private const string _repeatAllPathData = "M7,7 L17,7 L17,10 L21,6 L17,2 L17,5 L5,5 L5,11 L7,11 Z M17,17 L7,17 L7,14 L3,18 L7,22 L7,19 L19,19 L19,13 L17,13 Z";
+        private const string _repeatOnePathData = "M7,7 L17,7 L17,10 L21,6 L17,2 L17,5 L5,5 L5,11 L7,11 Z M17,17 L7,17 L7,14 L3,18 L7,22 L7,19 L19,19 L19,13 L17,13 Z M13,15 L13,9 L12,9 L10,10 L10,11 L11.5,11 L11.5,15 Z";
 
         private Windows.UI.Xaml.Media.Geometry _repeatAllGeo;
         private Windows.UI.Xaml.Media.Geometry _repeatOneGeo;
