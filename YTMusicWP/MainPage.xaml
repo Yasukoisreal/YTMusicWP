@@ -1791,9 +1791,7 @@
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" Click="ShuffleButton_Click" Style="{StaticResource IconButtonStyle}">
                             <StackPanel>
-                                <Viewbox Width="22" Height="22">
-                                    <Path x:Name="ShuffleIcon" Fill="White" Stretch="Uniform" Data="M10.59,9.17 L5.41,4 L4,5.41 L9.17,10.59 Z M14.5,4 L16.54,6.04 L4,18.59 L5.41,20 L17.96,7.46 L20,9.5 L20,4 Z M14.83,13.41 L13.42,14.82 L16.55,17.95 L14.5,20 L20,20 L20,14.5 L17.96,16.54 Z"/>
-                                </Viewbox>
+                                <FontIcon x:Name="ShuffleIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE14B;" Foreground="White" FontSize="20"/>
                                 <Ellipse x:Name="ShuffleDot" Width="4" Height="4" Fill="#1DB954" Margin="0,3,0,0" Visibility="Collapsed"/>
                             </StackPanel>
                         </Button>
@@ -1810,9 +1808,7 @@
                         </Button>
                         <Button Grid.Column="4" Click="RepeatButton_Click" Style="{StaticResource IconButtonStyle}">
                             <StackPanel>
-                                <Viewbox Width="22" Height="22">
-                                    <Path x:Name="RepeatIcon" Fill="White" Stretch="Uniform" Data="M7,7 L17,7 L17,10 L21,6 L17,2 L17,5 L5,5 L5,11 L7,11 Z M17,17 L7,17 L7,14 L3,18 L7,22 L7,19 L19,19 L19,13 L17,13 Z"/>
-                                </Viewbox>
+                                <FontIcon x:Name="RepeatIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE1CD;" Foreground="White" FontSize="20"/>
                                 <Ellipse x:Name="RepeatDot" Width="4" Height="4" Fill="#1DB954" Margin="0,3,0,0" Visibility="Collapsed"/>
                             </StackPanel>
                         </Button>

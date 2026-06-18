@@ -90,7 +90,7 @@ namespace YTMusicWP
                 }
 
                 bool isShuffle = SafeGetBool(settings, "ShuffleMode", false);
-                ShuffleIcon.Fill = isShuffle ? _greenBrush : _whiteBrush;
+                ShuffleIcon.Foreground = isShuffle ? _greenBrush : _whiteBrush;
                 int repeatMode = SafeGetInt(settings, "RepeatMode", 0);
                 UpdateRepeatUI(repeatMode);
 
