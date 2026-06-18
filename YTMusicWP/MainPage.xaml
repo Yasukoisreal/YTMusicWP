@@ -1500,14 +1500,11 @@
                         </Button>
                         <!-- Artist info at bottom -->
                         <StackPanel VerticalAlignment="Bottom" Margin="20,0,20,20">
-                            <!-- Verified badge + Name -->
+                            <!-- Verified badge -->
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <Viewbox Width="18" Height="18" Margin="0,0,6,0">
-                                    <Path Data="M12,2 L14.39,5.42 L18.49,4.59 L17.97,8.73 L21.5,11 L18.97,14.12 L20.09,18.14 L16.07,18.56 L14.04,22 L10.53,19.88 L7.04,22 L5.01,18.56 L0.99,18.14 L2.11,14.12 L-0.42,11 L3.11,8.73 L2.59,4.59 L6.69,5.42 L9.08,2 Z" Fill="#3B82F6"/>
-                                </Viewbox>
-                                <Viewbox Width="10" Height="10" Margin="-21,0,0,0">
-                                    <Path Data="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41-1.41z" Fill="White"/>
-                                </Viewbox>
+                                <Border Width="18" Height="18" CornerRadius="9" Background="#3B82F6" Margin="0,0,6,0">
+                                    <TextBlock Text="✓" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0"/>
+                                </Border>
                             </StackPanel>
                             <TextBlock x:Name="ArtistProfileTitle" Text="Artist" FontSize="36" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextWrapping="Wrap"/>
                             <TextBlock x:Name="ArtistMonthlyListeners" Text="" FontSize="14" Foreground="#B3B3B3" Margin="0,4,0,0"/>
@@ -1559,26 +1556,28 @@
                     <!-- About section -->
                     <StackPanel x:Name="ArtistAboutSection" Visibility="Collapsed" Margin="20,20,20,10">
                         <TextBlock Text="About" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
-                        <Grid CornerRadius="12" Height="180">
-                            <Border CornerRadius="12">
-                                <Border.Background>
-                                    <ImageBrush x:Name="ArtistAboutImage" Stretch="UniformToFill" Opacity="0.4"/>
-                                </Border.Background>
-                            </Border>
-                            <Rectangle RadiusX="12" RadiusY="12">
-                                <Rectangle.Fill>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                        <GradientStop Color="#00000000" Offset="0"/>
-                                        <GradientStop Color="#CC000000" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Rectangle.Fill>
-                            </Rectangle>
-                            <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,16">
-                                <TextBlock x:Name="ArtistAboutListeners" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="monthly listeners" FontSize="13" Foreground="#B3B3B3"/>
-                                <TextBlock x:Name="ArtistAboutDescription" FontSize="13" Foreground="#CCCCCC" Margin="0,6,0,0" MaxLines="3" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
-                            </StackPanel>
-                        </Grid>
+                        <Border CornerRadius="12" Height="180" Background="#1A1A1A">
+                            <Grid>
+                                <Border CornerRadius="12">
+                                    <Border.Background>
+                                        <ImageBrush x:Name="ArtistAboutImage" Stretch="UniformToFill" Opacity="0.4"/>
+                                    </Border.Background>
+                                </Border>
+                                <Rectangle>
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#00000000" Offset="0"/>
+                                            <GradientStop Color="#CC000000" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,16">
+                                    <TextBlock x:Name="ArtistAboutListeners" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                                    <TextBlock Text="monthly listeners" FontSize="13" Foreground="#B3B3B3"/>
+                                    <TextBlock x:Name="ArtistAboutDescription" FontSize="13" Foreground="#CCCCCC" Margin="0,6,0,0" MaxLines="3" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                     </StackPanel>
 
                     <!-- Bottom padding -->
