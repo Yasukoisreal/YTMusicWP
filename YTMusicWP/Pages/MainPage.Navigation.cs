@@ -43,6 +43,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseLoginWeb_Click(null, null);
             }
+            else if (CreateBottomSheet.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CreateBottomSheet.Visibility = Visibility.Collapsed;
+            }
             else if (CreatePlaylistDialog.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
@@ -149,8 +154,34 @@ namespace YTMusicWP
 
         private void NavCreate_Click(object sender, RoutedEventArgs e)
         {
-            // Open the create playlist dialog (same as Library's + button)
+            CreateBottomSheet.Visibility = Visibility.Visible;
+        }
+
+        private void CloseCreateSheet_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            // Only close if tapped on backdrop (not on the sheet content)
+            if (e.OriginalSource is Windows.UI.Xaml.Shapes.Rectangle)
+                CreateBottomSheet.Visibility = Visibility.Collapsed;
+        }
+
+        private void CreateSheet_Playlist_Click(object sender, RoutedEventArgs e)
+        {
+            CreateBottomSheet.Visibility = Visibility.Collapsed;
             OpenCreatePlaylistDialog_Click(sender, e);
+        }
+
+        private async void CreateSheet_Collab_Click(object sender, RoutedEventArgs e)
+        {
+            CreateBottomSheet.Visibility = Visibility.Collapsed;
+            var dialog = new Windows.UI.Popups.MessageDialog("Collaborative playlists are not yet supported on this platform.", "Coming Soon");
+            await dialog.ShowAsync();
+        }
+
+        private async void CreateSheet_Blend_Click(object sender, RoutedEventArgs e)
+        {
+            CreateBottomSheet.Visibility = Visibility.Collapsed;
+            var dialog = new Windows.UI.Popups.MessageDialog("Blend is not yet supported on this platform.", "Coming Soon");
+            await dialog.ShowAsync();
         }
 
     }
