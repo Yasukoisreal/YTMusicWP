@@ -1648,8 +1648,11 @@
                 <!-- Create -->
                 <Button Grid.Column="3" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
-                        <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
-                            <Path x:Name="NavCreateIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M10,2 L14,2 L14,10 L22,10 L22,14 L14,14 L14,22 L10,22 L10,14 L2,14 L2,10 L10,10 Z"/>
+                        <Viewbox x:Name="NavCreateViewbox" Width="22" Height="22" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                            <Viewbox.RenderTransform>
+                                <RotateTransform x:Name="NavCreateRotate" Angle="0"/>
+                            </Viewbox.RenderTransform>
+                            <Path x:Name="NavCreateIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z"/>
                         </Viewbox>
                         <TextBlock x:Name="NavCreateText" Text="Create" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
@@ -1657,67 +1660,67 @@
             </Grid>
         </Border>
 
-        <!-- ═══════════════════════════════════ CREATE BOTTOM SHEET ═══════════════════════════════════ -->
+        <!-- ═══════════════════════════════════ CREATE FLOATING MENU ═══════════════════════════════════ -->
         <Grid x:Name="CreateBottomSheet" Visibility="Collapsed" Canvas.ZIndex="95" Grid.RowSpan="3" Tapped="CloseCreateSheet_Tapped">
             <Rectangle Fill="#80000000"/>
-            <Border VerticalAlignment="Bottom" Background="#282828" CornerRadius="16,16,0,0" Padding="20,16,20,30">
+            <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="#282828" CornerRadius="12" Padding="6,8,6,8" Margin="12,0,12,68">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="CreateSheetTransform" Y="200"/>
+                </Border.RenderTransform>
                 <StackPanel>
-                    <!-- Handle bar -->
-                    <Rectangle Width="40" Height="4" RadiusX="2" RadiusY="2" Fill="#666666" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-
                     <!-- Option 1: Create Playlist -->
-                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Playlist_Click" Margin="0,0,0,4">
-                        <Grid Margin="0,8">
+                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Playlist_Click">
+                        <Grid Margin="6,6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Border Width="48" Height="48" CornerRadius="24" Background="#3E3E3E">
-                                <Viewbox Width="22" Height="22">
+                                <Viewbox Width="20" Height="20">
                                     <Path Fill="White" Stretch="Uniform" Data="M19,11 L13,11 L13,5 L11,5 L11,11 L5,11 L5,13 L11,13 L11,19 L13,19 L13,13 L19,13 Z"/>
                                 </Viewbox>
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
                                 <TextBlock Text="Playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="Create a playlist with songs or podcast episodes" FontSize="13" Foreground="#A0A0A0" TextWrapping="Wrap"/>
+                                <TextBlock Text="Create a playlist with songs or podcast episodes" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>
                     </Button>
 
                     <!-- Option 2: Collaborative Playlist -->
-                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Collab_Click" Margin="0,0,0,4">
-                        <Grid Margin="0,8">
+                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Collab_Click">
+                        <Grid Margin="6,6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Border Width="48" Height="48" CornerRadius="24" Background="#3E3E3E">
-                                <Viewbox Width="22" Height="22">
+                                <Viewbox Width="20" Height="20">
                                     <Path Fill="White" Stretch="Uniform" Data="M16,11 C17.66,11 18.99,9.66 18.99,8 C18.99,6.34 17.66,5 16,5 C14.34,5 13,6.34 13,8 C13,9.66 14.34,11 16,11 Z M8,11 C9.66,11 10.99,9.66 10.99,8 C10.99,6.34 9.66,5 8,5 C6.34,5 5,6.34 5,8 C5,9.66 6.34,11 8,11 Z M8,13 C5.67,13 1,14.17 1,16.5 L1,19 L15,19 L15,16.5 C15,14.17 10.33,13 8,13 Z M16,13 C15.71,13 15.38,13.02 15.03,13.05 C16.19,13.89 17,15.02 17,16.5 L17,19 L23,19 L23,16.5 C23,14.17 18.33,13 16,13 Z"/>
                                 </Viewbox>
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
                                 <TextBlock Text="Collaborative playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="Create a playlist together with friends" FontSize="13" Foreground="#A0A0A0" TextWrapping="Wrap"/>
+                                <TextBlock Text="Create a playlist together with friends" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>
                     </Button>
 
                     <!-- Option 3: Blend -->
                     <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Blend_Click">
-                        <Grid Margin="0,8">
+                        <Grid Margin="6,6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Border Width="48" Height="48" CornerRadius="24" Background="#3E3E3E">
-                                <Viewbox Width="22" Height="22">
+                                <Viewbox Width="20" Height="20">
                                     <Path Fill="White" Stretch="Uniform" Data="M12,3 C7.03,3 3,7.03 3,12 C3,16.97 7.03,21 12,21 C16.97,21 21,16.97 21,12 C21,7.03 16.97,3 12,3 Z M12,5 C13.66,5 15.17,5.58 16.38,6.53 L12,10.91 L7.62,6.53 C8.83,5.58 10.34,5 12,5 Z M5,12 C5,10.34 5.58,8.83 6.53,7.62 L10.91,12 L6.53,16.38 C5.58,15.17 5,13.66 5,12 Z M12,19 C10.34,19 8.83,18.42 7.62,17.47 L12,13.09 L16.38,17.47 C15.17,18.42 13.66,19 12,19 Z M17.47,16.38 L13.09,12 L17.47,7.62 C18.42,8.83 19,10.34 19,12 C19,13.66 18.42,15.17 17.47,16.38 Z"/>
                                 </Viewbox>
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
                                 <TextBlock Text="Blend" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="Create a playlist that combines your music tastes with friends" FontSize="13" Foreground="#A0A0A0" TextWrapping="Wrap"/>
+                                <TextBlock Text="Create a playlist that combines music tastes with friends" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>
                     </Button>

@@ -46,7 +46,7 @@ namespace YTMusicWP
             else if (CreateBottomSheet.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
-                CreateBottomSheet.Visibility = Visibility.Collapsed;
+                CloseCreateSheet();
             }
             else if (CreatePlaylistDialog.Visibility == Visibility.Visible)
             {
@@ -152,34 +152,154 @@ namespace YTMusicWP
             SettingsPanel.Visibility = Visibility.Collapsed;
         }
 
+        private bool _createSheetOpen = false;
+
         private void NavCreate_Click(object sender, RoutedEventArgs e)
         {
+            if (_createSheetOpen)
+            {
+                CloseCreateSheet();
+            }
+            else
+            {
+                OpenCreateSheet();
+            }
+        }
+
+        private void OpenCreateSheet()
+        {
+            _createSheetOpen = true;
             CreateBottomSheet.Visibility = Visibility.Visible;
+
+            // Rotate + → × (45°)
+            var rotateAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 45,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(rotateAnim, NavCreateRotate);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(rotateAnim, "Angle");
+
+            // Scale icon up (22 → 28)
+            var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 28,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleWAnim, NavCreateViewbox);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleWAnim, "Width");
+
+            var scaleHAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 28,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleHAnim, NavCreateViewbox);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleHAnim, "Height");
+
+            // Slide sheet up
+            var slideAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(250),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateSheetTransform);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
+
+            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+            sb.Children.Add(rotateAnim);
+            sb.Children.Add(scaleWAnim);
+            sb.Children.Add(scaleHAnim);
+            sb.Children.Add(slideAnim);
+            sb.Begin();
+
+            // Hide text, change color to white
+            NavCreateText.Visibility = Visibility.Collapsed;
+            NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Colors.White);
+        }
+
+        private void CloseCreateSheet()
+        {
+            _createSheetOpen = false;
+
+            // Rotate × → + (0°)
+            var rotateAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(rotateAnim, NavCreateRotate);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(rotateAnim, "Angle");
+
+            // Scale icon back (28 → 22)
+            var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 22,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleWAnim, NavCreateViewbox);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleWAnim, "Width");
+
+            var scaleHAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 22,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleHAnim, NavCreateViewbox);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleHAnim, "Height");
+
+            // Slide sheet down
+            var slideAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 200,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateSheetTransform);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
+
+            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+            sb.Children.Add(rotateAnim);
+            sb.Children.Add(scaleWAnim);
+            sb.Children.Add(scaleHAnim);
+            sb.Children.Add(slideAnim);
+            sb.Completed += (s, a) => CreateBottomSheet.Visibility = Visibility.Collapsed;
+            sb.Begin();
+
+            // Show text, reset color
+            NavCreateText.Visibility = Visibility.Visible;
+            NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
         }
 
         private void CloseCreateSheet_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
-            // Only close if tapped on backdrop (not on the sheet content)
             if (e.OriginalSource is Windows.UI.Xaml.Shapes.Rectangle)
-                CreateBottomSheet.Visibility = Visibility.Collapsed;
+                CloseCreateSheet();
         }
 
         private void CreateSheet_Playlist_Click(object sender, RoutedEventArgs e)
         {
-            CreateBottomSheet.Visibility = Visibility.Collapsed;
+            CloseCreateSheet();
             OpenCreatePlaylistDialog_Click(sender, e);
         }
 
         private async void CreateSheet_Collab_Click(object sender, RoutedEventArgs e)
         {
-            CreateBottomSheet.Visibility = Visibility.Collapsed;
+            CloseCreateSheet();
             var dialog = new Windows.UI.Popups.MessageDialog("Collaborative playlists are not yet supported on this platform.", "Coming Soon");
             await dialog.ShowAsync();
         }
 
         private async void CreateSheet_Blend_Click(object sender, RoutedEventArgs e)
         {
-            CreateBottomSheet.Visibility = Visibility.Collapsed;
+            CloseCreateSheet();
             var dialog = new Windows.UI.Popups.MessageDialog("Blend is not yet supported on this platform.", "Coming Soon");
             await dialog.ShowAsync();
         }
