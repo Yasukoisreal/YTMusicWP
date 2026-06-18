@@ -1610,7 +1610,7 @@
         </Grid>
 
         <!-- ═══════════════════════════════════ BOTTOM NAV (Row 2) ═══════════════════════════════════ -->
-        <Border Grid.Row="2" Background="#0D0D0D" BorderBrush="#1F1F1F" BorderThickness="0,1,0,0" Padding="0,8,0,10">
+        <Border Grid.Row="2" Background="#0D0D0D" BorderBrush="#1F1F1F" BorderThickness="0,1,0,0" Padding="0,8,0,10" Canvas.ZIndex="96">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -1664,9 +1664,9 @@
         </Border>
 
         <!-- ═══════════════════════════════════ CREATE FLOATING MENU ═══════════════════════════════════ -->
-        <Grid x:Name="CreateBottomSheet" Visibility="Collapsed" Canvas.ZIndex="95" Grid.RowSpan="3" Tapped="CloseCreateSheet_Tapped">
+        <Grid x:Name="CreateBottomSheet" Visibility="Collapsed" Canvas.ZIndex="90" Grid.RowSpan="3" Tapped="CloseCreateSheet_Tapped">
             <Rectangle Fill="#80000000"/>
-            <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="#282828" CornerRadius="12" Padding="6,8,6,8" Margin="12,0,12,68">
+            <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="#282828" CornerRadius="12,12,0,0" Padding="6,8,6,8" Margin="12,0,12,0">
                 <Border.RenderTransform>
                     <TranslateTransform x:Name="CreateSheetTransform" Y="200"/>
                 </Border.RenderTransform>
