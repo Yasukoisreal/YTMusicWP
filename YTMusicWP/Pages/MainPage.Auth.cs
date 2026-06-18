@@ -592,7 +592,7 @@ namespace YTMusicWP
 
                 if (hasNew) SaveFavoritesAsync();
 
-                LoginStatusText.Text = "Status: Logged In & Synced!";
+                LoginStatusText.Text = "Synced! " + contents.Count + " found, " + favoriteTracks.Count + " total";
                 LoginStatusText.Foreground = _greenBrush;
             }
             catch (Exception ex)
