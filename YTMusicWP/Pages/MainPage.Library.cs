@@ -15,6 +15,222 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        private string _libraryFilter = "all";
+        private ObservableCollection<LibraryItem> _libraryItems = new ObservableCollection<LibraryItem>();
+
+        private void LibChip_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null) return;
+            _libraryFilter = btn.Tag as string ?? "all";
+
+            // Reset all chips to inactive
+            var chips = new[] { LibChipAll, LibChipPlaylists, LibChipArtists, LibChipDownloads, LibChipRecent };
+            foreach (var chip in chips)
+            {
+                chip.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 51, 51, 51));
+                chip.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+            }
+
+            // Set active chip
+            btn.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84));
+            btn.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.Black);
+
+            RefreshLibraryList();
+        }
+
+        private void RefreshLibraryList()
+        {
+            _libraryItems.Clear();
+
+            bool showAll = _libraryFilter == "all";
+
+            // Liked Songs
+            if (showAll || _libraryFilter == "playlists")
+            {
+                _libraryItems.Add(new LibraryItem
+                {
+                    Title = "Liked Songs",
+                    Subtitle = "Playlist • " + favoriteTracks.Count + " songs",
+                    IconGlyph = "♥",
+                    ThumbnailUrl = null,
+                    IsCircle = false,
+                    ItemType = "favorites",
+                    Tag = null
+                });
+            }
+
+            // User Playlists
+            if (showAll || _libraryFilter == "playlists")
+            {
+                foreach (var pl in userPlaylists)
+                {
+                    string thumb = null;
+                    if (pl.Tracks != null && pl.Tracks.Count > 0 && !string.IsNullOrEmpty(pl.Tracks[0].ThumbnailUrl))
+                        thumb = pl.Tracks[0].ThumbnailUrl;
+
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = pl.Name,
+                        Subtitle = "Playlist • " + (pl.Tracks != null ? pl.Tracks.Count : 0) + " songs",
+                        ThumbnailUrl = thumb,
+                        IconGlyph = thumb == null ? "♫" : null,
+                        IsCircle = false,
+                        ItemType = "playlist",
+                        Tag = pl
+                    });
+                }
+            }
+
+            // Downloads
+            if (showAll || _libraryFilter == "downloads")
+            {
+                if (downloadedTracks.Count > 0)
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = "Downloaded Songs",
+                        Subtitle = "Playlist • " + downloadedTracks.Count + " songs",
+                        IconGlyph = "⬇",
+                        ThumbnailUrl = null,
+                        IsCircle = false,
+                        ItemType = "downloads",
+                        Tag = null
+                    });
+                }
+            }
+
+            // Recent History
+            if (showAll || _libraryFilter == "recent")
+            {
+                if (historyTracks.Count > 0)
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = "Recently Played",
+                        Subtitle = "Playlist • " + historyTracks.Count + " songs",
+                        IconGlyph = "🕐",
+                        ThumbnailUrl = null,
+                        IsCircle = false,
+                        ItemType = "recent",
+                        Tag = null
+                    });
+                }
+            }
+
+            // YT Playlists
+            if (showAll || _libraryFilter == "playlists")
+            {
+                foreach (var ytpl in _youtubeUserPlaylists)
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = ytpl.Title,
+                        Subtitle = "Playlist • " + ytpl.TrackCount + " tracks",
+                        ThumbnailUrl = ytpl.ThumbnailUrl,
+                        IconGlyph = null,
+                        IsCircle = false,
+                        ItemType = "ytplaylist",
+                        Tag = ytpl
+                    });
+                }
+            }
+
+            // Subscriptions (artists)
+            if (showAll || _libraryFilter == "artists")
+            {
+                foreach (var sub in _youtubeSubscriptions)
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = sub.Title,
+                        Subtitle = "Artist",
+                        ThumbnailUrl = sub.ThumbnailUrl,
+                        IconGlyph = null,
+                        IsCircle = true,
+                        ItemType = "artist",
+                        Tag = sub
+                    });
+                }
+            }
+
+            LibraryUnifiedList.ItemsSource = _libraryItems;
+            LibraryEmptyState.Visibility = _libraryItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void LibraryUnified_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var item = e.ClickedItem as LibraryItem;
+            if (item == null) return;
+
+            switch (item.ItemType)
+            {
+                case "favorites":
+                    // Open a pseudo-playlist view showing favorites
+                    _currentViewingPlaylist = null;
+                    PlaylistDetailsTitle.Text = "Liked Songs";
+                    PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+                    PlaylistSongsList.ItemsSource = favoriteTracks;
+                    PlaylistDetailsTrackCount.Text = favoriteTracks.Count + " tracks";
+                    PlaylistDetailsView.Visibility = Visibility.Visible;
+                    PlaylistSlideInStoryboard.Begin();
+                    break;
+
+                case "playlist":
+                    var pl = item.Tag as UserPlaylist;
+                    _currentViewingPlaylist = pl;
+                    if (pl != null)
+                    {
+                        PlaylistDetailsTitle.Text = pl.Name;
+                        if (pl.Tracks != null && pl.Tracks.Count > 0 && !string.IsNullOrEmpty(pl.Tracks[0].ThumbnailUrl))
+                        {
+                            PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(pl.Tracks[0].ThumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 150 };
+                            PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
+                        }
+                        else
+                        {
+                            PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+                        }
+                        PlaylistSongsList.ItemsSource = pl.Tracks;
+                        PlaylistDetailsTrackCount.Text = (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks";
+                        PlaylistDetailsView.Visibility = Visibility.Visible;
+                        PlaylistSlideInStoryboard.Begin();
+                    }
+                    break;
+
+                case "downloads":
+                    _currentViewingPlaylist = null;
+                    PlaylistDetailsTitle.Text = "Downloaded Songs";
+                    PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+                    PlaylistSongsList.ItemsSource = downloadedTracks;
+                    PlaylistDetailsTrackCount.Text = downloadedTracks.Count + " tracks";
+                    PlaylistDetailsView.Visibility = Visibility.Visible;
+                    PlaylistSlideInStoryboard.Begin();
+                    break;
+
+                case "recent":
+                    _currentViewingPlaylist = null;
+                    PlaylistDetailsTitle.Text = "Recently Played";
+                    PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+                    PlaylistSongsList.ItemsSource = historyTracks;
+                    PlaylistDetailsTrackCount.Text = historyTracks.Count + " tracks";
+                    PlaylistDetailsView.Visibility = Visibility.Visible;
+                    PlaylistSlideInStoryboard.Begin();
+                    break;
+
+                case "ytplaylist":
+                    var ytpl = item.Tag as YouTubePlaylistInfo;
+                    if (ytpl != null)
+                        OpenYouTubePlaylist(ytpl.PlaylistId, ytpl.Title, ytpl.ThumbnailUrl);
+                    break;
+
+                case "artist":
+                    var sub = item.Tag as YouTubeSubscription;
+                    if (sub != null)
+                        OpenArtistProfile(sub.ChannelId, sub.Title);
+                    break;
+            }
+        }
         private void CancelCreatePlaylist_Click(object sender, RoutedEventArgs e)
         {
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;

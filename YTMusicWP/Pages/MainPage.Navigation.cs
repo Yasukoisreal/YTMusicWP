@@ -92,6 +92,7 @@ namespace YTMusicWP
                 YouTubePlaylistsListView.ItemsSource = _youtubeUserPlaylists;
             if (SubscriptionsListView.ItemsSource == null)
                 SubscriptionsListView.ItemsSource = _youtubeSubscriptions;
+            RefreshLibraryList();
         }
 
         private void SwitchTab(int tab)

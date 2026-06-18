@@ -113,6 +113,7 @@
     <Compile Include="Services\InnerTubeClient.Browse.cs" />
     <Compile Include="Services\InnerTubeClient.Player.cs" />
     <Compile Include="Models\YouTubeTrack.cs" />
+    <Compile Include="Models\LibraryItem.cs" />
     <Compile Include="Models\LyricLine.cs" />
     <Compile Include="Models\UserPlaylist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

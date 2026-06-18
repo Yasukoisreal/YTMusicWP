@@ -68,6 +68,21 @@
             </Setter>
         </Style>
 
+        <Style x:Key="ChipButtonStyle" TargetType="Button">
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="16" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="CategoryButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -956,118 +971,92 @@
         <Grid x:Name="LibraryPanel" Grid.Row="0" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
+
             <!-- Library Header -->
-            <Grid Margin="15,15,15,0">
+            <Grid Margin="15,15,15,8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Border Width="32" Height="32" CornerRadius="16" Background="#1DB954" Margin="0,0,10,0">
                     <TextBlock Text="Y" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <TextBlock Grid.Column="1" Text="Your Library" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
-                <Button Grid.Column="2" Click="OpenSettings_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
-                    <Viewbox Width="20" Height="20"><Path Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.04 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.04 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" Fill="White"/></Viewbox>
+                <Button Grid.Column="2" Click="NavSearch_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
+                    <Viewbox Width="20" Height="20"><Path Data="M9.5,2 C5.36,2 2,5.36 2,9.5 C2,13.64 5.36,17 9.5,17 C11.24,17 12.84,16.41 14.12,15.42 L19.35,20.65 L20.65,19.35 L15.42,14.12 C16.41,12.84 17,11.24 17,9.5 C17,5.36 13.64,2 9.5,2 Z M9.5,4.5 C12.26,4.5 14.5,6.74 14.5,9.5 C14.5,12.26 12.26,14.5 9.5,14.5 C6.74,14.5 4.5,12.26 4.5,9.5 C4.5,6.74 6.74,4.5 9.5,4.5 Z" Fill="White"/></Viewbox>
+                </Button>
+                <Button Grid.Column="3" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
+                    <Viewbox Width="20" Height="20"><Path Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z" Fill="White"/></Viewbox>
                 </Button>
             </Grid>
-            <Pivot Grid.Row="1" Margin="0,5,0,0">
-                <PivotItem Header="Favorites">
-                    <ListView x:Name="FavoriteSongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
-                </PivotItem>
-                <PivotItem Header="Playlists">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Button Click="OpenCreatePlaylistDialog_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,5,15,15" Height="50">
-                            <Border Background="#1A1DB954" CornerRadius="10" BorderThickness="1" BorderBrush="#1DB954">
-                                <TextBlock Text="➕ Create New Playlist" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="#1DB954" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </Button>
-                        <ListView x:Name="PlaylistsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="PlaylistsListView_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Margin="0,0,0,15" Background="Transparent" Holding="PlaylistItem_Holding">
-                                        <FlyoutBase.AttachedFlyout>
-                                            <MenuFlyout>
-                                                <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylist_Click"/>
-                                            </MenuFlyout>
-                                        </FlyoutBase.AttachedFlyout>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Border Grid.Column="0" Width="52" Height="52" Background="#1E1E1E" CornerRadius="10" Margin="0,0,12,0">
-                                            <Viewbox Width="24" Height="24"><Path Data="M15,6H3V8H15V6M15,10H3V12H15V10M3,16H11V14H3V16M17,6V14.18C16.69,14.07 16.35,14 16,14A3,3 0 0,0 13,17A3,3 0 0,0 16,20A3,3 0 0,0 19,17V8H22V6H17Z" Fill="White"/></Viewbox>
-                                        </Border>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Custom Playlist" FontSize="14" Foreground="#B3B3B3"/>
-                                        </StackPanel>
-                                        <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                    </Grid>
-                </PivotItem>
-                <PivotItem Header="Recent">
-                    <ListView x:Name="HistorySongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
-                </PivotItem>
-                <PivotItem Header="Downloads">
-                    <ListView x:Name="DownloadedSongList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
-                </PivotItem>
-                <PivotItem Header="YT Playlists">
-                    <ListView x:Name="YouTubePlaylistsListView" IsItemClickEnabled="True" ItemClick="YouTubePlaylist_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,5,0,10" Background="Transparent">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border Width="56" Height="56" CornerRadius="8" Margin="0,0,12,0">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
-                                        </Border.Background>
-                                    </Border>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
-                                        <TextBlock FontSize="13" Foreground="#B3B3B3" Margin="0,3,0,0">
-                                            <Run Text="{Binding TrackCount}"/> <Run Text="tracks"/>
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </PivotItem>
-                <PivotItem Header="Subscriptions">
-                    <ListView x:Name="SubscriptionsListView" IsItemClickEnabled="True" ItemClick="Subscription_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,5,0,10" Background="Transparent">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Border Width="48" Height="48" CornerRadius="24" Margin="0,0,12,0">
-                                        <Border.Background>
-                                            <ImageBrush ImageSource="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
-                                        </Border.Background>
-                                    </Border>
-                                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </PivotItem>
-            </Pivot>
+
+            <!-- Filter Chips -->
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="15,0,0,8">
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="LibChipAll" Content="All" Click="LibChip_Click" Tag="all" Style="{StaticResource ChipButtonStyle}" Background="#1DB954" Foreground="Black" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipPlaylists" Content="Playlists" Click="LibChip_Click" Tag="playlists" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipArtists" Content="Artists" Click="LibChip_Click" Tag="artists" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipDownloads" Content="Downloads" Click="LibChip_Click" Tag="downloads" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipRecent" Content="Recent" Click="LibChip_Click" Tag="recent" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,15,0"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Sort Row -->
+            <Grid Grid.Row="2" Margin="15,0,15,6">
+                <TextBlock Text="Recents" FontSize="13" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratSemiBold}" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Unified Library List -->
+            <ListView x:Name="LibraryUnifiedList" Grid.Row="3" IsItemClickEnabled="True" ItemClick="LibraryUnified_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="15,0,15,0">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,5,0,5" Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Thumbnail area -->
+                            <Grid Width="56" Height="56" Margin="0,0,12,0">
+                                <!-- Fallback: icon on dark background (always rendered behind) -->
+                                <Border CornerRadius="6" Background="#282828">
+                                    <TextBlock Text="{Binding IconGlyph}" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                                </Border>
+                                <!-- Thumbnail image on top (covers icon when available) -->
+                                <Border CornerRadius="6">
+                                    <Border.Background>
+                                        <ImageBrush Stretch="UniformToFill" ImageSource="{Binding ThumbnailUrl}"/>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                            <!-- Text -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                                <TextBlock Text="{Binding Subtitle}" FontSize="13" Foreground="#B3B3B3" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Empty State -->
+            <StackPanel x:Name="LibraryEmptyState" Grid.Row="3" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="🎵" FontSize="48" HorizontalAlignment="Center"/>
+                <TextBlock Text="No items yet" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <!-- Hidden old ListViews (keep bindings working) -->
+            <ListView x:Name="FavoriteSongList" Visibility="Collapsed"/>
+            <ListView x:Name="HistorySongList" Visibility="Collapsed"/>
+            <ListView x:Name="DownloadedSongList" Visibility="Collapsed"/>
+            <ListView x:Name="PlaylistsListView" Visibility="Collapsed"/>
+            <ListView x:Name="YouTubePlaylistsListView" Visibility="Collapsed"/>
+            <ListView x:Name="SubscriptionsListView" Visibility="Collapsed"/>
         </Grid>
 
         <!-- ═══════════════════════════════════ SETTINGS PANEL (overlay) ═══════════════════════════════════ -->
