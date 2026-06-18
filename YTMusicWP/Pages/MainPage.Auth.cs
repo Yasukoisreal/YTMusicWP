@@ -566,13 +566,15 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    LoginStatusText.Text = "Status: Sync Failed";
+                    string errBody = await response.Content.ReadAsStringAsync();
+                    string errSnippet = errBody.Length > 80 ? errBody.Substring(0, 80) : errBody;
+                    LoginStatusText.Text = "Sync " + (int)response.StatusCode + ": " + errSnippet;
                     LoginStatusText.Foreground = _authOrangeBrush;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                LoginStatusText.Text = "Status: Sync Error";
+                LoginStatusText.Text = "Sync Error: " + ex.Message;
                 LoginStatusText.Foreground = _authRedBrush;
             }
         }
