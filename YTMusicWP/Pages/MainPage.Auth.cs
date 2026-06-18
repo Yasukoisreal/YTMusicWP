@@ -491,9 +491,23 @@ namespace YTMusicWP
             try
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
-                string url = "https://www.googleapis.com/youtube/v3/videos?myRating=like&part=snippet&maxResults=50";
 
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                // Use InnerTube API — browse liked music playlist (LM)
+                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
+                var context = InnerTubeClient.BuildMusicContext(visitorData);
+
+                var body = new JObject
+                {
+                    ["context"] = context,
+                    ["browseId"] = "FEmusic_liked_videos"
+                };
+
+                string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://music.youtube.com");
+                request.Headers.Add("Referer", "https://music.youtube.com/");
                 request.Headers.Add("Authorization", "Bearer " + accessToken);
 
                 var response = await _apiClient.SendAsync(request);
@@ -503,26 +517,44 @@ namespace YTMusicWP
                     var json = JObject.Parse(resultJson);
 
                     bool hasNew = false;
-                    var itemsToken = json["items"];
-                    if (itemsToken == null) { LoginStatusText.Text = "Status: API Quota Exceeded"; return; }
-                    var items = itemsToken.Reverse();
-
-                    foreach (var item in items)
+                    // Navigate InnerTube response structure for liked videos
+                    var contents = json.SelectTokens("$..musicResponsiveListItemRenderer");
+                    foreach (var item in contents)
                     {
                         try
                         {
-                            string vidId = item["id"]?.ToString();
+                            // Extract video ID from playlistItemData or overlay
+                            string vidId = item.SelectToken("..playNavigationEndpoint..videoId")?.ToString()
+                                ?? item.SelectToken("..watchEndpoint..videoId")?.ToString();
                             if (string.IsNullOrEmpty(vidId)) continue;
                             if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
 
-                            string title = System.Net.WebUtility.HtmlDecode(item["snippet"]?["title"]?.ToString() ?? "");
-                            string channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(item["snippet"]?["channelTitle"]?.ToString() ?? ""));
+                            // Extract title
+                            var flexColumns = item["flexColumns"];
+                            string title = "";
+                            string channel = "";
+                            if (flexColumns != null && flexColumns.Count() > 0)
+                            {
+                                title = flexColumns[0]?.SelectToken("..text")?.ToString() ?? "";
+                                if (flexColumns.Count() > 1)
+                                    channel = CleanChannelName(flexColumns[1]?.SelectToken("..text")?.ToString() ?? "");
+                            }
 
-                            var thumbs = item["snippet"]?["thumbnails"];
-                            string thumbUrl = thumbs?["maxres"]?["url"]?.ToString() ?? thumbs?["standard"]?["url"]?.ToString() ?? thumbs?["high"]?["url"]?.ToString() ?? thumbs?["medium"]?["url"]?.ToString();
+                            // Extract thumbnail
+                            string thumbUrl = item.SelectToken("..thumbnails[-1:].url")?.ToString()
+                                ?? item.SelectToken("..thumbnail..url")?.ToString();
 
-                            favoriteTracks.Insert(0, new YouTubeTrack { VideoId = vidId, Title = title, ChannelName = channel, ThumbnailUrl = thumbUrl });
-                            hasNew = true;
+                            if (!string.IsNullOrEmpty(title))
+                            {
+                                favoriteTracks.Insert(0, new YouTubeTrack
+                                {
+                                    VideoId = vidId,
+                                    Title = System.Net.WebUtility.HtmlDecode(title),
+                                    ChannelName = System.Net.WebUtility.HtmlDecode(channel),
+                                    ThumbnailUrl = thumbUrl
+                                });
+                                hasNew = true;
+                            }
                         }
                         catch { continue; }
                     }
@@ -621,48 +653,64 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
-                string nextPageToken = "";
 
-                // Paginate — YouTube API returns max 50 per page
-                while (true)
+                // Use InnerTube — browse library playlists
+                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
+                var context = InnerTubeClient.BuildMusicContext(visitorData);
+
+                var body = new JObject
                 {
-                    string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50"
-                        + (string.IsNullOrEmpty(nextPageToken) ? "" : "&pageToken=" + nextPageToken);
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+                    ["context"] = context,
+                    ["browseId"] = "FEmusic_liked_playlists"
+                };
 
-                    var response = await _apiClient.SendAsync(request);
-                    if (!response.IsSuccessStatusCode) break;
+                string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://music.youtube.com");
+                request.Headers.Add("Referer", "https://music.youtube.com/");
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
 
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    var json = JObject.Parse(resultJson);
-                    var items = json["items"];
-                    if (items == null) break;
+                var response = await _apiClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return;
 
-                    foreach (var item in items)
+                string resultJson = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(resultJson);
+
+                var items = json.SelectTokens("$..musicTwoRowItemRenderer");
+                foreach (var item in items)
+                {
+                    try
                     {
-                        try
+                        string plId = item.SelectToken("..browseId")?.ToString()
+                            ?? item.SelectToken("..playlistId")?.ToString();
+                        if (string.IsNullOrEmpty(plId)) continue;
+
+                        string title = item["title"]?.SelectToken("..text")?.ToString() ?? "";
+                        string subtitle = item["subtitle"]?.SelectToken("..text")?.ToString() ?? "";
+                        string thumbUrl = item.SelectToken("..thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("..thumbnail..url")?.ToString();
+
+                        // Try to parse track count from subtitle (e.g. "50 songs")
+                        int count = 0;
+                        if (!string.IsNullOrEmpty(subtitle))
                         {
-                            var snippet = item["snippet"];
-                            string plId = item["id"]?.ToString();
-                            string title = snippet?["title"]?.ToString() ?? "";
-                            int count = item["contentDetails"]?["itemCount"]?.Value<int>() ?? 0;
-                            var thumbs = snippet?["thumbnails"];
-                            string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["medium"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
-
-                            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                            {
-                                PlaylistId = plId,
-                                Title = title,
-                                TrackCount = count,
-                                ThumbnailUrl = thumbUrl
-                            });
+                            var match = System.Text.RegularExpressions.Regex.Match(subtitle, @"(\d+)");
+                            if (match.Success) int.TryParse(match.Value, out count);
                         }
-                        catch { continue; }
-                    }
 
-                    nextPageToken = json["nextPageToken"]?.ToString();
-                    if (string.IsNullOrEmpty(nextPageToken) || _youtubeUserPlaylists.Count >= 200) break; // Cap at 200 for RAM
+                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                        {
+                            PlaylistId = plId.StartsWith("VL") ? plId.Substring(2) : plId,
+                            Title = title,
+                            TrackCount = count,
+                            ThumbnailUrl = thumbUrl
+                        });
+
+                        if (_youtubeUserPlaylists.Count >= 200) break;
+                    }
+                    catch { continue; }
                 }
             }
             catch { }
@@ -678,46 +726,54 @@ namespace YTMusicWP
             try
             {
                 _youtubeSubscriptions.Clear();
-                string nextPageToken = "";
 
-                // Paginate — YouTube API returns max 50 per page
-                while (true)
+                // Use InnerTube — browse library artists (subscriptions)
+                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
+                var context = InnerTubeClient.BuildMusicContext(visitorData);
+
+                var body = new JObject
                 {
-                    string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&order=alphabetical"
-                        + (string.IsNullOrEmpty(nextPageToken) ? "" : "&pageToken=" + nextPageToken);
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+                    ["context"] = context,
+                    ["browseId"] = "FEmusic_library_corpus_artists"
+                };
 
-                    var response = await _apiClient.SendAsync(request);
-                    if (!response.IsSuccessStatusCode) break;
+                string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://music.youtube.com");
+                request.Headers.Add("Referer", "https://music.youtube.com/");
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
 
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    var json = JObject.Parse(resultJson);
-                    var items = json["items"];
-                    if (items == null) break;
+                var response = await _apiClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return;
 
-                    foreach (var item in items)
+                string resultJson = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(resultJson);
+
+                var items = json.SelectTokens("$..musicResponsiveListItemRenderer");
+                foreach (var item in items)
+                {
+                    try
                     {
-                        try
+                        string channelId = item.SelectToken("..browseId")?.ToString();
+                        if (string.IsNullOrEmpty(channelId)) continue;
+
+                        string title = item.SelectToken("..flexColumns[0]..text")?.ToString()
+                            ?? item.SelectToken("..text")?.ToString() ?? "";
+                        string thumbUrl = item.SelectToken("..thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("..thumbnail..url")?.ToString();
+
+                        _youtubeSubscriptions.Add(new YouTubeSubscription
                         {
-                            var snippet = item["snippet"];
-                            string channelId = snippet?["resourceId"]?["channelId"]?.ToString();
-                            string title = snippet?["title"]?.ToString() ?? "";
-                            var thumbs = snippet?["thumbnails"];
-                            string thumbUrl = thumbs?["high"]?["url"]?.ToString() ?? thumbs?["default"]?["url"]?.ToString();
+                            ChannelId = channelId,
+                            Title = title,
+                            ThumbnailUrl = thumbUrl
+                        });
 
-                            _youtubeSubscriptions.Add(new YouTubeSubscription
-                            {
-                                ChannelId = channelId,
-                                Title = title,
-                                ThumbnailUrl = thumbUrl
-                            });
-                        }
-                        catch { continue; }
+                        if (_youtubeSubscriptions.Count >= 500) break;
                     }
-
-                    nextPageToken = json["nextPageToken"]?.ToString();
-                    if (string.IsNullOrEmpty(nextPageToken) || _youtubeSubscriptions.Count >= 500) break; // Cap at 500 for RAM
+                    catch { continue; }
                 }
             }
             catch { }
@@ -733,13 +789,28 @@ namespace YTMusicWP
 
             try
             {
-                string url = "https://www.googleapis.com/youtube/v3/videos/rate?id=" + videoId + "&rating=" + rating;
+                // Use InnerTube like/dislike endpoint
+                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
+                var context = InnerTubeClient.BuildMusicContext(visitorData);
+
+                string endpoint = rating == "like" ? "like/like" : (rating == "dislike" ? "like/dislike" : "like/removelike");
+                string url = "https://music.youtube.com/youtubei/v1/" + endpoint + "?prettyPrint=false";
+
+                var body = new JObject
+                {
+                    ["context"] = context,
+                    ["target"] = new JObject { ["videoId"] = videoId }
+                };
+
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://music.youtube.com");
+                request.Headers.Add("Referer", "https://music.youtube.com/");
                 request.Headers.Add("Authorization", "Bearer " + token);
-                request.Content = new StringContent("");
 
                 var response = await _apiClient.SendAsync(request);
-                return response.IsSuccessStatusCode || (int)response.StatusCode == 204;
+                return response.IsSuccessStatusCode;
             }
             catch { return false; }
         }
@@ -754,23 +825,31 @@ namespace YTMusicWP
 
             try
             {
-                string url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet";
+                // Use InnerTube — add to watch later playlist
+                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
+                var context = InnerTubeClient.BuildMusicContext(visitorData);
+
                 var body = new JObject
                 {
-                    ["snippet"] = new JObject
+                    ["context"] = context,
+                    ["playlistId"] = "WL",
+                    ["actions"] = new JArray
                     {
-                        ["playlistId"] = "WL",
-                        ["resourceId"] = new JObject
+                        new JObject
                         {
-                            ["kind"] = "youtube#video",
-                            ["videoId"] = videoId
+                            ["addedVideoId"] = videoId,
+                            ["action"] = "ACTION_ADD_VIDEO"
                         }
                     }
                 };
 
+                string url = "https://music.youtube.com/youtubei/v1/browse/edit_playlist?prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Add("Authorization", "Bearer " + token);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://music.youtube.com");
+                request.Headers.Add("Referer", "https://music.youtube.com/");
+                request.Headers.Add("Authorization", "Bearer " + token);
 
                 var response = await _apiClient.SendAsync(request);
                 return response.IsSuccessStatusCode;
@@ -819,23 +898,35 @@ namespace YTMusicWP
         {
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get,
-                    "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&fields=items(snippet(title,thumbnails))");
+                // Use InnerTube — browse account menu to get avatar
+                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
+                var context = InnerTubeClient.BuildMusicContext(visitorData);
+
+                var body = new JObject
+                {
+                    ["context"] = context,
+                    ["browseId"] = "FEmusic_home"
+                };
+
+                string url = "https://music.youtube.com/youtubei/v1/account/account_menu?prettyPrint=false";
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://music.youtube.com");
+                request.Headers.Add("Referer", "https://music.youtube.com/");
                 request.Headers.Add("Authorization", "Bearer " + accessToken);
 
                 var response = await _apiClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode) return;
 
-                string json = await response.Content.ReadAsStringAsync();
-                var data = JObject.Parse(json);
-                var channel = data["items"]?.First;
-                if (channel == null) return;
+                string resultJson = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(resultJson);
 
-                string name = channel["snippet"]?["title"]?.ToString() ?? "";
-                // Prefer medium (88px) or default (88px) thumbnail
-                string avatarUrl = channel["snippet"]?["thumbnails"]?["medium"]?["url"]?.ToString()
-                    ?? channel["snippet"]?["thumbnails"]?["default"]?["url"]?.ToString()
-                    ?? "";
+                // Extract name and avatar from account menu response
+                string name = json.SelectToken("$..accountName..text")?.ToString()
+                    ?? json.SelectToken("$..channelHandle..text")?.ToString() ?? "";
+                string avatarUrl = json.SelectToken("$..accountPhoto..thumbnails[-1:].url")?.ToString()
+                    ?? json.SelectToken("$..accountPhoto..thumbnails[0].url")?.ToString() ?? "";
 
                 if (!string.IsNullOrEmpty(avatarUrl))
                 {
@@ -844,7 +935,6 @@ namespace YTMusicWP
                     if (!string.IsNullOrEmpty(name))
                         settings["GoogleUserName"] = name;
 
-                    // Update UI
                     LoadHomeAvatar();
                 }
             }
