@@ -141,17 +141,6 @@ namespace YTMusicWP
                         }
                     }
 
-                    // Hide unused sections
-                    var sectionPanels = new[] {
-                        HomeTrendingTitle.Parent as FrameworkElement,
-                        HomePopTitle.Parent as FrameworkElement,
-                        HomeChillTitle.Parent as FrameworkElement,
-                        HomeWorkoutTitle.Parent as FrameworkElement,
-                        HomeGenre5Title.Parent as FrameworkElement,
-                        HomeGenre6Title.Parent as FrameworkElement,
-                        HomeGenre7Title.Parent as FrameworkElement,
-                        HomeGenre8Title.Parent as FrameworkElement
-                    };
 
                     if (homeSections.Count > 0) _currentHomeQuery = homeSections[0].Title;
                     HomeLoading.Visibility = Visibility.Collapsed;

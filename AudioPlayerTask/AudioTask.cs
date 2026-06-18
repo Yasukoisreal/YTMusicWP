@@ -29,6 +29,7 @@ namespace AudioPlayerTask
         private int _currentTrackIndex = -1;
         private Random _rand = new Random();
         private int _retryCount = 0;
+        private bool _isRetrying = false;
         private string _currentLoadedVidId = "";
 
         // Server stream state
@@ -109,6 +110,7 @@ namespace AudioPlayerTask
         private void ResetRetryState()
         {
             _retryCount = 0;
+            _isRetrying = false;
             _resolvedUrl = null;
             _innerTubeAttempted = false;
         }
@@ -638,6 +640,10 @@ namespace AudioPlayerTask
         // ==========================================
         private async void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
+            // [FIX-SOF] Guard against re-entrancy — prevents StackOverflowException
+            if (_isRetrying) return;
+            _isRetrying = true;
+
             _currentLoadedVidId = "";
             _retryCount++;
 
@@ -646,7 +652,7 @@ namespace AudioPlayerTask
 
             if (string.IsNullOrEmpty(vidId) || vidId.StartsWith("LOCAL:"))
             {
-                _retryCount = 0;
+                ResetRetryState();
                 ReportErrorToUI("Playback failed");
                 return;
             }
@@ -663,7 +669,8 @@ namespace AudioPlayerTask
             // Retry 1-2: Lấy URL InnerTube MỚI
             if (_retryCount <= 2)
             {
-                await Task.Delay(500);
+                await Task.Delay(800);
+                _isRetrying = false; // Allow next failure to re-enter
                 _cachedVisitorData = null;
                 string freshUrl = await ResolveViaInnerTubeDirectAsync(vidId);
                 if (!string.IsNullOrEmpty(freshUrl))
@@ -677,7 +684,8 @@ namespace AudioPlayerTask
             }
 
             // Retry 3-4: Dùng URL từ MainPage
-            await Task.Delay(500);
+            await Task.Delay(800);
+            _isRetrying = false; // Allow next failure to re-enter
             _innerTubeAttempted = true;
             _resolvedUrl = null;
             StartPlaybackAsync();
@@ -909,7 +917,15 @@ namespace AudioPlayerTask
         {
             try
             {
-                if (sender.CurrentState == MediaPlayerState.Playing) { _retryCount = 0; _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing; }
+                if (sender.CurrentState == MediaPlayerState.Playing)
+                {
+                    // [FIX-SOF] Only reset retryCount if NOT in a retry cycle
+                    // Without this guard, player briefly entering Playing before failing
+                    // would reset _retryCount → infinite retry → StackOverflow
+                    if (!_isRetrying) _retryCount = 0;
+                    _isRetrying = false;
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                }
                 else if (sender.CurrentState == MediaPlayerState.Paused) _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                 else if (sender.CurrentState == MediaPlayerState.Closed) _systemControls.PlaybackStatus = MediaPlaybackStatus.Closed;
             }
