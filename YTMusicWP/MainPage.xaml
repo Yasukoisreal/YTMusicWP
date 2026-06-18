@@ -1567,7 +1567,7 @@
                                 </Rectangle>
                                 <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,16">
                                     <TextBlock x:Name="ArtistAboutListeners" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                    <TextBlock Text="subscribers" FontSize="12" Foreground="#B3B3B3" Margin="0,2,0,0"/>
+                                    <TextBlock Text="followers" FontSize="12" Foreground="#B3B3B3" Margin="0,2,0,0"/>
                                     <TextBlock x:Name="ArtistAboutDescription" FontSize="12" Foreground="#CCCCCC" Margin="0,8,0,0" MaxLines="3" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
                             </Grid>

@@ -181,7 +181,7 @@ namespace YTMusicWP
             // Monthly listeners
             if (!string.IsNullOrEmpty(subscriberCount))
             {
-                ArtistMonthlyListeners.Text = subscriberCount + " subscribers";
+                ArtistMonthlyListeners.Text = subscriberCount + " followers";
                 ArtistAboutListeners.Text = subscriberCount;
             }
             else
