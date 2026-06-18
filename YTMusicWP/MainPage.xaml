@@ -673,9 +673,6 @@
                         <!-- ═══════ DISCOVER SECTION ═══════ -->
                         <Grid Margin="0,0,0,12">
                             <TextBlock Text="Discover" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <Button Click="OpenShortsBtn_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="8,4">
-                                <TextBlock Text="Shorts ▶" FontSize="12" Foreground="#1DB954" FontFamily="{StaticResource MontserratSemiBold}"/>
-                            </Button>
                         </Grid>
                         <ListView x:Name="DiscoverListView" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled">
                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
