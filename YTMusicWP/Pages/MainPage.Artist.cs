@@ -222,65 +222,44 @@ namespace YTMusicWP
                 ArtistAboutSection.Visibility = Visibility.Visible;
             }
 
-            // Check if already following
-            await CheckFollowStatusAsync(channelId);
+            // Check if already following (from local cache)
+            CheckFollowStatusLocal(channelId);
         }
 
-        private async Task CheckFollowStatusAsync(string channelId)
+        private void CheckFollowStatusLocal(string channelId)
         {
             if (string.IsNullOrEmpty(channelId)) return;
-
             try
             {
-                string accessToken = await GetAccessTokenAsync();
-                if (string.IsNullOrEmpty(accessToken)) return;
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                string followedJson = settings.ContainsKey("FollowedArtists") ? settings["FollowedArtists"]?.ToString() : "[]";
+                var followed = JArray.Parse(followedJson ?? "[]");
+                _isFollowingArtist = followed.Any(f => f.ToString() == channelId);
+                UpdateFollowButton();
+            }
+            catch { }
+        }
 
-                // Use InnerTube browse channel page to check subscribe state
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = channelId }, accessToken);
-                if (json["_error"] != null) return;
+        private void SaveFollowState(string channelId, bool isFollowing)
+        {
+            try
+            {
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                string followedJson = settings.ContainsKey("FollowedArtists") ? settings["FollowedArtists"]?.ToString() : "[]";
+                var followed = JArray.Parse(followedJson ?? "[]");
 
-                // Try multiple paths — TV format uses different structures
-                bool isSubscribed = false;
-
-                // Path 1: subscribeButton.subscribed (Web format)
-                var sub1 = json.SelectToken("$..subscribeButton..subscribed");
-                if (sub1 != null) { try { isSubscribed = sub1.Value<bool>(); } catch { } }
-
-                // Path 2: toggleButtonRenderer.isToggled (TV format)
-                if (!isSubscribed)
+                if (isFollowing)
                 {
-                    var sub2 = json.SelectToken("$..subscribeButton..isToggled");
-                    if (sub2 != null) { try { isSubscribed = sub2.Value<bool>(); } catch { } }
+                    if (!followed.Any(f => f.ToString() == channelId))
+                        followed.Add(channelId);
+                }
+                else
+                {
+                    var toRemove = followed.FirstOrDefault(f => f.ToString() == channelId);
+                    if (toRemove != null) followed.Remove(toRemove);
                 }
 
-                // Path 3: subscriberCountWithSubscribeText contains "SUBSCRIBED"
-                if (!isSubscribed)
-                {
-                    var sub3 = json.SelectToken("$..subscriberCountWithSubscribeText..text");
-                    if (sub3 != null && sub3.ToString().ToUpper().Contains("SUBSCRIB"))
-                        isSubscribed = true;
-                }
-
-                // Path 4: check if any button text says "SUBSCRIBED" / "Đã đăng ký"
-                if (!isSubscribed)
-                {
-                    var allTexts = json.SelectTokens("$..subscribeButton..text");
-                    foreach (var t in allTexts)
-                    {
-                        string txt = t.ToString().ToUpper();
-                        if (txt.Contains("SUBSCRIBED") || txt.Contains("FOLLOWING") || txt.Contains("ĐÃ ĐĂNG KÝ"))
-                        {
-                            isSubscribed = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (isSubscribed)
-                {
-                    _isFollowingArtist = true;
-                    UpdateFollowButton();
-                }
+                settings["FollowedArtists"] = followed.ToString(Newtonsoft.Json.Formatting.None);
             }
             catch { }
         }
@@ -334,6 +313,7 @@ namespace YTMusicWP
                     if (json["_error"] == null)
                     {
                         _isFollowingArtist = true;
+                        SaveFollowState(_currentArtistChannelId, true);
                         UpdateFollowButton();
                         ShowToast("Following " + ArtistProfileTitle.Text);
                     }
@@ -355,6 +335,7 @@ namespace YTMusicWP
                     {
                         _isFollowingArtist = false;
                         _currentSubscriptionId = null;
+                        SaveFollowState(_currentArtistChannelId, false);
                         UpdateFollowButton();
                         ShowToast("Unfollowed " + ArtistProfileTitle.Text);
                     }
