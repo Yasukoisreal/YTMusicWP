@@ -1621,7 +1621,7 @@
                 <Button Grid.Column="0" Click="NavHome_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
-                            <Path x:Name="NavHomeIcon" Fill="White" Stretch="Uniform" Data="M6,2 L8.5,2 L8.5,8 L6,8 Z M12,4 L2,13 L5,13 L5,22 L10,22 L10,16 L14,16 L14,22 L19,22 L19,13 L22,13 Z"/>
+                            <Path x:Name="NavHomeIcon" Fill="White" Stretch="Uniform" Data="M12,2 L5,9 L5,21 L10,21 L10,14 L14,14 L14,21 L19,21 L19,9 Z"/>
                         </Viewbox>
                         <TextBlock x:Name="NavHomeText" Text="Home" FontSize="10" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
