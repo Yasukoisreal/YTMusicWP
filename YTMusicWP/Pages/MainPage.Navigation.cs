@@ -184,7 +184,7 @@ namespace YTMusicWP
             // Scale icon up (22 → 28)
             var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
             {
-                To = 28,
+                To = 18,
                 Duration = TimeSpan.FromMilliseconds(200),
                 EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
             };
@@ -193,7 +193,7 @@ namespace YTMusicWP
 
             var scaleHAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
             {
-                To = 28,
+                To = 18,
                 Duration = TimeSpan.FromMilliseconds(200),
                 EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
             };
@@ -240,7 +240,7 @@ namespace YTMusicWP
             // Scale icon back (28 → 22)
             var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
             {
-                To = 22,
+                To = 14,
                 Duration = TimeSpan.FromMilliseconds(200),
                 EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
             };
@@ -249,7 +249,7 @@ namespace YTMusicWP
 
             var scaleHAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
             {
-                To = 22,
+                To = 14,
                 Duration = TimeSpan.FromMilliseconds(200),
                 EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
             };
