@@ -2180,36 +2180,34 @@
                 </Grid>
             </Border>
             <ScrollViewer Grid.Row="1">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="30,60,30,30">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="30,40,30,30">
                     <!-- Icon -->
-                    <TextBlock Text="🔐" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    <TextBlock Text="🔐" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                     
-                    <!-- Instructions -->
-                    <TextBlock Text="To sign in, open your browser and go to:" Foreground="#B3B3B3" FontSize="15" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,15"/>
+                    <!-- Instructions - CLEAR: use PC or other phone -->
+                    <TextBlock Text="On your PC or other phone, open Chrome/Firefox and go to:" Foreground="#B3B3B3" FontSize="15" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,12"/>
                     
                     <!-- URL -->
-                    <Border Background="#1E1E1E" CornerRadius="10" Padding="15,10" Margin="0,0,0,20">
-                        <TextBlock Text="google.com/device" Foreground="#1DB954" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center"/>
+                    <Border Background="#1E1E1E" CornerRadius="10" Padding="15,10" Margin="0,0,0,15">
+                        <TextBlock Text="google.com/device" Foreground="#1DB954" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" IsTextSelectionEnabled="True"/>
                     </Border>
                     
                     <!-- Then enter code -->
-                    <TextBlock Text="Then enter this code:" Foreground="#B3B3B3" FontSize="15" TextAlignment="Center" Margin="0,0,0,10"/>
+                    <TextBlock Text="Enter this code:" Foreground="#B3B3B3" FontSize="15" TextAlignment="Center" Margin="0,0,0,8"/>
                     
                     <!-- User Code (big, prominent) -->
-                    <Border Background="#282828" CornerRadius="12" Padding="20,15" Margin="0,0,0,25">
-                        <TextBlock x:Name="DeviceCodeText" Text="----" Foreground="White" FontSize="32" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" CharacterSpacing="200" IsTextSelectionEnabled="True"/>
+                    <Border Background="#282828" CornerRadius="12" Padding="20,15" Margin="0,0,0,15">
+                        <TextBlock x:Name="DeviceCodeText" Text="----" Foreground="White" FontSize="36" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" CharacterSpacing="250" IsTextSelectionEnabled="True"/>
                     </Border>
                     
-                    <!-- Status -->
-                    <ProgressBar x:Name="DeviceCodeProgress" IsIndeterminate="True" Foreground="#1DB954" Margin="0,0,0,10"/>
-                    <TextBlock x:Name="DeviceCodeStatus" Text="Waiting for you to sign in..." Foreground="#888888" FontSize="13" TextAlignment="Center" Margin="0,0,0,25"/>
+                    <!-- Note -->
+                    <TextBlock Text="⚠ IE on Windows Phone can't open this page. Use a PC or another phone's browser (Chrome, Firefox, Safari)." Foreground="#FF9800" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,20"/>
                     
-                    <!-- Open browser button -->
-                    <Button x:Name="OpenDeviceBrowserBtn" Click="OpenDeviceBrowser_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="50" HorizontalAlignment="Stretch">
-                        <Border Background="#1DB954" CornerRadius="8" HorizontalAlignment="Stretch">
-                            <TextBlock Text="Open Browser" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Button>
+                    <!-- Status -->
+                    <ProgressBar x:Name="DeviceCodeProgress" IsIndeterminate="True" Foreground="#1DB954" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="DeviceCodeStatus" Text="Waiting for you to sign in..." Foreground="#888888" FontSize="13" TextAlignment="Center" Margin="0,0,0,20"/>
+                    
+                    <!-- Buttons removed: no point opening IE which can't handle Google's JS -->
                 </StackPanel>
             </ScrollViewer>
             <!-- Hidden: old WebView (kept for code compatibility) -->
