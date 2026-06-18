@@ -256,102 +256,177 @@ namespace YTMusicWP
             await Windows.System.Launcher.LaunchUriAsync(new Uri(authUrl));
             ShowToast("Opening browser! After approving on PC, return here.");
         }
+        private string _deviceVerificationUrl = "";
+        private string _deviceUserCode = "";
+        private bool _deviceCodePolling = false;
 
-        private void LoginGoogle_Click(object sender, RoutedEventArgs e)
+        private async void LoginGoogle_Click(object sender, RoutedEventArgs e)
         {
-            // Use built-in credentials — no user setup needed
-            string clientId = _builtInClientId;
-
-            string authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
-                             "client_id=" + Uri.EscapeDataString(clientId) +
-                             "&redirect_uri=http://localhost" +
-                             "&response_type=code" +
-                             "&scope=https://www.googleapis.com/auth/youtube" +
-                             "&access_type=offline&prompt=consent";
-
-            _isAuthProcessing = false;
             LoginWebContainer.Visibility = Visibility.Visible;
-            try { LoginWebView.Navigate(new Uri(authUrl)); } catch { }
+            DeviceCodeText.Text = "----";
+            DeviceCodeStatus.Text = "Requesting code...";
+            DeviceCodeProgress.Visibility = Visibility.Visible;
+
+            await StartDeviceCodeFlow();
+        }
+
+        private async void OpenDeviceBrowser_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(_deviceVerificationUrl))
+            {
+                await Windows.System.Launcher.LaunchUriAsync(new Uri(_deviceVerificationUrl));
+            }
+            else
+            {
+                await Windows.System.Launcher.LaunchUriAsync(new Uri("https://www.google.com/device"));
+            }
         }
 
         private void CloseLoginWeb_Click(object sender, RoutedEventArgs e)
         {
             LoginWebContainer.Visibility = Visibility.Collapsed;
+            _deviceCodePolling = false;
             _isAuthProcessing = false;
-            try { LoginWebView.Navigate(new Uri("about:blank")); } catch { }
         }
 
-        private async void ExtractAndProcessCode(string url)
+        private async Task StartDeviceCodeFlow()
         {
-            if (_isAuthProcessing) return;
-            _isAuthProcessing = true;
-
-            LoginWebContainer.Visibility = Visibility.Collapsed;
-            LoginWebLoading.Visibility = Visibility.Collapsed;
-            try { LoginWebView.Navigate(new Uri("about:blank")); } catch { }
-
-            string authCode = "";
             try
             {
-                int codeIndex = url.IndexOf("code=");
-                if (codeIndex > -1)
+                var content = new FormUrlEncodedContent(new[]
                 {
-                    int startIndex = codeIndex + 5;
-                    int endIndex = url.IndexOf("&", startIndex);
-                    if (endIndex > -1) authCode = url.Substring(startIndex, endIndex - startIndex);
-                    else authCode = url.Substring(startIndex);
+                    new KeyValuePair<string, string>("client_id", _builtInClientId),
+                    new KeyValuePair<string, string>("scope", "https://www.googleapis.com/auth/youtube")
+                });
+
+                var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/device/code", content);
+                string resultJson = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = JObject.Parse(resultJson);
+                    string deviceCode = json["device_code"]?.ToString();
+                    string userCode = json["user_code"]?.ToString();
+                    string verificationUrl = json["verification_url"]?.ToString() ?? "https://www.google.com/device";
+                    int expiresIn = json["expires_in"]?.Value<int>() ?? 1800;
+                    int interval = json["interval"]?.Value<int>() ?? 5;
+
+                    _deviceUserCode = userCode;
+                    _deviceVerificationUrl = verificationUrl;
+
+                    DeviceCodeText.Text = userCode ?? "ERROR";
+                    DeviceCodeStatus.Text = "Waiting for you to sign in...";
+
+                    // Start polling for user authorization
+                    _deviceCodePolling = true;
+                    await PollDeviceCodeAsync(deviceCode, interval, expiresIn);
                 }
-                if (!string.IsNullOrEmpty(authCode)) authCode = Uri.UnescapeDataString(authCode);
+                else
+                {
+                    DeviceCodeText.Text = "ERROR";
+                    DeviceCodeStatus.Text = "Failed to get code. Try again.";
+                    DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                }
             }
-            catch { }
-
-            if (!string.IsNullOrEmpty(authCode))
+            catch
             {
-                await ProcessGoogleAuthCode(authCode);
+                DeviceCodeText.Text = "ERROR";
+                DeviceCodeStatus.Text = "Network error. Check your connection.";
+                DeviceCodeProgress.Visibility = Visibility.Collapsed;
             }
-            else
-            {
-                ShowToast("Invalid link. Please try again.");
-            }
-            _isAuthProcessing = false;
         }
 
-        private void LoginWebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+        private async Task PollDeviceCodeAsync(string deviceCode, int interval, int expiresIn)
         {
-            if (args.Uri == null) return;
-            string url = args.Uri.ToString();
+            int elapsed = 0;
+            while (_deviceCodePolling && elapsed < expiresIn)
+            {
+                await Task.Delay(interval * 1000);
+                if (!_deviceCodePolling) return;
+                elapsed += interval;
 
-            if (url.Contains("localhost") && url.Contains("code="))
-            {
-                args.Cancel = true;
-                ExtractAndProcessCode(url);
+                try
+                {
+                    var content = new FormUrlEncodedContent(new[]
+                    {
+                        new KeyValuePair<string, string>("client_id", _builtInClientId),
+                        new KeyValuePair<string, string>("client_secret", _builtInClientSecret),
+                        new KeyValuePair<string, string>("device_code", deviceCode),
+                        new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
+                    });
+
+                    var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/token", content);
+                    string resultJson = await response.Content.ReadAsStringAsync();
+                    var json = JObject.Parse(resultJson);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        // Success! Got tokens
+                        _deviceCodePolling = false;
+                        string accessToken = json["access_token"]?.ToString();
+                        string refreshToken = json["refresh_token"]?.ToString() ?? "";
+
+                        var settings = ApplicationData.Current.LocalSettings.Values;
+                        settings["GoogleAccessToken"] = accessToken;
+                        settings["GoogleRefreshToken"] = refreshToken;
+                        long expiresInSec = json["expires_in"]?.Value<long>() ?? 3600;
+                        settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresInSec - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+
+                        DeviceCodeStatus.Text = "Success! Syncing...";
+                        DeviceCodeProgress.Visibility = Visibility.Collapsed;
+
+                        LoginStatusText.Text = "Status: Logged In & Synced!";
+                        LoginStatusText.Foreground = _greenBrush;
+                        ShowToast("Login successful! Syncing...");
+
+                        await SyncAllAsync(accessToken);
+
+                        LoginWebContainer.Visibility = Visibility.Collapsed;
+                        return;
+                    }
+                    else
+                    {
+                        string error = json["error"]?.ToString() ?? "";
+                        if (error == "authorization_pending")
+                        {
+                            // User hasn't approved yet, keep polling
+                            continue;
+                        }
+                        else if (error == "slow_down")
+                        {
+                            interval += 2; // Increase polling interval
+                            continue;
+                        }
+                        else
+                        {
+                            // access_denied, expired_token, etc.
+                            _deviceCodePolling = false;
+                            DeviceCodeStatus.Text = "Login failed: " + error;
+                            DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                            return;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Network error, retry
+                    DeviceCodeStatus.Text = "Network issue, retrying...";
+                }
             }
-            else if (url.Contains("localhost") && url.Contains("error="))
+
+            // Expired
+            if (_deviceCodePolling)
             {
-                args.Cancel = true;
-                LoginWebContainer.Visibility = Visibility.Collapsed;
-                ShowToast("Access denied by user.");
-            }
-            else
-            {
-                LoginWebLoading.Visibility = Visibility.Visible;
+                _deviceCodePolling = false;
+                DeviceCodeStatus.Text = "Code expired. Please try again.";
+                DeviceCodeProgress.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void LoginWebView_NavigationFailed(object sender, WebViewNavigationFailedEventArgs e)
-        {
-            LoginWebLoading.Visibility = Visibility.Collapsed;
-            if (e.Uri != null)
-            {
-                string url = e.Uri.ToString();
-                if (url.Contains("localhost") && url.Contains("code=")) ExtractAndProcessCode(url);
-            }
-        }
-
-        private void LoginWebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
-        {
-            LoginWebLoading.Visibility = Visibility.Collapsed;
-        }
+        // Old WebView handlers (kept for XAML compatibility, no longer used)
+        private void LoginWebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args) { }
+        private void LoginWebView_NavigationFailed(object sender, WebViewNavigationFailedEventArgs e) { }
+        private void LoginWebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args) { }
 
         private async Task ProcessGoogleAuthCode(string authCode)
         {
