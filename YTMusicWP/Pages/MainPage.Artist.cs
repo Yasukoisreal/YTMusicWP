@@ -12,6 +12,9 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        private string _currentArtistChannelId;
+        private bool _isFollowingArtist;
+
         private async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
         {
             try
@@ -92,6 +95,8 @@ namespace YTMusicWP
 
         private async void OpenArtistProfile(string channelId, string channelName)
         {
+            _currentArtistChannelId = channelId;
+            _isFollowingArtist = false;
             ArtistProfileView.Visibility = Visibility.Visible;
             ArtistSlideInStoryboard.Begin();
             ArtistLoadingBar.Visibility = Visibility.Visible;
@@ -216,7 +221,9 @@ namespace YTMusicWP
             }
         }
 
-        private void ArtistFollow_Click(object sender, RoutedEventArgs e)
+        private string _currentSubscriptionId; // For unsubscribe
+
+        private async void ArtistFollow_Click(object sender, RoutedEventArgs e)
         {
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
             if (!settings.ContainsKey("GoogleAccessToken") || string.IsNullOrEmpty(settings["GoogleAccessToken"]?.ToString()))
@@ -224,7 +231,79 @@ namespace YTMusicWP
                 ShowToast("Please sign in to follow artists");
                 return;
             }
-            ShowToast("Following " + ArtistProfileTitle.Text);
+
+            if (string.IsNullOrEmpty(_currentArtistChannelId))
+            {
+                ShowToast("Cannot follow this artist");
+                return;
+            }
+
+            string accessToken = settings["GoogleAccessToken"].ToString();
+
+            try
+            {
+                if (!_isFollowingArtist)
+                {
+                    // Subscribe via YouTube Data API
+                    var client = new HttpClient();
+                    var requestBody = new JObject
+                    {
+                        ["snippet"] = new JObject
+                        {
+                            ["resourceId"] = new JObject
+                            {
+                                ["kind"] = "youtube#channel",
+                                ["channelId"] = _currentArtistChannelId
+                            }
+                        }
+                    };
+
+                    var content = new StringContent(requestBody.ToString(), System.Text.Encoding.UTF8, "application/json");
+                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
+                    var response = await client.PostAsync(
+                        "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet",
+                        content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var result = JObject.Parse(await response.Content.ReadAsStringAsync());
+                        _currentSubscriptionId = result["id"]?.ToString();
+                        _isFollowingArtist = true;
+                        ShowToast("Following " + ArtistProfileTitle.Text);
+                    }
+                    else
+                    {
+                        ShowToast("Failed to follow artist");
+                    }
+                }
+                else
+                {
+                    // Unsubscribe
+                    if (!string.IsNullOrEmpty(_currentSubscriptionId))
+                    {
+                        var client = new HttpClient();
+                        client.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
+                        var response = await client.DeleteAsync(
+                            "https://www.googleapis.com/youtube/v3/subscriptions?id=" + _currentSubscriptionId);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            _isFollowingArtist = false;
+                            _currentSubscriptionId = null;
+                            ShowToast("Unfollowed " + ArtistProfileTitle.Text);
+                        }
+                    }
+                    else
+                    {
+                        _isFollowingArtist = false;
+                        ShowToast("Unfollowed " + ArtistProfileTitle.Text);
+                    }
+                }
+            }
+            catch
+            {
+                ShowToast("Network error");
+            }
         }
 
         private void CloseArtistProfile_Click(object sender, RoutedEventArgs e)
