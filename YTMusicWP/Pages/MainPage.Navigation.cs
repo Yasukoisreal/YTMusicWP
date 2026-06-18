@@ -128,13 +128,7 @@ namespace YTMusicWP
             NavHomeText.Foreground = (tab == 0) ? activeBrush : inactiveBrush;
             NavHomeText.FontWeight = (tab == 0) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
 
-            // NavSearchIcon is a Canvas with Path children
-            var searchBrush = (tab == 1) ? activeBrush : inactiveBrush;
-            foreach (var child in NavSearchIcon.Children)
-            {
-                var p = child as Windows.UI.Xaml.Shapes.Path;
-                if (p != null) p.Fill = searchBrush;
-            }
+            NavSearchIcon.Fill = (tab == 1) ? activeBrush : inactiveBrush;
             NavSearchText.Foreground = (tab == 1) ? activeBrush : inactiveBrush;
             NavSearchText.FontWeight = (tab == 1) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
 

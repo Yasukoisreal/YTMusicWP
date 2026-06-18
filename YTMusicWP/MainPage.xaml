@@ -1620,24 +1620,27 @@
                 <!-- Home -->
                 <Button Grid.Column="0" Click="NavHome_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
-                        <Polygon x:Name="NavHomeIcon" Fill="White" Points="12,1 1,11 4,11 4,20 9,20 9,14 15,14 15,20 20,20 20,11 23,11" Stretch="Uniform" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <Viewbox Width="24" Height="24" HorizontalAlignment="Center">
+                            <Path x:Name="NavHomeIcon" Fill="White" Data="M12.5,3.247 L3,11.209 L3,20.5 L9.5,20.5 L9.5,14.5 L15.5,14.5 L15.5,20.5 L22,20.5 L22,11.209 Z"/>
+                        </Viewbox>
                         <TextBlock x:Name="NavHomeText" Text="Home" FontSize="10" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Search -->
                 <Button Grid.Column="1" Click="NavSearch_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
-                        <Canvas x:Name="NavSearchIcon" Width="22" Height="22" HorizontalAlignment="Center">
-                            <Path Fill="#B3B3B3" Data="M9,1 L13,2 L16,5 L17,9 L16,13 L13,16 L9,17 L5,16 L2,13 L1,9 L2,5 L5,2 Z M9,4 L7,5 L5,7 L4,9 L5,11 L7,13 L9,14 L11,13 L13,11 L14,9 L13,7 L11,5 Z"/>
-                            <Path Fill="#B3B3B3" Data="M14,13 L15,12 L21,18 L20,19 Z"/>
-                        </Canvas>
+                        <Viewbox Width="24" Height="24" HorizontalAlignment="Center">
+                            <Path x:Name="NavSearchIcon" Fill="#B3B3B3" Data="M10.533,1.279 C5.427,1.279 1.279,5.427 1.279,10.533 C1.279,15.639 5.427,19.787 10.533,19.787 C12.767,19.787 14.819,18.986 16.4,17.65 L20.849,22.099 L22.099,20.849 L17.65,16.4 C18.986,14.819 19.787,12.767 19.787,10.533 C19.787,5.427 15.639,1.279 10.533,1.279 Z M10.533,3.779 C14.266,3.779 17.287,6.8 17.287,10.533 C17.287,14.266 14.266,17.287 10.533,17.287 C6.8,17.287 3.779,14.266 3.779,10.533 C3.779,6.8 6.8,3.779 10.533,3.779 Z"/>
+                        </Viewbox>
                         <TextBlock x:Name="NavSearchText" Text="Search" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Library -->
                 <Button Grid.Column="2" Click="NavLibrary_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
-                        <Path x:Name="NavLibraryIcon" Fill="#B3B3B3" Data="M1,1 L19,1 L19,4 L1,4 Z M1,7 L19,7 L19,10 L1,10 Z M1,13 L14,13 L14,16 L1,16 Z" Stretch="Uniform" Width="22" Height="18" HorizontalAlignment="Center"/>
+                        <Viewbox Width="24" Height="24" HorizontalAlignment="Center">
+                            <Path x:Name="NavLibraryIcon" Fill="#B3B3B3" Data="M3,22 L3,2 L5.5,2 L5.5,22 Z M8.5,22 L8.5,2 L11,2 L11,22 Z M14,22 L14,7 L16.5,7 L16.5,22 Z M19.5,22 L19.5,11 L22,11 L22,22 Z"/>
+                        </Viewbox>
                         <TextBlock x:Name="NavLibraryText" Text="Library" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
