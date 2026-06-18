@@ -181,7 +181,7 @@ namespace YTMusicWP
             // Monthly listeners
             if (!string.IsNullOrEmpty(subscriberCount))
             {
-                ArtistMonthlyListeners.Text = subscriberCount + " người nghe hằng tháng";
+                ArtistMonthlyListeners.Text = subscriberCount + " subscribers";
                 ArtistAboutListeners.Text = subscriberCount;
             }
             else

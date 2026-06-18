@@ -1517,7 +1517,7 @@
                         </Grid.ColumnDefinitions>
                         <!-- Subscribe button (outline) -->
                         <Border Grid.Column="0" CornerRadius="4" BorderBrush="White" BorderThickness="1" Padding="14,6" VerticalAlignment="Center">
-                            <TextBlock Text="Đăng ký" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock Text="Subscribe" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </Border>
                         <!-- Play button (green filled circle - same as Now Playing) -->
                         <Button Grid.Column="1" Click="ArtistPlayAll_Click" Style="{StaticResource IconButtonStyle}" Width="46" Height="46" Margin="16,0,0,0">
@@ -1534,14 +1534,14 @@
                     </Grid>
 
                     <!-- ======= PHỔ BIẾN (Popular) ======= -->
-                    <TextBlock Text="Phổ biến" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,14,16,6"/>
+                    <TextBlock Text="Popular" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,14,16,6"/>
 
                     <!-- Songs list -->
                     <ListView x:Name="ArtistSongsList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" Margin="6,0,6,0"/>
 
                     <!-- ======= BẢN PHÁT HÀNH NỔI TIẾNG (Albums) ======= -->
                     <StackPanel x:Name="ArtistAlbumsSection" Visibility="Collapsed" Margin="0,6,0,0">
-                        <TextBlock x:Name="ArtistAlbumsTitle" Text="Bản phát hành nổi tiếng" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,0,16,8"/>
+                        <TextBlock x:Name="ArtistAlbumsTitle" Text="Releases" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,0,16,8"/>
                         <ListView x:Name="ArtistAlbumsList" IsItemClickEnabled="True" ItemClick="ArtistAlbum_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource ArtistAlbumItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="16,0,0,0">
                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                         </ListView>
@@ -1549,7 +1549,7 @@
 
                     <!-- ======= GIỚI THIỆU (About) ======= -->
                     <StackPanel x:Name="ArtistAboutSection" Visibility="Collapsed" Margin="16,16,16,8">
-                        <TextBlock Text="Giới thiệu" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+                        <TextBlock Text="About" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
                         <Border CornerRadius="12" Height="200" Background="#1A1A1A">
                             <Grid>
                                 <Border CornerRadius="12">
@@ -1567,7 +1567,7 @@
                                 </Rectangle>
                                 <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,16">
                                     <TextBlock x:Name="ArtistAboutListeners" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                    <TextBlock Text="người nghe hằng tháng" FontSize="12" Foreground="#B3B3B3" Margin="0,2,0,0"/>
+                                    <TextBlock Text="subscribers" FontSize="12" Foreground="#B3B3B3" Margin="0,2,0,0"/>
                                     <TextBlock x:Name="ArtistAboutDescription" FontSize="12" Foreground="#CCCCCC" Margin="0,8,0,0" MaxLines="3" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
                             </Grid>
