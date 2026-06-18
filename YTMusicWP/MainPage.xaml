@@ -1649,7 +1649,7 @@
                 <Button Grid.Column="3" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
                         <Grid HorizontalAlignment="Center" Width="22" Height="22">
-                            <Ellipse x:Name="NavCreateCircle" Width="28" Height="28" Margin="-3" Stroke="White" StrokeThickness="1.5" Visibility="Collapsed"/>
+                            <Ellipse x:Name="NavCreateCircle" Width="28" Height="28" Margin="-3" Fill="White" Visibility="Collapsed"/>
                             <Viewbox x:Name="NavCreateViewbox" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                 <Viewbox.RenderTransform>
                                     <RotateTransform x:Name="NavCreateRotate" Angle="0"/>

@@ -170,6 +170,7 @@ namespace YTMusicWP
         {
             _createSheetOpen = true;
             CreateBottomSheet.Visibility = Visibility.Visible;
+            CreateBottomSheet.Opacity = 0;
 
             // Rotate + → × (45°)
             var rotateAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
@@ -181,7 +182,7 @@ namespace YTMusicWP
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(rotateAnim, NavCreateRotate);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(rotateAnim, "Angle");
 
-            // Scale icon up (22 → 28)
+            // Scale icon up
             var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
             {
                 To = 18,
@@ -210,17 +211,29 @@ namespace YTMusicWP
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateSheetTransform);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
 
+            // Fade in menu
+            var fadeInAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(200),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeInAnim, CreateBottomSheet);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeInAnim, "Opacity");
+
             var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
             sb.Children.Add(rotateAnim);
             sb.Children.Add(scaleWAnim);
             sb.Children.Add(scaleHAnim);
             sb.Children.Add(slideAnim);
+            sb.Children.Add(fadeInAnim);
             sb.Begin();
 
-            // Hide text, show circle, change color to white
+            // Hide text, show circle, icon → black
             NavCreateText.Visibility = Visibility.Collapsed;
             NavCreateCircle.Visibility = Visibility.Visible;
-            NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Colors.White);
+            NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Colors.Black);
         }
 
         private void CloseCreateSheet()
@@ -237,7 +250,7 @@ namespace YTMusicWP
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(rotateAnim, NavCreateRotate);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(rotateAnim, "Angle");
 
-            // Scale icon back (28 → 22)
+            // Scale icon back
             var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
             {
                 To = 14,
@@ -266,15 +279,30 @@ namespace YTMusicWP
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateSheetTransform);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
 
+            // Fade out menu
+            var fadeOutAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(180),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn }
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOutAnim, CreateBottomSheet);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeOutAnim, "Opacity");
+
             var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
             sb.Children.Add(rotateAnim);
             sb.Children.Add(scaleWAnim);
             sb.Children.Add(scaleHAnim);
             sb.Children.Add(slideAnim);
-            sb.Completed += (s, a) => CreateBottomSheet.Visibility = Visibility.Collapsed;
+            sb.Children.Add(fadeOutAnim);
+            sb.Completed += (s, a) =>
+            {
+                CreateBottomSheet.Visibility = Visibility.Collapsed;
+                CreateBottomSheet.Opacity = 1;
+            };
             sb.Begin();
 
-            // Show text, hide circle, reset color
+            // Show text, hide circle, icon → gray
             NavCreateText.Visibility = Visibility.Visible;
             NavCreateCircle.Visibility = Visibility.Collapsed;
             NavCreateIcon.Fill = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
