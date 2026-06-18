@@ -1515,10 +1515,16 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <!-- Subscribe button (outline) -->
-                        <Border Grid.Column="0" CornerRadius="4" BorderBrush="White" BorderThickness="1" Padding="14,6" VerticalAlignment="Center">
-                            <TextBlock Text="Follow" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
-                        </Border>
+                        <!-- Follow button (outline) -->
+                        <Button x:Name="ArtistFollowBtn" Grid.Column="0" Click="ArtistFollow_Click" VerticalAlignment="Center">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="ArtistFollowBorder" CornerRadius="4" BorderBrush="White" BorderThickness="1" Padding="14,6">
+                                        <TextBlock x:Name="ArtistFollowText" Text="Follow" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                         <!-- Play button (green filled circle - same as Now Playing) -->
                         <Button Grid.Column="1" Click="ArtistPlayAll_Click" Style="{StaticResource IconButtonStyle}" Width="46" Height="46" Margin="16,0,0,0">
                             <Border Width="46" Height="46" CornerRadius="23" Background="#1DB954">

@@ -216,6 +216,17 @@ namespace YTMusicWP
             }
         }
 
+        private void ArtistFollow_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+            if (!settings.ContainsKey("GoogleAccessToken") || string.IsNullOrEmpty(settings["GoogleAccessToken"]?.ToString()))
+            {
+                ShowToast("Please sign in to follow artists");
+                return;
+            }
+            ShowToast("Following " + ArtistProfileTitle.Text);
+        }
+
         private void CloseArtistProfile_Click(object sender, RoutedEventArgs e)
         {
             ArtistSlideOutStoryboard.Begin();
