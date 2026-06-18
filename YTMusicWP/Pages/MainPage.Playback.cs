@@ -165,7 +165,7 @@ namespace YTMusicWP
             var settings = ApplicationData.Current.LocalSettings;
             bool newState = !(settings.Values.ContainsKey("ShuffleMode") ? (bool)settings.Values["ShuffleMode"] : false);
             settings.Values["ShuffleMode"] = newState;
-            ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
+            ShuffleIcon.Fill = newState ? _greenBrush : _whiteBrush;
             ShuffleDot.Visibility = newState ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -178,11 +178,36 @@ namespace YTMusicWP
             UpdateRepeatUI(newMode);
         }
 
+        // Spotify-style repeat icon path data
+        private const string _repeatAllPathData = "M7,7 L17,7 L17,10 L19,10 L19,5 L7,5 L7,2 L3,6 L7,10 Z M17,17 L7,17 L7,14 L5,14 L5,19 L17,19 L17,22 L21,18 L17,14 Z";
+        private const string _repeatOnePathData = "M7,7 L17,7 L17,10 L19,10 L19,5 L7,5 L7,2 L3,6 L7,10 Z M17,17 L7,17 L7,14 L5,14 L5,19 L17,19 L17,22 L21,18 L17,14 Z M11,10 L13,10 L13,16 L11,16 Z M10,10 L12,10 L12,11.5 L10,11.5 Z";
+
+        private Windows.UI.Xaml.Media.Geometry _repeatAllGeo;
+        private Windows.UI.Xaml.Media.Geometry _repeatOneGeo;
+
+        private Windows.UI.Xaml.Media.Geometry GetRepeatGeometry(bool isOne)
+        {
+            if (isOne)
+            {
+                if (_repeatOneGeo == null)
+                    _repeatOneGeo = ((Windows.UI.Xaml.Shapes.Path)Windows.UI.Xaml.Markup.XamlReader.Load(
+                        "<Path xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='" + _repeatOnePathData + "'/>")).Data;
+                return _repeatOneGeo;
+            }
+            else
+            {
+                if (_repeatAllGeo == null)
+                    _repeatAllGeo = ((Windows.UI.Xaml.Shapes.Path)Windows.UI.Xaml.Markup.XamlReader.Load(
+                        "<Path xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' Data='" + _repeatAllPathData + "'/>")).Data;
+                return _repeatAllGeo;
+            }
+        }
+
         private void UpdateRepeatUI(int mode)
         {
-            if (mode == 0) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _whiteBrush; RepeatDot.Visibility = Visibility.Collapsed; }
-            else if (mode == 1) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
-            else if (mode == 2) { RepeatIcon.Glyph = "\uE1CC"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
+            if (mode == 0) { RepeatIcon.Data = GetRepeatGeometry(false); RepeatIcon.Fill = _whiteBrush; RepeatDot.Visibility = Visibility.Collapsed; }
+            else if (mode == 1) { RepeatIcon.Data = GetRepeatGeometry(false); RepeatIcon.Fill = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
+            else if (mode == 2) { RepeatIcon.Data = GetRepeatGeometry(true); RepeatIcon.Fill = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
         }
 
         private void SetupTimer()
