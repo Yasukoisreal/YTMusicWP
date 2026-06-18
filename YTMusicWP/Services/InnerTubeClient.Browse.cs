@@ -217,6 +217,36 @@ namespace YTMusicWP
                             ?["thumbnail"]?["thumbnails"];
                         if (fg != null && fg.HasValues)
                             result.CoverUrl = fg.Last?["url"]?.ToString() ?? "";
+
+                        // Subscriber count (monthly listeners)
+                        var subText = mih["subscriptionButton"]?["subscribeButtonRenderer"]
+                            ?["subscriberCountText"]?["runs"]?[0]?["text"]?.ToString();
+                        if (!string.IsNullOrEmpty(subText))
+                            result.SubscriberCount = subText;
+                        // Also try subtitle runs for listener count
+                        if (string.IsNullOrEmpty(result.SubscriberCount))
+                        {
+                            var subtitleRuns = mih["subtitle"]?["runs"];
+                            if (subtitleRuns != null)
+                            {
+                                string subtitleText = "";
+                                foreach (var sr in subtitleRuns)
+                                    subtitleText += sr["text"]?.ToString() ?? "";
+                                if (!string.IsNullOrEmpty(subtitleText))
+                                    result.SubscriberCount = subtitleText;
+                            }
+                        }
+
+                        // Description
+                        var descRuns = mih["description"]?["musicDescriptionShelfRenderer"]
+                            ?["description"]?["runs"];
+                        if (descRuns != null)
+                        {
+                            string desc = "";
+                            foreach (var dr in descRuns)
+                                desc += dr["text"]?.ToString() ?? "";
+                            result.Description = desc;
+                        }
                     }
                 }
 

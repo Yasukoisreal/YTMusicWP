@@ -98,17 +98,20 @@ namespace YTMusicWP
             ArtistSongsList.Visibility = Visibility.Collapsed;
             ArtistProfileTitle.Text = channelName ?? "Unknown Artist";
             ArtistProfileCover.Source = null;
-            ArtistProfileAvatar.ImageSource = null;
+            ArtistMonthlyListeners.Text = "";
             ArtistAlbumsSection.Visibility = Visibility.Collapsed;
             ArtistAlbumsList.ItemsSource = null;
+            ArtistAboutSection.Visibility = Visibility.Collapsed;
+            ArtistAboutDescription.Text = "";
+            ArtistAboutListeners.Text = "";
 
             List<YouTubeTrack> tracks = null;
             List<ArtistAlbum> albums = null;
-            bool hasCustomAvatar = false;
+            string subscriberCount = "";
+            string description = "";
+            string avatarUrl = "";
 
-            // InnerTube artist profile (không cần API key)
-
-            // Lớp 1: InnerTube trực tiếp (không cần proxy)
+            // InnerTube artist profile
             if (!string.IsNullOrEmpty(channelId))
             {
                 try
@@ -117,15 +120,17 @@ namespace YTMusicWP
                     if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
                         tracks = artistResult.Tracks;
 
-                    if (!string.IsNullOrEmpty(artistResult.AvatarUrl) && !hasCustomAvatar)
-                    {
-                        ArtistProfileAvatar.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.AvatarUrl))) { DecodePixelWidth = 200 };
-                        hasCustomAvatar = true;
-                    }
+                    avatarUrl = artistResult.AvatarUrl;
+
                     if (!string.IsNullOrEmpty(artistResult.CoverUrl))
                     {
-                        ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 400 };
+                        ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
                     }
+                    else if (!string.IsNullOrEmpty(avatarUrl))
+                    {
+                        ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
+                    }
+
                     if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
                     {
                         ArtistProfileTitle.Text = artistResult.Name;
@@ -134,11 +139,13 @@ namespace YTMusicWP
                     {
                         albums = artistResult.Albums;
                     }
+                    subscriberCount = artistResult.SubscriberCount;
+                    description = artistResult.Description;
                 }
                 catch { }
             }
 
-            // Lớp 2: Dự phòng (Fallback) gọi /api/search như cũ
+            // Fallback search
             if (tracks == null || tracks.Count == 0)
             {
                 string query = channelName ?? "";
@@ -155,35 +162,56 @@ namespace YTMusicWP
                     list.Add(t);
                 }
                 
-                if (list.Count > 0)
+                if (list.Count > 0 && ArtistProfileCover.Source == null)
                 {
                     try {
-                        var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(list[0].ThumbnailUrl))) { DecodePixelWidth = 400 };
-                        if (ArtistProfileCover.Source == null) ArtistProfileCover.Source = bmp;
-                        if (!hasCustomAvatar) ArtistProfileAvatar.ImageSource = bmp;
-                        
-                        if (ArtistProfileTitle.Text == "Nghệ sĩ" || ArtistProfileTitle.Text == "Artist" || ArtistProfileTitle.Text == "Unknown Artist")
-                        {
-                            var trackWithArtist = list.FirstOrDefault(t => !string.IsNullOrEmpty(t.ChannelName) && t.ChannelName != "Nghệ sĩ" && t.ChannelName != "Artist");
-                            if (trackWithArtist != null) ArtistProfileTitle.Text = trackWithArtist.ChannelName;
-                            else if (!string.IsNullOrEmpty(list[0].ChannelName)) ArtistProfileTitle.Text = list[0].ChannelName;
-                        }
+                        var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(list[0].ThumbnailUrl))) { DecodePixelWidth = 480 };
+                        ArtistProfileCover.Source = bmp;
                     } catch {}
                 }
+
+                if (ArtistProfileTitle.Text == "Nghệ sĩ" || ArtistProfileTitle.Text == "Artist" || ArtistProfileTitle.Text == "Unknown Artist")
+                {
+                    var trackWithArtist = list.FirstOrDefault(t => !string.IsNullOrEmpty(t.ChannelName) && t.ChannelName != "Nghệ sĩ" && t.ChannelName != "Artist");
+                    if (trackWithArtist != null) ArtistProfileTitle.Text = trackWithArtist.ChannelName;
+                    else if (list.Count > 0 && !string.IsNullOrEmpty(list[0].ChannelName)) ArtistProfileTitle.Text = list[0].ChannelName;
+                }
+            }
+
+            // Monthly listeners
+            if (!string.IsNullOrEmpty(subscriberCount))
+            {
+                ArtistMonthlyListeners.Text = subscriberCount + " monthly listeners";
+            }
+            else
+            {
+                ArtistMonthlyListeners.Text = "";
             }
 
             ArtistSongsList.ItemsSource = list;
             ArtistLoadingBar.Visibility = Visibility.Collapsed;
             ArtistSongsList.Visibility = Visibility.Visible;
 
-            // Populate albums carousel
+            // Albums carousel
             if (albums != null && albums.Count > 0)
             {
-                // Group by section title (Albums, Singles, etc.)
                 var firstSection = albums[0].SectionTitle;
                 ArtistAlbumsTitle.Text = firstSection;
                 ArtistAlbumsList.ItemsSource = albums;
                 ArtistAlbumsSection.Visibility = Visibility.Visible;
+            }
+
+            // About section
+            if (!string.IsNullOrEmpty(subscriberCount) || !string.IsNullOrEmpty(description))
+            {
+                ArtistAboutListeners.Text = !string.IsNullOrEmpty(subscriberCount) ? subscriberCount : "";
+                ArtistAboutDescription.Text = description;
+                // Use avatar or cover for about background
+                if (!string.IsNullOrEmpty(avatarUrl))
+                {
+                    ArtistAboutImage.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 300 };
+                }
+                ArtistAboutSection.Visibility = Visibility.Visible;
             }
         }
 
@@ -197,10 +225,11 @@ namespace YTMusicWP
             ArtistProfileView.Visibility = Visibility.Collapsed;
             // [OPT-M9] Giải phóng ảnh khi đóng — tiết kiệm RAM
             ArtistProfileCover.Source = null;
-            ArtistProfileAvatar.ImageSource = null;
             ArtistSongsList.ItemsSource = null;
             ArtistAlbumsList.ItemsSource = null;
             ArtistAlbumsSection.Visibility = Visibility.Collapsed;
+            ArtistAboutSection.Visibility = Visibility.Collapsed;
+            ArtistAboutImage.ImageSource = null;
         }
 
         private void ArtistPlayAll_Click(object sender, RoutedEventArgs e)

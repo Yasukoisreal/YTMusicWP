@@ -188,6 +188,8 @@ namespace YTMusicWP
         public string Name { get; set; } = "";
         public string AvatarUrl { get; set; } = "";
         public string CoverUrl { get; set; } = "";
+        public string SubscriberCount { get; set; } = "";
+        public string Description { get; set; } = "";
         public List<YouTubeTrack> Tracks { get; set; } = new List<YouTubeTrack>();
         public List<ArtistAlbum> Albums { get; set; } = new List<ArtistAlbum>();
     }

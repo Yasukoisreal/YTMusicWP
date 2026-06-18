@@ -1480,71 +1480,109 @@
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="ArtistTransform" Y="1000"/>
             </Grid.RenderTransform>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <!-- Header with cover image -->
-            <Grid Grid.Row="0" Height="220">
-                <Image x:Name="ArtistProfileCover" Stretch="UniformToFill" Opacity="0.5"/>
-                <Rectangle>
-                    <Rectangle.Fill>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="#00121212" Offset="0.3"/>
-                            <GradientStop Color="#121212" Offset="1"/>
-                        </LinearGradientBrush>
-                    </Rectangle.Fill>
-                </Rectangle>
-                <Button Click="CloseArtistProfile_Click" Style="{StaticResource IconButtonStyle}" Width="50" Height="50" Margin="10,15,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
-                    <Viewbox Width="20" Height="20"><Path Data="M20,11V13H8L13.5,18.5 12.08,19.92 4.16,12 12.08,4.08 13.5,5.5 8,11H20Z" Fill="White"/></Viewbox>
-                </Button>
-                <StackPanel VerticalAlignment="Bottom" Margin="20,0,20,15">
-                    <Ellipse Width="80" Height="80" HorizontalAlignment="Left" Margin="0,0,0,10">
-                        <Ellipse.Fill>
-                            <ImageBrush x:Name="ArtistProfileAvatar" Stretch="UniformToFill"/>
-                        </Ellipse.Fill>
-                    </Ellipse>
-                    <TextBlock x:Name="ArtistProfileTitle" Text="Artist" FontSize="28" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                </StackPanel>
-            </Grid>
-            <!-- Action buttons -->
-            <Grid Grid.Row="1" Margin="20,10,20,10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="▶ Play" Click="ArtistPlayAll_Click" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="100" Height="40">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="20">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <Button Grid.Column="1" Content="⟳ Shuffle" Click="ArtistShuffle_Click" Foreground="White" FontWeight="SemiBold" Background="#2A2A2A" Width="110" Height="40" Margin="10,0,0,0">
-                    <Button.Template>
-                        <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="20">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                </Button>
-                <ProgressBar x:Name="ArtistLoadingBar" Grid.Column="2" IsIndeterminate="True" Visibility="Collapsed" Foreground="#1DB954" VerticalAlignment="Center" Margin="15,0,0,0"/>
-            </Grid>
-            <!-- Songs + Albums -->
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="0,0,0,30">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <!-- Hero Header -->
+                    <Grid Height="300">
+                        <Image x:Name="ArtistProfileCover" Stretch="UniformToFill" Opacity="0.7"/>
+                        <Rectangle>
+                            <Rectangle.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#00121212" Offset="0.0"/>
+                                    <GradientStop Color="#80121212" Offset="0.5"/>
+                                    <GradientStop Color="#121212" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Rectangle.Fill>
+                        </Rectangle>
+                        <!-- Back button -->
+                        <Button Click="CloseArtistProfile_Click" Style="{StaticResource IconButtonStyle}" Width="50" Height="50" Margin="5,15,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                            <Viewbox Width="20" Height="20"><Path Data="M20,11V13H8L13.5,18.5 12.08,19.92 4.16,12 12.08,4.08 13.5,5.5 8,11H20Z" Fill="White"/></Viewbox>
+                        </Button>
+                        <!-- Artist info at bottom -->
+                        <StackPanel VerticalAlignment="Bottom" Margin="20,0,20,20">
+                            <!-- Verified badge + Name -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <Viewbox Width="18" Height="18" Margin="0,0,6,0">
+                                    <Path Data="M12,2 L14.39,5.42 L18.49,4.59 L17.97,8.73 L21.5,11 L18.97,14.12 L20.09,18.14 L16.07,18.56 L14.04,22 L10.53,19.88 L7.04,22 L5.01,18.56 L0.99,18.14 L2.11,14.12 L-0.42,11 L3.11,8.73 L2.59,4.59 L6.69,5.42 L9.08,2 Z" Fill="#3B82F6"/>
+                                </Viewbox>
+                                <Viewbox Width="10" Height="10" Margin="-21,0,0,0">
+                                    <Path Data="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41-1.41z" Fill="White"/>
+                                </Viewbox>
+                            </StackPanel>
+                            <TextBlock x:Name="ArtistProfileTitle" Text="Artist" FontSize="36" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="ArtistMonthlyListeners" Text="" FontSize="14" Foreground="#B3B3B3" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Action buttons -->
+                    <Grid Margin="20,12,20,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="▶ Play" Click="ArtistPlayAll_Click" Background="#1DB954" Foreground="Black" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Width="100" Height="40">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="20">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button Grid.Column="1" Content="⟳ Shuffle" Click="ArtistShuffle_Click" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Background="#2A2A2A" Width="110" Height="40" Margin="10,0,0,0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="20">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <ProgressBar x:Name="ArtistLoadingBar" Grid.Column="2" IsIndeterminate="True" Visibility="Collapsed" Foreground="#1DB954" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                    </Grid>
+
+                    <!-- Popular section label -->
+                    <TextBlock Text="Popular" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="20,8,20,8"/>
+
+                    <!-- Songs list -->
                     <ListView x:Name="ArtistSongsList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" Margin="10,0,10,0"/>
-                    <StackPanel x:Name="ArtistAlbumsSection" Visibility="Collapsed" Margin="10,20,10,0">
-                        <TextBlock x:Name="ArtistAlbumsTitle" Text="Albums" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+
+                    <!-- Albums section -->
+                    <StackPanel x:Name="ArtistAlbumsSection" Visibility="Collapsed" Margin="10,10,10,0">
+                        <TextBlock x:Name="ArtistAlbumsTitle" Text="Albums" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="10,0,0,10"/>
                         <ListView x:Name="ArtistAlbumsList" IsItemClickEnabled="True" ItemClick="ArtistAlbum_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource ArtistAlbumItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled">
                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                         </ListView>
                     </StackPanel>
+
+                    <!-- About section -->
+                    <StackPanel x:Name="ArtistAboutSection" Visibility="Collapsed" Margin="20,20,20,10">
+                        <TextBlock Text="About" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+                        <Grid CornerRadius="12" Height="180">
+                            <Border CornerRadius="12">
+                                <Border.Background>
+                                    <ImageBrush x:Name="ArtistAboutImage" Stretch="UniformToFill" Opacity="0.4"/>
+                                </Border.Background>
+                            </Border>
+                            <Rectangle RadiusX="12" RadiusY="12">
+                                <Rectangle.Fill>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#00000000" Offset="0"/>
+                                        <GradientStop Color="#CC000000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Rectangle.Fill>
+                            </Rectangle>
+                            <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,16">
+                                <TextBlock x:Name="ArtistAboutListeners" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                                <TextBlock Text="monthly listeners" FontSize="13" Foreground="#B3B3B3"/>
+                                <TextBlock x:Name="ArtistAboutDescription" FontSize="13" Foreground="#CCCCCC" Margin="0,6,0,0" MaxLines="3" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Bottom padding -->
+                    <Rectangle Height="80"/>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
