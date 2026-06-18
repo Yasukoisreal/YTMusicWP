@@ -97,12 +97,14 @@ namespace YTMusicWP
         {
             _currentArtistChannelId = channelId;
             _isFollowingArtist = false;
+            _currentSubscriptionId = null;
             ArtistProfileView.Visibility = Visibility.Visible;
             ArtistSlideInStoryboard.Begin();
             ArtistLoadingBar.Visibility = Visibility.Visible;
             ArtistSongsList.Visibility = Visibility.Collapsed;
             ArtistProfileTitle.Text = channelName ?? "Unknown Artist";
             ArtistProfileCover.Source = null;
+            UpdateFollowButton();
             ArtistMonthlyListeners.Text = "";
             ArtistAlbumsSection.Visibility = Visibility.Collapsed;
             ArtistAlbumsList.ItemsSource = null;
@@ -219,6 +221,53 @@ namespace YTMusicWP
                 }
                 ArtistAboutSection.Visibility = Visibility.Visible;
             }
+
+            // Check if already following
+            await CheckFollowStatusAsync(channelId);
+        }
+
+        private async Task CheckFollowStatusAsync(string channelId)
+        {
+            if (string.IsNullOrEmpty(channelId)) return;
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+            if (!settings.ContainsKey("GoogleAccessToken") || string.IsNullOrEmpty(settings["GoogleAccessToken"]?.ToString()))
+                return;
+
+            try
+            {
+                string accessToken = settings["GoogleAccessToken"].ToString();
+                var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
+                var response = await client.GetAsync(
+                    "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&forChannelId=" + channelId);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                    var items = json["items"] as JArray;
+                    if (items != null && items.Count > 0)
+                    {
+                        _isFollowingArtist = true;
+                        _currentSubscriptionId = items[0]["id"]?.ToString();
+                        UpdateFollowButton();
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateFollowButton()
+        {
+            if (_isFollowingArtist)
+            {
+                ArtistFollowBtn.Content = "Following";
+                ArtistFollowBtn.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84)); // #1DB954
+            }
+            else
+            {
+                ArtistFollowBtn.Content = "Follow";
+                ArtistFollowBtn.Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+            }
         }
 
         private string _currentSubscriptionId; // For unsubscribe
@@ -269,6 +318,7 @@ namespace YTMusicWP
                         var result = JObject.Parse(await response.Content.ReadAsStringAsync());
                         _currentSubscriptionId = result["id"]?.ToString();
                         _isFollowingArtist = true;
+                        UpdateFollowButton();
                         ShowToast("Following " + ArtistProfileTitle.Text);
                     }
                     else
@@ -290,12 +340,14 @@ namespace YTMusicWP
                         {
                             _isFollowingArtist = false;
                             _currentSubscriptionId = null;
+                            UpdateFollowButton();
                             ShowToast("Unfollowed " + ArtistProfileTitle.Text);
                         }
                     }
                     else
                     {
                         _isFollowingArtist = false;
+                        UpdateFollowButton();
                         ShowToast("Unfollowed " + ArtistProfileTitle.Text);
                     }
                 }
