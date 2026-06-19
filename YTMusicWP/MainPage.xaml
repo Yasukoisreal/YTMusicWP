@@ -132,15 +132,16 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Rectangle Grid.Column="0" Width="52" Height="52" Margin="0,0,12,0" RadiusX="8" RadiusY="8">
-                    <Rectangle.Fill>
-                        <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
-                            <ImageBrush.ImageSource>
-                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
-                            </ImageBrush.ImageSource>
-                        </ImageBrush>
-                    </Rectangle.Fill>
-                </Rectangle>
+                <Grid Grid.Column="0" Width="52" Height="52" Margin="0,0,12,0" Background="#1E1E1E">
+                    <Grid.Clip>
+                        <RectangleGeometry Rect="0,0,52,52"/>
+                    </Grid.Clip>
+                    <Image Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image.Source>
+                            <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                        </Image.Source>
+                    </Image>
+                </Grid>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
@@ -167,15 +168,16 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Rectangle Grid.Column="0" Width="52" Height="52" Margin="0,0,12,0" RadiusX="8" RadiusY="8">
-                    <Rectangle.Fill>
-                        <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
-                            <ImageBrush.ImageSource>
-                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
-                            </ImageBrush.ImageSource>
-                        </ImageBrush>
-                    </Rectangle.Fill>
-                </Rectangle>
+                <Grid Grid.Column="0" Width="52" Height="52" Margin="0,0,12,0" Background="#1E1E1E">
+                    <Grid.Clip>
+                        <RectangleGeometry Rect="0,0,52,52"/>
+                    </Grid.Clip>
+                    <Image Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image.Source>
+                            <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                        </Image.Source>
+                    </Image>
+                </Grid>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Title}" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="14" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
@@ -195,15 +197,16 @@
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <StackPanel>
-                    <Rectangle Width="140" Height="140" RadiusX="10" RadiusY="10" Margin="0,0,0,8">
-                        <Rectangle.Fill>
-                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
-                                <ImageBrush.ImageSource>
-                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
-                                </ImageBrush.ImageSource>
-                            </ImageBrush>
-                        </Rectangle.Fill>
-                    </Rectangle>
+                    <Grid Width="140" Height="140" Margin="0,0,0,8">
+                        <Grid.Clip>
+                            <RectangleGeometry Rect="0,0,140,140"/>
+                        </Grid.Clip>
+                        <Image Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image.Source>
+                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
+                            </Image.Source>
+                        </Image>
+                    </Grid>
                     <TextBlock Text="{Binding Title}" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="12" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                 </StackPanel>
@@ -222,15 +225,16 @@
                         <ColumnDefinition Width="56"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Rectangle Grid.Column="0" Width="56" Height="56" RadiusX="6" RadiusY="6">
-                        <Rectangle.Fill>
-                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
-                                <ImageBrush.ImageSource>
-                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
-                                </ImageBrush.ImageSource>
-                            </ImageBrush>
-                        </Rectangle.Fill>
-                    </Rectangle>
+                    <Grid Grid.Column="0" Width="56" Height="56">
+                        <Grid.Clip>
+                            <RectangleGeometry Rect="0,0,56,56"/>
+                        </Grid.Clip>
+                        <Image Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Image.Source>
+                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
+                            </Image.Source>
+                        </Image>
+                    </Grid>
                     <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis" Margin="8,0,5,0"/>
                 </Grid>
             </Border>
