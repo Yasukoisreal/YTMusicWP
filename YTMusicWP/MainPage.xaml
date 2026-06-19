@@ -134,13 +134,10 @@
                 </Grid.ColumnDefinitions>
                 <Rectangle Grid.Column="0" Width="52" Height="52" Margin="0,0,12,0" RadiusX="8" RadiusY="8">
                     <Rectangle.Fill>
-                        <ImageBrush Stretch="UniformToFill">
+                        <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                             <ImageBrush.ImageSource>
                                 <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
                             </ImageBrush.ImageSource>
-                            <ImageBrush.RelativeTransform>
-                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                            </ImageBrush.RelativeTransform>
                         </ImageBrush>
                     </Rectangle.Fill>
                 </Rectangle>
@@ -172,13 +169,10 @@
                 </Grid.ColumnDefinitions>
                 <Rectangle Grid.Column="0" Width="52" Height="52" Margin="0,0,12,0" RadiusX="8" RadiusY="8">
                     <Rectangle.Fill>
-                        <ImageBrush Stretch="UniformToFill">
+                        <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                             <ImageBrush.ImageSource>
                                 <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
                             </ImageBrush.ImageSource>
-                            <ImageBrush.RelativeTransform>
-                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                            </ImageBrush.RelativeTransform>
                         </ImageBrush>
                     </Rectangle.Fill>
                 </Rectangle>
@@ -203,13 +197,10 @@
                 <StackPanel>
                     <Rectangle Width="140" Height="140" RadiusX="10" RadiusY="10" Margin="0,0,0,8">
                         <Rectangle.Fill>
-                            <ImageBrush Stretch="UniformToFill">
+                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                                 <ImageBrush.ImageSource>
                                     <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
                                 </ImageBrush.ImageSource>
-                                <ImageBrush.RelativeTransform>
-                                    <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                                </ImageBrush.RelativeTransform>
                             </ImageBrush>
                         </Rectangle.Fill>
                     </Rectangle>
@@ -233,13 +224,10 @@
                     </Grid.ColumnDefinitions>
                     <Rectangle Grid.Column="0" Width="56" Height="56" RadiusX="6" RadiusY="6">
                         <Rectangle.Fill>
-                            <ImageBrush Stretch="UniformToFill">
+                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                                 <ImageBrush.ImageSource>
                                     <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="100"/>
                                 </ImageBrush.ImageSource>
-                                <ImageBrush.RelativeTransform>
-                                    <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                                </ImageBrush.RelativeTransform>
                             </ImageBrush>
                         </Rectangle.Fill>
                     </Rectangle>
@@ -253,13 +241,10 @@
                 <StackPanel>
                     <Rectangle Width="140" Height="140" RadiusX="10" RadiusY="10" Margin="0,0,0,8">
                         <Rectangle.Fill>
-                            <ImageBrush Stretch="UniformToFill">
+                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                                 <ImageBrush.ImageSource>
                                     <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
                                 </ImageBrush.ImageSource>
-                                <ImageBrush.RelativeTransform>
-                                    <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                                </ImageBrush.RelativeTransform>
                             </ImageBrush>
                         </Rectangle.Fill>
                     </Rectangle>
