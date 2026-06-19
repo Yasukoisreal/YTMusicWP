@@ -525,12 +525,13 @@ namespace YTMusicWP
             if (track != null) await DownloadTrackAsync(track);
         }
 
-        private void MenuFavorite_Click(object sender, RoutedEventArgs e)
+        private async void MenuFavorite_Click(object sender, RoutedEventArgs e)
         {
             var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
             if (track != null)
             {
                 var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+                bool isAdding = (existing == null);
                 if (existing != null) favoriteTracks.Remove(existing);
                 else favoriteTracks.Insert(0, track);
                 SaveFavoritesAsync();
@@ -538,8 +539,15 @@ namespace YTMusicWP
 
                 if (currentTrack != null && currentTrack.VideoId == track.VideoId)
                 {
-                    BigHeartBtn.Content = existing == null ? "♥" : "♡";
-                    BigHeartBtn.Foreground = existing == null ? _greenBrush : _whiteBrush;
+                    BigHeartBtn.Content = isAdding ? "♥" : "♡";
+                    BigHeartBtn.Foreground = isAdding ? _greenBrush : _whiteBrush;
+                }
+
+                // Sync to YouTube if logged in
+                if (!track.VideoId.StartsWith("LOCAL:") && !track.VideoId.StartsWith("CHANNEL:") && !track.VideoId.StartsWith("PLAYLIST:"))
+                {
+                    string rating = isAdding ? "like" : "none";
+                    await RateVideoAsync(track.VideoId, rating);
                 }
             }
         }

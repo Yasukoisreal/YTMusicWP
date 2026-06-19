@@ -768,12 +768,13 @@ namespace YTMusicWP
             ShortsPauseBtn.Text = isPlaying ? "❚❚" : "▶";
         }
 
-        private void ShortsHeart_Click(object sender, RoutedEventArgs e)
+        private async void ShortsHeart_Click(object sender, RoutedEventArgs e)
         {
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
             var track = _shortsSongs[_shortsSongIndex];
 
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+            bool isAdding = (existing == null);
             if (existing != null)
             {
                 favoriteTracks.Remove(existing);
@@ -789,6 +790,13 @@ namespace YTMusicWP
                 ShowToast("Added to Favorites");
             }
             SaveFavoritesAsync();
+
+            // Sync to YouTube if logged in
+            if (!track.VideoId.StartsWith("LOCAL:") && !track.VideoId.StartsWith("CHANNEL:") && !track.VideoId.StartsWith("PLAYLIST:"))
+            {
+                string rating = isAdding ? "like" : "none";
+                await RateVideoAsync(track.VideoId, rating);
+            }
         }
 
         private void ShortsSongBar_Tapped(object sender, TappedRoutedEventArgs e)

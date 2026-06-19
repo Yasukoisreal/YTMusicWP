@@ -868,6 +868,31 @@ namespace YTMusicWP
             catch { return false; }
         }
 
+        private async Task<bool> AddToYouTubePlaylistAsync(string playlistId, string videoId)
+        {
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token)) return false;
+
+            try
+            {
+                var extra = new JObject
+                {
+                    ["playlistId"] = playlistId,
+                    ["actions"] = new JArray
+                    {
+                        new JObject
+                        {
+                            ["addedVideoId"] = videoId,
+                            ["action"] = "ACTION_ADD_VIDEO"
+                        }
+                    }
+                };
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                return json["_error"] == null;
+            }
+            catch { return false; }
+        }
+
         private async Task RefreshGoogleTokenAndSyncAsync()
         {
             string token = await RefreshGoogleTokenAsync();
