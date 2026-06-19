@@ -289,6 +289,14 @@ namespace YTMusicWP
                 return;
             }
 
+            // Require login to follow/subscribe
+            string accessToken = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                ShowToast("Sign in to follow artists");
+                return;
+            }
+
             ArtistFollowBtn.IsEnabled = false;
 
             try
@@ -296,51 +304,57 @@ namespace YTMusicWP
                 if (!_isFollowingArtist)
                 {
                     // Subscribe via InnerTube
-                    string accessToken = await GetAccessTokenAsync();
                     bool apiSuccess = false;
-                    if (!string.IsNullOrEmpty(accessToken))
+                    try
                     {
-                        try
+                        var extra = new JObject
                         {
-                            var extra = new JObject
-                            {
-                                ["channelIds"] = new JArray { _currentArtistChannelId },
-                                ["params"] = "EgIIAhgA"
-                            };
-                            var result = await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
-                            apiSuccess = result["_error"] == null;
-                        }
-                        catch { }
+                            ["channelIds"] = new JArray { _currentArtistChannelId },
+                            ["params"] = "EgIIAhgA"
+                        };
+                        var result = await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
+                        apiSuccess = result["_error"] == null;
                     }
+                    catch { }
 
-                    _isFollowingArtist = true;
-                    SaveFollowState(_currentArtistChannelId, true);
-                    UpdateFollowButton();
-                    ShowToast(apiSuccess ? "Subscribed to " + ArtistProfileTitle.Text : "Followed locally (API failed)");
+                    if (apiSuccess)
+                    {
+                        _isFollowingArtist = true;
+                        SaveFollowState(_currentArtistChannelId, true);
+                        UpdateFollowButton();
+                        ShowToast("Subscribed to " + ArtistProfileTitle.Text);
+                    }
+                    else
+                    {
+                        ShowToast("Failed to subscribe");
+                    }
                 }
                 else
                 {
                     // Unsubscribe via InnerTube
-                    string accessToken = await GetAccessTokenAsync();
                     bool apiSuccess = false;
-                    if (!string.IsNullOrEmpty(accessToken))
+                    try
                     {
-                        try
+                        var extra = new JObject
                         {
-                            var extra = new JObject
-                            {
-                                ["channelIds"] = new JArray { _currentArtistChannelId }
-                            };
-                            var result = await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
-                            apiSuccess = result["_error"] == null;
-                        }
-                        catch { }
+                            ["channelIds"] = new JArray { _currentArtistChannelId }
+                        };
+                        var result = await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
+                        apiSuccess = result["_error"] == null;
                     }
+                    catch { }
 
-                    _isFollowingArtist = false;
-                    SaveFollowState(_currentArtistChannelId, false);
-                    UpdateFollowButton();
-                    ShowToast(apiSuccess ? "Unsubscribed from " + ArtistProfileTitle.Text : "Unfollowed locally (API failed)");
+                    if (apiSuccess)
+                    {
+                        _isFollowingArtist = false;
+                        SaveFollowState(_currentArtistChannelId, false);
+                        UpdateFollowButton();
+                        ShowToast("Unsubscribed from " + ArtistProfileTitle.Text);
+                    }
+                    else
+                    {
+                        ShowToast("Failed to unsubscribe");
+                    }
                 }
             }
             catch { }
