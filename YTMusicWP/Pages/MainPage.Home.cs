@@ -72,26 +72,48 @@ namespace YTMusicWP
                     HomeArtistsSection.Visibility = Visibility.Visible;
                     HomeArtistsCarousel.ItemsSource = artistItems;
 
-                    // [OPT-4] Fetch real artist avatars in parallel (batch 3 concurrent)
+                    // Fetch real artist avatars via YouTube Music search (correct disambiguation)
                     for (int i = 0; i < artistItems.Count; i += 3)
                     {
                         var batch = new System.Collections.Generic.List<Task>(3);
                         for (int j = i; j < Math.Min(i + 3, artistItems.Count); j++)
                         {
                             var artist = artistItems[j];
-                            if (string.IsNullOrEmpty(artist.ChannelId)) continue;
-                            int idx = j; // capture for closure
+                            int idx = j;
                             batch.Add(Task.Run(async () =>
                             {
                                 try
                                 {
-                                    var result = await InnerTubeClient.BrowseArtistAsync(artist.ChannelId);
-                                    if (!string.IsNullOrEmpty(result.AvatarUrl))
+                                    // Search YouTube Music for artist — more reliable than channelId browse
+                                    var searchResults = await InnerTubeClient.SearchAsync(artist.Title, 5);
+                                    var artistMatch = searchResults.FirstOrDefault(r =>
+                                        r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
+                                        r.Title.Equals(artist.Title, StringComparison.OrdinalIgnoreCase));
+
+                                    if (artistMatch != null)
                                     {
-                                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
+                                        string ytmChannelId = artistMatch.VideoId.Replace("CHANNEL:", "");
+                                        var result = await InnerTubeClient.BrowseArtistAsync(ytmChannelId);
+                                        if (!string.IsNullOrEmpty(result.AvatarUrl))
                                         {
-                                            artistItems[idx].ThumbnailUrl = GetHighResThumbnail(result.AvatarUrl);
-                                        });
+                                            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
+                                            {
+                                                artistItems[idx].ThumbnailUrl = GetHighResThumbnail(result.AvatarUrl);
+                                                artistItems[idx].ChannelId = ytmChannelId;
+                                            });
+                                        }
+                                    }
+                                    else if (!string.IsNullOrEmpty(artist.ChannelId))
+                                    {
+                                        // Fallback: use existing channelId
+                                        var result = await InnerTubeClient.BrowseArtistAsync(artist.ChannelId);
+                                        if (!string.IsNullOrEmpty(result.AvatarUrl))
+                                        {
+                                            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
+                                            {
+                                                artistItems[idx].ThumbnailUrl = GetHighResThumbnail(result.AvatarUrl);
+                                            });
+                                        }
                                     }
                                 }
                                 catch { }
