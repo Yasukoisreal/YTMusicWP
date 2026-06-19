@@ -734,5 +734,33 @@ namespace YTMusicWP
             }
         }
 
+        private async void LibrarySync_Click(object sender, RoutedEventArgs e)
+        {
+            LibrarySyncBtn.IsEnabled = false;
+            try
+            {
+                string accessToken = await GetAccessTokenAsync();
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    ShowToast("Syncing...");
+                    await SyncAllAsync(accessToken);
+                    RefreshLibraryList();
+                    ShowToast("Synced!");
+                }
+                else
+                {
+                    ShowToast("Sign in first to sync");
+                }
+            }
+            catch
+            {
+                ShowToast("Sync failed");
+            }
+            finally
+            {
+                LibrarySyncBtn.IsEnabled = true;
+            }
+        }
+
     }
 }

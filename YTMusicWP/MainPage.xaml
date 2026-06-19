@@ -989,15 +989,19 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Border Width="32" Height="32" CornerRadius="16" Background="#1DB954" Margin="0,0,10,0">
                     <TextBlock Text="Y" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <TextBlock Grid.Column="1" Text="Your Library" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
-                <Button Grid.Column="2" Click="NavSearch_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
+                <Button x:Name="LibrarySyncBtn" Grid.Column="2" Click="LibrarySync_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
+                    <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="18" Foreground="White"/>
+                </Button>
+                <Button Grid.Column="3" Click="NavSearch_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
                     <Viewbox Width="20" Height="20"><Path Data="M9.5,2 C5.36,2 2,5.36 2,9.5 C2,13.64 5.36,17 9.5,17 C11.24,17 12.84,16.41 14.12,15.42 L19.35,20.65 L20.65,19.35 L15.42,14.12 C16.41,12.84 17,11.24 17,9.5 C17,5.36 13.64,2 9.5,2 Z M9.5,4.5 C12.26,4.5 14.5,6.74 14.5,9.5 C14.5,12.26 12.26,14.5 9.5,14.5 C6.74,14.5 4.5,12.26 4.5,9.5 C4.5,6.74 6.74,4.5 9.5,4.5 Z" Fill="White"/></Viewbox>
                 </Button>
-                <Button Grid.Column="3" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
+                <Button Grid.Column="4" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
                     <Viewbox Width="20" Height="20"><Path Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z" Fill="White"/></Viewbox>
                 </Button>
             </Grid>
