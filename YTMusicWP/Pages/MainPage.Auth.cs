@@ -582,106 +582,50 @@ namespace YTMusicWP
 
                 bool hasNew = false;
                 
-                // Find ALL videoId values anywhere in response
+                // Find ALL videoId values anywhere in TV format response
                 var allVideoIds = json.SelectTokens("$..videoId").ToList();
-                
-                // Find all renderer property names
-                var rendererNames = new System.Collections.Generic.HashSet<string>();
-                foreach (var token in json.SelectTokens("$..*"))
+
+                if (allVideoIds.Count == 0)
                 {
-                    var obj = token as JObject;
-                    if (obj != null)
-                    {
-                        foreach (var prop in obj.Properties())
-                        {
-                            if (prop.Name.EndsWith("Renderer"))
-                                rendererNames.Add(prop.Name);
-                        }
-                    }
+                    LoginStatusText.Text = "No liked videos found";
+                    LoginStatusText.Foreground = _authOrangeBrush;
+                    return;
                 }
 
-                // Save full response to file for detailed inspection
-                try
-                {
-                    var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
-                    var file = await folder.CreateFileAsync("debug_response.json", Windows.Storage.CreationCollisionOption.ReplaceExisting);
-                    string fullJson = json.ToString();
-                    // Truncate if too large for WP8.1
-                    if (fullJson.Length > 50000) fullJson = fullJson.Substring(0, 50000);
-                    await Windows.Storage.FileIO.WriteTextAsync(file, fullJson);
-                }
-                catch { }
-
-                // Show debug info
-                string renderers = rendererNames.Count > 0 ? string.Join(",", rendererNames) : "NONE";
-                LoginStatusText.Text = "VIDs:" + allVideoIds.Count + " R:" + renderers;
+                LoginStatusText.Text = "Found " + allVideoIds.Count + " videos, resolving...";
                 LoginStatusText.Foreground = _authOrangeBrush;
 
-                // Try to parse using found videoIds directly
-                if (allVideoIds.Count > 0)
+                // Collect unique videoIds, maintaining YouTube order
+                var uniqueVideoIds = new List<string>();
+                foreach (var vidToken in allVideoIds)
                 {
-                    foreach (var vidToken in allVideoIds)
+                    string vid = vidToken.ToString();
+                    if (!string.IsNullOrEmpty(vid) && !uniqueVideoIds.Contains(vid))
+                        uniqueVideoIds.Add(vid);
+                }
+
+                // Fetch metadata for each video via InnerTube player
+                foreach (var vidId in uniqueVideoIds)
+                {
+                    if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
+
+                    try
                     {
-                        try
+                        var meta = await GetVideoMetadataAsync(vidId);
+                        string title = meta.Item1 ?? "Video " + vidId;
+                        string channel = CleanChannelName(meta.Item2 ?? "");
+                        string thumbUrl = meta.Item3;
+
+                        favoriteTracks.Add(new YouTubeTrack
                         {
-                            string vidId = vidToken.ToString();
-                            if (string.IsNullOrEmpty(vidId)) continue;
-                            if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
-
-                            // Traverse up parents until we find one with a "title" property
-                            string title = "";
-                            string channel = "";
-                            string thumbUrl = "";
-                            JToken ancestor = vidToken.Parent;
-                            for (int level = 0; level < 10 && ancestor != null; level++)
-                            {
-                                var ancestorObj = ancestor as JObject;
-                                if (ancestorObj != null)
-                                {
-                                    // Look for title
-                                    if (string.IsNullOrEmpty(title))
-                                    {
-                                        title = ancestorObj.SelectToken("title.runs[0].text")?.ToString()
-                                            ?? ancestorObj.SelectToken("title.simpleText")?.ToString()
-                                            ?? ancestorObj.SelectToken("title.accessibility.accessibilityData.label")?.ToString()
-                                            ?? ancestorObj.SelectToken("headline.runs[0].text")?.ToString()
-                                            ?? "";
-                                    }
-                                    // Look for channel
-                                    if (string.IsNullOrEmpty(channel))
-                                    {
-                                        channel = ancestorObj.SelectToken("shortBylineText.runs[0].text")?.ToString()
-                                            ?? ancestorObj.SelectToken("longBylineText.runs[0].text")?.ToString()
-                                            ?? ancestorObj.SelectToken("subtitle.runs[0].text")?.ToString()
-                                            ?? ancestorObj.SelectToken("byline.runs[0].text")?.ToString()
-                                            ?? "";
-                                    }
-                                    // Look for thumbnail
-                                    if (string.IsNullOrEmpty(thumbUrl))
-                                    {
-                                        thumbUrl = ancestorObj.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
-                                            ?? "";
-                                    }
-                                    // Stop if we found title
-                                    if (!string.IsNullOrEmpty(title)) break;
-                                }
-                                ancestor = ancestor.Parent;
-                            }
-
-                            if (string.IsNullOrEmpty(title)) title = "Video " + vidId;
-                            channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
-
-                            favoriteTracks.Insert(0, new YouTubeTrack
-                            {
-                                VideoId = vidId,
-                                Title = System.Net.WebUtility.HtmlDecode(title),
-                                ChannelName = channel,
-                                ThumbnailUrl = thumbUrl
-                            });
-                            hasNew = true;
-                        }
-                        catch { continue; }
+                            VideoId = vidId,
+                            Title = title,
+                            ChannelName = channel,
+                            ThumbnailUrl = thumbUrl
+                        });
+                        hasNew = true;
                     }
+                    catch { continue; }
                 }
 
                 if (hasNew) SaveFavoritesAsync();

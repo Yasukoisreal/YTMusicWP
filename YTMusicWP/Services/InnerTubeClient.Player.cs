@@ -428,6 +428,59 @@ namespace YTMusicWP
             catch { }
             return lines;
         }
+        /// <summary>
+        /// Get video metadata (title, author, thumbnail) via InnerTube player.
+        /// Uses ANDROID_VR client with videoDetails field for lightweight response.
+        /// </summary>
+        public static async Task<Tuple<string, string, string>> GetVideoMetadataAsync(string videoId)
+        {
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+                string requestBody = "{" +
+                    "\"contentCheckOk\":true," +
+                    "\"context\":{\"client\":{" +
+                        "\"clientName\":\"ANDROID_VR\"," +
+                        "\"clientVersion\":\"1.60.19\"," +
+                        "\"deviceMake\":\"Oculus\"," +
+                        "\"deviceModel\":\"Quest 3\"," +
+                        "\"osName\":\"ANDROID\"," +
+                        "\"osVersion\":\"12L\"," +
+                        "\"platform\":\"MOBILE\"," +
+                        "\"clientScreen\":0," +
+                        "\"hl\":\"en\",\"gl\":\"US\"" +
+                        vdField +
+                    "}}," +
+                    "\"videoId\":\"" + videoId + "\"" +
+                "}";
+
+                var req = new HttpRequestMessage(HttpMethod.Post,
+                    "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails");
+                req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
+                req.Headers.Add("User-Agent",
+                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+
+                var resp = await _client.SendAsync(req);
+                if (!resp.IsSuccessStatusCode)
+                    return new Tuple<string, string, string>("", "", "");
+
+                string json = await resp.Content.ReadAsStringAsync();
+                var data = JObject.Parse(json);
+
+                var details = data["videoDetails"];
+                string title = details?["title"]?.ToString() ?? "";
+                string author = details?["author"]?.ToString() ?? "";
+                string thumbUrl = details?.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                    ?? details?.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
+
+                return new Tuple<string, string, string>(title, author, thumbUrl);
+            }
+            catch
+            {
+                return new Tuple<string, string, string>("", "", "");
+            }
+        }
     }
 
     public class CaptionTrack
