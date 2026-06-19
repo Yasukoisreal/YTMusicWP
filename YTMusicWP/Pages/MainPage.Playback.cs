@@ -145,16 +145,12 @@ namespace YTMusicWP
         {
             if (currentTrack == null) return;
 
-            // Require login for YouTube tracks
-            bool isYouTubeTrack = !currentTrack.VideoId.StartsWith("LOCAL:") && !currentTrack.VideoId.StartsWith("CHANNEL:") && !currentTrack.VideoId.StartsWith("PLAYLIST:");
-            if (isYouTubeTrack)
+            // Require login to like songs
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
             {
-                string token = await GetAccessTokenAsync();
-                if (string.IsNullOrEmpty(token))
-                {
-                    ShowToast("Sign in to like songs");
-                    return;
-                }
+                ShowToast("Sign in to like songs");
+                return;
             }
 
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == currentTrack.VideoId);
@@ -164,8 +160,8 @@ namespace YTMusicWP
             else { favoriteTracks.Insert(0, currentTrack); BigHeartBtn.Content = "♥"; BigHeartBtn.Foreground = _greenBrush; }
             SaveFavoritesAsync();
 
-            // Sync to YouTube
-            if (isYouTubeTrack)
+            // Sync to YouTube (skip LOCAL tracks that can't be rated)
+            if (!currentTrack.VideoId.StartsWith("LOCAL:"))
             {
                 string rating = isAdding ? "like" : "none";
                 await RateVideoAsync(currentTrack.VideoId, rating);

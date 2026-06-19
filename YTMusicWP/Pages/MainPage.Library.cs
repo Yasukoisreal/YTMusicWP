@@ -530,16 +530,12 @@ namespace YTMusicWP
             var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
             if (track == null) return;
 
-            // Require login for YouTube tracks
-            bool isYouTubeTrack = !track.VideoId.StartsWith("LOCAL:") && !track.VideoId.StartsWith("CHANNEL:") && !track.VideoId.StartsWith("PLAYLIST:");
-            if (isYouTubeTrack)
+            // Require login to like songs
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
             {
-                string token = await GetAccessTokenAsync();
-                if (string.IsNullOrEmpty(token))
-                {
-                    ShowToast("Sign in to like songs");
-                    return;
-                }
+                ShowToast("Sign in to like songs");
+                return;
             }
 
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
@@ -555,8 +551,8 @@ namespace YTMusicWP
                 BigHeartBtn.Foreground = isAdding ? _greenBrush : _whiteBrush;
             }
 
-            // Sync to YouTube
-            if (isYouTubeTrack)
+            // Sync to YouTube (skip LOCAL tracks that can't be rated)
+            if (!track.VideoId.StartsWith("LOCAL:"))
             {
                 string rating = isAdding ? "like" : "none";
                 await RateVideoAsync(track.VideoId, rating);
