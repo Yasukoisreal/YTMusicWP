@@ -95,6 +95,7 @@ namespace YTMusicWP
                 {
                     LoginStatusText.Text = "Status: Logged In & Synced!";
                     LoginStatusText.Foreground = _greenBrush;
+                    SyncNowBtn.Visibility = Visibility.Visible;
                     // Load cached avatar
                     LoadHomeAvatar();
                 }
@@ -367,6 +368,7 @@ namespace YTMusicWP
 
                         var settings = ApplicationData.Current.LocalSettings.Values;
                         settings["GoogleAccessToken"] = accessToken;
+                        SyncNowBtn.Visibility = Visibility.Visible;
                         settings["GoogleRefreshToken"] = refreshToken;
                         long expiresInSec = json["expires_in"]?.Value<long>() ?? 3600;
                         settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresInSec - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
@@ -457,6 +459,7 @@ namespace YTMusicWP
 
                     var settings = ApplicationData.Current.LocalSettings.Values;
                     settings["GoogleAccessToken"] = accessToken;
+                    SyncNowBtn.Visibility = Visibility.Visible;
                     settings["GoogleRefreshToken"] = refreshToken;
                     settings["GoogleClientId"] = clientId;
                     settings["GoogleClientSecret"] = clientSecret;
@@ -882,6 +885,35 @@ namespace YTMusicWP
             string token = await RefreshGoogleTokenAsync();
             if (!string.IsNullOrEmpty(token))
                 await SyncAllAsync(token);
+        }
+
+        private async void SyncNow_Click(object sender, RoutedEventArgs e)
+        {
+            SyncNowBtn.IsEnabled = false;
+            try
+            {
+                string accessToken = await GetAccessTokenAsync();
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    LoginStatusText.Text = "Syncing...";
+                    LoginStatusText.Foreground = _authOrangeBrush;
+                    await SyncAllAsync(accessToken);
+                }
+                else
+                {
+                    LoginStatusText.Text = "Not logged in";
+                    LoginStatusText.Foreground = _authRedBrush;
+                }
+            }
+            catch (Exception ex)
+            {
+                LoginStatusText.Text = "Sync error: " + ex.Message;
+                LoginStatusText.Foreground = _authRedBrush;
+            }
+            finally
+            {
+                SyncNowBtn.IsEnabled = true;
+            }
         }
 
         // ══════════════════════════════════════════
