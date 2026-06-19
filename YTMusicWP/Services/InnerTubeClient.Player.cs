@@ -474,6 +474,17 @@ namespace YTMusicWP
                 string channelId = details?["channelId"]?.ToString() ?? "";
                 string thumbUrl = details?.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
                     ?? details?.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
+                
+                // For music tracks, ensure square thumbnail
+                if (!string.IsNullOrEmpty(thumbUrl) && thumbUrl.Contains("lh3.googleusercontent.com"))
+                {
+                    // lh3 URLs: append =w226-h226-l90-rj for square 226x226
+                    int eqIdx = thumbUrl.LastIndexOf('=');
+                    if (eqIdx > 0)
+                        thumbUrl = thumbUrl.Substring(0, eqIdx) + "=w226-h226-l90-rj";
+                    else
+                        thumbUrl += "=w226-h226-l90-rj";
+                }
 
                 // Strict filter: only YouTube Music audio tracks (ATV)
                 // MUSIC_VIDEO_TYPE_ATV = official audio track (song on YouTube Music)
