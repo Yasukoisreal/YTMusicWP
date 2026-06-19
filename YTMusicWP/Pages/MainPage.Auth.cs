@@ -845,30 +845,28 @@ namespace YTMusicWP
                 _youtubeSubscriptions.Clear();
                 var addedIds = new HashSet<string>();
 
-                // Method 1: InnerTube 'guide' endpoint — returns subscriptions in sidebar
+                // Method 1: WEB client browse FEchannels — returns gridChannelRenderer with proper names
                 try
                 {
-                    var guideJson = await AuthInnerTubePostAsync("guide", new JObject(), accessToken);
-                    if (guideJson["_error"] == null)
+                    var json = await WebBrowseAsync("FEchannels", accessToken);
+                    if (json["_error"] == null)
                     {
-                        // Look for guideSubscriptionsSectionRenderer or guideEntryRenderer
-                        var entries = guideJson.SelectTokens("$..guideEntryRenderer").ToList();
-                        foreach (var entry in entries)
+                        var items = json.SelectTokens("$..gridChannelRenderer").ToList();
+                        foreach (var item in items)
                         {
-                            var browseId = entry.SelectToken("navigationEndpoint.browseEndpoint.browseId")?.ToString();
-                            if (string.IsNullOrEmpty(browseId) || !browseId.StartsWith("UC")) continue;
-                            if (addedIds.Contains(browseId)) continue;
-                            addedIds.Add(browseId);
+                            string channelId = item["channelId"]?.ToString();
+                            if (string.IsNullOrEmpty(channelId)) continue;
+                            if (addedIds.Contains(channelId)) continue;
+                            addedIds.Add(channelId);
 
-                            string title = entry.SelectToken("formattedTitle.simpleText")?.ToString()
-                                ?? entry.SelectToken("formattedTitle.runs[0].text")?.ToString()
-                                ?? entry.SelectToken("title")?.ToString()
-                                ?? "";
-                            string thumbUrl = entry.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
+                            string title = item.SelectToken("title.simpleText")?.ToString()
+                                ?? item.SelectToken("title.runs[0].text")?.ToString() ?? "";
+                            string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                                ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
 
                             _youtubeSubscriptions.Add(new YouTubeSubscription
                             {
-                                ChannelId = browseId,
+                                ChannelId = channelId,
                                 Title = title,
                                 ThumbnailUrl = thumbUrl
                             });
@@ -879,57 +877,75 @@ namespace YTMusicWP
                 }
                 catch { }
 
-                // Method 2: If guide didn't work, try YouTube Data API v3
+                // Method 2: InnerTube 'guide' endpoint
                 if (_youtubeSubscriptions.Count == 0)
                 {
                     try
                     {
-                        string nextPageToken = "";
-                        do
+                        var guideJson = await AuthInnerTubePostAsync("guide", new JObject(), accessToken);
+                        if (guideJson["_error"] == null)
                         {
-                            string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50";
-                            if (!string.IsNullOrEmpty(nextPageToken))
-                                url += "&pageToken=" + nextPageToken;
-
-                            var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
-                            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-
-                            var response = await _apiClient.SendAsync(request);
-                            if (!response.IsSuccessStatusCode) break;
-
-                            string body = await response.Content.ReadAsStringAsync();
-                            var json = JObject.Parse(body);
-
-                            var items = json["items"] as JArray;
-                            if (items == null || items.Count == 0) break;
-
-                            foreach (var item in items)
+                            var entries = guideJson.SelectTokens("$..guideEntryRenderer").ToList();
+                            foreach (var entry in entries)
                             {
-                                var snippet = item["snippet"];
-                                if (snippet == null) continue;
+                                var browseId = entry.SelectToken("navigationEndpoint.browseEndpoint.browseId")?.ToString();
+                                if (string.IsNullOrEmpty(browseId) || !browseId.StartsWith("UC")) continue;
+                                if (addedIds.Contains(browseId)) continue;
+                                addedIds.Add(browseId);
 
-                                string channelId = snippet["resourceId"]?["channelId"]?.ToString();
-                                if (string.IsNullOrEmpty(channelId)) continue;
-                                if (addedIds.Contains(channelId)) continue;
-                                addedIds.Add(channelId);
-
-                                string title = snippet["title"]?.ToString() ?? "";
-                                string thumbUrl = snippet.SelectToken("thumbnails.default.url")?.ToString()
-                                    ?? snippet.SelectToken("thumbnails.medium.url")?.ToString()
-                                    ?? "";
+                                string title = entry.SelectToken("formattedTitle.simpleText")?.ToString()
+                                    ?? entry.SelectToken("formattedTitle.runs[0].text")?.ToString()
+                                    ?? entry.SelectToken("title")?.ToString() ?? "";
+                                string thumbUrl = entry.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
 
                                 _youtubeSubscriptions.Add(new YouTubeSubscription
                                 {
-                                    ChannelId = channelId,
+                                    ChannelId = browseId,
                                     Title = title,
                                     ThumbnailUrl = thumbUrl
                                 });
+
+                                if (_youtubeSubscriptions.Count >= 200) break;
                             }
+                        }
+                    }
+                    catch { }
+                }
 
-                            nextPageToken = json["nextPageToken"]?.ToString() ?? "";
-                            if (_youtubeSubscriptions.Count >= 200) break;
+                // Method 3: YouTube Data API v3 fallback
+                if (_youtubeSubscriptions.Count == 0)
+                {
+                    try
+                    {
+                        var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get,
+                            "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50");
+                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-                        } while (!string.IsNullOrEmpty(nextPageToken));
+                        var response = await _apiClient.SendAsync(request);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string body = await response.Content.ReadAsStringAsync();
+                            var json = JObject.Parse(body);
+                            var items = json["items"] as JArray;
+                            if (items != null)
+                            {
+                                foreach (var item in items)
+                                {
+                                    var snippet = item["snippet"];
+                                    if (snippet == null) continue;
+                                    string channelId = snippet["resourceId"]?["channelId"]?.ToString();
+                                    if (string.IsNullOrEmpty(channelId) || addedIds.Contains(channelId)) continue;
+                                    addedIds.Add(channelId);
+
+                                    _youtubeSubscriptions.Add(new YouTubeSubscription
+                                    {
+                                        ChannelId = channelId,
+                                        Title = snippet["title"]?.ToString() ?? "",
+                                        ThumbnailUrl = snippet.SelectToken("thumbnails.default.url")?.ToString() ?? ""
+                                    });
+                                }
+                            }
+                        }
                     }
                     catch { }
                 }
@@ -938,6 +954,9 @@ namespace YTMusicWP
 
             // Cache subscriptions locally
             SaveYouTubeSubscriptionsCacheAsync();
+
+            // DEBUG: Show sync result (remove later)
+            try { await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { ShowToast("Synced " + _youtubeSubscriptions.Count + " subscriptions"); }); } catch { }
         }
 
         private async void SaveYouTubeSubscriptionsCacheAsync()
