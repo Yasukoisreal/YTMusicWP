@@ -578,93 +578,86 @@ namespace YTMusicWP
                 }
 
                 bool hasNew = false;
-                // Find any renderer items
-                var contents = json.SelectTokens("$..playlistVideoRenderer").ToList();
-                if (contents.Count == 0) contents = json.SelectTokens("$..gridVideoRenderer").ToList();
-                if (contents.Count == 0) contents = json.SelectTokens("$..compactVideoRenderer").ToList();
-
-                // Debug: dump first item to a file for inspection
-                if (contents.Count > 0)
+                
+                // Find ALL videoId values anywhere in response
+                var allVideoIds = json.SelectTokens("$..videoId").ToList();
+                
+                // Find all renderer property names
+                var rendererNames = new System.Collections.Generic.HashSet<string>();
+                foreach (var token in json.SelectTokens("$..*"))
                 {
-                    try
+                    if (token is JObject obj)
                     {
-                        string itemDump = contents[0].ToString();
-                        // Write to local storage for inspection
-                        var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
-                        var file = await folder.CreateFileAsync("debug_item.json", Windows.Storage.CreationCollisionOption.ReplaceExisting);
-                        await Windows.Storage.FileIO.WriteTextAsync(file, itemDump);
-
-                        // Show first 300 chars in status
-                        string preview = itemDump.Length > 300 ? itemDump.Substring(0, 300) : itemDump;
-                        LoginStatusText.Text = contents.Count + " items. " + preview;
-                        LoginStatusText.Foreground = _authOrangeBrush;
-                    }
-                    catch { }
-                }
-                else
-                {
-                    // No renderers found at all — show response structure
-                    string dump = json.ToString().Length > 300 ? json.ToString().Substring(0, 300) : json.ToString();
-                    LoginStatusText.Text = "No renderers. " + dump;
-                    LoginStatusText.Foreground = _authOrangeBrush;
-                    return;
-                }
-
-                foreach (var item in contents)
-                {
-                    try
-                    {
-                        // Try ALL possible videoId locations (Web + TV + navigation)
-                        string vidId = item["videoId"]?.ToString()
-                            ?? item["contentId"]?.ToString()
-                            ?? item.SelectToken("navigationEndpoint.watchEndpoint.videoId")?.ToString()
-                            ?? item.SelectToken("onTap.innertubeCommand.watchEndpoint.videoId")?.ToString()
-                            ?? item.SelectToken("command.watchEndpoint.videoId")?.ToString()
-                            ?? item.SelectToken("..watchEndpoint.videoId")?.ToString();
-                        if (string.IsNullOrEmpty(vidId)) continue;
-                        if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
-
-                        // Try ALL possible title paths
-                        string title = item.SelectToken("title.runs[0].text")?.ToString()
-                            ?? item["title"]?["simpleText"]?.ToString()
-                            ?? item.SelectToken("title.accessibility.accessibilityData.label")?.ToString()
-                            ?? item.SelectToken("..headline.runs[0].text")?.ToString()
-                            ?? item.SelectToken("..metadata.title")?.ToString()
-                            ?? "";
-
-                        // Try ALL possible channel paths
-                        string channel = item.SelectToken("shortBylineText.runs[0].text")?.ToString()
-                            ?? item.SelectToken("longBylineText.runs[0].text")?.ToString()
-                            ?? item.SelectToken("..subtitle.runs[0].text")?.ToString()
-                            ?? item.SelectToken("..byline.runs[0].text")?.ToString()
-                            ?? "";
-                        channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
-
-                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
-                            ?? item.SelectToken("..thumbnails[0].url")?.ToString();
-
-                        if (string.IsNullOrEmpty(title)) title = "Video " + vidId;
-
-                        favoriteTracks.Insert(0, new YouTubeTrack
+                        foreach (var prop in obj.Properties())
                         {
-                            VideoId = vidId,
-                            Title = System.Net.WebUtility.HtmlDecode(title),
-                            ChannelName = channel,
-                            ThumbnailUrl = thumbUrl
-                        });
-                        hasNew = true;
+                            if (prop.Name.EndsWith("Renderer"))
+                                rendererNames.Add(prop.Name);
+                        }
                     }
-                    catch { continue; }
+                }
+
+                // Save full response to file for detailed inspection
+                try
+                {
+                    var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+                    var file = await folder.CreateFileAsync("debug_response.json", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+                    string fullJson = json.ToString();
+                    // Truncate if too large for WP8.1
+                    if (fullJson.Length > 50000) fullJson = fullJson.Substring(0, 50000);
+                    await Windows.Storage.FileIO.WriteTextAsync(file, fullJson);
+                }
+                catch { }
+
+                // Show debug info
+                string renderers = rendererNames.Count > 0 ? string.Join(",", rendererNames) : "NONE";
+                LoginStatusText.Text = "VIDs:" + allVideoIds.Count + " R:" + renderers;
+                LoginStatusText.Foreground = _authOrangeBrush;
+
+                // Try to parse using found videoIds directly
+                if (allVideoIds.Count > 0)
+                {
+                    foreach (var vidToken in allVideoIds)
+                    {
+                        try
+                        {
+                            string vidId = vidToken.ToString();
+                            if (string.IsNullOrEmpty(vidId)) continue;
+                            if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
+
+                            // Get parent object to find title
+                            var parent = vidToken.Parent?.Parent; // Go up to the containing object
+                            string title = parent?.SelectToken("title.runs[0].text")?.ToString()
+                                ?? parent?.SelectToken("title.simpleText")?.ToString()
+                                ?? parent?.SelectToken("..headline.runs[0].text")?.ToString()
+                                ?? "Video " + vidId;
+                            string channel = parent?.SelectToken("shortBylineText.runs[0].text")?.ToString()
+                                ?? parent?.SelectToken("longBylineText.runs[0].text")?.ToString()
+                                ?? parent?.SelectToken("..subtitle.runs[0].text")?.ToString()
+                                ?? "";
+                            channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
+                            string thumbUrl = parent?.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
+                                ?? parent?.SelectToken("..thumbnails[0].url")?.ToString();
+
+                            favoriteTracks.Insert(0, new YouTubeTrack
+                            {
+                                VideoId = vidId,
+                                Title = System.Net.WebUtility.HtmlDecode(title),
+                                ChannelName = channel,
+                                ThumbnailUrl = thumbUrl
+                            });
+                            hasNew = true;
+                        }
+                        catch { continue; }
+                    }
                 }
 
                 if (hasNew) SaveFavoritesAsync();
 
-                if (!hasNew && contents.Count > 0)
-                    LoginStatusText.Text = contents.Count + " items but 0 parsed. Check debug_item.json";
-                else
+                if (hasNew)
+                {
                     LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
-                LoginStatusText.Foreground = hasNew ? _greenBrush : _authOrangeBrush;
+                    LoginStatusText.Foreground = _greenBrush;
+                }
             }
             catch (Exception ex)
             {
