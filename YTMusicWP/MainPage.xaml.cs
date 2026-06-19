@@ -100,6 +100,7 @@ namespace YTMusicWP
 
         private ObservableCollection<UserPlaylist> userPlaylists = new ObservableCollection<UserPlaylist>();
         private UserPlaylist _currentViewingPlaylist = null;
+        private string _currentViewingYtPlaylistId = null;
         private YouTubeTrack _trackPendingForPlaylist = null;
 
 
@@ -169,7 +170,7 @@ namespace YTMusicWP
             LyricsListView.ItemsSource = currentLyrics;
             QueueListView.ItemsSource = currentQueueTracks;
             PlaylistsListView.ItemsSource = userPlaylists;
-            DialogPlaylistList.ItemsSource = userPlaylists;
+            DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
 
             _typingTimer.Interval = TimeSpan.FromMilliseconds(400);
             _typingTimer.Tick += TypingTimer_Tick;

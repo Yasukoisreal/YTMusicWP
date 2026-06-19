@@ -893,6 +893,68 @@ namespace YTMusicWP
             catch { return false; }
         }
 
+        private async Task<string> CreateYouTubePlaylistAsync(string title)
+        {
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token)) return null;
+
+            try
+            {
+                var extra = new JObject
+                {
+                    ["title"] = title
+                };
+                var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
+                if (json["_error"] != null) return null;
+                // Extract playlistId from response
+                string plId = json.SelectToken("$..playlistId")?.ToString();
+                return plId;
+            }
+            catch { return null; }
+        }
+
+        private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
+        {
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token)) return false;
+
+            try
+            {
+                var extra = new JObject
+                {
+                    ["playlistId"] = playlistId
+                };
+                var json = await AuthInnerTubePostAsync("playlist/delete", extra, token);
+                return json["_error"] == null;
+            }
+            catch { return false; }
+        }
+
+        private async Task<bool> RemoveFromYouTubePlaylistAsync(string playlistId, string videoId)
+        {
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token)) return false;
+
+            try
+            {
+                var extra = new JObject
+                {
+                    ["playlistId"] = playlistId,
+                    ["actions"] = new JArray
+                    {
+                        new JObject
+                        {
+                            ["removedVideoId"] = videoId,
+                            ["action"] = "ACTION_REMOVE_VIDEO"
+                        }
+                    }
+                };
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                return json["_error"] == null;
+            }
+            catch { return false; }
+        }
+
         private async Task RefreshGoogleTokenAndSyncAsync()
         {
             string token = await RefreshGoogleTokenAsync();

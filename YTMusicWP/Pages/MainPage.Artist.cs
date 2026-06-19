@@ -87,6 +87,7 @@ namespace YTMusicWP
                     }
                 }
                 
+                _currentViewingYtPlaylistId = playlistId;
                 _currentViewingPlaylist = new UserPlaylist { Name = playlistName, Tracks = tracks };
                 PlaylistSongsList.ItemsSource = _currentViewingPlaylist.Tracks;
                 PlaylistDetailsTrackCount.Text = tracks.Count + " tracks";

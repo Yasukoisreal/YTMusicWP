@@ -171,6 +171,7 @@ namespace YTMusicWP
                 case "favorites":
                     // Open a pseudo-playlist view showing favorites
                     _currentViewingPlaylist = null;
+                    _currentViewingYtPlaylistId = null;
                     PlaylistDetailsTitle.Text = "Liked Songs";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     PlaylistSongsList.ItemsSource = favoriteTracks;
@@ -203,6 +204,7 @@ namespace YTMusicWP
 
                 case "downloads":
                     _currentViewingPlaylist = null;
+                    _currentViewingYtPlaylistId = null;
                     PlaylistDetailsTitle.Text = "Downloaded Songs";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     PlaylistSongsList.ItemsSource = downloadedTracks;
@@ -213,6 +215,7 @@ namespace YTMusicWP
 
                 case "recent":
                     _currentViewingPlaylist = null;
+                    _currentViewingYtPlaylistId = null;
                     PlaylistDetailsTitle.Text = "Recently Played";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     PlaylistSongsList.ItemsSource = historyTracks;
@@ -239,16 +242,31 @@ namespace YTMusicWP
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
         }
 
-        private void ConfirmCreatePlaylist_Click(object sender, RoutedEventArgs e)
+        private async void ConfirmCreatePlaylist_Click(object sender, RoutedEventArgs e)
         {
             string name = NewPlaylistNameTextBox.Text.Trim();
-            if (!string.IsNullOrEmpty(name))
-            {
-                userPlaylists.Insert(0, new UserPlaylist { Name = name });
-                SavePlaylistsAsync();
-                ShowToast("Playlist created.");
-            }
+            if (string.IsNullOrEmpty(name)) return;
+
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
+            ShowToast("Creating playlist...");
+
+            string plId = await CreateYouTubePlaylistAsync(name);
+            if (!string.IsNullOrEmpty(plId))
+            {
+                _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                {
+                    PlaylistId = plId,
+                    Title = name,
+                    TrackCount = 0,
+                    ThumbnailUrl = ""
+                });
+                RefreshLibraryList();
+                ShowToast("Playlist created!");
+            }
+            else
+            {
+                ShowToast("Failed to create playlist");
+            }
         }
 
         private void PlaylistItem_Holding(object sender, HoldingRoutedEventArgs e)
@@ -264,36 +282,49 @@ namespace YTMusicWP
             }
         }
 
-        private void MenuDeletePlaylist_Click(object sender, RoutedEventArgs e)
+        private async void MenuDeletePlaylist_Click(object sender, RoutedEventArgs e)
         {
-            var playlist = (sender as MenuFlyoutItem)?.DataContext as UserPlaylist;
-            if (playlist != null)
+            // This handler is kept for compatibility but now unused for YT playlists
+            ShowToast("Use YouTube to manage playlists");
+        }
+
+        private async void MenuDeletePlaylistInside_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentViewingYtPlaylistId != null)
             {
-                userPlaylists.Remove(playlist);
-                SavePlaylistsAsync();
-                ShowToast("Playlist deleted.");
+                ShowToast("Deleting playlist...");
+                bool success = await DeleteYouTubePlaylistAsync(_currentViewingYtPlaylistId);
+                if (success)
+                {
+                    var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == _currentViewingYtPlaylistId);
+                    if (pl != null) _youtubeUserPlaylists.Remove(pl);
+                    RefreshLibraryList();
+                    ShowToast("Playlist deleted!");
+                    PlaylistSlideOutStoryboard.Begin();
+                }
+                else
+                {
+                    ShowToast("Failed to delete playlist");
+                }
             }
         }
 
-        private void MenuDeletePlaylistInside_Click(object sender, RoutedEventArgs e)
-        {
-            if (_currentViewingPlaylist != null)
-            {
-                userPlaylists.Remove(_currentViewingPlaylist);
-                SavePlaylistsAsync();
-                ShowToast("Playlist deleted.");
-                PlaylistSlideOutStoryboard.Begin();
-            }
-        }
-
-        private void MenuRemoveFromPlaylist_Click(object sender, RoutedEventArgs e)
+        private async void MenuRemoveFromPlaylist_Click(object sender, RoutedEventArgs e)
         {
             var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
-            if (track != null && _currentViewingPlaylist != null)
+            if (track != null && _currentViewingYtPlaylistId != null)
             {
-                _currentViewingPlaylist.Tracks.Remove(track);
-                SavePlaylistsAsync();
-                ShowToast("Removed from playlist");
+                bool success = await RemoveFromYouTubePlaylistAsync(_currentViewingYtPlaylistId, track.VideoId);
+                if (success)
+                {
+                    var ytTracks = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
+                    if (ytTracks != null) ytTracks.Remove(track);
+                    ShowToast("Removed from playlist");
+                }
+                else
+                {
+                    ShowToast("Failed to remove");
+                }
             }
         }
 
@@ -343,13 +374,21 @@ namespace YTMusicWP
             }
         }
 
-        private void MenuAddToPlaylist_Click(object sender, RoutedEventArgs e)
+        private async void MenuAddToPlaylist_Click(object sender, RoutedEventArgs e)
         {
             _trackPendingForPlaylist = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
-            if (_trackPendingForPlaylist != null)
+            if (_trackPendingForPlaylist == null) return;
+
+            // Require login
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
             {
-                AddToPlaylistDialog.Visibility = Visibility.Visible;
+                ShowToast("Sign in to add to playlist");
+                return;
             }
+
+            DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
+            AddToPlaylistDialog.Visibility = Visibility.Visible;
         }
 
         private void CancelAddToPlaylist_Click(object sender, RoutedEventArgs e)
@@ -357,23 +396,29 @@ namespace YTMusicWP
             AddToPlaylistDialog.Visibility = Visibility.Collapsed;
         }
 
-        private void DialogPlaylistList_ItemClick(object sender, ItemClickEventArgs e)
+        private async void DialogPlaylistList_ItemClick(object sender, ItemClickEventArgs e)
         {
-            var playlist = e.ClickedItem as UserPlaylist;
-            if (playlist != null && _trackPendingForPlaylist != null)
+            var ytPlaylist = e.ClickedItem as YouTubePlaylistInfo;
+            if (ytPlaylist != null && _trackPendingForPlaylist != null)
             {
-                if (!playlist.Tracks.Any(t => t.VideoId == _trackPendingForPlaylist.VideoId))
+                AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+                ShowToast("Adding to " + ytPlaylist.Title + "...");
+
+                bool success = await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist.VideoId);
+                if (success)
                 {
-                    playlist.Tracks.Insert(0, _trackPendingForPlaylist);
-                    SavePlaylistsAsync();
-                    ShowToast("Added to " + playlist.Name);
+                    ytPlaylist.TrackCount++;
+                    ShowToast("Added to " + ytPlaylist.Title);
                 }
                 else
                 {
-                    ShowToast("Song already in playlist.");
+                    ShowToast("Failed to add to playlist");
                 }
             }
-            AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+            else
+            {
+                AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void MenuShare_Click(object sender, RoutedEventArgs e)

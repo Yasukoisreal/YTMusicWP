@@ -166,8 +166,16 @@ namespace YTMusicWP
             catch { }
         }
 
-        private void OpenCreatePlaylistDialog_Click(object sender, RoutedEventArgs e)
+        private async void OpenCreatePlaylistDialog_Click(object sender, RoutedEventArgs e)
         {
+            // Require login to create playlist
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
+            {
+                ShowToast("Sign in to create playlists");
+                return;
+            }
+
             NewPlaylistNameTextBox.Text = "";
             CreatePlaylistDialog.Visibility = Visibility.Visible;
         }

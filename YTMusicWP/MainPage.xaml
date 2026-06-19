@@ -2171,7 +2171,7 @@
                     <ListView x:Name="DialogPlaylistList" MaxHeight="250" IsItemClickEnabled="True" ItemClick="DialogPlaylistList_ItemClick" SelectionMode="None">
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" FontSize="18" Foreground="White" Margin="0,12"/>
+                                <TextBlock Text="{Binding Title}" FontSize="18" Foreground="White" Margin="0,12"/>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
