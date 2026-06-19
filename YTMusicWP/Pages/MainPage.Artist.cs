@@ -247,6 +247,9 @@ namespace YTMusicWP
                 }
             }
 
+            // Re-check follow status now that artist name is resolved
+            UpdateFollowButton();
+
             // Monthly listeners
             if (!string.IsNullOrEmpty(subscriberCount))
             {
@@ -328,9 +331,18 @@ namespace YTMusicWP
 
         private void UpdateFollowButton()
         {
-            // Always check subscriptions list for current state
+            // Check subscriptions by channelId OR by artist name
             if (!string.IsNullOrEmpty(_currentArtistChannelId))
                 _isFollowingArtist = _youtubeSubscriptions.Any(s => s.ChannelId == _currentArtistChannelId);
+
+            // Also check by name if channelId didn't match (YTM channelId may differ from subscription channelId)
+            if (!_isFollowingArtist)
+            {
+                string displayName = ArtistProfileTitle.Text;
+                if (!string.IsNullOrEmpty(displayName) && displayName != "Unknown Artist")
+                    _isFollowingArtist = _youtubeSubscriptions.Any(s =>
+                        s.Title.Equals(displayName, StringComparison.OrdinalIgnoreCase));
+            }
 
             if (_isFollowingArtist)
             {
