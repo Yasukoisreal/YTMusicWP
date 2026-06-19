@@ -586,7 +586,8 @@ namespace YTMusicWP
                 var rendererNames = new System.Collections.Generic.HashSet<string>();
                 foreach (var token in json.SelectTokens("$..*"))
                 {
-                    if (token is JObject obj)
+                    var obj = token as JObject;
+                    if (obj != null)
                     {
                         foreach (var prop in obj.Properties())
                         {
