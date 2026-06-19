@@ -54,7 +54,7 @@ namespace YTMusicWP
                 AlbumArtEntranceStoryboard.Begin();
                 MenuCoverImage.ImageSource = bigBmp;
 
-                var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute));
+                var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(track.ThumbnailUrl), UriKind.Absolute));
                 miniBmp.DecodePixelWidth = 100;
                 MiniCoverImage.ImageSource = miniBmp;
             }
@@ -459,7 +459,7 @@ namespace YTMusicWP
 
                             var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             miniBmp.DecodePixelWidth = 100;
-                            miniBmp.UriSource = new Uri(thumb, UriKind.Absolute);
+                            miniBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
                             MiniCoverImage.ImageSource = miniBmp;
                         }
                         catch { }
@@ -518,7 +518,7 @@ namespace YTMusicWP
 
                             var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             miniBmp.DecodePixelWidth = 100;
-                            miniBmp.UriSource = new Uri(thumb, UriKind.Absolute);
+                            miniBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
                             MiniCoverImage.ImageSource = miniBmp;
                         }
                         catch { }
