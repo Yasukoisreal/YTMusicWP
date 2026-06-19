@@ -611,7 +611,7 @@ namespace YTMusicWP
 
                     try
                     {
-                        var meta = await GetVideoMetadataAsync(vidId);
+                        var meta = await InnerTubeClient.GetVideoMetadataAsync(vidId);
                         string title = meta.Item1 ?? "Video " + vidId;
                         string channel = CleanChannelName(meta.Item2 ?? "");
                         string thumbUrl = meta.Item3;
