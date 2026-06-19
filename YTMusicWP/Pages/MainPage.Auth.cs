@@ -633,6 +633,24 @@ namespace YTMusicWP
 
                         if (!isMusic) { skippedNonMusic++; continue; }
 
+                        // Try to get square album art from YouTube Music search
+                        if (!string.IsNullOrEmpty(thumbUrl) && thumbUrl.Contains("i.ytimg.com"))
+                        {
+                            try
+                            {
+                                var searchResults = await InnerTubeClient.SearchAsync(title + " " + channel, 5);
+                                var match = searchResults.FirstOrDefault(r =>
+                                    r.VideoId == vidId ||
+                                    (r.Title != null && r.Title.Equals(title, StringComparison.OrdinalIgnoreCase)));
+                                if (match != null && !string.IsNullOrEmpty(match.ThumbnailUrl) 
+                                    && !match.ThumbnailUrl.Contains("i.ytimg.com"))
+                                {
+                                    thumbUrl = match.ThumbnailUrl;
+                                }
+                            }
+                            catch { }
+                        }
+
                         favoriteTracks.Add(new YouTubeTrack
                         {
                             VideoId = vidId,
