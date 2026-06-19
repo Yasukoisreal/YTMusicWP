@@ -882,55 +882,31 @@ namespace YTMusicWP
                 foreach (var cid in allChannelIds)
                     if (!mergedIds.Contains(cid)) mergedIds.Add(cid);
 
-                // Build title map: find all text near channel references
-                var titleMap = new Dictionary<string, string>();
-                var thumbMap = new Dictionary<string, string>();
-
-                // Search for all renderers that contain channel info
-                string jsonStr = json.ToString();
-                foreach (var chId in mergedIds)
-                {
-                    if (titleMap.ContainsKey(chId)) continue;
-
-                    // Find all tokens that have this channelId value
-                    var tokens = json.SelectTokens("$..[?(@.channelId=='" + chId + "')]").ToList();
-                    if (tokens.Count == 0)
-                        tokens = json.SelectTokens("$..[?(@.browseId=='" + chId + "')]").ToList();
-
-                    foreach (var tok in tokens)
-                    {
-                        // Walk up looking for title
-                        var p = tok.Parent;
-                        for (int d = 0; d < 10 && p != null; d++)
-                        {
-                            p = p.Parent;
-                            if (p == null) break;
-
-                            var t = p.SelectToken("title.simpleText")
-                                ?? p.SelectToken("title.runs[0].text")
-                                ?? p.SelectToken("title.content")
-                                ?? p.SelectToken("formattedTitle.simpleText");
-                            if (t != null && t.ToString().Length > 0 && !t.ToString().StartsWith("UC"))
-                            {
-                                titleMap[chId] = t.ToString();
-                                var th = p.SelectToken("thumbnail.thumbnails[0].url")
-                                    ?? p.SelectToken("thumbnailRenderer..thumbnail.thumbnails[0].url");
-                                if (th != null) thumbMap[chId] = th.ToString();
-                                break;
-                            }
-                        }
-                        if (titleMap.ContainsKey(chId)) break;
-                    }
-                }
-
-                // Add subscriptions
+                // Browse each channel to get real name + thumbnail
+                // Results are cached to JSON so this only runs on first sync
                 foreach (var chId in mergedIds)
                 {
                     if (addedIds.Contains(chId)) continue;
                     addedIds.Add(chId);
 
-                    string title = titleMap.ContainsKey(chId) ? titleMap[chId] : chId;
-                    string thumb = thumbMap.ContainsKey(chId) ? thumbMap[chId] : "";
+                    string title = chId;
+                    string thumb = "";
+
+                    try
+                    {
+                        var chJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = chId }, accessToken);
+                        if (chJson["_error"] == null)
+                        {
+                            var t = chJson.SelectToken("$..title.runs[0].text")?.ToString()
+                                ?? chJson.SelectToken("$..title.simpleText")?.ToString();
+                            if (!string.IsNullOrEmpty(t)) title = t;
+                            
+                            var th = chJson.SelectToken("$..avatar.thumbnails[0].url")?.ToString()
+                                ?? chJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString();
+                            if (!string.IsNullOrEmpty(th)) thumb = th;
+                        }
+                    }
+                    catch { }
 
                     _youtubeSubscriptions.Add(new YouTubeSubscription
                     {
