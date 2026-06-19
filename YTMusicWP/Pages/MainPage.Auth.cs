@@ -877,8 +877,15 @@ namespace YTMusicWP
                         try
                         {
                             var artistResult = await InnerTubeClient.BrowseArtistAsync(chId);
-                            // Only keep YouTube Music artists (has music header)
+                            // Must be a YouTube Music artist page with actual music content
+                            // Regular YouTube channels won't have albums/singles on YTM
+                            System.Diagnostics.Debug.WriteLine("[SubSync] " + chId + " → " + artistResult.Name 
+                                + " | IsYTM=" + artistResult.IsYouTubeMusicArtist 
+                                + " | Tracks=" + artistResult.Tracks.Count 
+                                + " | Albums=" + artistResult.Albums.Count
+                                + " | Sub=" + artistResult.SubscriberCount);
                             if (!artistResult.IsYouTubeMusicArtist) return null;
+                            if (artistResult.Albums.Count == 0 && artistResult.Tracks.Count == 0) return null;
 
                             string name = (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
                                 ? artistResult.Name : chId;
