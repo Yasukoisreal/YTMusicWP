@@ -850,6 +850,9 @@ namespace YTMusicWP
             {
                 _youtubeSubscriptions.Clear();
 
+                // Delete old cache to prevent stale unfiltered data
+                try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json"); await f.DeleteAsync(); } catch { }
+
                 // Step 1: Get channel IDs from FEchannels
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
                 if (json["_error"] != null) return;
