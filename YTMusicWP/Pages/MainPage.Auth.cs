@@ -525,88 +525,77 @@ namespace YTMusicWP
         // ══════════════════════════════════════════
         // SYNC LIKED VIDEOS
         // ══════════════════════════════════════════
+        // SYNC LIKED VIDEOS (YouTube Data API v3)
+        // ══════════════════════════════════════════
         private async Task SyncLikedVideosAsync(string accessToken)
         {
             try
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
 
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
-
-                if (json["_error"] != null)
-                {
-                    LoginStatusText.Text = "Sync " + json["_error"] + ": " + (json["_body"]?.ToString() ?? "");
-                    LoginStatusText.Foreground = _authOrangeBrush;
-                    return;
-                }
-
                 bool hasNew = false;
-                // Try multiple renderer types (TV vs Web format)
-                var contents = json.SelectTokens("$..playlistVideoRenderer").ToList();
-                if (contents.Count == 0)
-                    contents = json.SelectTokens("$..gridVideoRenderer").ToList();
-                if (contents.Count == 0)
-                    contents = json.SelectTokens("$..tileRenderer").ToList();
-                if (contents.Count == 0)
-                    contents = json.SelectTokens("$..pivotVideoRenderer").ToList();
-                
-                // Debug: show what we found
-                if (contents.Count == 0)
-                {
-                    // Dump first 200 chars of response to see the structure
-                    string dump = json.ToString().Length > 200 ? json.ToString().Substring(0, 200) : json.ToString();
-                    LoginStatusText.Text = "0 items. Keys: " + dump;
-                    LoginStatusText.Foreground = _authOrangeBrush;
-                    return;
-                }
+                string pageToken = "";
 
-                foreach (var item in contents)
+                // Fetch up to 3 pages (150 videos max)
+                for (int page = 0; page < 3; page++)
                 {
-                    try
+                    string url = "https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50";
+                    if (!string.IsNullOrEmpty(pageToken))
+                        url += "&pageToken=" + pageToken;
+
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                    var response = await _apiClient.SendAsync(request);
+
+                    if (!response.IsSuccessStatusCode)
                     {
-                        // TV format uses contentId, Web uses videoId
-                        string vidId = item["videoId"]?.ToString()
-                            ?? item["contentId"]?.ToString()
-                            ?? item.SelectToken("..videoId")?.ToString();
-                        if (string.IsNullOrEmpty(vidId)) continue;
-                        if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
-
-                        // Try all possible title paths (Web + TV)
-                        string title = item.SelectToken("title.runs[0].text")?.ToString()
-                            ?? item["title"]?["simpleText"]?.ToString()
-                            ?? item.SelectToken("title.accessibility.accessibilityData.label")?.ToString()
-                            ?? item.SelectToken("..title..text")?.ToString()
-                            ?? item.SelectToken("..headline..text")?.ToString()
-                            ?? "";
-
-                        // Try all possible channel/artist paths
-                        string channel = item.SelectToken("shortBylineText.runs[0].text")?.ToString()
-                            ?? item.SelectToken("shortBylineText.simpleText")?.ToString()
-                            ?? item.SelectToken("longBylineText.runs[0].text")?.ToString()
-                            ?? item.SelectToken("..byline..text")?.ToString()
-                            ?? item.SelectToken("..subtitle..text")?.ToString()
-                            ?? "";
-                        channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
-
-                        // Thumbnail
-                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
-                            ?? item.SelectToken("..thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("..thumbnails[0].url")?.ToString();
-
-                        // Accept items with at least a videoId (title can be empty for now)
-                        if (string.IsNullOrEmpty(title)) title = "Video " + vidId;
-
-                        favoriteTracks.Insert(0, new YouTubeTrack
-                        {
-                            VideoId = vidId,
-                            Title = System.Net.WebUtility.HtmlDecode(title),
-                            ChannelName = channel,
-                            ThumbnailUrl = thumbUrl
-                        });
-                        hasNew = true;
+                        string errBody = await response.Content.ReadAsStringAsync();
+                        string errSnippet = errBody.Length > 80 ? errBody.Substring(0, 80) : errBody;
+                        LoginStatusText.Text = "Sync " + (int)response.StatusCode + ": " + errSnippet;
+                        LoginStatusText.Foreground = _authOrangeBrush;
+                        return;
                     }
-                    catch { continue; }
+
+                    var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                    var items = json["items"] as JArray;
+                    if (items == null || items.Count == 0) break;
+
+                    foreach (var item in items)
+                    {
+                        try
+                        {
+                            string vidId = item["id"]?.ToString();
+                            if (string.IsNullOrEmpty(vidId)) continue;
+                            if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
+
+                            var snippet = item["snippet"];
+                            string title = snippet?["title"]?.ToString() ?? "";
+                            string channel = snippet?["channelTitle"]?.ToString() ?? "";
+                            channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
+
+                            // Get best thumbnail
+                            string thumbUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
+                                ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
+                                ?? snippet?.SelectToken("thumbnails.default.url")?.ToString();
+
+                            if (!string.IsNullOrEmpty(title))
+                            {
+                                favoriteTracks.Insert(0, new YouTubeTrack
+                                {
+                                    VideoId = vidId,
+                                    Title = System.Net.WebUtility.HtmlDecode(title),
+                                    ChannelName = channel,
+                                    ThumbnailUrl = thumbUrl
+                                });
+                                hasNew = true;
+                            }
+                        }
+                        catch { continue; }
+                    }
+
+                    pageToken = json["nextPageToken"]?.ToString();
+                    if (string.IsNullOrEmpty(pageToken)) break;
                 }
 
                 if (hasNew) SaveFavoritesAsync();
@@ -697,27 +686,31 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
-                if (json["_error"] != null) return;
 
-                // Try to find playlists in the library response
-                var items = json.SelectTokens("$..gridPlaylistRenderer");
+                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                var response = await _apiClient.SendAsync(request);
+                if (!response.IsSuccessStatusCode) return;
+
+                var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                var items = json["items"] as JArray;
+                if (items == null) return;
+
                 foreach (var item in items)
                 {
                     try
                     {
-                        string plId = item["playlistId"]?.ToString();
+                        string plId = item["id"]?.ToString();
                         if (string.IsNullOrEmpty(plId)) continue;
 
-                        string title = item.SelectToken("title..text")?.ToString() ?? item["title"]?["simpleText"]?.ToString() ?? "";
-                        string countText = item.SelectToken("videoCountShortText..text")?.ToString()
-                            ?? item.SelectToken("videoCountText..text")?.ToString() ?? "0";
-                        int count = 0;
-                        var match = System.Text.RegularExpressions.Regex.Match(countText, @"(\d+)");
-                        if (match.Success) int.TryParse(match.Value, out count);
-
-                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+                        var snippet = item["snippet"];
+                        string title = snippet?["title"]?.ToString() ?? "";
+                        int count = item.SelectToken("contentDetails.itemCount")?.Value<int>() ?? 0;
+                        string thumbUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
+                            ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
+                            ?? snippet?.SelectToken("thumbnails.default.url")?.ToString();
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
@@ -745,31 +738,52 @@ namespace YTMusicWP
             try
             {
                 _youtubeSubscriptions.Clear();
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
-                if (json["_error"] != null) return;
 
-                var items = json.SelectTokens("$..gridChannelRenderer");
-                foreach (var item in items)
+                string pageToken = "";
+                for (int page = 0; page < 10; page++)
                 {
-                    try
+                    string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&order=alphabetical";
+                    if (!string.IsNullOrEmpty(pageToken))
+                        url += "&pageToken=" + pageToken;
+
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                    var response = await _apiClient.SendAsync(request);
+                    if (!response.IsSuccessStatusCode) break;
+
+                    var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                    var items = json["items"] as JArray;
+                    if (items == null || items.Count == 0) break;
+
+                    foreach (var item in items)
                     {
-                        string channelId = item["channelId"]?.ToString();
-                        if (string.IsNullOrEmpty(channelId)) continue;
-
-                        string title = item.SelectToken("title..text")?.ToString() ?? item["title"]?["simpleText"]?.ToString() ?? "";
-                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
-
-                        _youtubeSubscriptions.Add(new YouTubeSubscription
+                        try
                         {
-                            ChannelId = channelId,
-                            Title = title,
-                            ThumbnailUrl = thumbUrl
-                        });
+                            var snippet = item["snippet"];
+                            string channelId = snippet?.SelectToken("resourceId.channelId")?.ToString();
+                            if (string.IsNullOrEmpty(channelId)) continue;
 
-                        if (_youtubeSubscriptions.Count >= 500) break;
+                            string title = snippet?["title"]?.ToString() ?? "";
+                            string thumbUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
+                                ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
+                                ?? snippet?.SelectToken("thumbnails.default.url")?.ToString();
+
+                            _youtubeSubscriptions.Add(new YouTubeSubscription
+                            {
+                                ChannelId = channelId,
+                                Title = title,
+                                ThumbnailUrl = thumbUrl
+                            });
+
+                            if (_youtubeSubscriptions.Count >= 500) break;
+                        }
+                        catch { continue; }
                     }
-                    catch { continue; }
+
+                    if (_youtubeSubscriptions.Count >= 500) break;
+                    pageToken = json["nextPageToken"]?.ToString();
+                    if (string.IsNullOrEmpty(pageToken)) break;
                 }
             }
             catch { }
