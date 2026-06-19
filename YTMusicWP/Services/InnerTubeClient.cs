@@ -190,6 +190,7 @@ namespace YTMusicWP
         public string CoverUrl { get; set; } = "";
         public string SubscriberCount { get; set; } = "";
         public string Description { get; set; } = "";
+        public bool IsYouTubeMusicArtist { get; set; } = false;
         public List<YouTubeTrack> Tracks { get; set; } = new List<YouTubeTrack>();
         public List<ArtistAlbum> Albums { get; set; } = new List<ArtistAlbum>();
     }

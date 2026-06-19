@@ -862,7 +862,7 @@ namespace YTMusicWP
                     .Take(30)
                     .ToList();
 
-                // Step 2: Resolve channel names in parallel (5 at a time)
+                // Step 2: Resolve channel names in parallel (5 at a time), filter music artists only
                 const int batchSize = 5;
                 var results = new List<YouTubeSubscription>();
 
@@ -871,22 +871,22 @@ namespace YTMusicWP
                     var batch = channelIds.Skip(i).Take(batchSize).ToList();
                     var tasks = batch.Select(async chId =>
                     {
-                        string name = chId;
-                        string avatarUrl = "";
                         try
                         {
                             var artistResult = await InnerTubeClient.BrowseArtistAsync(chId);
-                            if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
-                                name = artistResult.Name;
-                            if (!string.IsNullOrEmpty(artistResult.AvatarUrl))
-                                avatarUrl = artistResult.AvatarUrl;
+                            // Only keep YouTube Music artists (has music header)
+                            if (!artistResult.IsYouTubeMusicArtist) return null;
+
+                            string name = (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                                ? artistResult.Name : chId;
+                            string avatarUrl = artistResult.AvatarUrl ?? "";
+                            return new YouTubeSubscription { ChannelId = chId, Title = name, ThumbnailUrl = avatarUrl };
                         }
-                        catch { }
-                        return new YouTubeSubscription { ChannelId = chId, Title = name, ThumbnailUrl = avatarUrl };
+                        catch { return null; }
                     }).ToArray();
 
                     var batchResults = await Task.WhenAll(tasks);
-                    results.AddRange(batchResults);
+                    results.AddRange(batchResults.Where(r => r != null));
                 }
 
                 foreach (var sub in results)

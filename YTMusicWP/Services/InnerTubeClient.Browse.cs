@@ -204,6 +204,7 @@ namespace YTMusicWP
                     var mih = header["musicImmersiveHeaderRenderer"] ?? header["musicVisualHeaderRenderer"];
                     if (mih != null)
                     {
+                        result.IsYouTubeMusicArtist = true;
                         result.Name = mih["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
 
                         // Avatar
