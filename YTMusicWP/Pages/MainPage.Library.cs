@@ -213,7 +213,7 @@ namespace YTMusicWP
                 case "artist":
                     var sub = item.Tag as YouTubeSubscription;
                     if (sub != null)
-                        OpenArtistProfile(sub.ChannelId, sub.Title);
+                        OpenArtistProfile(sub.ChannelId, sub.Title, true);
                     break;
             }
         }
@@ -702,7 +702,7 @@ namespace YTMusicWP
             var sub = e.ClickedItem as YouTubeSubscription;
             if (sub != null && !string.IsNullOrEmpty(sub.ChannelId))
             {
-                OpenArtistProfile(sub.ChannelId, sub.Title);
+                OpenArtistProfile(sub.ChannelId, sub.Title, true);
             }
         }
 

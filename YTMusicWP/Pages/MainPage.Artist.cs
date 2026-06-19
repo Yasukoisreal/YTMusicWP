@@ -95,7 +95,7 @@ namespace YTMusicWP
             catch { ShowToast("Failed to load playlist"); }
         }
 
-        private async void OpenArtistProfile(string channelId, string channelName)
+        private async void OpenArtistProfile(string channelId, string channelName, bool trustChannelId = false)
         {
             _currentArtistChannelId = channelId;
             _isFollowingArtist = _youtubeSubscriptions.Any(s => s.ChannelId == channelId);
@@ -119,8 +119,35 @@ namespace YTMusicWP
             string description = "";
             string avatarUrl = "";
 
-            // Step 1: Search YouTube Music for the correct artist (preferred — exact match)
-            if (!string.IsNullOrEmpty(channelName))
+            // When channelId is trusted (from Library/Search), browse directly first
+            if (trustChannelId && !string.IsNullOrEmpty(channelId))
+            {
+                try
+                {
+                    var artistResult = await InnerTubeClient.BrowseArtistAsync(channelId);
+                    if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
+                    {
+                        tracks = artistResult.Tracks;
+                        avatarUrl = artistResult.AvatarUrl;
+
+                        if (!string.IsNullOrEmpty(artistResult.CoverUrl))
+                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
+                        else if (!string.IsNullOrEmpty(avatarUrl))
+                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
+
+                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                            ArtistProfileTitle.Text = artistResult.Name;
+                        if (artistResult.Albums != null && artistResult.Albums.Count > 0)
+                            albums = artistResult.Albums;
+                        subscriberCount = artistResult.SubscriberCount;
+                        description = artistResult.Description;
+                    }
+                }
+                catch { }
+            }
+
+            // Search YouTube Music for artist (preferred when channelId not trusted)
+            if ((tracks == null || tracks.Count == 0) && !string.IsNullOrEmpty(channelName))
             {
                 try
                 {
@@ -161,7 +188,7 @@ namespace YTMusicWP
                 catch { }
             }
 
-            // Step 2: Fallback to channelId browse (when search didn't find artist)
+            // Fallback to channelId browse
             if ((tracks == null || tracks.Count == 0) && !string.IsNullOrEmpty(channelId))
             {
                 try
@@ -188,7 +215,7 @@ namespace YTMusicWP
                 catch { }
             }
 
-            // Step 3: Final fallback — search songs
+            // Final fallback — search songs
             if (tracks == null || tracks.Count == 0)
             {
                 string query = channelName ?? "";

@@ -20,7 +20,7 @@ namespace YTMusicWP
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
             if (track.VideoId.StartsWith("CHANNEL:"))
             {
-                OpenArtistProfile(track.VideoId.Substring(8), track.Title ?? track.ChannelName);
+                OpenArtistProfile(track.VideoId.Substring(8), track.Title ?? track.ChannelName, true);
                 return;
             }
             if (track.VideoId.StartsWith("PLAYLIST:"))
