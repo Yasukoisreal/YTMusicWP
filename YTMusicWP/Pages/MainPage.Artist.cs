@@ -98,7 +98,7 @@ namespace YTMusicWP
         private async void OpenArtistProfile(string channelId, string channelName)
         {
             _currentArtistChannelId = channelId;
-            _isFollowingArtist = false;
+            _isFollowingArtist = _youtubeSubscriptions.Any(s => s.ChannelId == channelId);
             ArtistProfileView.Visibility = Visibility.Visible;
             ArtistSlideInStoryboard.Begin();
             ArtistLoadingBar.Visibility = Visibility.Visible;
