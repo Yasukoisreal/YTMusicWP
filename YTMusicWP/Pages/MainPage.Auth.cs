@@ -567,6 +567,9 @@ namespace YTMusicWP
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
 
+                // Clear stale entries from previous syncs
+                favoriteTracks.Clear();
+
                 // Use TVHTML5 client (only client that works with TV OAuth token)
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
 
@@ -625,19 +628,48 @@ namespace YTMusicWP
                             if (string.IsNullOrEmpty(vidId)) continue;
                             if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
 
-                            // Get parent object to find title
-                            var parent = vidToken.Parent?.Parent; // Go up to the containing object
-                            string title = parent?.SelectToken("title.runs[0].text")?.ToString()
-                                ?? parent?.SelectToken("title.simpleText")?.ToString()
-                                ?? parent?.SelectToken("..headline.runs[0].text")?.ToString()
-                                ?? "Video " + vidId;
-                            string channel = parent?.SelectToken("shortBylineText.runs[0].text")?.ToString()
-                                ?? parent?.SelectToken("longBylineText.runs[0].text")?.ToString()
-                                ?? parent?.SelectToken("..subtitle.runs[0].text")?.ToString()
-                                ?? "";
+                            // Traverse up parents until we find one with a "title" property
+                            string title = "";
+                            string channel = "";
+                            string thumbUrl = "";
+                            JToken ancestor = vidToken.Parent;
+                            for (int level = 0; level < 10 && ancestor != null; level++)
+                            {
+                                var ancestorObj = ancestor as JObject;
+                                if (ancestorObj != null)
+                                {
+                                    // Look for title
+                                    if (string.IsNullOrEmpty(title))
+                                    {
+                                        title = ancestorObj.SelectToken("title.runs[0].text")?.ToString()
+                                            ?? ancestorObj.SelectToken("title.simpleText")?.ToString()
+                                            ?? ancestorObj.SelectToken("title.accessibility.accessibilityData.label")?.ToString()
+                                            ?? ancestorObj.SelectToken("headline.runs[0].text")?.ToString()
+                                            ?? "";
+                                    }
+                                    // Look for channel
+                                    if (string.IsNullOrEmpty(channel))
+                                    {
+                                        channel = ancestorObj.SelectToken("shortBylineText.runs[0].text")?.ToString()
+                                            ?? ancestorObj.SelectToken("longBylineText.runs[0].text")?.ToString()
+                                            ?? ancestorObj.SelectToken("subtitle.runs[0].text")?.ToString()
+                                            ?? ancestorObj.SelectToken("byline.runs[0].text")?.ToString()
+                                            ?? "";
+                                    }
+                                    // Look for thumbnail
+                                    if (string.IsNullOrEmpty(thumbUrl))
+                                    {
+                                        thumbUrl = ancestorObj.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
+                                            ?? "";
+                                    }
+                                    // Stop if we found title
+                                    if (!string.IsNullOrEmpty(title)) break;
+                                }
+                                ancestor = ancestor.Parent;
+                            }
+
+                            if (string.IsNullOrEmpty(title)) title = "Video " + vidId;
                             channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
-                            string thumbUrl = parent?.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
-                                ?? parent?.SelectToken("..thumbnails[0].url")?.ToString();
 
                             favoriteTracks.Insert(0, new YouTubeTrack
                             {
