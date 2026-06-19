@@ -295,8 +295,9 @@ namespace YTMusicWP
             {
                 if (!_isFollowingArtist)
                 {
-                    // Try to subscribe via InnerTube (best-effort)
+                    // Subscribe via InnerTube
                     string accessToken = await GetAccessTokenAsync();
+                    bool apiSuccess = false;
                     if (!string.IsNullOrEmpty(accessToken))
                     {
                         try
@@ -306,7 +307,8 @@ namespace YTMusicWP
                                 ["channelIds"] = new JArray { _currentArtistChannelId },
                                 ["params"] = "EgIIAhgA"
                             };
-                            await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
+                            var result = await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
+                            apiSuccess = result["_error"] == null;
                         }
                         catch { }
                     }
@@ -314,12 +316,13 @@ namespace YTMusicWP
                     _isFollowingArtist = true;
                     SaveFollowState(_currentArtistChannelId, true);
                     UpdateFollowButton();
-                    ShowToast("Following " + ArtistProfileTitle.Text);
+                    ShowToast(apiSuccess ? "Subscribed to " + ArtistProfileTitle.Text : "Followed locally (API failed)");
                 }
                 else
                 {
-                    // Try to unsubscribe via InnerTube (best-effort)
+                    // Unsubscribe via InnerTube
                     string accessToken = await GetAccessTokenAsync();
+                    bool apiSuccess = false;
                     if (!string.IsNullOrEmpty(accessToken))
                     {
                         try
@@ -328,7 +331,8 @@ namespace YTMusicWP
                             {
                                 ["channelIds"] = new JArray { _currentArtistChannelId }
                             };
-                            await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
+                            var result = await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
+                            apiSuccess = result["_error"] == null;
                         }
                         catch { }
                     }
@@ -336,7 +340,7 @@ namespace YTMusicWP
                     _isFollowingArtist = false;
                     SaveFollowState(_currentArtistChannelId, false);
                     UpdateFollowButton();
-                    ShowToast("Unfollowed " + ArtistProfileTitle.Text);
+                    ShowToast(apiSuccess ? "Unsubscribed from " + ArtistProfileTitle.Text : "Unfollowed locally (API failed)");
                 }
             }
             catch { }
