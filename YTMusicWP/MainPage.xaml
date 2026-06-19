@@ -1819,11 +1819,7 @@
                                     <CompositeTransform x:Name="BigCoverTransform" ScaleX="1" ScaleY="1"/>
                                 </Rectangle.RenderTransform>
                                 <Rectangle.Fill>
-                                    <ImageBrush x:Name="BigCoverImage" Stretch="UniformToFill">
-                                        <ImageBrush.RelativeTransform>
-                                            <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                                        </ImageBrush.RelativeTransform>
-                                    </ImageBrush>
+                                    <ImageBrush x:Name="BigCoverImage" Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center"/>
                                 </Rectangle.Fill>
                             </Rectangle>
                         </Grid>
@@ -1988,11 +1984,7 @@
                         </Grid.ColumnDefinitions>
                         <Rectangle Grid.Column="0" Width="50" Height="50" RadiusX="4" RadiusY="4">
                             <Rectangle.Fill>
-                                <ImageBrush x:Name="MenuCoverImage" Stretch="UniformToFill">
-                                    <ImageBrush.RelativeTransform>
-                                        <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                                    </ImageBrush.RelativeTransform>
-                                </ImageBrush>
+                                <ImageBrush x:Name="MenuCoverImage" Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center"/>
                             </Rectangle.Fill>
                         </Rectangle>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
