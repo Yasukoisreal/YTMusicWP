@@ -432,7 +432,7 @@ namespace YTMusicWP
         /// Get video metadata (title, author, thumbnail) via InnerTube player.
         /// Uses ANDROID_VR client with videoDetails field for lightweight response.
         /// </summary>
-        public static async Task<Tuple<string, string, string>> GetVideoMetadataAsync(string videoId)
+        public static async Task<Tuple<string, string, string, bool>> GetVideoMetadataAsync(string videoId)
         {
             try
             {
@@ -456,14 +456,14 @@ namespace YTMusicWP
                 "}";
 
                 var req = new HttpRequestMessage(HttpMethod.Post,
-                    "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails");
+                    "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails,microformat");
                 req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
                 req.Headers.Add("User-Agent",
                     "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
 
                 var resp = await _client.SendAsync(req);
                 if (!resp.IsSuccessStatusCode)
-                    return new Tuple<string, string, string>("", "", "");
+                    return new Tuple<string, string, string, bool>("", "", "", false);
 
                 string json = await resp.Content.ReadAsStringAsync();
                 var data = JObject.Parse(json);
@@ -474,11 +474,33 @@ namespace YTMusicWP
                 string thumbUrl = details?.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
                     ?? details?.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
 
-                return new Tuple<string, string, string>(title, author, thumbUrl);
+                // Check if it's music content
+                bool isMusic = false;
+                string musicVideoType = details?["musicVideoType"]?.ToString() ?? "";
+                if (!string.IsNullOrEmpty(musicVideoType)) isMusic = true;
+
+                // Also check microformat category
+                if (!isMusic)
+                {
+                    string category = data.SelectToken("microformat.playerMicroformatRenderer.category")?.ToString() ?? "";
+                    if (category.Equals("Music", StringComparison.OrdinalIgnoreCase) ||
+                        category.Equals("Entertainment", StringComparison.OrdinalIgnoreCase))
+                        isMusic = true;
+                }
+
+                // Check if channel name contains "Topic" or "VEVO" — strong music indicator
+                if (!isMusic)
+                {
+                    string ch = author.ToLower();
+                    if (ch.Contains("- topic") || ch.Contains("vevo") || ch.Contains("official"))
+                        isMusic = true;
+                }
+
+                return new Tuple<string, string, string, bool>(title, author, thumbUrl, isMusic);
             }
             catch
             {
-                return new Tuple<string, string, string>("", "", "");
+                return new Tuple<string, string, string, bool>("", "", "", false);
             }
         }
     }

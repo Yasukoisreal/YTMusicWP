@@ -612,7 +612,8 @@ namespace YTMusicWP
                         uniqueVideoIds.Add(vid);
                 }
 
-                // Fetch metadata for each video via InnerTube player
+                // Fetch metadata for each video via InnerTube player — filter music only
+                int skippedNonMusic = 0;
                 foreach (var vidId in uniqueVideoIds)
                 {
                     if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
@@ -623,6 +624,9 @@ namespace YTMusicWP
                         string title = meta.Item1 ?? "Video " + vidId;
                         string channel = CleanChannelName(meta.Item2 ?? "");
                         string thumbUrl = meta.Item3;
+                        bool isMusic = meta.Item4;
+
+                        if (!isMusic) { skippedNonMusic++; continue; }
 
                         favoriteTracks.Add(new YouTubeTrack
                         {
