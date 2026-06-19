@@ -475,25 +475,19 @@ namespace YTMusicWP
                 string thumbUrl = details?.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
                     ?? details?.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
 
-                // Check if it's music content
+                // Strict filter: only YouTube Music audio tracks (ATV)
+                // MUSIC_VIDEO_TYPE_ATV = official audio track (song on YouTube Music)
+                // Rejects: OMV (music videos), UGC (user content), regular YouTube videos
                 bool isMusic = false;
                 string musicVideoType = details?["musicVideoType"]?.ToString() ?? "";
-                if (!string.IsNullOrEmpty(musicVideoType)) isMusic = true;
+                if (musicVideoType == "MUSIC_VIDEO_TYPE_ATV")
+                    isMusic = true;
 
-                // Also check microformat category
+                // Also accept Topic channel tracks (auto-generated YouTube Music content)
                 if (!isMusic)
                 {
-                    string category = data.SelectToken("microformat.playerMicroformatRenderer.category")?.ToString() ?? "";
-                    if (category.Equals("Music", StringComparison.OrdinalIgnoreCase) ||
-                        category.Equals("Entertainment", StringComparison.OrdinalIgnoreCase))
-                        isMusic = true;
-                }
-
-                // Check if channel name contains "Topic" or "VEVO" — strong music indicator
-                if (!isMusic)
-                {
-                    string ch = author.ToLower();
-                    if (ch.Contains("- topic") || ch.Contains("vevo") || ch.Contains("official"))
+                    string ch = author ?? "";
+                    if (ch.EndsWith(" - Topic") || ch.EndsWith(" - Chủ đề"))
                         isMusic = true;
                 }
 
