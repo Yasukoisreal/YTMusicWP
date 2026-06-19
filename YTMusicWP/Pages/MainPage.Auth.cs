@@ -222,10 +222,14 @@ namespace YTMusicWP
 
             _youtubeUserPlaylists.Clear();
             _youtubeSubscriptions.Clear();
+            favoriteTracks.Clear();
+            historyTracks.Clear();
 
-            // Clear cached YouTube data
+            // Clear all cached YouTube data
             try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_playlists_cache.json"); await f.DeleteAsync(); } catch { }
             try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json"); await f.DeleteAsync(); } catch { }
+            try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("favorites.json"); await f.DeleteAsync(); } catch { }
+            try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("history.json"); await f.DeleteAsync(); } catch { }
 
             LoginStatusText.Text = "Status: Not Logged In";
             LoginStatusText.Foreground = _authGrayBrush;
