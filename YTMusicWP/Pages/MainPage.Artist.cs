@@ -125,35 +125,73 @@ namespace YTMusicWP
                 try
                 {
                     var artistResult = await InnerTubeClient.BrowseArtistAsync(channelId);
-                    if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
+
+                    // Verify this is the right artist by comparing names
+                    bool nameMatch = string.IsNullOrEmpty(channelName) ||
+                        string.IsNullOrEmpty(artistResult.Name) ||
+                        artistResult.Name.Equals(channelName, StringComparison.OrdinalIgnoreCase) ||
+                        artistResult.Name.Contains(channelName) ||
+                        channelName.Contains(artistResult.Name);
+
+                    if (nameMatch && artistResult.Tracks != null && artistResult.Tracks.Count > 0)
+                    {
                         tracks = artistResult.Tracks;
+                        avatarUrl = artistResult.AvatarUrl;
 
-                    avatarUrl = artistResult.AvatarUrl;
+                        if (!string.IsNullOrEmpty(artistResult.CoverUrl))
+                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
+                        else if (!string.IsNullOrEmpty(avatarUrl))
+                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
 
-                    if (!string.IsNullOrEmpty(artistResult.CoverUrl))
-                    {
-                        ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
+                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                            ArtistProfileTitle.Text = artistResult.Name;
+                        if (artistResult.Albums != null && artistResult.Albums.Count > 0)
+                            albums = artistResult.Albums;
+                        subscriberCount = artistResult.SubscriberCount;
+                        description = artistResult.Description;
                     }
-                    else if (!string.IsNullOrEmpty(avatarUrl))
-                    {
-                        ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
-                    }
-
-                    if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
-                    {
-                        ArtistProfileTitle.Text = artistResult.Name;
-                    }
-                    if (artistResult.Albums != null && artistResult.Albums.Count > 0)
-                    {
-                        albums = artistResult.Albums;
-                    }
-                    subscriberCount = artistResult.SubscriberCount;
-                    description = artistResult.Description;
                 }
                 catch { }
             }
 
-            // Fallback search — only if BrowseArtistAsync didn't return tracks
+            // Fallback: Search YouTube Music for the correct artist
+            if ((tracks == null || tracks.Count == 0) && !string.IsNullOrEmpty(channelName))
+            {
+                try
+                {
+                    // Search for artist on YouTube Music
+                    var searchResults = await InnerTubeClient.SearchAsync(channelName, 5);
+                    var artistMatch = searchResults.FirstOrDefault(r =>
+                        r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
+                        r.Title.Equals(channelName, StringComparison.OrdinalIgnoreCase));
+
+                    if (artistMatch != null)
+                    {
+                        string ytmChannelId = artistMatch.VideoId.Replace("CHANNEL:", "");
+                        _currentArtistChannelId = ytmChannelId;
+
+                        var artistResult = await InnerTubeClient.BrowseArtistAsync(ytmChannelId);
+                        if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
+                            tracks = artistResult.Tracks;
+                        avatarUrl = artistResult.AvatarUrl;
+
+                        if (!string.IsNullOrEmpty(artistResult.CoverUrl))
+                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
+                        else if (!string.IsNullOrEmpty(avatarUrl))
+                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
+
+                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                            ArtistProfileTitle.Text = artistResult.Name;
+                        if (artistResult.Albums != null && artistResult.Albums.Count > 0)
+                            albums = artistResult.Albums;
+                        subscriberCount = artistResult.SubscriberCount;
+                        description = artistResult.Description;
+                    }
+                }
+                catch { }
+            }
+
+            // Final fallback: search songs
             if (tracks == null || tracks.Count == 0)
             {
                 string query = channelName ?? "";
