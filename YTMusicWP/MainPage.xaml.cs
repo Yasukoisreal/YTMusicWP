@@ -320,7 +320,10 @@ namespace YTMusicWP
                 if (!string.IsNullOrEmpty(token))
                 {
                     await SyncAllAsync(token);
-                    RefreshLibraryList();
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    {
+                        RefreshLibraryList();
+                    });
                 }
             }
             catch { }
