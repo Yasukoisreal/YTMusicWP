@@ -738,42 +738,30 @@ namespace YTMusicWP
                         uniqueIds.Add(plId);
                 }
 
-                // For each playlist, try to get title from the response tree
+                // For each playlist, browse it to get real title
                 foreach (var plId in uniqueIds)
                 {
                     try
                     {
-                        // Find the token and traverse up for title
                         string title = "";
                         string thumbUrl = "";
                         int count = 0;
 
-                        // Search for title near the playlistId in the JSON tree
-                        foreach (var token in allPlaylistIds)
+                        // Browse the playlist directly to get title
+                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
+                        if (plJson["_error"] == null)
                         {
-                            if (token.ToString() != plId) continue;
-                            JToken ancestor = token.Parent;
-                            for (int level = 0; level < 10 && ancestor != null; level++)
-                            {
-                                var ancestorObj = ancestor as JObject;
-                                if (ancestorObj != null)
-                                {
-                                    if (string.IsNullOrEmpty(title))
-                                    {
-                                        title = ancestorObj.SelectToken("title.runs[0].text")?.ToString()
-                                            ?? ancestorObj.SelectToken("title.simpleText")?.ToString()
-                                            ?? "";
-                                    }
-                                    if (string.IsNullOrEmpty(thumbUrl))
-                                    {
-                                        thumbUrl = ancestorObj.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
-                                            ?? "";
-                                    }
-                                    if (!string.IsNullOrEmpty(title)) break;
-                                }
-                                ancestor = ancestor.Parent;
-                            }
-                            if (!string.IsNullOrEmpty(title)) break;
+                            // Title is usually in header
+                            title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
+                                ?? plJson.SelectToken("$..title.simpleText")?.ToString()
+                                ?? "";
+                            // Thumbnail
+                            thumbUrl = plJson.SelectToken("$..playlistHeaderRenderer.playlistHeaderBanner.heroPlaylistThumbnailRenderer.thumbnail.thumbnails[0].url")?.ToString()
+                                ?? plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString()
+                                ?? "";
+                            // Count videos
+                            var videoIds = plJson.SelectTokens("$..videoId").ToList();
+                            count = videoIds.Count;
                         }
 
                         if (string.IsNullOrEmpty(title)) title = "Playlist " + plId;
