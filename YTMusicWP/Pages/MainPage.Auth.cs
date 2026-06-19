@@ -502,15 +502,49 @@ namespace YTMusicWP
             {
                 ["context"] = new JObject { ["client"] = clientObj }
             };
-            // Merge extra parameters
             foreach (var prop in extraParams.Properties())
                 body[prop.Name] = prop.Value;
 
-            // YouTube TV API key — matches the YouTube TV OAuth client
             string url = "https://www.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyDCU8hByM-4DrUqRUYnGn-3llEO78bcxq8&prettyPrint=false";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version");
+            request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+            var response = await _apiClient.SendAsync(request);
+            string resultJson = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+                return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
+            
+            return JObject.Parse(resultJson);
+        }
+
+        // WEB client for browse requests — returns standard web format with videoId, title etc.
+        private async Task<JObject> WebBrowseAsync(string browseId, string accessToken)
+        {
+            var body = new JObject
+            {
+                ["context"] = new JObject
+                {
+                    ["client"] = new JObject
+                    {
+                        ["clientName"] = "WEB",
+                        ["clientVersion"] = "2.20241016.00.00",
+                        ["hl"] = InnerTubeClient.CurrentLanguage,
+                        ["gl"] = InnerTubeClient.CurrentRegion
+                    }
+                },
+                ["browseId"] = browseId
+            };
+
+            // Try without API key first (Bearer should be enough)
+            string url = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+            request.Headers.Add("Origin", "https://www.youtube.com");
+            request.Headers.Add("Referer", "https://www.youtube.com/");
             request.Headers.Add("Authorization", "Bearer " + accessToken);
 
             var response = await _apiClient.SendAsync(request);
@@ -533,69 +567,50 @@ namespace YTMusicWP
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
 
-                bool hasNew = false;
-                string pageToken = "";
+                // Use WEB client to browse liked videos playlist — returns standard web format
+                var json = await WebBrowseAsync("VLLL", accessToken);
 
-                // Fetch up to 3 pages (150 videos max)
-                for (int page = 0; page < 3; page++)
+                if (json["_error"] != null)
                 {
-                    string url = "https://www.googleapis.com/youtube/v3/videos?part=snippet&myRating=like&maxResults=50";
-                    if (!string.IsNullOrEmpty(pageToken))
-                        url += "&pageToken=" + pageToken;
+                    LoginStatusText.Text = "Sync " + json["_error"] + ": " + (json["_body"]?.ToString() ?? "");
+                    LoginStatusText.Foreground = _authOrangeBrush;
+                    return;
+                }
 
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+                bool hasNew = false;
+                // Standard web format uses playlistVideoRenderer
+                var contents = json.SelectTokens("$..playlistVideoRenderer").ToList();
 
-                    var response = await _apiClient.SendAsync(request);
-
-                    if (!response.IsSuccessStatusCode)
+                foreach (var item in contents)
+                {
+                    try
                     {
-                        string errBody = await response.Content.ReadAsStringAsync();
-                        string errSnippet = errBody.Length > 80 ? errBody.Substring(0, 80) : errBody;
-                        LoginStatusText.Text = "Sync " + (int)response.StatusCode + ": " + errSnippet;
-                        LoginStatusText.Foreground = _authOrangeBrush;
-                        return;
-                    }
+                        string vidId = item["videoId"]?.ToString();
+                        if (string.IsNullOrEmpty(vidId)) continue;
+                        if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
 
-                    var json = JObject.Parse(await response.Content.ReadAsStringAsync());
-                    var items = json["items"] as JArray;
-                    if (items == null || items.Count == 0) break;
+                        string title = item.SelectToken("title.runs[0].text")?.ToString()
+                            ?? item["title"]?["simpleText"]?.ToString() ?? "";
+                        string channel = item.SelectToken("shortBylineText.runs[0].text")?.ToString()
+                            ?? item.SelectToken("longBylineText.runs[0].text")?.ToString() ?? "";
+                        channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
 
-                    foreach (var item in items)
-                    {
-                        try
+                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+
+                        if (!string.IsNullOrEmpty(title))
                         {
-                            string vidId = item["id"]?.ToString();
-                            if (string.IsNullOrEmpty(vidId)) continue;
-                            if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
-
-                            var snippet = item["snippet"];
-                            string title = snippet?["title"]?.ToString() ?? "";
-                            string channel = snippet?["channelTitle"]?.ToString() ?? "";
-                            channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
-
-                            // Get best thumbnail
-                            string thumbUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
-                                ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
-                                ?? snippet?.SelectToken("thumbnails.default.url")?.ToString();
-
-                            if (!string.IsNullOrEmpty(title))
+                            favoriteTracks.Insert(0, new YouTubeTrack
                             {
-                                favoriteTracks.Insert(0, new YouTubeTrack
-                                {
-                                    VideoId = vidId,
-                                    Title = System.Net.WebUtility.HtmlDecode(title),
-                                    ChannelName = channel,
-                                    ThumbnailUrl = thumbUrl
-                                });
-                                hasNew = true;
-                            }
+                                VideoId = vidId,
+                                Title = System.Net.WebUtility.HtmlDecode(title),
+                                ChannelName = channel,
+                                ThumbnailUrl = thumbUrl
+                            });
+                            hasNew = true;
                         }
-                        catch { continue; }
                     }
-
-                    pageToken = json["nextPageToken"]?.ToString();
-                    if (string.IsNullOrEmpty(pageToken)) break;
+                    catch { continue; }
                 }
 
                 if (hasNew) SaveFavoritesAsync();
@@ -686,31 +701,27 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
+                var json = await WebBrowseAsync("FElibrary", accessToken);
+                if (json["_error"] != null) return;
 
-                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50";
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode) return;
-
-                var json = JObject.Parse(await response.Content.ReadAsStringAsync());
-                var items = json["items"] as JArray;
-                if (items == null) return;
-
+                var items = json.SelectTokens("$..gridPlaylistRenderer");
                 foreach (var item in items)
                 {
                     try
                     {
-                        string plId = item["id"]?.ToString();
+                        string plId = item["playlistId"]?.ToString();
                         if (string.IsNullOrEmpty(plId)) continue;
 
-                        var snippet = item["snippet"];
-                        string title = snippet?["title"]?.ToString() ?? "";
-                        int count = item.SelectToken("contentDetails.itemCount")?.Value<int>() ?? 0;
-                        string thumbUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
-                            ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
-                            ?? snippet?.SelectToken("thumbnails.default.url")?.ToString();
+                        string title = item.SelectToken("title.runs[0].text")?.ToString()
+                            ?? item["title"]?["simpleText"]?.ToString() ?? "";
+                        string countText = item.SelectToken("videoCountShortText.simpleText")?.ToString()
+                            ?? item.SelectToken("videoCountText.runs[0].text")?.ToString() ?? "0";
+                        int count = 0;
+                        var match = System.Text.RegularExpressions.Regex.Match(countText, @"(\d+)");
+                        if (match.Success) int.TryParse(match.Value, out count);
+
+                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
@@ -738,52 +749,32 @@ namespace YTMusicWP
             try
             {
                 _youtubeSubscriptions.Clear();
+                var json = await WebBrowseAsync("FEchannels", accessToken);
+                if (json["_error"] != null) return;
 
-                string pageToken = "";
-                for (int page = 0; page < 10; page++)
+                var items = json.SelectTokens("$..gridChannelRenderer");
+                foreach (var item in items)
                 {
-                    string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&order=alphabetical";
-                    if (!string.IsNullOrEmpty(pageToken))
-                        url += "&pageToken=" + pageToken;
-
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                    var response = await _apiClient.SendAsync(request);
-                    if (!response.IsSuccessStatusCode) break;
-
-                    var json = JObject.Parse(await response.Content.ReadAsStringAsync());
-                    var items = json["items"] as JArray;
-                    if (items == null || items.Count == 0) break;
-
-                    foreach (var item in items)
+                    try
                     {
-                        try
+                        string channelId = item["channelId"]?.ToString();
+                        if (string.IsNullOrEmpty(channelId)) continue;
+
+                        string title = item.SelectToken("title.simpleText")?.ToString()
+                            ?? item.SelectToken("title.runs[0].text")?.ToString() ?? "";
+                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+
+                        _youtubeSubscriptions.Add(new YouTubeSubscription
                         {
-                            var snippet = item["snippet"];
-                            string channelId = snippet?.SelectToken("resourceId.channelId")?.ToString();
-                            if (string.IsNullOrEmpty(channelId)) continue;
+                            ChannelId = channelId,
+                            Title = title,
+                            ThumbnailUrl = thumbUrl
+                        });
 
-                            string title = snippet?["title"]?.ToString() ?? "";
-                            string thumbUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
-                                ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
-                                ?? snippet?.SelectToken("thumbnails.default.url")?.ToString();
-
-                            _youtubeSubscriptions.Add(new YouTubeSubscription
-                            {
-                                ChannelId = channelId,
-                                Title = title,
-                                ThumbnailUrl = thumbUrl
-                            });
-
-                            if (_youtubeSubscriptions.Count >= 500) break;
-                        }
-                        catch { continue; }
+                        if (_youtubeSubscriptions.Count >= 500) break;
                     }
-
-                    if (_youtubeSubscriptions.Count >= 500) break;
-                    pageToken = json["nextPageToken"]?.ToString();
-                    if (string.IsNullOrEmpty(pageToken)) break;
+                    catch { continue; }
                 }
             }
             catch { }
