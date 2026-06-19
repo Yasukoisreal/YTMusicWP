@@ -559,60 +559,59 @@ namespace YTMusicWP
                     LoginStatusText.Foreground = _authOrangeBrush;
                     return;
                 }
-                // Debug: dump first item keys
-                if (contents.Count > 0)
-                {
-                    var first = contents[0];
-                    string keys = string.Join(",", first.Children<JProperty>().Select(p => p.Name));
-                    string vid = first["videoId"]?.ToString() ?? "null";
-                    string tRuns = first.SelectToken("title.runs[0].text")?.ToString() ?? "null";
-                    string tSimple = first["title"]?["simpleText"]?.ToString() ?? "null";
-                    string tAccess = first.SelectToken("title.accessibility.accessibilityData.label")?.ToString() ?? "null";
-                    LoginStatusText.Text = "K:" + keys + " V:" + vid + " T:" + tRuns + "|" + tSimple + "|" + tAccess;
-                    LoginStatusText.Foreground = _authOrangeBrush;
-                }
 
                 foreach (var item in contents)
                 {
                     try
                     {
-                        string vidId = item["videoId"]?.ToString();
+                        // TV format uses contentId, Web uses videoId
+                        string vidId = item["videoId"]?.ToString()
+                            ?? item["contentId"]?.ToString()
+                            ?? item.SelectToken("..videoId")?.ToString();
                         if (string.IsNullOrEmpty(vidId)) continue;
                         if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
 
-                        // Try multiple title paths
+                        // Try all possible title paths (Web + TV)
                         string title = item.SelectToken("title.runs[0].text")?.ToString()
                             ?? item["title"]?["simpleText"]?.ToString()
                             ?? item.SelectToken("title.accessibility.accessibilityData.label")?.ToString()
+                            ?? item.SelectToken("..title..text")?.ToString()
+                            ?? item.SelectToken("..headline..text")?.ToString()
                             ?? "";
 
+                        // Try all possible channel/artist paths
                         string channel = item.SelectToken("shortBylineText.runs[0].text")?.ToString()
                             ?? item.SelectToken("shortBylineText.simpleText")?.ToString()
                             ?? item.SelectToken("longBylineText.runs[0].text")?.ToString()
+                            ?? item.SelectToken("..byline..text")?.ToString()
+                            ?? item.SelectToken("..subtitle..text")?.ToString()
                             ?? "";
                         channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
 
+                        // Thumbnail
                         string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
+                            ?? item.SelectToken("..thumbnails[-1:].url")?.ToString()
+                            ?? item.SelectToken("..thumbnails[0].url")?.ToString();
 
-                        if (!string.IsNullOrEmpty(title))
+                        // Accept items with at least a videoId (title can be empty for now)
+                        if (string.IsNullOrEmpty(title)) title = "Video " + vidId;
+
+                        favoriteTracks.Insert(0, new YouTubeTrack
                         {
-                            favoriteTracks.Insert(0, new YouTubeTrack
-                            {
-                                VideoId = vidId,
-                                Title = System.Net.WebUtility.HtmlDecode(title),
-                                ChannelName = channel,
-                                ThumbnailUrl = thumbUrl
-                            });
-                            hasNew = true;
-                        }
+                            VideoId = vidId,
+                            Title = System.Net.WebUtility.HtmlDecode(title),
+                            ChannelName = channel,
+                            ThumbnailUrl = thumbUrl
+                        });
+                        hasNew = true;
                     }
                     catch { continue; }
                 }
 
                 if (hasNew) SaveFavoritesAsync();
 
-                // Keep debug text showing
+                LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
                 LoginStatusText.Foreground = _greenBrush;
             }
             catch (Exception ex)
