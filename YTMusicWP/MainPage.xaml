@@ -1338,11 +1338,7 @@
             <StackPanel Grid.Row="1" Margin="20,0,20,20">
                 <Rectangle x:Name="PlaylistDetailsCoverRect" Width="220" Height="220" RadiusX="10" RadiusY="10" Visibility="Collapsed" HorizontalAlignment="Center" Margin="0,10">
                     <Rectangle.Fill>
-                        <ImageBrush x:Name="PlaylistDetailsCoverBrush" Stretch="UniformToFill">
-                            <ImageBrush.RelativeTransform>
-                                <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                            </ImageBrush.RelativeTransform>
-                        </ImageBrush>
+                        <ImageBrush x:Name="PlaylistDetailsCoverBrush" Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center"/>
                     </Rectangle.Fill>
                 </Rectangle>
                 <TextBlock x:Name="PlaylistDetailsTitle" Text="Playlist Name" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextAlignment="Center" TextWrapping="Wrap"/>

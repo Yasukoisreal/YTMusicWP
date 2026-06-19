@@ -37,6 +37,32 @@ namespace YTMusicWP
             return url;
         }
 
+        /// <summary>
+        /// Get best thumbnail for 1:1 square display (playlist covers).
+        /// YouTube Music thumbnails (lh3.googleusercontent.com) → request 1:1 crop.
+        /// YouTube thumbnails (i.ytimg.com) → use mqdefault (16:9, no letterbox bars).
+        /// </summary>
+        private static string GetSquareThumbnail(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            // YouTube Music thumbnails — request square crop
+            if (url.Contains("lh3.googleusercontent.com") || url.Contains("yt3.ggpht.com"))
+            {
+                // Remove any existing size params and request square
+                int eqIdx = url.LastIndexOf("=");
+                if (eqIdx > 0)
+                    return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
+                return url + "=w480-h480-l90-rj";
+            }
+            // YouTube video thumbnails — use mqdefault (320x180, true 16:9 without letterbox)
+            // hqdefault is 480x360 (4:3 with black bars baked in)
+            if (url.Contains("hqdefault.jpg"))
+                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+            if (url.Contains("sddefault.jpg"))
+                return url.Replace("sddefault.jpg", "mqdefault.jpg");
+            return url;
+        }
+
         public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "", string searchFilter = null)
         {
             var list = new List<YouTubeTrack>(20);
