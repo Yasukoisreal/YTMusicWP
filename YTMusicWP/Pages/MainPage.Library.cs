@@ -63,27 +63,7 @@ namespace YTMusicWP
                 });
             }
 
-            // User Playlists
-            if (showAll || _libraryFilter == "playlists")
-            {
-                foreach (var pl in userPlaylists)
-                {
-                    string thumb = null;
-                    if (pl.Tracks != null && pl.Tracks.Count > 0 && !string.IsNullOrEmpty(pl.Tracks[0].ThumbnailUrl))
-                        thumb = pl.Tracks[0].ThumbnailUrl;
-
-                    _libraryItems.Add(new LibraryItem
-                    {
-                        Title = pl.Name,
-                        Subtitle = "Playlist • " + (pl.Tracks != null ? pl.Tracks.Count : 0) + " songs",
-                        ThumbnailUrl = thumb,
-                        IconGlyph = thumb == null ? "♫" : null,
-                        IsCircle = false,
-                        ItemType = "playlist",
-                        Tag = pl
-                    });
-                }
-            }
+            // (Local playlists removed — all playlists are now YouTube-synced)
 
             // Downloads
             if (showAll || _libraryFilter == "downloads")

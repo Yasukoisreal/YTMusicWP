@@ -846,29 +846,65 @@ namespace YTMusicWP
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
                 if (json["_error"] != null) return;
 
-                var items = json.SelectTokens("$..gridChannelRenderer");
-                foreach (var item in items)
+                // Try multiple renderer types (web, TV, mobile formats)
+                var rendererNames = new[] { "gridChannelRenderer", "compactChannelRenderer", "channelRenderer", "lockupViewModel" };
+                var foundAny = false;
+
+                foreach (var rendererName in rendererNames)
                 {
-                    try
+                    var items = json.SelectTokens("$.." + rendererName);
+                    foreach (var item in items)
                     {
-                        string channelId = item["channelId"]?.ToString();
-                        if (string.IsNullOrEmpty(channelId)) continue;
+                        try
+                        {
+                            string channelId = item["channelId"]?.ToString()
+                                ?? item.SelectToken("$..browseId")?.ToString();
+                            if (string.IsNullOrEmpty(channelId)) continue;
+                            // Skip if already added
+                            if (_youtubeSubscriptions.Any(s => s.ChannelId == channelId)) continue;
 
-                        string title = item.SelectToken("title.simpleText")?.ToString()
-                            ?? item.SelectToken("title.runs[0].text")?.ToString() ?? "";
-                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+                            string title = item.SelectToken("title.simpleText")?.ToString()
+                                ?? item.SelectToken("title.runs[0].text")?.ToString()
+                                ?? item.SelectToken("$..metadata.lockupMetadataViewModel.title.content")?.ToString()
+                                ?? "";
+                            string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
+                                ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
+                                ?? item.SelectToken("$..thumbnailViewModel.image.sources[0].url")?.ToString();
 
+                            _youtubeSubscriptions.Add(new YouTubeSubscription
+                            {
+                                ChannelId = channelId,
+                                Title = title,
+                                ThumbnailUrl = thumbUrl
+                            });
+
+                            foundAny = true;
+                            if (_youtubeSubscriptions.Count >= 500) break;
+                        }
+                        catch { continue; }
+                    }
+                    if (foundAny) break; // Found in one format, stop trying others
+                }
+
+                // Fallback: extract from any browseEndpoint with channelId pattern
+                if (!foundAny)
+                {
+                    var channelIds = json.SelectTokens("$..browseEndpoint.browseId")
+                        .Select(t => t.ToString())
+                        .Where(id => id.StartsWith("UC"))
+                        .Distinct()
+                        .Take(100);
+
+                    foreach (var chId in channelIds)
+                    {
+                        if (_youtubeSubscriptions.Any(s => s.ChannelId == chId)) continue;
                         _youtubeSubscriptions.Add(new YouTubeSubscription
                         {
-                            ChannelId = channelId,
-                            Title = title,
-                            ThumbnailUrl = thumbUrl
+                            ChannelId = chId,
+                            Title = "Channel",
+                            ThumbnailUrl = ""
                         });
-
-                        if (_youtubeSubscriptions.Count >= 500) break;
                     }
-                    catch { continue; }
                 }
             }
             catch { }
