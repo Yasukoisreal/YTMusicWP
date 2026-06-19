@@ -267,6 +267,10 @@ namespace YTMusicWP
 
         private void UpdateFollowButton()
         {
+            // Always check subscriptions list for current state
+            if (!string.IsNullOrEmpty(_currentArtistChannelId))
+                _isFollowingArtist = _youtubeSubscriptions.Any(s => s.ChannelId == _currentArtistChannelId);
+
             if (_isFollowingArtist)
             {
                 ArtistFollowBtn.Content = "Following";
