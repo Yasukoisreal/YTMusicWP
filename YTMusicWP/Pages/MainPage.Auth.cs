@@ -844,7 +844,7 @@ namespace YTMusicWP
             {
                 _youtubeSubscriptions.Clear();
 
-                // Step 1: Get channel IDs from FEchannels (TV InnerTube - proven to return UC* IDs)
+                // Step 1: Get channel IDs from FEchannels
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
                 if (json["_error"] != null) return;
 
@@ -856,29 +856,35 @@ namespace YTMusicWP
                     .Take(30)
                     .ToList();
 
-                // Step 2: For each channel, use BrowseArtistAsync (same method as artist profile - works!)
-                foreach (var chId in channelIds)
+                // Step 2: Resolve channel names in parallel (5 at a time)
+                const int batchSize = 5;
+                var results = new List<YouTubeSubscription>();
+
+                for (int i = 0; i < channelIds.Count; i += batchSize)
                 {
-                    string name = chId;
-                    string avatarUrl = "";
-
-                    try
+                    var batch = channelIds.Skip(i).Take(batchSize).ToList();
+                    var tasks = batch.Select(async chId =>
                     {
-                        var artistResult = await InnerTubeClient.BrowseArtistAsync(chId);
-                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
-                            name = artistResult.Name;
-                        if (!string.IsNullOrEmpty(artistResult.AvatarUrl))
-                            avatarUrl = artistResult.AvatarUrl;
-                    }
-                    catch { }
+                        string name = chId;
+                        string avatarUrl = "";
+                        try
+                        {
+                            var artistResult = await InnerTubeClient.BrowseArtistAsync(chId);
+                            if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                                name = artistResult.Name;
+                            if (!string.IsNullOrEmpty(artistResult.AvatarUrl))
+                                avatarUrl = artistResult.AvatarUrl;
+                        }
+                        catch { }
+                        return new YouTubeSubscription { ChannelId = chId, Title = name, ThumbnailUrl = avatarUrl };
+                    }).ToArray();
 
-                    _youtubeSubscriptions.Add(new YouTubeSubscription
-                    {
-                        ChannelId = chId,
-                        Title = name,
-                        ThumbnailUrl = avatarUrl
-                    });
+                    var batchResults = await Task.WhenAll(tasks);
+                    results.AddRange(batchResults);
                 }
+
+                foreach (var sub in results)
+                    _youtubeSubscriptions.Add(sub);
             }
             catch { }
 
