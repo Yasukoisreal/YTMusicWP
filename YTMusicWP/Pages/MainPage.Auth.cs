@@ -567,8 +567,8 @@ namespace YTMusicWP
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
 
-                // Use WEB client to browse liked videos playlist — returns standard web format
-                var json = await WebBrowseAsync("VLLL", accessToken);
+                // Use TVHTML5 client (only client that works with TV OAuth token)
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
 
                 if (json["_error"] != null)
                 {
@@ -578,45 +578,93 @@ namespace YTMusicWP
                 }
 
                 bool hasNew = false;
-                // Standard web format uses playlistVideoRenderer
+                // Find any renderer items
                 var contents = json.SelectTokens("$..playlistVideoRenderer").ToList();
+                if (contents.Count == 0) contents = json.SelectTokens("$..gridVideoRenderer").ToList();
+                if (contents.Count == 0) contents = json.SelectTokens("$..compactVideoRenderer").ToList();
+
+                // Debug: dump first item to a file for inspection
+                if (contents.Count > 0)
+                {
+                    try
+                    {
+                        string itemDump = contents[0].ToString();
+                        // Write to local storage for inspection
+                        var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+                        var file = await folder.CreateFileAsync("debug_item.json", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+                        await Windows.Storage.FileIO.WriteTextAsync(file, itemDump);
+
+                        // Show first 300 chars in status
+                        string preview = itemDump.Length > 300 ? itemDump.Substring(0, 300) : itemDump;
+                        LoginStatusText.Text = contents.Count + " items. " + preview;
+                        LoginStatusText.Foreground = _authOrangeBrush;
+                    }
+                    catch { }
+                }
+                else
+                {
+                    // No renderers found at all — show response structure
+                    string dump = json.ToString().Length > 300 ? json.ToString().Substring(0, 300) : json.ToString();
+                    LoginStatusText.Text = "No renderers. " + dump;
+                    LoginStatusText.Foreground = _authOrangeBrush;
+                    return;
+                }
 
                 foreach (var item in contents)
                 {
                     try
                     {
-                        string vidId = item["videoId"]?.ToString();
+                        // Try ALL possible videoId locations (Web + TV + navigation)
+                        string vidId = item["videoId"]?.ToString()
+                            ?? item["contentId"]?.ToString()
+                            ?? item.SelectToken("navigationEndpoint.watchEndpoint.videoId")?.ToString()
+                            ?? item.SelectToken("onTap.innertubeCommand.watchEndpoint.videoId")?.ToString()
+                            ?? item.SelectToken("command.watchEndpoint.videoId")?.ToString()
+                            ?? item.SelectToken("..watchEndpoint.videoId")?.ToString();
                         if (string.IsNullOrEmpty(vidId)) continue;
                         if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
 
+                        // Try ALL possible title paths
                         string title = item.SelectToken("title.runs[0].text")?.ToString()
-                            ?? item["title"]?["simpleText"]?.ToString() ?? "";
+                            ?? item["title"]?["simpleText"]?.ToString()
+                            ?? item.SelectToken("title.accessibility.accessibilityData.label")?.ToString()
+                            ?? item.SelectToken("..headline.runs[0].text")?.ToString()
+                            ?? item.SelectToken("..metadata.title")?.ToString()
+                            ?? "";
+
+                        // Try ALL possible channel paths
                         string channel = item.SelectToken("shortBylineText.runs[0].text")?.ToString()
-                            ?? item.SelectToken("longBylineText.runs[0].text")?.ToString() ?? "";
+                            ?? item.SelectToken("longBylineText.runs[0].text")?.ToString()
+                            ?? item.SelectToken("..subtitle.runs[0].text")?.ToString()
+                            ?? item.SelectToken("..byline.runs[0].text")?.ToString()
+                            ?? "";
                         channel = CleanChannelName(System.Net.WebUtility.HtmlDecode(channel));
 
                         string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
+                            ?? item.SelectToken("..thumbnails[0].url")?.ToString();
 
-                        if (!string.IsNullOrEmpty(title))
+                        if (string.IsNullOrEmpty(title)) title = "Video " + vidId;
+
+                        favoriteTracks.Insert(0, new YouTubeTrack
                         {
-                            favoriteTracks.Insert(0, new YouTubeTrack
-                            {
-                                VideoId = vidId,
-                                Title = System.Net.WebUtility.HtmlDecode(title),
-                                ChannelName = channel,
-                                ThumbnailUrl = thumbUrl
-                            });
-                            hasNew = true;
-                        }
+                            VideoId = vidId,
+                            Title = System.Net.WebUtility.HtmlDecode(title),
+                            ChannelName = channel,
+                            ThumbnailUrl = thumbUrl
+                        });
+                        hasNew = true;
                     }
                     catch { continue; }
                 }
 
                 if (hasNew) SaveFavoritesAsync();
 
-                LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
-                LoginStatusText.Foreground = _greenBrush;
+                if (!hasNew && contents.Count > 0)
+                    LoginStatusText.Text = contents.Count + " items but 0 parsed. Check debug_item.json";
+                else
+                    LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
+                LoginStatusText.Foreground = hasNew ? _greenBrush : _authOrangeBrush;
             }
             catch (Exception ex)
             {
@@ -701,7 +749,7 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
-                var json = await WebBrowseAsync("FElibrary", accessToken);
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
                 if (json["_error"] != null) return;
 
                 var items = json.SelectTokens("$..gridPlaylistRenderer");
@@ -749,7 +797,7 @@ namespace YTMusicWP
             try
             {
                 _youtubeSubscriptions.Clear();
-                var json = await WebBrowseAsync("FEchannels", accessToken);
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
                 if (json["_error"] != null) return;
 
                 var items = json.SelectTokens("$..gridChannelRenderer");
