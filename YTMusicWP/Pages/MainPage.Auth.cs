@@ -722,24 +722,58 @@ namespace YTMusicWP
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
                 if (json["_error"] != null) return;
 
-                var items = json.SelectTokens("$..gridPlaylistRenderer");
-                foreach (var item in items)
+                // Find all playlistId values in TV format response
+                var allPlaylistIds = json.SelectTokens("$..playlistId").ToList();
+                var uniqueIds = new List<string>();
+                foreach (var token in allPlaylistIds)
+                {
+                    string plId = token.ToString();
+                    // Skip system playlists (LL = Liked, WL = Watch Later, etc.)
+                    if (string.IsNullOrEmpty(plId)) continue;
+                    if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
+                    if (!uniqueIds.Contains(plId))
+                        uniqueIds.Add(plId);
+                }
+
+                // For each playlist, try to get title from the response tree
+                foreach (var plId in uniqueIds)
                 {
                     try
                     {
-                        string plId = item["playlistId"]?.ToString();
-                        if (string.IsNullOrEmpty(plId)) continue;
-
-                        string title = item.SelectToken("title.runs[0].text")?.ToString()
-                            ?? item["title"]?["simpleText"]?.ToString() ?? "";
-                        string countText = item.SelectToken("videoCountShortText.simpleText")?.ToString()
-                            ?? item.SelectToken("videoCountText.runs[0].text")?.ToString() ?? "0";
+                        // Find the token and traverse up for title
+                        string title = "";
+                        string thumbUrl = "";
                         int count = 0;
-                        var match = System.Text.RegularExpressions.Regex.Match(countText, @"(\d+)");
-                        if (match.Success) int.TryParse(match.Value, out count);
 
-                        string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                            ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString();
+                        // Search for title near the playlistId in the JSON tree
+                        foreach (var token in allPlaylistIds)
+                        {
+                            if (token.ToString() != plId) continue;
+                            JToken ancestor = token.Parent;
+                            for (int level = 0; level < 10 && ancestor != null; level++)
+                            {
+                                var ancestorObj = ancestor as JObject;
+                                if (ancestorObj != null)
+                                {
+                                    if (string.IsNullOrEmpty(title))
+                                    {
+                                        title = ancestorObj.SelectToken("title.runs[0].text")?.ToString()
+                                            ?? ancestorObj.SelectToken("title.simpleText")?.ToString()
+                                            ?? "";
+                                    }
+                                    if (string.IsNullOrEmpty(thumbUrl))
+                                    {
+                                        thumbUrl = ancestorObj.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
+                                            ?? "";
+                                    }
+                                    if (!string.IsNullOrEmpty(title)) break;
+                                }
+                                ancestor = ancestor.Parent;
+                            }
+                            if (!string.IsNullOrEmpty(title)) break;
+                        }
+
+                        if (string.IsNullOrEmpty(title)) title = "Playlist " + plId;
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
