@@ -48,7 +48,7 @@ namespace YTMusicWP
             if (!string.IsNullOrEmpty(track.ThumbnailUrl))
             {
                 // [OPT-M3] Dùng chung 1 BitmapImage cho BigCover + MenuCover (cùng src, cùng DecodePixelWidth)
-                var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(track.ThumbnailUrl), UriKind.Absolute));
+                var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(track.ThumbnailUrl), UriKind.Absolute));
                 bigBmp.DecodePixelWidth = 360;
                 BigCoverImage.ImageSource  = bigBmp;
                 AlbumArtEntranceStoryboard.Begin();
@@ -452,7 +452,7 @@ namespace YTMusicWP
                         {
                             var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             bigBmp.DecodePixelWidth = 360;
-                            bigBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
+                            bigBmp.UriSource = new Uri(GetHighResThumbnail(thumb), UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
@@ -511,7 +511,7 @@ namespace YTMusicWP
                         {
                             var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             bigBmp.DecodePixelWidth = 360;
-                            bigBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
+                            bigBmp.UriSource = new Uri(GetHighResThumbnail(thumb), UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
