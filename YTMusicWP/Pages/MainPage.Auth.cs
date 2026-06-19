@@ -625,6 +625,7 @@ namespace YTMusicWP
                         string channel = CleanChannelName(meta.Item2 ?? "");
                         string thumbUrl = meta.Item3;
                         bool isMusic = meta.Item4;
+                        string chId = meta.Item5;
 
                         if (!isMusic) { skippedNonMusic++; continue; }
 
@@ -633,6 +634,7 @@ namespace YTMusicWP
                             VideoId = vidId,
                             Title = title,
                             ChannelName = channel,
+                            ChannelId = chId,
                             ThumbnailUrl = thumbUrl
                         });
                         hasNew = true;

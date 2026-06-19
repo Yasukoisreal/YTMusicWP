@@ -153,12 +153,11 @@ namespace YTMusicWP
                 catch { }
             }
 
-            // Fallback search
+            // Fallback search — only if BrowseArtistAsync didn't return tracks
             if (tracks == null || tracks.Count == 0)
             {
                 string query = channelName ?? "";
-                if (!string.IsNullOrEmpty(channelId)) query += " \"Topic\""; 
-                tracks = await FetchMusicList(query);
+                tracks = await FetchMusicList(query, "", "songs");
             }
             
             var list = new ObservableCollection<YouTubeTrack>();

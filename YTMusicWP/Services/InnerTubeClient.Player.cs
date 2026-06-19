@@ -432,7 +432,7 @@ namespace YTMusicWP
         /// Get video metadata (title, author, thumbnail) via InnerTube player.
         /// Uses ANDROID_VR client with videoDetails field for lightweight response.
         /// </summary>
-        public static async Task<Tuple<string, string, string, bool>> GetVideoMetadataAsync(string videoId)
+        public static async Task<Tuple<string, string, string, bool, string>> GetVideoMetadataAsync(string videoId)
         {
             try
             {
@@ -463,7 +463,7 @@ namespace YTMusicWP
 
                 var resp = await _client.SendAsync(req);
                 if (!resp.IsSuccessStatusCode)
-                    return new Tuple<string, string, string, bool>("", "", "", false);
+                    return new Tuple<string, string, string, bool, string>("", "", "", false, "");
 
                 string json = await resp.Content.ReadAsStringAsync();
                 var data = JObject.Parse(json);
@@ -471,6 +471,7 @@ namespace YTMusicWP
                 var details = data["videoDetails"];
                 string title = details?["title"]?.ToString() ?? "";
                 string author = details?["author"]?.ToString() ?? "";
+                string channelId = details?["channelId"]?.ToString() ?? "";
                 string thumbUrl = details?.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
                     ?? details?.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
 
@@ -496,11 +497,11 @@ namespace YTMusicWP
                         isMusic = true;
                 }
 
-                return new Tuple<string, string, string, bool>(title, author, thumbUrl, isMusic);
+                return new Tuple<string, string, string, bool, string>(title, author, thumbUrl, isMusic, channelId);
             }
             catch
             {
-                return new Tuple<string, string, string, bool>("", "", "", false);
+                return new Tuple<string, string, string, bool, string>("", "", "", false, "");
             }
         }
     }
