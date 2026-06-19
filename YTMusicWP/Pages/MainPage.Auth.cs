@@ -843,91 +843,47 @@ namespace YTMusicWP
             try
             {
                 _youtubeSubscriptions.Clear();
-                var addedIds = new HashSet<string>();
 
+                // Step 1: Get channel IDs from FEchannels (TV InnerTube - proven to return UC* IDs)
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
-                
-                // DEBUG: Save raw response to file
-                try
-                {
-                    string debugSnippet = json.ToString().Length > 2000 ? json.ToString().Substring(0, 2000) : json.ToString();
-                    var debugFile = await ApplicationData.Current.LocalFolder.CreateFileAsync("debug_subs.txt", CreationCollisionOption.ReplaceExisting);
-                    await FileIO.WriteTextAsync(debugFile, debugSnippet);
-                }
-                catch { }
+                if (json["_error"] != null) return;
 
-                if (json["_error"] != null)
-                {
-                    // DEBUG: show error
-                    string errMsg = json["_error"]?.ToString() + " " + (json["_body"]?.ToString() ?? "");
-                    try { await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { ShowToast("Subs err: " + errMsg); }); } catch { }
-                    return;
-                }
-
-                // Try ALL possible channel ID locations
-                var allBrowseIds = json.SelectTokens("$..browseEndpoint.browseId")
+                var channelIds = json.SelectTokens("$..browseEndpoint.browseId")
                     .Select(t => t.ToString())
                     .Where(id => id.StartsWith("UC"))
+                    .Union(json.SelectTokens("$..channelId").Select(t => t.ToString()).Where(id => id.StartsWith("UC")))
                     .Distinct()
+                    .Take(30)
                     .ToList();
 
-                var allChannelIds = json.SelectTokens("$..channelId")
-                    .Select(t => t.ToString())
-                    .Where(id => !string.IsNullOrEmpty(id))
-                    .Distinct()
-                    .ToList();
-
-                // Merge both lists
-                var mergedIds = new List<string>(allBrowseIds);
-                foreach (var cid in allChannelIds)
-                    if (!mergedIds.Contains(cid)) mergedIds.Add(cid);
-
-                // Browse each channel to get real name + thumbnail
-                // Results are cached to JSON so this only runs on first sync
-                foreach (var chId in mergedIds)
+                // Step 2: For each channel, use BrowseArtistAsync (same method as artist profile - works!)
+                foreach (var chId in channelIds)
                 {
-                    if (addedIds.Contains(chId)) continue;
-                    addedIds.Add(chId);
-
-                    string title = chId;
-                    string thumb = "";
+                    string name = chId;
+                    string avatarUrl = "";
 
                     try
                     {
-                        var chJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = chId }, accessToken);
-                        if (chJson["_error"] == null)
-                        {
-                            var t = chJson.SelectToken("$..title.runs[0].text")?.ToString()
-                                ?? chJson.SelectToken("$..title.simpleText")?.ToString();
-                            if (!string.IsNullOrEmpty(t)) title = t;
-                            
-                            var th = chJson.SelectToken("$..avatar.thumbnails[0].url")?.ToString()
-                                ?? chJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString();
-                            if (!string.IsNullOrEmpty(th)) thumb = th;
-                        }
+                        var artistResult = await InnerTubeClient.BrowseArtistAsync(chId);
+                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                            name = artistResult.Name;
+                        if (!string.IsNullOrEmpty(artistResult.AvatarUrl))
+                            avatarUrl = artistResult.AvatarUrl;
                     }
                     catch { }
 
                     _youtubeSubscriptions.Add(new YouTubeSubscription
                     {
                         ChannelId = chId,
-                        Title = title,
-                        ThumbnailUrl = thumb
+                        Title = name,
+                        ThumbnailUrl = avatarUrl
                     });
-
-                    if (_youtubeSubscriptions.Count >= 200) break;
                 }
             }
-            catch (Exception ex)
-            {
-                try { await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { ShowToast("Subs exception: " + ex.Message); }); } catch { }
-            }
+            catch { }
 
             // Cache subscriptions locally
             SaveYouTubeSubscriptionsCacheAsync();
-
-            // DEBUG: Show sync result
-            try { await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { ShowToast("Synced " + _youtubeSubscriptions.Count + " subs, titles:" + _youtubeSubscriptions.Count(s => !s.Title.StartsWith("UC"))); }); } catch { }
         }
 
         private async void SaveYouTubeSubscriptionsCacheAsync()
