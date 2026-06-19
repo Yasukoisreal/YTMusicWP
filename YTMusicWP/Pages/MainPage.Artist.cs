@@ -99,7 +99,6 @@ namespace YTMusicWP
         {
             _currentArtistChannelId = channelId;
             _isFollowingArtist = false;
-            _currentSubscriptionId = null;
             ArtistProfileView.Visibility = Visibility.Visible;
             ArtistSlideInStoryboard.Begin();
             ArtistLoadingBar.Visibility = Visibility.Visible;
@@ -280,7 +279,6 @@ namespace YTMusicWP
             }
         }
 
-        private string _currentSubscriptionId; // For unsubscribe
 
         private async void ArtistFollow_Click(object sender, RoutedEventArgs e)
         {

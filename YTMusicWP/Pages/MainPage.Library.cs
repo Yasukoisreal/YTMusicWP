@@ -262,7 +262,7 @@ namespace YTMusicWP
             }
         }
 
-        private async void MenuDeletePlaylist_Click(object sender, RoutedEventArgs e)
+        private void MenuDeletePlaylist_Click(object sender, RoutedEventArgs e)
         {
             // This handler is kept for compatibility but now unused for YT playlists
             ShowToast("Use YouTube to manage playlists");
