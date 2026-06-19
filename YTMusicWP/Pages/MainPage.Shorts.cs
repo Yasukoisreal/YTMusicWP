@@ -773,6 +773,14 @@ namespace YTMusicWP
             if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
             var track = _shortsSongs[_shortsSongIndex];
 
+            // Require login for YouTube tracks
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
+            {
+                ShowToast("Sign in to like songs");
+                return;
+            }
+
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
             bool isAdding = (existing == null);
             if (existing != null)
@@ -791,12 +799,9 @@ namespace YTMusicWP
             }
             SaveFavoritesAsync();
 
-            // Sync to YouTube if logged in
-            if (!track.VideoId.StartsWith("LOCAL:") && !track.VideoId.StartsWith("CHANNEL:") && !track.VideoId.StartsWith("PLAYLIST:"))
-            {
-                string rating = isAdding ? "like" : "none";
-                await RateVideoAsync(track.VideoId, rating);
-            }
+            // Sync to YouTube
+            string rating = isAdding ? "like" : "none";
+            await RateVideoAsync(track.VideoId, rating);
         }
 
         private void ShortsSongBar_Tapped(object sender, TappedRoutedEventArgs e)

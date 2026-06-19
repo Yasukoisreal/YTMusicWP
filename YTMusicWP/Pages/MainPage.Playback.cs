@@ -144,6 +144,19 @@ namespace YTMusicWP
         private async void HeartButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentTrack == null) return;
+
+            // Require login for YouTube tracks
+            bool isYouTubeTrack = !currentTrack.VideoId.StartsWith("LOCAL:") && !currentTrack.VideoId.StartsWith("CHANNEL:") && !currentTrack.VideoId.StartsWith("PLAYLIST:");
+            if (isYouTubeTrack)
+            {
+                string token = await GetAccessTokenAsync();
+                if (string.IsNullOrEmpty(token))
+                {
+                    ShowToast("Sign in to like songs");
+                    return;
+                }
+            }
+
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == currentTrack.VideoId);
             bool isAdding = (existing == null);
 
@@ -151,12 +164,11 @@ namespace YTMusicWP
             else { favoriteTracks.Insert(0, currentTrack); BigHeartBtn.Content = "♥"; BigHeartBtn.Foreground = _greenBrush; }
             SaveFavoritesAsync();
 
-            // Sync to YouTube if logged in
-            if (!currentTrack.VideoId.StartsWith("LOCAL:") && !currentTrack.VideoId.StartsWith("CHANNEL:") && !currentTrack.VideoId.StartsWith("PLAYLIST:"))
+            // Sync to YouTube
+            if (isYouTubeTrack)
             {
                 string rating = isAdding ? "like" : "none";
-                bool success = await RateVideoAsync(currentTrack.VideoId, rating);
-                if (success && isAdding) System.Diagnostics.Debug.WriteLine("[Auth] Liked on YouTube: " + currentTrack.VideoId);
+                await RateVideoAsync(currentTrack.VideoId, rating);
             }
         }
 

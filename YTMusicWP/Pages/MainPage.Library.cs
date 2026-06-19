@@ -528,27 +528,38 @@ namespace YTMusicWP
         private async void MenuFavorite_Click(object sender, RoutedEventArgs e)
         {
             var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
-            if (track != null)
+            if (track == null) return;
+
+            // Require login for YouTube tracks
+            bool isYouTubeTrack = !track.VideoId.StartsWith("LOCAL:") && !track.VideoId.StartsWith("CHANNEL:") && !track.VideoId.StartsWith("PLAYLIST:");
+            if (isYouTubeTrack)
             {
-                var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
-                bool isAdding = (existing == null);
-                if (existing != null) favoriteTracks.Remove(existing);
-                else favoriteTracks.Insert(0, track);
-                SaveFavoritesAsync();
-                ShowToast(existing != null ? "Removed from Favorites" : "Added to Favorites");
-
-                if (currentTrack != null && currentTrack.VideoId == track.VideoId)
+                string token = await GetAccessTokenAsync();
+                if (string.IsNullOrEmpty(token))
                 {
-                    BigHeartBtn.Content = isAdding ? "♥" : "♡";
-                    BigHeartBtn.Foreground = isAdding ? _greenBrush : _whiteBrush;
+                    ShowToast("Sign in to like songs");
+                    return;
                 }
+            }
 
-                // Sync to YouTube if logged in
-                if (!track.VideoId.StartsWith("LOCAL:") && !track.VideoId.StartsWith("CHANNEL:") && !track.VideoId.StartsWith("PLAYLIST:"))
-                {
-                    string rating = isAdding ? "like" : "none";
-                    await RateVideoAsync(track.VideoId, rating);
-                }
+            var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+            bool isAdding = (existing == null);
+            if (existing != null) favoriteTracks.Remove(existing);
+            else favoriteTracks.Insert(0, track);
+            SaveFavoritesAsync();
+            ShowToast(isAdding ? "Added to Favorites" : "Removed from Favorites");
+
+            if (currentTrack != null && currentTrack.VideoId == track.VideoId)
+            {
+                BigHeartBtn.Content = isAdding ? "♥" : "♡";
+                BigHeartBtn.Foreground = isAdding ? _greenBrush : _whiteBrush;
+            }
+
+            // Sync to YouTube
+            if (isYouTubeTrack)
+            {
+                string rating = isAdding ? "like" : "none";
+                await RateVideoAsync(track.VideoId, rating);
             }
         }
 
