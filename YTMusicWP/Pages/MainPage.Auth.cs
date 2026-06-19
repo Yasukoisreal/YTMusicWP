@@ -211,7 +211,7 @@ namespace YTMusicWP
             catch { ShowToast("Error clearing cache"); }
         }
 
-        private void LogoutGoogle_Click(object sender, RoutedEventArgs e)
+        private async void LogoutGoogle_Click(object sender, RoutedEventArgs e)
         {
             var settings = ApplicationData.Current.LocalSettings.Values;
             settings.Remove("GoogleAccessToken");
@@ -222,6 +222,10 @@ namespace YTMusicWP
 
             _youtubeUserPlaylists.Clear();
             _youtubeSubscriptions.Clear();
+
+            // Clear cached YouTube data
+            try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_playlists_cache.json"); await f.DeleteAsync(); } catch { }
+            try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json"); await f.DeleteAsync(); } catch { }
 
             LoginStatusText.Text = "Status: Not Logged In";
             LoginStatusText.Foreground = _authGrayBrush;
@@ -235,6 +239,7 @@ namespace YTMusicWP
             settings.Remove("GoogleAvatarUrl");
             settings.Remove("GoogleUserName");
 
+            RefreshLibraryList();
             ShowToast("Logged out successfully");
         }
 
@@ -780,6 +785,52 @@ namespace YTMusicWP
                 }
             }
             catch { }
+
+            // Cache playlists locally for instant load on next startup
+            SaveYouTubePlaylistsCacheAsync();
+        }
+
+        private async void SaveYouTubePlaylistsCacheAsync()
+        {
+            try
+            {
+                var arr = new JArray();
+                foreach (var pl in _youtubeUserPlaylists)
+                {
+                    arr.Add(new JObject
+                    {
+                        ["PlaylistId"] = pl.PlaylistId,
+                        ["Title"] = pl.Title,
+                        ["TrackCount"] = pl.TrackCount,
+                        ["ThumbnailUrl"] = pl.ThumbnailUrl ?? ""
+                    });
+                }
+                var file = await ApplicationData.Current.LocalFolder.CreateFileAsync("yt_playlists_cache.json", CreationCollisionOption.ReplaceExisting);
+                await FileIO.WriteTextAsync(file, arr.ToString());
+            }
+            catch { }
+        }
+
+        private async Task LoadYouTubePlaylistsCacheAsync()
+        {
+            try
+            {
+                var file = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_playlists_cache.json");
+                string json = await FileIO.ReadTextAsync(file);
+                var arr = JArray.Parse(json);
+                _youtubeUserPlaylists.Clear();
+                foreach (var item in arr)
+                {
+                    _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                    {
+                        PlaylistId = item["PlaylistId"]?.ToString() ?? "",
+                        Title = item["Title"]?.ToString() ?? "",
+                        TrackCount = item["TrackCount"]?.Value<int>() ?? 0,
+                        ThumbnailUrl = item["ThumbnailUrl"]?.ToString() ?? ""
+                    });
+                }
+            }
+            catch { }
         }
 
         // ══════════════════════════════════════════
@@ -818,6 +869,50 @@ namespace YTMusicWP
                         if (_youtubeSubscriptions.Count >= 500) break;
                     }
                     catch { continue; }
+                }
+            }
+            catch { }
+
+            // Cache subscriptions locally
+            SaveYouTubeSubscriptionsCacheAsync();
+        }
+
+        private async void SaveYouTubeSubscriptionsCacheAsync()
+        {
+            try
+            {
+                var arr = new JArray();
+                foreach (var sub in _youtubeSubscriptions)
+                {
+                    arr.Add(new JObject
+                    {
+                        ["ChannelId"] = sub.ChannelId,
+                        ["Title"] = sub.Title,
+                        ["ThumbnailUrl"] = sub.ThumbnailUrl ?? ""
+                    });
+                }
+                var file = await ApplicationData.Current.LocalFolder.CreateFileAsync("yt_subs_cache.json", CreationCollisionOption.ReplaceExisting);
+                await FileIO.WriteTextAsync(file, arr.ToString());
+            }
+            catch { }
+        }
+
+        private async Task LoadYouTubeSubscriptionsCacheAsync()
+        {
+            try
+            {
+                var file = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json");
+                string json = await FileIO.ReadTextAsync(file);
+                var arr = JArray.Parse(json);
+                _youtubeSubscriptions.Clear();
+                foreach (var item in arr)
+                {
+                    _youtubeSubscriptions.Add(new YouTubeSubscription
+                    {
+                        ChannelId = item["ChannelId"]?.ToString() ?? "",
+                        Title = item["Title"]?.ToString() ?? "",
+                        ThumbnailUrl = item["ThumbnailUrl"]?.ToString() ?? ""
+                    });
                 }
             }
             catch { }

@@ -290,7 +290,8 @@ namespace YTMusicWP
             DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
 
             // [OPT-8] Parallel file I/O — independent operations run concurrently
-            await Task.WhenAll(LoadFavoritesAsync(), LoadHistoryAsync(), LoadPlaylistsAsync());
+            await Task.WhenAll(LoadFavoritesAsync(), LoadHistoryAsync(), LoadPlaylistsAsync(),
+                LoadYouTubePlaylistsCacheAsync(), LoadYouTubeSubscriptionsCacheAsync());
             await LoadDownloadsAsync(); // depends on filesystem scan, runs after
 
             SyncBackgroundPlayer();
@@ -305,7 +306,24 @@ namespace YTMusicWP
                 {
                     await LoadHomeRecommendations();
                 }
+
+                // Auto-sync YouTube data in background if logged in
+                AutoSyncYouTubeAsync();
             }
+        }
+
+        private async void AutoSyncYouTubeAsync()
+        {
+            try
+            {
+                string token = await GetAccessTokenAsync();
+                if (!string.IsNullOrEmpty(token))
+                {
+                    await SyncAllAsync(token);
+                    RefreshLibraryList();
+                }
+            }
+            catch { }
         }
 
         protected override void OnNavigatedFrom(NavigationEventArgs e)
