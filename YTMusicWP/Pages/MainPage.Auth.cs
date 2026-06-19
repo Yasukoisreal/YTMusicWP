@@ -843,142 +843,57 @@ namespace YTMusicWP
             try
             {
                 _youtubeSubscriptions.Clear();
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
-                if (json["_error"] != null) return;
+                
+                // Use YouTube Data API v3 — reliable, fast, single request
+                string nextPageToken = "";
+                var addedIds = new HashSet<string>();
 
-                // Try multiple renderer types (web, TV, mobile formats)
-                var rendererNames = new[] { "gridChannelRenderer", "compactChannelRenderer", "channelRenderer", "lockupViewModel" };
-                var foundAny = false;
-
-                foreach (var rendererName in rendererNames)
+                do
                 {
-                    var items = json.SelectTokens("$.." + rendererName);
+                    string url = "https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50";
+                    if (!string.IsNullOrEmpty(nextPageToken))
+                        url += "&pageToken=" + nextPageToken;
+
+                    var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, url);
+                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+                    var response = await _apiClient.SendAsync(request);
+                    if (!response.IsSuccessStatusCode) break;
+
+                    string body = await response.Content.ReadAsStringAsync();
+                    var json = JObject.Parse(body);
+
+                    var items = json["items"] as JArray;
+                    if (items == null || items.Count == 0) break;
+
                     foreach (var item in items)
                     {
-                        try
-                        {
-                            string channelId = item["channelId"]?.ToString()
-                                ?? item.SelectToken("$..browseId")?.ToString();
-                            if (string.IsNullOrEmpty(channelId)) continue;
-                            // Skip if already added
-                            if (_youtubeSubscriptions.Any(s => s.ChannelId == channelId)) continue;
+                        var snippet = item["snippet"];
+                        if (snippet == null) continue;
 
-                            string title = item.SelectToken("title.simpleText")?.ToString()
-                                ?? item.SelectToken("title.runs[0].text")?.ToString()
-                                ?? item.SelectToken("$..metadata.lockupMetadataViewModel.title.content")?.ToString()
-                                ?? "";
-                            string thumbUrl = item.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                                ?? item.SelectToken("thumbnail.thumbnails[0].url")?.ToString()
-                                ?? item.SelectToken("$..thumbnailViewModel.image.sources[0].url")?.ToString();
+                        string channelId = snippet["resourceId"]?["channelId"]?.ToString();
+                        if (string.IsNullOrEmpty(channelId)) continue;
+                        if (addedIds.Contains(channelId)) continue;
+                        addedIds.Add(channelId);
 
-                            _youtubeSubscriptions.Add(new YouTubeSubscription
-                            {
-                                ChannelId = channelId,
-                                Title = title,
-                                ThumbnailUrl = thumbUrl
-                            });
-
-                            foundAny = true;
-                            if (_youtubeSubscriptions.Count >= 500) break;
-                        }
-                        catch { continue; }
-                    }
-                    if (foundAny) break; // Found in one format, stop trying others
-                }
-
-                // Fallback: extract from any browseEndpoint with channelId pattern
-                if (!foundAny)
-                {
-                    var channelIds = json.SelectTokens("$..browseEndpoint.browseId")
-                        .Select(t => t.ToString())
-                        .Where(id => id.StartsWith("UC"))
-                        .Distinct()
-                        .Take(50)
-                        .ToList();
-
-                    // Try to find titles from the original response by walking up from browseEndpoints
-                    var channelTitleMap = new Dictionary<string, string>();
-                    var channelThumbMap = new Dictionary<string, string>();
-                    try
-                    {
-                        // Find all browseEndpoint tokens
-                        var browseTokens = json.SelectTokens("$..browseEndpoint").ToList();
-                        foreach (var bt in browseTokens)
-                        {
-                            string bid = bt["browseId"]?.ToString();
-                            if (string.IsNullOrEmpty(bid) || !bid.StartsWith("UC")) continue;
-                            if (channelTitleMap.ContainsKey(bid)) continue;
-
-                            // Walk up to find a parent with title
-                            var parent = bt.Parent;
-                            for (int depth = 0; depth < 8 && parent != null; depth++)
-                            {
-                                parent = parent.Parent;
-                                if (parent == null) break;
-                                
-                                var titleToken = parent.SelectToken("title.simpleText")
-                                    ?? parent.SelectToken("title.runs[0].text")
-                                    ?? parent.SelectToken("title.content");
-                                if (titleToken != null)
-                                {
-                                    channelTitleMap[bid] = titleToken.ToString();
-                                    var thumbToken = parent.SelectToken("thumbnail.thumbnails[0].url")
-                                        ?? parent.SelectToken("thumbnailRenderer.channelThumbnailWithLinkRenderer.thumbnail.thumbnails[0].url");
-                                    if (thumbToken != null)
-                                        channelThumbMap[bid] = thumbToken.ToString();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-
-                    foreach (var chId in channelIds)
-                    {
-                        if (_youtubeSubscriptions.Any(s => s.ChannelId == chId)) continue;
-                        
-                        string chTitle = "";
-                        string chThumb = "";
-
-                        // Use title from map if available
-                        if (channelTitleMap.ContainsKey(chId))
-                        {
-                            chTitle = channelTitleMap[chId];
-                            if (channelThumbMap.ContainsKey(chId))
-                                chThumb = channelThumbMap[chId];
-                        }
-                        else
-                        {
-                            // Browse channel individually as last resort
-                            try
-                            {
-                                var chJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = chId }, accessToken);
-                                if (chJson["_error"] == null)
-                                {
-                                    chTitle = chJson.SelectToken("$..title.runs[0].text")?.ToString()
-                                        ?? chJson.SelectToken("$..title.simpleText")?.ToString()
-                                        ?? chJson.SelectToken("$..channelName")?.ToString()
-                                        ?? chJson.SelectToken("header..title.content")?.ToString()
-                                        ?? "";
-                                    chThumb = chJson.SelectToken("$..avatar.thumbnails[-1:].url")?.ToString()
-                                        ?? chJson.SelectToken("$..avatar.thumbnails[0].url")?.ToString()
-                                        ?? chJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString()
-                                        ?? "";
-                                }
-                            }
-                            catch { }
-                        }
-
-                        if (string.IsNullOrEmpty(chTitle)) chTitle = chId;
+                        string title = snippet["title"]?.ToString() ?? "";
+                        string thumbUrl = snippet.SelectToken("thumbnails.default.url")?.ToString()
+                            ?? snippet.SelectToken("thumbnails.medium.url")?.ToString()
+                            ?? "";
 
                         _youtubeSubscriptions.Add(new YouTubeSubscription
                         {
-                            ChannelId = chId,
-                            Title = chTitle,
-                            ThumbnailUrl = chThumb
+                            ChannelId = channelId,
+                            Title = title,
+                            ThumbnailUrl = thumbUrl
                         });
                     }
-                }
+
+                    nextPageToken = json["nextPageToken"]?.ToString() ?? "";
+
+                    if (_youtubeSubscriptions.Count >= 200) break;
+
+                } while (!string.IsNullOrEmpty(nextPageToken));
             }
             catch { }
 
