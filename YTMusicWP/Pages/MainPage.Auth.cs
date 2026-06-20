@@ -325,7 +325,7 @@ namespace YTMusicWP
                 var content = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("client_id", _builtInClientId),
-                    new KeyValuePair<string, string>("scope", "https://www.googleapis.com/auth/youtube")
+                    new KeyValuePair<string, string>("scope", "https://www.googleapis.com/auth/youtube openid profile")
                 });
 
                 var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/device/code", content);
@@ -1176,82 +1176,114 @@ namespace YTMusicWP
         {
             try
             {
-                // Use YouTube Data API — works with youtube scope we already have
+                // Method 0: Google userinfo (works if openid+profile scope is available)
+                var userinfoReq = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v3/userinfo");
+                userinfoReq.Headers.Add("Authorization", "Bearer " + accessToken);
+                var userinfoResp = await _apiClient.SendAsync(userinfoReq);
+                if (userinfoResp.IsSuccessStatusCode)
+                {
+                    string uiJson = await userinfoResp.Content.ReadAsStringAsync();
+                    var uiData = JObject.Parse(uiJson);
+                    string name = uiData["name"]?.ToString() ?? "";
+                    string pic = uiData["picture"]?.ToString() ?? "";
+                    // Request higher res
+                    if (!string.IsNullOrEmpty(pic) && pic.Contains("=s96-c"))
+                        pic = pic.Replace("=s96-c", "=s128-c");
+                    if (SaveAvatarData(name, pic)) return;
+                }
+
+                // Method 1: YouTube Data API channels?mine=true
                 var request = new HttpRequestMessage(HttpMethod.Get,
                     "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&fields=items(snippet(title,thumbnails))");
                 request.Headers.Add("Authorization", "Bearer " + accessToken);
                 var response = await _apiClient.SendAsync(request);
 
-                if (!response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode)
                 {
-                    // Fallback: try InnerTube account_menu
-                    await FetchAvatarFromInnerTubeAsync(accessToken);
-                    return;
+                    string resultJson = await response.Content.ReadAsStringAsync();
+                    var json = JObject.Parse(resultJson);
+                    var items = json["items"] as JArray;
+                    if (items != null && items.Count > 0)
+                    {
+                        var snippet = items[0]["snippet"];
+                        string name = snippet?["title"]?.ToString() ?? "";
+                        string avatarUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
+                            ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
+                            ?? snippet?.SelectToken("thumbnails.default.url")?.ToString() ?? "";
+
+                        if (SaveAvatarData(name, avatarUrl)) return;
+                    }
                 }
 
-                string resultJson = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(resultJson);
-                var items = json["items"] as JArray;
-                if (items == null || items.Count == 0)
+                // Method 2: InnerTube account_menu with WEB client
+                var body = new JObject
                 {
-                    await FetchAvatarFromInnerTubeAsync(accessToken);
-                    return;
-                }
+                    ["context"] = new JObject
+                    {
+                        ["client"] = new JObject
+                        {
+                            ["clientName"] = "WEB",
+                            ["clientVersion"] = "2.20241016.00.00",
+                            ["hl"] = InnerTubeClient.CurrentLanguage,
+                            ["gl"] = InnerTubeClient.CurrentRegion
+                        }
+                    }
+                };
 
-                var snippet = items[0]["snippet"];
-                string name = snippet?["title"]?.ToString() ?? "";
-                // Try high → medium → default thumbnail
-                string avatarUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
-                    ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
-                    ?? snippet?.SelectToken("thumbnails.default.url")?.ToString() ?? "";
+                string menuUrl = "https://www.youtube.com/youtubei/v1/account/account_menu?prettyPrint=false";
+                var menuReq = new HttpRequestMessage(HttpMethod.Post, menuUrl);
+                menuReq.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                menuReq.Headers.Add("Authorization", "Bearer " + accessToken);
 
-                if (!string.IsNullOrEmpty(avatarUrl))
+                var menuResp = await _apiClient.SendAsync(menuReq);
+                if (menuResp.IsSuccessStatusCode)
                 {
-                    var settings = ApplicationData.Current.LocalSettings.Values;
-                    settings["GoogleAvatarUrl"] = avatarUrl;
-                    if (!string.IsNullOrEmpty(name))
-                        settings["GoogleUserName"] = name;
+                    string menuJson = await menuResp.Content.ReadAsStringAsync();
+                    var menuData = JObject.Parse(menuJson);
 
-                    LoadHomeAvatar();
-                }
-            }
-            catch
-            {
-                try { await FetchAvatarFromInnerTubeAsync(accessToken); } catch { }
-            }
-        }
+                    string name = menuData.SelectToken("$..accountName..text")?.ToString() ?? "";
 
-        private async Task FetchAvatarFromInnerTubeAsync(string accessToken)
-        {
-            try
-            {
-                var json = await AuthInnerTubePostAsync("account/account_menu", new JObject(), accessToken);
-                if (json["_error"] != null) return;
+                    // Iterate thumbnails to get largest
+                    string avatarUrl = "";
+                    var thumbs = menuData.SelectTokens("$..accountPhoto..thumbnails[*]");
+                    foreach (var t in thumbs)
+                    {
+                        string u = t["url"]?.ToString();
+                        if (!string.IsNullOrEmpty(u)) avatarUrl = u;
+                    }
 
-                // Extract name and avatar — try multiple paths
-                string name = json.SelectToken("$..accountName..text")?.ToString()
-                    ?? json.SelectToken("$..channelHandle..text")?.ToString() ?? "";
+                    // Also try header renderer
+                    if (string.IsNullOrEmpty(avatarUrl))
+                    {
+                        thumbs = menuData.SelectTokens("$..thumbnail..thumbnails[*]");
+                        foreach (var t in thumbs)
+                        {
+                            string u = t["url"]?.ToString();
+                            if (!string.IsNullOrEmpty(u)) avatarUrl = u;
+                        }
+                    }
 
-                // Find avatar thumbnail — iterate to get largest
-                string avatarUrl = "";
-                var thumbs = json.SelectTokens("$..accountPhoto..thumbnails[*]");
-                foreach (var t in thumbs)
-                {
-                    string u = t["url"]?.ToString();
-                    if (!string.IsNullOrEmpty(u)) avatarUrl = u; // last = largest
-                }
-
-                if (!string.IsNullOrEmpty(avatarUrl))
-                {
-                    var settings = ApplicationData.Current.LocalSettings.Values;
-                    settings["GoogleAvatarUrl"] = avatarUrl;
-                    if (!string.IsNullOrEmpty(name))
-                        settings["GoogleUserName"] = name;
-
-                    LoadHomeAvatar();
+                    SaveAvatarData(name, avatarUrl);
                 }
             }
             catch { }
+        }
+
+        private bool SaveAvatarData(string name, string avatarUrl)
+        {
+            if (string.IsNullOrEmpty(avatarUrl)) return false;
+
+            // Ensure https
+            if (avatarUrl.StartsWith("//"))
+                avatarUrl = "https:" + avatarUrl;
+
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            settings["GoogleAvatarUrl"] = avatarUrl;
+            if (!string.IsNullOrEmpty(name))
+                settings["GoogleUserName"] = name;
+
+            LoadHomeAvatar();
+            return true;
         }
 
     }
