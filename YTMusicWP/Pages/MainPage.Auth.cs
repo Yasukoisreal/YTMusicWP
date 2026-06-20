@@ -804,88 +804,69 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
-                if (json["_error"] != null)
-                {
-                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] FElibrary error: " + json["_error"]);
-                    return;
-                }
 
-                // Find all playlistId values in TV format response
-                // Find all playlistId values in response
-                var allPlaylistIds = json.SelectTokens("$..playlistId").ToList();
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found " + allPlaylistIds.Count + " playlistId tokens");
-
-                // Also search for browseId values starting with VL (alternative format)
-                var allBrowseIds = json.SelectTokens("$..browseId")
-                    .Select(t => t.ToString())
-                    .Where(id => id.StartsWith("VL"))
-                    .Select(id => id.Substring(2))
-                    .ToList();
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found " + allBrowseIds.Count + " VL browseId tokens");
-
-                var uniqueIds = new List<string>();
-                foreach (var token in allPlaylistIds)
+                // Use YouTube Data API v3 — stable and reliable
+                string nextPageToken = "";
+                while (nextPageToken != null)
                 {
-                    string plId = token.ToString();
-                    // Skip system playlists (LL = Liked, WL = Watch Later, etc.)
-                    if (string.IsNullOrEmpty(plId)) continue;
-                    if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
-                    if (!uniqueIds.Contains(plId))
-                        uniqueIds.Add(plId);
-                }
-                // Merge browseId-based playlist IDs
-                foreach (var plId in allBrowseIds)
-                {
-                    if (string.IsNullOrEmpty(plId)) continue;
-                    if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
-                    if (!uniqueIds.Contains(plId))
-                        uniqueIds.Add(plId);
-                }
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Unique playlist IDs: " + uniqueIds.Count);
+                    string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&mine=true&maxResults=50";
+                    if (!string.IsNullOrEmpty(nextPageToken))
+                        url += "&pageToken=" + nextPageToken;
 
-                // For each playlist, browse it to get real title
-                foreach (var plId in uniqueIds)
-                {
-                    try
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                    var response = await _apiClient.SendAsync(request);
+                    if (!response.IsSuccessStatusCode)
                     {
-                        string title = "";
-                        string thumbUrl = "";
-                        int count = 0;
-
-                        // Browse the playlist directly to get title
-                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
-                        if (plJson["_error"] == null)
-                        {
-                            // Title is usually in header
-                            title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                                ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                                ?? "";
-                            // Thumbnail
-                            thumbUrl = plJson.SelectToken("$..playlistHeaderRenderer.playlistHeaderBanner.heroPlaylistThumbnailRenderer.thumbnail.thumbnails[0].url")?.ToString()
-                                ?? plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString()
-                                ?? "";
-                            // Count videos
-                            var videoIds = plJson.SelectTokens("$..videoId").ToList();
-                            count = videoIds.Count;
-                        }
-
-                        if (string.IsNullOrEmpty(title)) title = "Playlist " + plId;
-
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                        {
-                            PlaylistId = plId,
-                            Title = title,
-                            TrackCount = count,
-                            ThumbnailUrl = thumbUrl
-                        });
-
-                        if (_youtubeUserPlaylists.Count >= 200) break;
+                        System.Diagnostics.Debug.WriteLine("[PlaylistSync] API v3 error: " + (int)response.StatusCode);
+                        break;
                     }
-                    catch { continue; }
+
+                    string resultJson = await response.Content.ReadAsStringAsync();
+                    var json = JObject.Parse(resultJson);
+
+                    var items = json["items"] as JArray;
+                    if (items != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            string plId = item["id"]?.ToString() ?? "";
+                            if (string.IsNullOrEmpty(plId)) continue;
+                            // Skip system playlists
+                            if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
+
+                            string title = item["snippet"]?["title"]?.ToString() ?? "Playlist";
+                            string thumbUrl = "";
+                            var thumbs = item["snippet"]?["thumbnails"];
+                            if (thumbs != null)
+                            {
+                                thumbUrl = thumbs["medium"]?["url"]?.ToString()
+                                    ?? thumbs["default"]?["url"]?.ToString()
+                                    ?? "";
+                            }
+                            int count = item["contentDetails"]?["itemCount"]?.Value<int>() ?? 0;
+
+                            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                            {
+                                PlaylistId = plId,
+                                Title = title,
+                                TrackCount = count,
+                                ThumbnailUrl = thumbUrl
+                            });
+
+                            System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found: " + title + " (" + plId + ") " + count + " tracks");
+                        }
+                    }
+
+                    nextPageToken = json["nextPageToken"]?.ToString();
+                    if (_youtubeUserPlaylists.Count >= 200) break;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Exception: " + ex.Message);
+            }
 
             // Cache playlists locally for instant load on next startup
             // Only save if we actually found playlists (don't overwrite cache with empty)
