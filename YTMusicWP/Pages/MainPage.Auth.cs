@@ -820,147 +820,77 @@ namespace YTMusicWP
                 // Log what keys exist in response to understand format
                 var topKeys = string.Join(",", json.Properties().Select(p => p.Name));
 
-                // DEBUG: Find the parent renderer/container of playlistId tokens
+                // Find playlists by walking up from each playlistId token
                 var plIdTokens = json.SelectTokens("$..playlistId").ToList();
-                string debugInfo = "pId=" + plIdTokens.Count;
+                
                 foreach (var tok in plIdTokens)
                 {
-                    string plIdVal = tok.ToString();
-                    if (plIdVal == "LL" || plIdVal == "WL" || plIdVal == "LM") continue;
-                    
-                    // Walk up to find the container object name
-                    var parent = tok.Parent; // property "playlistId"
-                    if (parent != null) parent = parent.Parent; // container object
-                    if (parent != null && parent.Parent != null)
+                    try
                     {
-                        var grandParent = parent.Parent; // property that holds the container
-                        string containerName = grandParent is Newtonsoft.Json.Linq.JProperty ? ((Newtonsoft.Json.Linq.JProperty)grandParent).Name : "arr";
-                        
-                        // Get sibling keys in the container
-                        var siblingKeys = "";
-                        if (parent is JObject)
-                            siblingKeys = string.Join(",", ((JObject)parent).Properties().Take(8).Select(p => p.Name));
-                        
-                        debugInfo += " | " + containerName + "={" + siblingKeys + "}";
-                    }
-                }
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    LoginStatusText.Text = debugInfo.Substring(0, Math.Min(200, debugInfo.Length));
-                });
+                        string plId = tok.ToString();
+                        if (string.IsNullOrEmpty(plId)) continue;
+                        if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
+                        if (_youtubeUserPlaylists.Any(p => p.PlaylistId == plId)) continue;
 
-                // Search for playlist renderers directly in FElibrary response
-                // Try multiple known renderer types
-                var rendererTypes = new[] {
-                    "gridPlaylistRenderer", "compactPlaylistRenderer", 
-                    "playlistRenderer", "lockupViewModel"
-                };
-
-                foreach (var rType in rendererTypes)
-                {
-                    var renderers = json.SelectTokens("$.." + rType).ToList();
-                    foreach (var renderer in renderers)
-                    {
-                        try
+                        // Walk up to find the enclosing renderer object (parent of the property containing playlistId)
+                        JObject container = null;
+                        var current = tok.Parent; // JProperty "playlistId"
+                        if (current != null) current = current.Parent; // containing JObject
+                        
+                        // Walk up several levels to find a large-enough container with title info
+                        for (int i = 0; i < 6 && current != null; i++)
                         {
-                            string plId = renderer["playlistId"]?.ToString()
-                                ?? renderer["contentId"]?.ToString()
-                                ?? "";
-                            
-                            // For browseEndpoint-based IDs
-                            if (string.IsNullOrEmpty(plId))
+                            if (current is JObject obj)
                             {
-                                plId = renderer.SelectToken("$.navigationEndpoint.browseEndpoint.browseId")?.ToString() ?? "";
-                                if (plId.StartsWith("VL")) plId = plId.Substring(2);
+                                // Check if this level has a "title" property
+                                if (obj["title"] != null)
+                                {
+                                    container = obj;
+                                    break;
+                                }
                             }
+                            current = current.Parent;
+                        }
 
-                            if (string.IsNullOrEmpty(plId)) continue;
-                            if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
-                            if (_youtubeUserPlaylists.Any(p => p.PlaylistId == plId)) continue;
+                        // If no container with title found, use immediate parent
+                        if (container == null)
+                        {
+                            current = tok.Parent?.Parent;
+                            if (current is JObject obj2) container = obj2;
+                        }
 
-                            // Title
-                            string title = renderer.SelectToken("$.title.runs[0].text")?.ToString()
-                                ?? renderer.SelectToken("$.title.simpleText")?.ToString()
-                                ?? renderer.SelectToken("$.metadata.lockupMetadataViewModel.title.content")?.ToString()
+                        // Extract title from container
+                        string title = "Playlist";
+                        if (container != null)
+                        {
+                            title = container.SelectToken("$.title.runs[0].text")?.ToString()
+                                ?? container.SelectToken("$.title.simpleText")?.ToString()
+                                ?? container.SelectToken("$.title.content")?.ToString()
+                                ?? container.SelectToken("$..title.content")?.ToString()
                                 ?? "Playlist";
+                        }
 
-                            // Thumbnail
-                            string thumbUrl = renderer.SelectToken("$.thumbnail.thumbnails[0].url")?.ToString()
-                                ?? renderer.SelectToken("$..thumbnailViewModel.image.sources[0].url")?.ToString()
+                        // Extract thumbnail from container or nearby
+                        string thumbUrl = "";
+                        if (container != null)
+                        {
+                            thumbUrl = container.SelectToken("$.thumbnail.thumbnails[0].url")?.ToString()
+                                ?? container.SelectToken("$..thumbnails[0].url")?.ToString()
                                 ?? "";
+                        }
 
-                            // Track count
-                            int count = 0;
-                            string countStr = renderer.SelectToken("$.videoCountText.runs[0].text")?.ToString()
-                                ?? renderer.SelectToken("$.videoCountShortText.simpleText")?.ToString()
+                        // Extract video count
+                        int count = 0;
+                        if (container != null)
+                        {
+                            string countStr = container.SelectToken("$.videoCountText.runs[0].text")?.ToString()
+                                ?? container.SelectToken("$.videoCountShortText.simpleText")?.ToString()
+                                ?? container.SelectToken("$.videoCount")?.ToString()
                                 ?? "";
                             if (!string.IsNullOrEmpty(countStr))
                             {
-                                var match = System.Text.RegularExpressions.Regex.Match(countStr, @"(\d+)");
-                                if (match.Success) count = int.Parse(match.Groups[1].Value);
-                            }
-
-                            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                            {
-                                PlaylistId = plId,
-                                Title = title,
-                                TrackCount = count,
-                                ThumbnailUrl = thumbUrl
-                            });
-                        }
-                        catch { continue; }
-                        if (_youtubeUserPlaylists.Count >= 200) break;
-                    }
-                    if (_youtubeUserPlaylists.Count > 0) break; // Found with this renderer type
-                }
-
-                // Last resort: raw string search for playlist title near the ID
-                if (_youtubeUserPlaylists.Count == 0)
-                {
-                    // Search for any playlistId or VL browseId
-                    var allBrowseIds = json.SelectTokens("$..browseId")
-                        .Select(t => t.ToString())
-                        .Where(id => id.StartsWith("VL") && id.Length > 4)
-                        .Select(id => id.Substring(2))
-                        .Distinct().ToList();
-                    var allPlaylistIds = json.SelectTokens("$..playlistId")
-                        .Select(t => t.ToString()).Distinct().ToList();
-                    
-                    var uniqueIds = new List<string>();
-                    foreach (var id in allPlaylistIds.Concat(allBrowseIds))
-                    {
-                        if (string.IsNullOrEmpty(id) || id == "LL" || id == "WL" || id == "LM" || id.StartsWith("RDMM")) continue;
-                        if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
-                    }
-
-                    // Try to find title from raw JSON string near the playlist ID
-                    string rawJson = json.ToString();
-                    foreach (var plId in uniqueIds)
-                    {
-                        string title = "Playlist";
-                        // Search for "title":{"runs":[{"text":"TITLE"}]} near the playlistId
-                        int idIdx = rawJson.IndexOf("\"" + plId + "\"");
-                        if (idIdx >= 0)
-                        {
-                            // Search nearby (±500 chars) for title
-                            int searchStart = Math.Max(0, idIdx - 500);
-                            int searchEnd = Math.Min(rawJson.Length, idIdx + 500);
-                            string nearby = rawJson.Substring(searchStart, searchEnd - searchStart);
-                            
-                            var titleMatch = System.Text.RegularExpressions.Regex.Match(nearby, @"""title"":\s*\{""runs"":\[\{""text"":""([^""]+)""\}");
-                            if (titleMatch.Success)
-                                title = titleMatch.Groups[1].Value;
-                            else
-                            {
-                                titleMatch = System.Text.RegularExpressions.Regex.Match(nearby, @"""title"":\s*\{""simpleText"":""([^""]+)""\}");
-                                if (titleMatch.Success)
-                                    title = titleMatch.Groups[1].Value;
-                                else
-                                {
-                                    titleMatch = System.Text.RegularExpressions.Regex.Match(nearby, @"""title"":\s*\{""content"":""([^""]+)""\}");
-                                    if (titleMatch.Success)
-                                        title = titleMatch.Groups[1].Value;
-                                }
+                                var m = System.Text.RegularExpressions.Regex.Match(countStr, @"(\d+)");
+                                if (m.Success) count = int.Parse(m.Groups[1].Value);
                             }
                         }
 
@@ -968,15 +898,17 @@ namespace YTMusicWP
                         {
                             PlaylistId = plId,
                             Title = title,
-                            TrackCount = 0,
-                            ThumbnailUrl = ""
+                            TrackCount = count,
+                            ThumbnailUrl = thumbUrl
                         });
                     }
+                    catch { continue; }
+                    if (_youtubeUserPlaylists.Count >= 200) break;
                 }
 
                 await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
-                    LoginStatusText.Text = "PL: " + _youtubeUserPlaylists.Count + " synced | " + topKeys.Substring(0, Math.Min(40, topKeys.Length));
+                    LoginStatusText.Text = "PL: " + _youtubeUserPlaylists.Count + " synced";
                 });
             }
             catch (Exception ex)
