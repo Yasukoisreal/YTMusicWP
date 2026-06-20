@@ -1107,27 +1107,7 @@ namespace YTMusicWP
         // ══════════════════════════════════════════
         private async Task<bool> AddToWatchLaterAsync(string videoId)
         {
-            string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return false;
-
-            try
-            {
-                var extra = new JObject
-                {
-                    ["playlistId"] = "WL",
-                    ["actions"] = new JArray
-                    {
-                        new JObject
-                        {
-                            ["addedVideoId"] = videoId,
-                            ["action"] = "ACTION_ADD_VIDEO"
-                        }
-                    }
-                };
-                var json = await AndroidInnerTubePostAsync("browse/edit_playlist", extra, token);
-                return json["_error"] == null;
-            }
-            catch { return false; }
+            return await AddToYouTubePlaylistAsync("WL", videoId);
         }
 
         private async Task<bool> AddToYouTubePlaylistAsync(string playlistId, string videoId)
@@ -1137,23 +1117,31 @@ namespace YTMusicWP
 
             try
             {
-                var extra = new JObject
+                string url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&key=" + _beatoraApiKey;
+                var body = new JObject
                 {
-                    ["playlistId"] = playlistId,
-                    ["actions"] = new JArray
+                    ["snippet"] = new JObject
                     {
-                        new JObject
+                        ["playlistId"] = playlistId,
+                        ["resourceId"] = new JObject
                         {
-                            ["addedVideoId"] = videoId,
-                            ["action"] = "ACTION_ADD_VIDEO"
+                            ["kind"] = "youtube#video",
+                            ["videoId"] = videoId
                         }
                     }
                 };
-                var json = await AndroidInnerTubePostAsync("browse/edit_playlist", extra, token);
-                return json["_error"] == null;
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("Authorization", "Bearer " + token);
+
+                var response = await _apiClient.SendAsync(request);
+                return response.IsSuccessStatusCode;
             }
             catch { return false; }
         }
+
+        private const string _beatoraApiKey = "AIzaSyBuyqL9Wwj8NIWlRr3HdwTJLGYN6sXqepY";
 
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
@@ -1162,20 +1150,26 @@ namespace YTMusicWP
 
             try
             {
-                var extra = new JObject
+                // Use YouTube Data API v3 with Beatora API key
+                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,status&key=" + _beatoraApiKey;
+                var body = new JObject
                 {
-                    ["title"] = title,
-                    ["privacyStatus"] = "PRIVATE"
+                    ["snippet"] = new JObject { ["title"] = title },
+                    ["status"] = new JObject { ["privacyStatus"] = "private" }
                 };
-                var json = await AndroidInnerTubePostAsync("playlist/create", extra, token);
-                if (json["_error"] != null)
-                {
-                    string errCode = json["_error"]?.ToString() ?? "?";
-                    string errBody = json["_body"]?.ToString() ?? "";
-                    return "ERR:" + errCode + " " + errBody;
-                }
-                string plId = json.SelectToken("$..playlistId")?.ToString();
-                return plId;
+
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("Authorization", "Bearer " + token);
+
+                var response = await _apiClient.SendAsync(request);
+                string resultJson = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                    return "ERR:" + (int)response.StatusCode + " " + (resultJson.Length > 150 ? resultJson.Substring(0, 150) : resultJson);
+
+                var json = JObject.Parse(resultJson);
+                return json["id"]?.ToString();
             }
             catch (Exception ex) { return "ERR:ex " + ex.Message; }
         }
@@ -1187,12 +1181,12 @@ namespace YTMusicWP
 
             try
             {
-                var extra = new JObject
-                {
-                    ["playlistId"] = playlistId
-                };
-                var json = await AndroidInnerTubePostAsync("playlist/delete", extra, token);
-                return json["_error"] == null;
+                string url = "https://www.googleapis.com/youtube/v3/playlists?id=" + playlistId + "&key=" + _beatoraApiKey;
+                var request = new HttpRequestMessage(HttpMethod.Delete, url);
+                request.Headers.Add("Authorization", "Bearer " + token);
+
+                var response = await _apiClient.SendAsync(request);
+                return response.IsSuccessStatusCode;
             }
             catch { return false; }
         }
