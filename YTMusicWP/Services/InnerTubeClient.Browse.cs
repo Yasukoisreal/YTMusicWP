@@ -65,21 +65,44 @@ namespace YTMusicWP
                     {
                         foreach (var sec in sections)
                         {
+                            // itemSectionRenderer → lockupViewModel
                             var isr = sec["itemSectionRenderer"];
-                            if (isr == null) continue;
-
-                            var items = isr["contents"];
-                            if (items == null) continue;
-
-                            foreach (var item in items)
+                            if (isr != null)
                             {
-                                try
+                                var items = isr["contents"];
+                                if (items != null)
                                 {
-                                    var track = ParseLockupViewModel(item);
-                                    if (track != null)
-                                        result.Tracks.Add(track);
+                                    foreach (var item in items)
+                                    {
+                                        try
+                                        {
+                                            var track = ParseLockupViewModel(item);
+                                            if (track != null)
+                                                result.Tracks.Add(track);
+                                        }
+                                        catch { continue; }
+                                    }
                                 }
-                                catch { continue; }
+                            }
+
+                            // musicShelfRenderer → musicResponsiveListItemRenderer (albums in twoColumn)
+                            var shelf = sec["musicShelfRenderer"];
+                            if (shelf != null)
+                            {
+                                var shelfItems = shelf["contents"];
+                                if (shelfItems != null)
+                                {
+                                    foreach (var sItem in shelfItems)
+                                    {
+                                        try
+                                        {
+                                            var track = ParseMusicListItem(sItem);
+                                            if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                                result.Tracks.Add(track);
+                                        }
+                                        catch { continue; }
+                                    }
+                                }
                             }
                         }
                     }
@@ -115,10 +138,39 @@ namespace YTMusicWP
                     }
                 }
 
+                // Brute-force fallback: search all musicResponsiveListItemRenderer
+                if (result.Tracks.Count == 0)
+                {
+                    var allItems = data?.SelectTokens("$..musicResponsiveListItemRenderer");
+                    if (allItems != null)
+                    {
+                        foreach (var mrlir in allItems)
+                        {
+                            try
+                            {
+                                var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
+                                var track = ParseMusicListItem(wrapper);
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    result.Tracks.Add(track);
+                            }
+                            catch { continue; }
+                        }
+                    }
+                }
+
                 // Album title fallback
                 if (string.IsNullOrEmpty(result.Title))
                 {
                     result.Title = data?["header"]?["musicImmersiveHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                }
+                if (string.IsNullOrEmpty(result.Title))
+                {
+                    result.Title = data?["header"]?["musicDetailHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                }
+                if (string.IsNullOrEmpty(result.Title))
+                {
+                    // Brute-force: any header title
+                    result.Title = data?.SelectToken("$..header..title..text")?.ToString() ?? "";
                 }
                 // Album thumbnail fallback
                 if (string.IsNullOrEmpty(result.ThumbnailUrl))
@@ -126,6 +178,12 @@ namespace YTMusicWP
                     var hdrThumbs = data?["header"]?["musicImmersiveHeaderRenderer"]?["thumbnail"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
                     if (hdrThumbs != null && hdrThumbs.HasValues)
                         result.ThumbnailUrl = hdrThumbs.Last?["url"]?.ToString() ?? "";
+                }
+                if (string.IsNullOrEmpty(result.ThumbnailUrl))
+                {
+                    var hdrThumbs2 = data?["header"]?["musicDetailHeaderRenderer"]?["thumbnail"]?["croppedSquareThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
+                    if (hdrThumbs2 != null && hdrThumbs2.HasValues)
+                        result.ThumbnailUrl = hdrThumbs2.Last?["url"]?.ToString() ?? "";
                 }
             }
             catch { }
