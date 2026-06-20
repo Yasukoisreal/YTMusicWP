@@ -63,7 +63,7 @@ namespace YTMusicWP
         private static string GetSquareThumbnail(string url)
         {
             if (string.IsNullOrEmpty(url)) return url;
-            // YouTube Music thumbnails — request square crop from CDN
+            // YouTube Music thumbnails — request square crop
             if (url.Contains("lh3.googleusercontent.com") || url.Contains("yt3.ggpht.com"))
             {
                 // Remove any existing size params and request square
@@ -72,10 +72,12 @@ namespace YTMusicWP
                     return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
                 return url + "=w480-h480-l90-rj";
             }
-            // YouTube video thumbnails — use sddefault (true 16:9, no black bars)
-            // hqdefault is 480x360 (4:3 with black bars baked in!) — BAD for square crop
-            // sddefault is 640x480 (4:3 but most videos actually fill 16:9 area)
-            // Use hqdefault but rely on UniformToFill to crop center
+            // YouTube video thumbnails — use mqdefault (320x180, true 16:9 without letterbox)
+            // hqdefault is 480x360 (4:3 with black bars baked in)
+            if (url.Contains("hqdefault.jpg"))
+                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+            if (url.Contains("sddefault.jpg"))
+                return url.Replace("sddefault.jpg", "mqdefault.jpg");
             return url;
         }
 

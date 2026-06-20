@@ -1046,7 +1046,7 @@
                                 <!-- Thumbnail image on top (covers icon when available) -->
                                 <Border CornerRadius="6">
                                     <Border.Background>
-                                        <ImageBrush Stretch="UniformToFill" ImageSource="{Binding ThumbnailUrl}"/>
+                                        <ImageBrush Stretch="UniformToFill" ImageSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}"/>
                                     </Border.Background>
                                 </Border>
                             </Grid>
