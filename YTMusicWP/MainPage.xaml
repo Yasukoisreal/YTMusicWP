@@ -986,9 +986,16 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Border Width="32" Height="32" CornerRadius="16" Background="#1DB954" Margin="0,0,10,0">
-                    <TextBlock Text="Y" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
+                <Grid Width="32" Height="32" Margin="0,0,10,0">
+                    <Border x:Name="LibAvatarFallback" Width="32" Height="32" CornerRadius="16" Background="#1DB954">
+                        <TextBlock x:Name="LibAvatarLetter" Text="Y" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <Ellipse x:Name="LibAvatarImage" Width="32" Height="32" Visibility="Collapsed">
+                        <Ellipse.Fill>
+                            <ImageBrush x:Name="LibAvatarBrush" Stretch="UniformToFill"/>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                </Grid>
                 <TextBlock Grid.Column="1" Text="Your Library" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
                 <Button x:Name="LibrarySyncBtn" Grid.Column="2" Click="LibrarySync_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
                     <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="18" Foreground="White"/>

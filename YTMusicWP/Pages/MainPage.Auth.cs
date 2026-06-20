@@ -260,6 +260,9 @@ namespace YTMusicWP
             HomeAvatarImage.Visibility = Visibility.Collapsed;
             HomeAvatarFallback.Visibility = Visibility.Visible;
             HomeAvatarLetter.Text = "Y";
+            LibAvatarImage.Visibility = Visibility.Collapsed;
+            LibAvatarFallback.Visibility = Visibility.Visible;
+            LibAvatarLetter.Text = "Y";
             settings.Remove("GoogleAvatarUrl");
             settings.Remove("GoogleUserName");
 
@@ -1201,15 +1204,27 @@ namespace YTMusicWP
                     var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                     bmp.DecodePixelWidth = 64; // 32dp × 2 for sharp rendering
                     bmp.UriSource = new Uri(avatarUrl, UriKind.Absolute);
+
+                    // Home avatar
                     HomeAvatarBrush.ImageSource = bmp;
                     HomeAvatarImage.Visibility = Visibility.Visible;
                     HomeAvatarFallback.Visibility = Visibility.Collapsed;
+
+                    // Library avatar
+                    var bmp2 = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    bmp2.DecodePixelWidth = 64;
+                    bmp2.UriSource = new Uri(avatarUrl, UriKind.Absolute);
+                    LibAvatarBrush.ImageSource = bmp2;
+                    LibAvatarImage.Visibility = Visibility.Visible;
+                    LibAvatarFallback.Visibility = Visibility.Collapsed;
                 }
 
                 // Show user's first initial instead of "Y"
                 if (!string.IsNullOrEmpty(userName))
                 {
-                    HomeAvatarLetter.Text = userName.Substring(0, 1).ToUpper();
+                    string initial = userName.Substring(0, 1).ToUpper();
+                    HomeAvatarLetter.Text = initial;
+                    LibAvatarLetter.Text = initial;
                 }
             }
             catch { }
