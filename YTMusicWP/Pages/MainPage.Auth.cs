@@ -895,17 +895,57 @@ namespace YTMusicWP
                     if (_youtubeUserPlaylists.Count >= 200) break;
                 }
 
-                // Fallback: if lockupViewModel didn't work, add from uniqueIds directly
+                // Fallback: if lockupViewModel didn't work, add from uniqueIds
                 if (_youtubeUserPlaylists.Count == 0 && uniqueIds.Count > 0)
                 {
                     foreach (var plId in uniqueIds)
                     {
+                        string title = "Playlist";
+                        string thumbUrl = "";
+                        int count = 0;
+
+                        // Try WebBrowseAsync (WEB client) for title
+                        try
+                        {
+                            var plJson = await WebBrowseAsync("VL" + plId, accessToken);
+                            if (plJson["_error"] == null)
+                            {
+                                title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
+                                    ?? plJson.SelectToken("$..title.simpleText")?.ToString()
+                                    ?? plJson.SelectToken("$..playlistMetadataRenderer.title")?.ToString()
+                                    ?? "Playlist";
+                                thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
+                                var vids = plJson.SelectTokens("$..videoId").ToList();
+                                count = vids.Count;
+                            }
+                        }
+                        catch { }
+
+                        // If WEB failed, try TVHTML5
+                        if (title == "Playlist")
+                        {
+                            try
+                            {
+                                var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
+                                if (plJson["_error"] == null)
+                                {
+                                    title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
+                                        ?? plJson.SelectToken("$..title.simpleText")?.ToString()
+                                        ?? "Playlist";
+                                    thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
+                                    var vids = plJson.SelectTokens("$..videoId").ToList();
+                                    count = vids.Count;
+                                }
+                            }
+                            catch { }
+                        }
+
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
                             PlaylistId = plId,
-                            Title = "Playlist " + plId.Substring(0, Math.Min(8, plId.Length)),
-                            TrackCount = 0,
-                            ThumbnailUrl = ""
+                            Title = title,
+                            TrackCount = count,
+                            ThumbnailUrl = thumbUrl
                         });
                     }
                 }
