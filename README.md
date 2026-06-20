@@ -1,42 +1,69 @@
 # 🎵 YTMusicWP
 
-![Windows Phone 8.1](https://img.shields.io/badge/Platform-Windows%20Phone%208.1-blue)
-![Windows 10 Mobile](https://img.shields.io/badge/Platform-Windows%2010%20Mobile-blue)
-![Language](https://img.shields.io/badge/Language-C%23%20%7C%20Python-green)
+![Platform](https://img.shields.io/badge/Platform-Windows%20Phone%208.1-blue)
+![Platform](https://img.shields.io/badge/Platform-Windows%2010%20Mobile-blue)
+![Language](https://img.shields.io/badge/Language-C%23-green)
+![Version](https://img.shields.io/badge/Version-2.0%20BETA-orange)
 
 A modern, fully functional YouTube Music client designed specifically to breathe new life into legacy Windows Phone 8.1 devices (like the Lumia 530) and Windows 10 Mobile.
 
 ## ✨ Key Features
-* **Background Audio Playback:** Listen to your favorite tracks seamlessly in the background with lock-screen controls.
-* **Offline Downloads:** Download tracks directly to your device storage (`.m4a` format) for offline listening.
-* **Real-time Synchronized Lyrics:** Fetches and displays perfectly synced lyrics, complete with UI highlighting and time-shift adjustments.
-* **Google OAuth 2.0 Sync:** Login with your Google account to sync your "Liked Songs" directly from YouTube.
-* **Playlist Management:** Create, edit, and manage custom offline playlists.
-* **Modern UI:** A clean, pivot-based dark theme interface inspired by the official YouTube Music app.
+
+- 🔍 **Discover Millions of Songs** — Search for any song, artist, or album, or explore 28 global category cards
+- ⬇️ **Offline Downloads** — Download tracks directly to your device (`.m4a` format) for offline listening
+- 🎤 **Synced Karaoke Lyrics** — Real-time lyrics that highlight word-by-word with adjustable sync delay
+- 🎧 **Music Shorts** — Swipe through quick music previews organized by mood and genre
+- 🔊 **Background Playback** — Listen with lock-screen controls, even when using other apps
+- 🔗 **Google Account Sync** — Login via OAuth 2.0 Device Code flow to sync your Liked Songs
+- 📋 **Playlist Management** — Create, edit, and manage custom playlists
+- 🎛️ **Audio Quality Options** — Choose between 48kbps, 128kbps, or 256kbps
+- 🔀 **Crossfade & Gapless Playback** — Smooth transitions between tracks
+- 🌍 **Trending by Region** — Explore trending music from 80+ countries
+- 🎭 **Your Top Mixes** — Chill, Focus, Energy & Sad mood mixes curated for you
+- 👤 **Artist Pages** — Browse any artist's discography, albums & related artists
+- 🎨 **Modern Dark UI** — A gorgeous dark theme interface inspired by YouTube Music
 
 ## 🏗️ Architecture
-This project consists of two main components to bypass legacy TLS limitations on WP8.1:
-1. **Frontend (C# / WinRT):** The native Windows Phone 8.1 application handling the UI, background media player, and local storage.
-2. **Backend API (Python / Flask):** A lightweight server script (`app.py`) that utilizes `yt-dlp` to cache YouTube audio files securely and stream them to the phone. It includes an auto-cleanup LRU cache mechanism to prevent server disk overflow.
 
-## 🚀 Installation Guide
+This is a fully native Windows Phone 8.1 application — **no external server required**.
 
-### For Windows Phone 8.1
-1. Download the `YTMusicWP_..._AnyCPU.appxbundle` from the **Releases** page.
-2. Connect your phone to your PC and deploy the bundle using **Windows Phone Application Deployment (WPAD)**.
+- **Frontend:** C# / WinRT with XAML-based UI
+- **API:** Direct InnerTube API calls (same API used by the official YouTube Music app)
+- **Audio:** Background audio task with `MediaPlayer` for lock-screen playback
+- **Storage:** Local settings + file-based caching for offline tracks and playlists
 
-### For Windows 10 Mobile (W10M)
-*W10M users do not need a `.cer` certificate if installed correctly.*
-1. On your phone, go to **Settings** > **Update & Security** > **For developers** and enable **Developer mode**.
-2. Download the single **`YTMusicWP_..._ARM.appx`** file (Do not use the `.appxbundle`).
-3. Open **Device Portal** via your browser or use tools like **WUT / Interop Tools**.
-4. Navigate to the App Deployment section, select the `.appx` file, and tap **Install**.
+## 🚀 Installation
 
-## ⚙️ Backend Setup (For Developers)
-If you want to host your own API server:
-1. Upload the `app.py` and `requirements.txt` to a hosting service (e.g., Railway, Heroku).
-2. Set your custom `APP_SECRET_KEY` in the environment variables.
-3. In the WP8.1 app settings, ensure the API endpoints point to your new server URL.
+### Windows Phone 8.1
+1. Download `YTMusicWP_2.0_BETA.appx` and `YTMusicWP_2.0_BETA.cer` from [Releases](https://github.com/Yasukoisreal/YTMusicWP/releases).
+2. Install the `.cer` certificate on your phone first.
+3. Deploy the `.appx` using **Windows Phone Application Deployment (WPAD)**.
+
+### Windows 10 Mobile
+1. Go to **Settings** > **Update & Security** > **For developers** and enable **Developer mode**.
+2. Download the `.appx` file (do not use `.appxbundle`).
+3. Install via **Device Portal** or **Interop Tools**.
+
+## 📋 Changelog
+
+### v2.0 BETA
+- 🔄 Switched to InnerTube API — faster, more reliable, no quota limits
+- 🎨 Brand new UI — modern dark theme, animations, floating mini-player
+- 🔐 New easy login — Device Code flow, just enter a code at google.com/device
+- ⚡ Faster playback & reduced API calls
+- 🐛 Fixed Play All, search suggestions, and memory leaks
+- 📱 Better stability on 512MB RAM devices
+
+### v1.2.1
+- Initial public release with Python backend
+
+## ⚡ Optimized for Low-End Devices
+
+Built and tested on devices with only 512MB RAM:
+- Lumia 520, 530, 535
+- Lumia 630, 730
+- Any Windows Phone 8.1 or Windows 10 Mobile device
 
 ## 👨‍💻 Developed By
-**An (Yasuko)** - A passion project dedicated to the Windows Phone modding community.
+
+**An (Yasuko)** — A passion project dedicated to the Windows Phone modding community.
