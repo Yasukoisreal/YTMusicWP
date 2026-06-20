@@ -93,25 +93,28 @@ namespace YTMusicWP
                                     if (artistMatch != null)
                                     {
                                         string ytmChannelId = artistMatch.VideoId.Replace("CHANNEL:", "");
-                                        var result = await InnerTubeClient.BrowseArtistAsync(ytmChannelId);
-                                        if (!string.IsNullOrEmpty(result.AvatarUrl))
+                                        // Use search result thumbnail directly — matches YouTube's display
+                                        string avatarUrl = GetArtistAvatar(artistMatch.ThumbnailUrl);
+                                        if (!string.IsNullOrEmpty(avatarUrl))
                                         {
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
-                                                artistItems[idx].ThumbnailUrl = GetArtistAvatar(result.AvatarUrl);
+                                                artistItems[idx].ThumbnailUrl = avatarUrl;
                                                 artistItems[idx].ChannelId = ytmChannelId;
                                             });
                                         }
                                     }
                                     else if (!string.IsNullOrEmpty(artist.ChannelId))
                                     {
-                                        // Fallback: use existing channelId
-                                        var result = await InnerTubeClient.BrowseArtistAsync(artist.ChannelId);
-                                        if (!string.IsNullOrEmpty(result.AvatarUrl))
+                                        // Fallback: search didn't find artist, try search thumbnail from first result
+                                        var searchResults2 = await InnerTubeClient.SearchAsync(artist.Title + " artist", 3);
+                                        var fallbackMatch = searchResults2.FirstOrDefault(r =>
+                                            r.VideoId != null && r.VideoId.StartsWith("CHANNEL:"));
+                                        if (fallbackMatch != null && !string.IsNullOrEmpty(fallbackMatch.ThumbnailUrl))
                                         {
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
-                                                artistItems[idx].ThumbnailUrl = GetArtistAvatar(result.AvatarUrl);
+                                                artistItems[idx].ThumbnailUrl = GetArtistAvatar(fallbackMatch.ThumbnailUrl);
                                             });
                                         }
                                     }
