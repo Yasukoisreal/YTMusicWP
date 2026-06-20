@@ -22,11 +22,8 @@ namespace YTMusicWP.Converters
                     return url.Substring(0, eqIdx) + "=w226-h226-l90-rj";
                 return url + "=w226-h226-l90-rj";
             }
-            // YouTube video thumbnails — use mqdefault (true 16:9, no letterbox bars)
-            if (url.Contains("hqdefault.jpg"))
-                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
-            if (url.Contains("sddefault.jpg"))
-                return url.Replace("sddefault.jpg", "mqdefault.jpg");
+            // YouTube video thumbnails — keep hqdefault for quality, XAML UniformToFill crops to square
+            // hqdefault (480x360) → center-cropped by UI into 52x52
             return url;
         }
 
