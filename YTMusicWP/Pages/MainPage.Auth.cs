@@ -1127,7 +1127,8 @@ namespace YTMusicWP
             {
                 var extra = new JObject
                 {
-                    ["title"] = title
+                    ["title"] = title,
+                    ["privacyStatus"] = "UNLISTED"
                 };
                 var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
                 if (json["_error"] != null) return null;
