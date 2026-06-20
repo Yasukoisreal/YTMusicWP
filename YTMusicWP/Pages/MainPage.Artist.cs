@@ -398,7 +398,18 @@ namespace YTMusicWP
                     {
                         _isFollowingArtist = true;
                         SaveFollowState(_currentArtistChannelId, true);
+                        // Add to local subscriptions list so UpdateFollowButton stays in sync
+                        if (!_youtubeSubscriptions.Any(s => s.ChannelId == _currentArtistChannelId))
+                        {
+                            _youtubeSubscriptions.Add(new YouTubeSubscription
+                            {
+                                ChannelId = _currentArtistChannelId,
+                                Title = ArtistProfileTitle.Text,
+                                ThumbnailUrl = ""
+                            });
+                        }
                         UpdateFollowButton();
+                        RefreshLibraryList();
                         ShowToast("Subscribed to " + ArtistProfileTitle.Text);
                     }
                     else
@@ -425,7 +436,15 @@ namespace YTMusicWP
                     {
                         _isFollowingArtist = false;
                         SaveFollowState(_currentArtistChannelId, false);
+                        // Remove from local subscriptions list so UpdateFollowButton stays in sync
+                        var toRemove = _youtubeSubscriptions.FirstOrDefault(s => s.ChannelId == _currentArtistChannelId);
+                        if (toRemove != null) _youtubeSubscriptions.Remove(toRemove);
+                        // Also try by name
+                        var byName = _youtubeSubscriptions.FirstOrDefault(s =>
+                            s.Title.Equals(ArtistProfileTitle.Text, StringComparison.OrdinalIgnoreCase));
+                        if (byName != null) _youtubeSubscriptions.Remove(byName);
                         UpdateFollowButton();
+                        RefreshLibraryList();
                         ShowToast("Unsubscribed from " + ArtistProfileTitle.Text);
                     }
                     else
