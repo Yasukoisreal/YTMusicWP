@@ -888,8 +888,10 @@ namespace YTMusicWP
         }
 
         // ══════════════════════════════════════════
-        // EXPORT / IMPORT PLAYLISTS
+        // EXPORT / IMPORT PLAYLISTS (WP8.1 continuation pattern)
         // ══════════════════════════════════════════
+        private string _pendingExportJson;
+
         private async void ExportPlaylists_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -905,7 +907,6 @@ namespace YTMusicWP
                         ["TrackCount"] = pl.TrackCount,
                         ["ThumbnailUrl"] = pl.ThumbnailUrl ?? ""
                     };
-                    // Include tracks for local playlists
                     if (pl.PlaylistId.StartsWith("LOCAL_"))
                     {
                         var tracks = await LoadLocalPlaylistTracksAsync(pl.PlaylistId);
@@ -928,30 +929,47 @@ namespace YTMusicWP
                 export["exportDate"] = DateTimeOffset.Now.ToString("o");
                 export["playlists"] = playlistsArr;
 
+                _pendingExportJson = export.ToString(Newtonsoft.Json.Formatting.Indented);
+
                 var picker = new FileSavePicker();
                 picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
                 picker.FileTypeChoices.Add("JSON", new List<string> { ".json" });
                 picker.SuggestedFileName = "beatora_playlists";
-                var file = await picker.PickSaveFileAsync();
-                if (file != null)
+                picker.PickSaveFileAndContinue();
+            }
+            catch (Exception ex) { ShowToast("Export failed: " + ex.Message); }
+        }
+
+        public async void HandleFileSaveContinuation(StorageFile file)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(_pendingExportJson))
                 {
-                    await FileIO.WriteTextAsync(file, export.ToString(Newtonsoft.Json.Formatting.Indented));
+                    await FileIO.WriteTextAsync(file, _pendingExportJson);
                     ShowToast("Exported " + _youtubeUserPlaylists.Count + " playlists!");
+                    _pendingExportJson = null;
                 }
             }
             catch (Exception ex) { ShowToast("Export failed: " + ex.Message); }
         }
 
-        private async void ImportPlaylists_Click(object sender, RoutedEventArgs e)
+        private void ImportPlaylists_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 var picker = new FileOpenPicker();
                 picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
                 picker.FileTypeFilter.Add(".json");
-                var file = await picker.PickSingleFileAsync();
-                if (file == null) return;
+                picker.PickSingleFileAndContinue();
+            }
+            catch (Exception ex) { ShowToast("Import failed: " + ex.Message); }
+        }
 
+        public async void HandleFileOpenContinuation(StorageFile file)
+        {
+            try
+            {
                 string json = await FileIO.ReadTextAsync(file);
                 var data = JObject.Parse(json);
                 var playlists = data["playlists"] as JArray;
@@ -963,8 +981,6 @@ namespace YTMusicWP
                     string plId = item["PlaylistId"]?.ToString() ?? "";
                     string title = item["Title"]?.ToString() ?? "";
                     if (string.IsNullOrEmpty(plId)) continue;
-
-                    // Skip if already exists
                     if (_youtubeUserPlaylists.Any(p => p.PlaylistId == plId)) continue;
 
                     _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
@@ -975,7 +991,6 @@ namespace YTMusicWP
                         ThumbnailUrl = item["ThumbnailUrl"]?.ToString() ?? ""
                     });
 
-                    // Restore tracks for local playlists
                     var tracks = item["Tracks"] as JArray;
                     if (tracks != null && plId.StartsWith("LOCAL_"))
                     {

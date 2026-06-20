@@ -89,5 +89,37 @@ namespace YTMusicWP
             // TODO: Save application state and stop any background activity if needed
             deferral.Complete();
         }
+
+        protected override void OnActivated(IActivatedEventArgs args)
+        {
+            base.OnActivated(args);
+
+            var rootFrame = Window.Current.Content as Frame;
+            if (rootFrame == null) return;
+
+            var page = rootFrame.Content as MainPage;
+            if (page == null) return;
+
+            // FileSavePicker continuation
+            if (args.Kind == ActivationKind.PickSaveFileContinuation)
+            {
+                var saveArgs = args as FileSavePickerContinuationEventArgs;
+                if (saveArgs != null && saveArgs.File != null)
+                {
+                    page.HandleFileSaveContinuation(saveArgs.File);
+                }
+            }
+            // FileOpenPicker continuation
+            else if (args.Kind == ActivationKind.PickFileContinuation)
+            {
+                var openArgs = args as FileOpenPickerContinuationEventArgs;
+                if (openArgs != null && openArgs.Files != null && openArgs.Files.Count > 0)
+                {
+                    page.HandleFileOpenContinuation(openArgs.Files[0]);
+                }
+            }
+
+            Window.Current.Activate();
+        }
     }
 }
