@@ -134,7 +134,8 @@ namespace YTMusicWP
         {
             var track = e.ClickedItem as YouTubeTrack;
             if (track == null) return;
-            OpenArtistProfile(track.ChannelId, track.Title);
+            // trustChannelId=true — channelId was already resolved by avatar fetch
+            OpenArtistProfile(track.ChannelId, track.Title, true);
         }
 
         private async Task LoadHomeRecommendations()
