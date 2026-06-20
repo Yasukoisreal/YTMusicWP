@@ -734,7 +734,7 @@ namespace YTMusicWP
         private async Task SyncAllAsync(string accessToken)
         {
             await SyncLikedVideosAsync(accessToken);
-            await SyncUserPlaylistsAsync(accessToken);
+            await LoadYouTubePlaylistsCacheAsync(); // Playlists are local-only
             await SyncSubscriptionsAsync(accessToken);
             // Fetch YouTube profile avatar
             await FetchAndCacheAvatarAsync(accessToken);
@@ -797,85 +797,9 @@ namespace YTMusicWP
         }
 
         // ══════════════════════════════════════════
-        // SYNC USER PLAYLISTS — Import from YouTube
+        // USER PLAYLISTS — Local only (no YouTube sync)
         // ══════════════════════════════════════════
         private ObservableCollection<YouTubePlaylistInfo> _youtubeUserPlaylists = new ObservableCollection<YouTubePlaylistInfo>();
-
-        private async Task SyncUserPlaylistsAsync(string accessToken)
-        {
-            try
-            {
-                _youtubeUserPlaylists.Clear();
-
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
-                if (json["_error"] != null)
-                {
-                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
-                        LoginStatusText.Text = "PL: FElibrary err " + json["_error"];
-                    });
-                    return;
-                }
-
-
-                // Collect unique playlist IDs from FElibrary response
-                var plIdTokens = json.SelectTokens("$..playlistId").Select(t => t.ToString()).Distinct().ToList();
-                var browseIdTokens = json.SelectTokens("$..browseId").Select(t => t.ToString())
-                    .Where(id => id.StartsWith("VL") && id.Length > 4).Select(id => id.Substring(2)).Distinct().ToList();
-                
-                var uniqueIds = new List<string>();
-                foreach (var id in plIdTokens.Concat(browseIdTokens))
-                {
-                    if (string.IsNullOrEmpty(id)) continue;
-                    if (id == "LL" || id == "WL" || id == "LM" || id.StartsWith("RDMM")) continue;
-                    if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
-                }
-
-                // For each playlist, fetch title via oEmbed (works for unlisted playlists)
-                foreach (var plId in uniqueIds)
-                {
-                    string title = "Playlist";
-                    string thumbUrl = "";
-                    try
-                    {
-                        string oembedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/playlist?list=" + plId + "&format=json";
-                        var oembedResp = await _apiClient.GetAsync(oembedUrl);
-                        if (oembedResp.IsSuccessStatusCode)
-                        {
-                            var oembedJson = JObject.Parse(await oembedResp.Content.ReadAsStringAsync());
-                            title = oembedJson["title"]?.ToString() ?? "Playlist";
-                            thumbUrl = oembedJson["thumbnail_url"]?.ToString() ?? "";
-                        }
-                    }
-                    catch { }
-
-                    _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                    {
-                        PlaylistId = plId,
-                        Title = title,
-                        TrackCount = 0,
-                        ThumbnailUrl = thumbUrl
-                    });
-                    if (_youtubeUserPlaylists.Count >= 200) break;
-                }
-
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    LoginStatusText.Text = "PL: " + _youtubeUserPlaylists.Count + " synced";
-                });
-            }
-            catch (Exception ex)
-            {
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    LoginStatusText.Text = "PL err: " + ex.Message;
-                });
-            }
-
-            // Cache playlists locally for instant load on next startup
-            if (_youtubeUserPlaylists.Count > 0)
-                SaveYouTubePlaylistsCacheAsync();
-        }
 
 
         private async void SaveYouTubePlaylistsCacheAsync()
