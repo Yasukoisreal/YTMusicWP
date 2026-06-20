@@ -2,6 +2,7 @@
 bin/
 obj/
 packages/
+nuget.exe
 *.suo
 *.user
 *.userosscache
@@ -15,6 +16,9 @@ Release_v*/
 # Certificates
 *.pfx
 *.cer
+
+# Auth tokens
+device_code.txt
 
 # Analysis files
 *_Analysis.md
