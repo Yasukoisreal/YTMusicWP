@@ -1384,22 +1384,6 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Save Settings Button -->
-                    <Button Content="Save Settings" Click="SaveSettingsButton_Click" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Margin="0,0,0,16" HorizontalAlignment="Stretch" BorderThickness="0" Height="50">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <Border CornerRadius="14">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
-                                            <GradientStop Color="#1DB954" Offset="0"/>
-                                            <GradientStop Color="#1ED760" Offset="1"/>
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                            </ControlTemplate>
-                        </Button.Template>
-                    </Button>
 
                     <!-- ═══════ DATA MANAGEMENT ═══════ -->
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
@@ -1434,8 +1418,8 @@
                     <!-- ═══════ ABOUT ═══════ -->
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,18">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="Beatora" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Version 1.0.0" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                            <TextBlock Text="YTMusicWP" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Version 2.0 BETA" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                             <TextBlock Text="A music streaming client for Windows Phone 8.1" FontSize="12" Foreground="#444" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
                             <TextBlock Text="Made with ♥" FontSize="11" Foreground="#333" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                         </StackPanel>

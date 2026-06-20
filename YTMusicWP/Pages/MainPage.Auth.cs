@@ -141,33 +141,32 @@ namespace YTMusicWP
                 AutoplayToggle.Toggled += AutoplayToggle_Toggled;
                 GaplessToggle.Toggled += GaplessToggle_Toggled;
                 NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
+                RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
             }
             catch { }
         }
 
-        private async void SaveSettingsButton_Click(object sender, RoutedEventArgs e)
+        private async void RegionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Save Settings only handles OAuth + Region
-            Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientId"] = ClientIdTextBox.Text.Trim();
-            Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleClientSecret"] = ClientSecretTextBox.Text.Trim();
-
             var selectedRegion = RegionComboBox.SelectedItem as ComboBoxItem;
-            if (selectedRegion != null && selectedRegion.Tag != null)
-            {
-                string regionTag = selectedRegion.Tag.ToString();
-                if (regionTag == "AUTO")
-                    regionTag = DetectOsRegion();
-                ApplicationData.Current.LocalSettings.Values["TrendingRegion"] = regionTag;
+            if (selectedRegion == null || selectedRegion.Tag == null) return;
 
-                // Update InnerTube region immediately
-                InnerTubeClient.SetRegion(regionTag);
-            }
+            string regionTag = selectedRegion.Tag.ToString();
+            if (regionTag == "AUTO")
+                regionTag = DetectOsRegion();
 
-            ShowToast("Settings Saved!");
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            string oldRegion = settings.ContainsKey("TrendingRegion") ? settings["TrendingRegion"].ToString() : "";
+
+            // Only reload if region actually changed
+            if (regionTag == oldRegion) return;
+
+            settings["TrendingRegion"] = regionTag;
+            InnerTubeClient.SetRegion(regionTag);
+            ShowToast("Region changed!");
 
             if (IsInternetAvailable())
             {
-                // Clear all home sections
                 homeTracks.Clear();
                 popTracks.Clear();
                 lofiTracks.Clear();
@@ -1089,11 +1088,11 @@ namespace YTMusicWP
             catch { return false; }
         }
 
-        private async Task<string> CreateYouTubePlaylistAsync(string title)
+        private Task<string> CreateYouTubePlaylistAsync(string title)
         {
             // Create local-only playlist (YouTube API blocked for TV client)
             string plId = "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
-            return plId;
+            return Task.FromResult(plId);
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)

@@ -72,6 +72,9 @@ namespace YTMusicWP
         private static readonly SolidColorBrush _dotActiveBrush = new SolidColorBrush(Colors.White);
         private static readonly SolidColorBrush _dotInactiveBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
 
+        // [OPT] Cached FontFamily — avoid allocation on every swipe/hashtag update
+        private static readonly FontFamily _shortsSemiBoldFont = new FontFamily("/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat");
+
         /// <summary>
         /// Analyze historyTracks to score each category and reorder
         /// </summary>
@@ -528,7 +531,7 @@ namespace YTMusicWP
         {
             ShortsHashtags.Children.Clear();
             string[] tags = _shortsCategoryHashtags[GetRealCategoryIndex(_shortsCategoryIndex)].Split('|');
-            var semiBoldFont = new FontFamily("/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat");
+            var semiBoldFont = _shortsSemiBoldFont;
             foreach (var tag in tags)
             {
                 var tb = new TextBlock

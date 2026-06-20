@@ -41,12 +41,22 @@ namespace YTMusicWP
             }
         }
 
+        // [OPT-AV] Debounce: don't refresh artists more than once per 5 minutes
+        private DateTime _lastArtistRefreshTime = DateTime.MinValue;
+
         private async void RefreshRecentArtists()
         {
+            // Debounce: skip if called within last 5 minutes
+            if ((DateTime.Now - _lastArtistRefreshTime).TotalMinutes < 5) return;
+            _lastArtistRefreshTime = DateTime.Now;
+
             try
             {
                 var seenArtists = new System.Collections.Generic.HashSet<string>();
                 var artistItems = new System.Collections.Generic.List<YouTubeTrack>();
+
+                // [OPT-AV] Load cached avatars from LocalSettings
+                var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
 
                 foreach (var track in historyTracks)
                 {
@@ -55,13 +65,20 @@ namespace YTMusicWP
                     if (seenArtists.Contains(key)) continue;
                     seenArtists.Add(key);
 
+                    // Check avatar cache first
+                    string cacheKey = "AvatarCache_" + key;
+                    string cachedAvatar = localSettings.ContainsKey(cacheKey) ? localSettings[cacheKey] as string : null;
+                    string cachedChannelKey = "AvatarChId_" + key;
+                    string cachedChannelId = localSettings.ContainsKey(cachedChannelKey) ? localSettings[cachedChannelKey] as string : null;
+
                     artistItems.Add(new YouTubeTrack
                     {
-                        VideoId = !string.IsNullOrEmpty(track.ChannelId) ? "CHANNEL:" + track.ChannelId : "",
+                        VideoId = !string.IsNullOrEmpty(cachedChannelId) ? "CHANNEL:" + cachedChannelId
+                                : !string.IsNullOrEmpty(track.ChannelId) ? "CHANNEL:" + track.ChannelId : "",
                         Title = track.ChannelName,
                         ChannelName = track.ChannelName,
-                        ChannelId = track.ChannelId,
-                        ThumbnailUrl = GetSquareThumbnail(track.ThumbnailUrl)
+                        ChannelId = cachedChannelId ?? track.ChannelId,
+                        ThumbnailUrl = !string.IsNullOrEmpty(cachedAvatar) ? cachedAvatar : GetSquareThumbnail(track.ThumbnailUrl)
                     });
 
                     if (artistItems.Count >= 10) break;
@@ -72,19 +89,27 @@ namespace YTMusicWP
                     HomeArtistsSection.Visibility = Visibility.Visible;
                     HomeArtistsCarousel.ItemsSource = artistItems;
 
-                    // Fetch real artist avatars via YouTube Music search (correct disambiguation)
-                    for (int i = 0; i < artistItems.Count; i += 3)
+                    // Only fetch avatars for artists that DON'T have a cached avatar
+                    var uncachedArtists = new System.Collections.Generic.List<int>();
+                    for (int i = 0; i < artistItems.Count; i++)
+                    {
+                        string cacheKey = "AvatarCache_" + artistItems[i].Title.ToLowerInvariant();
+                        if (!localSettings.ContainsKey(cacheKey))
+                            uncachedArtists.Add(i);
+                    }
+
+                    // Fetch only uncached avatars (batched 3 at a time)
+                    for (int i = 0; i < uncachedArtists.Count; i += 3)
                     {
                         var batch = new System.Collections.Generic.List<Task>(3);
-                        for (int j = i; j < Math.Min(i + 3, artistItems.Count); j++)
+                        for (int j = i; j < Math.Min(i + 3, uncachedArtists.Count); j++)
                         {
-                            var artist = artistItems[j];
-                            int idx = j;
+                            int idx = uncachedArtists[j];
+                            var artist = artistItems[idx];
                             batch.Add(Task.Run(async () =>
                             {
                                 try
                                 {
-                                    // Search YouTube Music for artist — more reliable than channelId browse
                                     var searchResults = await InnerTubeClient.SearchAsync(artist.Title, 5);
                                     var artistMatch = searchResults.FirstOrDefault(r =>
                                         r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
@@ -93,10 +118,15 @@ namespace YTMusicWP
                                     if (artistMatch != null)
                                     {
                                         string ytmChannelId = artistMatch.VideoId.Replace("CHANNEL:", "");
-                                        // Use search result thumbnail directly — matches YouTube's display
                                         string avatarUrl = GetArtistAvatar(artistMatch.ThumbnailUrl);
                                         if (!string.IsNullOrEmpty(avatarUrl))
                                         {
+                                            // Save to cache
+                                            string ck = "AvatarCache_" + artist.Title.ToLowerInvariant();
+                                            string ckId = "AvatarChId_" + artist.Title.ToLowerInvariant();
+                                            localSettings[ck] = avatarUrl;
+                                            localSettings[ckId] = ytmChannelId;
+
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
                                                 artistItems[idx].ThumbnailUrl = avatarUrl;
@@ -106,15 +136,18 @@ namespace YTMusicWP
                                     }
                                     else if (!string.IsNullOrEmpty(artist.ChannelId))
                                     {
-                                        // Fallback: search didn't find artist, try search thumbnail from first result
                                         var searchResults2 = await InnerTubeClient.SearchAsync(artist.Title + " artist", 3);
                                         var fallbackMatch = searchResults2.FirstOrDefault(r =>
                                             r.VideoId != null && r.VideoId.StartsWith("CHANNEL:"));
                                         if (fallbackMatch != null && !string.IsNullOrEmpty(fallbackMatch.ThumbnailUrl))
                                         {
+                                            string fallbackAvatar = GetArtistAvatar(fallbackMatch.ThumbnailUrl);
+                                            string ck = "AvatarCache_" + artist.Title.ToLowerInvariant();
+                                            localSettings[ck] = fallbackAvatar;
+
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
-                                                artistItems[idx].ThumbnailUrl = GetArtistAvatar(fallbackMatch.ThumbnailUrl);
+                                                artistItems[idx].ThumbnailUrl = fallbackAvatar;
                                             });
                                         }
                                     }
@@ -307,28 +340,44 @@ namespace YTMusicWP
         private void MoodChill_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
             SwitchTab(1);
+            SearchBox.TextChanged -= SearchBox_TextChanged;
             SearchBox.Text = "lofi chill beats relax";
+            SearchBox.TextChanged += SearchBox_TextChanged;
+            _typingTimer.Stop();
+            SuggestionPopup.Visibility = Visibility.Collapsed;
             SearchButton_Click(null, null);
         }
 
         private void MoodFocus_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
             SwitchTab(1);
+            SearchBox.TextChanged -= SearchBox_TextChanged;
             SearchBox.Text = "focus study concentration music";
+            SearchBox.TextChanged += SearchBox_TextChanged;
+            _typingTimer.Stop();
+            SuggestionPopup.Visibility = Visibility.Collapsed;
             SearchButton_Click(null, null);
         }
 
         private void MoodEnergy_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
             SwitchTab(1);
+            SearchBox.TextChanged -= SearchBox_TextChanged;
             SearchBox.Text = "energy workout pump up hits";
+            SearchBox.TextChanged += SearchBox_TextChanged;
+            _typingTimer.Stop();
+            SuggestionPopup.Visibility = Visibility.Collapsed;
             SearchButton_Click(null, null);
         }
 
         private void MoodSad_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
             SwitchTab(1);
+            SearchBox.TextChanged -= SearchBox_TextChanged;
             SearchBox.Text = "sad emotional songs";
+            SearchBox.TextChanged += SearchBox_TextChanged;
+            _typingTimer.Stop();
+            SuggestionPopup.Visibility = Visibility.Collapsed;
             SearchButton_Click(null, null);
         }
 

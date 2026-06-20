@@ -11,6 +11,10 @@ namespace YTMusicWP
     {
         public static string LastResolveDebug = "";
 
+        // [OPT] Cache captions from player response — avoids duplicate InnerTube call in GetCaptionTracksAsync
+        private static string _cachedCaptionsVideoId;
+        private static JToken _cachedCaptionsData;
+
         // Shared HttpClient for Invidious fallback — avoid socket leak from creating 8 instances per song
         private static readonly HttpClient _invidiousClient = CreateInvidiousClient();
         private static HttpClient CreateInvidiousClient()
@@ -81,6 +85,10 @@ namespace YTMusicWP
                             LastResolveDebug += " r:" + reason.Substring(0, Math.Min(20, reason.Length));
                         return null;
                     }
+
+                    // [OPT] Cache captions from this response — avoids duplicate API call in GetCaptionTracksAsync
+                    _cachedCaptionsVideoId = videoId;
+                    _cachedCaptionsData = data["captions"];
 
                     // Select itag based on Audio Quality setting
                     // Low=48kbps (itag 139), Normal=128kbps (itag 140), High=256kbps (itag 251/141)
@@ -317,38 +325,50 @@ namespace YTMusicWP
             var tracks = new List<CaptionTrack>();
             try
             {
-                string vd = await GetVisitorDataAsync();
-                string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
-                string requestBody = "{" +
-                    "\"contentCheckOk\":true," +
-                    "\"context\":{\"client\":{" +
-                        "\"clientName\":\"ANDROID_VR\"," +
-                        "\"clientVersion\":\"1.60.19\"," +
-                        "\"deviceMake\":\"Oculus\"," +
-                        "\"deviceModel\":\"Quest 3\"," +
-                        "\"osName\":\"ANDROID\"," +
-                        "\"osVersion\":\"12L\"," +
-                        "\"platform\":\"MOBILE\"," +
-                        "\"clientScreen\":0," +
-                        "\"hl\":\"en\",\"gl\":\"US\"" +
-                        vdField +
-                    "}}," +
-                    "\"videoId\":\"" + videoId + "\"" +
-                "}";
+                // [OPT] Use cached captions from ResolveStreamUrlAsync if available (same videoId)
+                JToken captionsNode = null;
+                if (_cachedCaptionsVideoId == videoId && _cachedCaptionsData != null)
+                {
+                    captionsNode = _cachedCaptionsData;
+                    System.Diagnostics.Debug.WriteLine("[Captions] Using cached data from player response");
+                }
+                else
+                {
+                    // Fallback: make a separate API call (only when cache miss)
+                    string vd = await GetVisitorDataAsync();
+                    string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+                    string requestBody = "{" +
+                        "\"contentCheckOk\":true," +
+                        "\"context\":{\"client\":{" +
+                            "\"clientName\":\"ANDROID_VR\"," +
+                            "\"clientVersion\":\"1.60.19\"," +
+                            "\"deviceMake\":\"Oculus\"," +
+                            "\"deviceModel\":\"Quest 3\"," +
+                            "\"osName\":\"ANDROID\"," +
+                            "\"osVersion\":\"12L\"," +
+                            "\"platform\":\"MOBILE\"," +
+                            "\"clientScreen\":0," +
+                            "\"hl\":\"en\",\"gl\":\"US\"" +
+                            vdField +
+                        "}}," +
+                        "\"videoId\":\"" + videoId + "\"" +
+                    "}";
 
-                var req = new HttpRequestMessage(HttpMethod.Post,
-                    "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
-                req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                req.Headers.Add("User-Agent",
-                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                    var req = new HttpRequestMessage(HttpMethod.Post,
+                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
+                    req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
+                    req.Headers.Add("User-Agent",
+                        "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
 
-                var resp = await _client.SendAsync(req);
-                if (!resp.IsSuccessStatusCode) return tracks;
+                    var resp = await _client.SendAsync(req);
+                    if (!resp.IsSuccessStatusCode) return tracks;
 
-                string json = await resp.Content.ReadAsStringAsync();
-                var data = JObject.Parse(json);
+                    string json = await resp.Content.ReadAsStringAsync();
+                    var data = JObject.Parse(json);
+                    captionsNode = data?["captions"];
+                }
 
-                var captionTracks = data?["captions"]?["playerCaptionsTracklistRenderer"]?["captionTracks"];
+                var captionTracks = captionsNode?["playerCaptionsTracklistRenderer"]?["captionTracks"];
                 if (captionTracks != null)
                 {
                     foreach (var ct in captionTracks)

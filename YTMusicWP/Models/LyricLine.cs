@@ -11,7 +11,10 @@ namespace YTMusicWP
         private string _text;
         public string Text { get { return _text; } set { _text = value; OnPropertyChanged("Text"); } }
 
-        private SolidColorBrush _colorBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
+        // [OPT] Static shared brush — avoids creating 50-100 brush objects per song
+        private static readonly SolidColorBrush _defaultLyricBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
+
+        private SolidColorBrush _colorBrush = _defaultLyricBrush;
         public SolidColorBrush ColorBrush { get { return _colorBrush; } set { _colorBrush = value; OnPropertyChanged("ColorBrush"); } }
 
         private double _fontSize = 22;

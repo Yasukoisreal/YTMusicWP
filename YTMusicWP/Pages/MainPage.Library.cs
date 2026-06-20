@@ -360,14 +360,26 @@ namespace YTMusicWP
 
         private void PlayAllPlaylist_Click(object sender, RoutedEventArgs e)
         {
+            // Try _currentViewingPlaylist first (local playlists, YT playlists after load)
             if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Count > 0)
             {
                 PlayTrack(_currentViewingPlaylist.Tracks[0]);
+                return;
             }
-            else
+
+            // Fallback: use whatever is bound to PlaylistSongsList (Liked Songs, Downloads, Recent, etc.)
+            var source = PlaylistSongsList.ItemsSource as System.Collections.IEnumerable;
+            if (source != null)
             {
-                ShowToast("Playlist is empty!");
+                var firstTrack = source.Cast<object>().FirstOrDefault() as YouTubeTrack;
+                if (firstTrack != null)
+                {
+                    PlayTrack(firstTrack);
+                    return;
+                }
             }
+
+            ShowToast("Playlist is empty!");
         }
 
         private async void MenuAddToPlaylist_Click(object sender, RoutedEventArgs e)
@@ -441,13 +453,13 @@ namespace YTMusicWP
             {
                 if (_trackToShare.VideoId.StartsWith("LOCAL:"))
                 {
-                    args.Request.Data.Properties.Title = "Beatora";
+                    args.Request.Data.Properties.Title = "YTMusicWP";
                     args.Request.Data.Properties.Description = _trackToShare.Title;
                     args.Request.Data.SetText("🎵 " + _trackToShare.Title + " — " + _trackToShare.ChannelName);
                 }
                 else
                 {
-                    args.Request.Data.Properties.Title = "Beatora - Share Music";
+                    args.Request.Data.Properties.Title = "YTMusicWP - Share Music";
                     args.Request.Data.Properties.Description = "Listen to " + _trackToShare.Title;
                     string url = "https://www.youtube.com/watch?v=" + _trackToShare.VideoId;
                     args.Request.Data.SetWebLink(new Uri(url));
@@ -779,7 +791,6 @@ namespace YTMusicWP
 
                     if (added > 0)
                     {
-                        SavePlaylistsAsync();
                         PlaylistDetailsTrackCount.Text = _currentViewingPlaylist.Tracks.Count + " tracks";
                         ShowToast("✨ Added " + added + " songs!");
                     }
@@ -837,21 +848,28 @@ namespace YTMusicWP
         {
             if (_scrollHooked) return;
 
-            // Find ScrollViewer inside ListView (deferred since it's created by template)
-            PlaylistSongsList.Loaded += (s, e) =>
-            {
-                _playlistSongsScrollViewer = FindChildOfType<ScrollViewer>(PlaylistSongsList);
-                if (_playlistSongsScrollViewer != null)
-                {
-                    _playlistSongsScrollViewer.ViewChanged += PlaylistSongsScroll_ViewChanged;
-                    _scrollHooked = true;
-                }
-            };
-
             // Try immediately if already loaded
             _playlistSongsScrollViewer = FindChildOfType<ScrollViewer>(PlaylistSongsList);
             if (_playlistSongsScrollViewer != null)
             {
+                _playlistSongsScrollViewer.ViewChanged -= PlaylistSongsScroll_ViewChanged;
+                _playlistSongsScrollViewer.ViewChanged += PlaylistSongsScroll_ViewChanged;
+                _scrollHooked = true;
+                return;
+            }
+
+            // Deferred: use named handler so we can unsubscribe after first success
+            PlaylistSongsList.Loaded -= PlaylistSongsList_LoadedForScroll;
+            PlaylistSongsList.Loaded += PlaylistSongsList_LoadedForScroll;
+        }
+
+        private void PlaylistSongsList_LoadedForScroll(object sender, RoutedEventArgs e)
+        {
+            PlaylistSongsList.Loaded -= PlaylistSongsList_LoadedForScroll; // Unsubscribe immediately
+            _playlistSongsScrollViewer = FindChildOfType<ScrollViewer>(PlaylistSongsList);
+            if (_playlistSongsScrollViewer != null)
+            {
+                _playlistSongsScrollViewer.ViewChanged -= PlaylistSongsScroll_ViewChanged;
                 _playlistSongsScrollViewer.ViewChanged += PlaylistSongsScroll_ViewChanged;
                 _scrollHooked = true;
             }
