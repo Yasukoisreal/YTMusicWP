@@ -54,9 +54,10 @@ namespace YTMusicWP
                 }
                 catch { useFallback = true; }
 
-                if (useFallback || tracks.Count == 0)
+                if (useFallback)
                 {
-                    // Fallback: search by playlist name
+                    // Only search as fallback when InnerTube browse actually failed
+                    // Do NOT search for empty playlists — they are intentionally empty
                     var searchResults = await FetchMusicList(playlistName);
                     if (searchResults != null)
                     {
