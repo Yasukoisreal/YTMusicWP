@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Networking.BackgroundTransfer;
 using Windows.Storage;
-using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -928,16 +927,11 @@ namespace YTMusicWP
                 export["exportDate"] = DateTimeOffset.Now.ToString("o");
                 export["playlists"] = playlistsArr;
 
-                var picker = new FileSavePicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeChoices.Add("JSON", new List<string> { ".json" });
-                picker.SuggestedFileName = "beatora_playlists";
-                var file = await picker.PickSaveFileAsync();
-                if (file != null)
-                {
-                    await FileIO.WriteTextAsync(file, export.ToString(Newtonsoft.Json.Formatting.Indented));
-                    ShowToast("Exported " + _youtubeUserPlaylists.Count + " playlists!");
-                }
+                // Save to Music Library (app has musicLibrary capability)
+                var folder = KnownFolders.MusicLibrary;
+                var file = await folder.CreateFileAsync("beatora_playlists.json", CreationCollisionOption.ReplaceExisting);
+                await FileIO.WriteTextAsync(file, export.ToString(Newtonsoft.Json.Formatting.Indented));
+                ShowToast("Exported to Music\\beatora_playlists.json");
             }
             catch (Exception ex) { ShowToast("Export failed: " + ex.Message); }
         }
@@ -946,11 +940,9 @@ namespace YTMusicWP
         {
             try
             {
-                var picker = new FileOpenPicker();
-                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                picker.FileTypeFilter.Add(".json");
-                var file = await picker.PickSingleFileAsync();
-                if (file == null) return;
+                // Read from Music Library where we exported
+                var folder = KnownFolders.MusicLibrary;
+                var file = await folder.GetFileAsync("beatora_playlists.json");
 
                 string json = await FileIO.ReadTextAsync(file);
                 var data = JObject.Parse(json);
