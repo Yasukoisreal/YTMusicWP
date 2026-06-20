@@ -44,13 +44,13 @@ namespace YTMusicWP
         private static string GetArtistAvatar(string url)
         {
             if (string.IsNullOrEmpty(url)) return url;
-            // Google CDN (lh3/yt3) — request exact square size
+            // Google CDN (lh3/yt3) — request plain square at exact size, no extra crop
             if (url.Contains("lh3.googleusercontent.com") || url.Contains("yt3.ggpht.com"))
             {
                 int eqIdx = url.LastIndexOf("=");
                 if (eqIdx > 0)
-                    return url.Substring(0, eqIdx) + "=s176-c-k-c0x00000000-no-rj";
-                return url + "=s176-c-k-c0x00000000-no-rj";
+                    return url.Substring(0, eqIdx) + "=s176-c-k-no-rj";
+                return url + "=s176-c-k-no-rj";
             }
             return url;
         }
