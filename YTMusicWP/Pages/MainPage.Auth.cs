@@ -556,6 +556,41 @@ namespace YTMusicWP
             return JObject.Parse(resultJson);
         }
 
+        // ANDROID client for write operations (playlist create/delete/edit)
+        // TVHTML5 returns 400 Precondition for these because YouTube TV doesn't support playlist management
+        private async Task<JObject> AndroidInnerTubePostAsync(string endpoint, JObject extraParams, string accessToken)
+        {
+            var clientObj = new JObject
+            {
+                ["clientName"] = "ANDROID",
+                ["clientVersion"] = "19.29.37",
+                ["androidSdkVersion"] = 30,
+                ["hl"] = InnerTubeClient.CurrentLanguage,
+                ["gl"] = InnerTubeClient.CurrentRegion
+            };
+
+            var body = new JObject
+            {
+                ["context"] = new JObject { ["client"] = clientObj }
+            };
+            foreach (var prop in extraParams.Properties())
+                body[prop.Name] = prop.Value;
+
+            string url = "https://www.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w&prettyPrint=false";
+            var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+            request.Headers.Add("User-Agent", "com.google.android.youtube/19.29.37 (Linux; U; Android 11) gzip");
+            request.Headers.Add("Authorization", "Bearer " + accessToken);
+
+            var response = await _apiClient.SendAsync(request);
+            string resultJson = await response.Content.ReadAsStringAsync();
+            
+            if (!response.IsSuccessStatusCode)
+                return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
+            
+            return JObject.Parse(resultJson);
+        }
+
         // WEB client for browse requests — returns standard web format with videoId, title etc.
         private async Task<JObject> WebBrowseAsync(string browseId, string accessToken)
         {
@@ -1087,7 +1122,7 @@ namespace YTMusicWP
                         }
                     }
                 };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                var json = await AndroidInnerTubePostAsync("browse/edit_playlist", extra, token);
                 return json["_error"] == null;
             }
             catch { return false; }
@@ -1112,7 +1147,7 @@ namespace YTMusicWP
                         }
                     }
                 };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                var json = await AndroidInnerTubePostAsync("browse/edit_playlist", extra, token);
                 return json["_error"] == null;
             }
             catch { return false; }
@@ -1130,7 +1165,7 @@ namespace YTMusicWP
                     ["title"] = title,
                     ["privacyStatus"] = "PRIVATE"
                 };
-                var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
+                var json = await AndroidInnerTubePostAsync("playlist/create", extra, token);
                 if (json["_error"] != null)
                 {
                     string errCode = json["_error"]?.ToString() ?? "?";
@@ -1154,7 +1189,7 @@ namespace YTMusicWP
                 {
                     ["playlistId"] = playlistId
                 };
-                var json = await AuthInnerTubePostAsync("playlist/delete", extra, token);
+                var json = await AndroidInnerTubePostAsync("playlist/delete", extra, token);
                 return json["_error"] == null;
             }
             catch { return false; }
@@ -1179,7 +1214,7 @@ namespace YTMusicWP
                         }
                     }
                 };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                var json = await AndroidInnerTubePostAsync("browse/edit_playlist", extra, token);
                 return json["_error"] == null;
             }
             catch { return false; }
