@@ -840,12 +840,13 @@ namespace YTMusicWP
                         // Walk up several levels to find a large-enough container with title info
                         for (int i = 0; i < 6 && current != null; i++)
                         {
-                            if (current is JObject obj)
+                            var objCheck = current as JObject;
+                            if (objCheck != null)
                             {
                                 // Check if this level has a "title" property
-                                if (obj["title"] != null)
+                                if (objCheck["title"] != null)
                                 {
-                                    container = obj;
+                                    container = objCheck;
                                     break;
                                 }
                             }
@@ -855,8 +856,9 @@ namespace YTMusicWP
                         // If no container with title found, use immediate parent
                         if (container == null)
                         {
-                            current = tok.Parent?.Parent;
-                            if (current is JObject obj2) container = obj2;
+                            current = tok.Parent != null ? tok.Parent.Parent : null;
+                            var obj2Check = current as JObject;
+                            if (obj2Check != null) container = obj2Check;
                         }
 
                         // Extract title from container
