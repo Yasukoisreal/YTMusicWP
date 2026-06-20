@@ -520,7 +520,7 @@
                                                 <TextBlock Text="♪" FontSize="24" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <Ellipse Width="72" Height="72">
                                                     <Ellipse.Fill>
-                                                        <ImageBrush Stretch="Fill">
+                                                        <ImageBrush Stretch="UniformToFill">
                                                             <ImageBrush.ImageSource>
                                                                 <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="176"/>
                                                             </ImageBrush.ImageSource>
