@@ -515,15 +515,19 @@
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Width="90" Margin="0,0,12,0">
-                                            <Ellipse Width="72" Height="72" Margin="0,0,0,6">
-                                                <Ellipse.Fill>
-                                                    <ImageBrush Stretch="UniformToFill">
-                                                        <ImageBrush.ImageSource>
-                                                            <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="100"/>
-                                                        </ImageBrush.ImageSource>
-                                                    </ImageBrush>
-                                                </Ellipse.Fill>
-                                            </Ellipse>
+                                            <Grid Width="72" Height="72" Margin="0,0,0,6">
+                                                <Ellipse Width="72" Height="72" Fill="#282828"/>
+                                                <TextBlock Text="♪" FontSize="24" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                <Ellipse Width="72" Height="72">
+                                                    <Ellipse.Fill>
+                                                        <ImageBrush Stretch="UniformToFill">
+                                                            <ImageBrush.ImageSource>
+                                                                <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="100"/>
+                                                            </ImageBrush.ImageSource>
+                                                        </ImageBrush>
+                                                    </Ellipse.Fill>
+                                                </Ellipse>
+                                            </Grid>
                                             <TextBlock Text="{Binding Title}" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </DataTemplate>

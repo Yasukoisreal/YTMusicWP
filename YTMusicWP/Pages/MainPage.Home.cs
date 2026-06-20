@@ -61,7 +61,7 @@ namespace YTMusicWP
                         Title = track.ChannelName,
                         ChannelName = track.ChannelName,
                         ChannelId = track.ChannelId,
-                        ThumbnailUrl = track.ThumbnailUrl
+                        ThumbnailUrl = GetSquareThumbnail(track.ThumbnailUrl)
                     });
 
                     if (artistItems.Count >= 10) break;
