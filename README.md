@@ -21,7 +21,7 @@ A modern, fully functional YouTube Music client designed specifically to breathe
 - 🌍 **Trending by Region** — Explore trending music from 80+ countries
 - 🎭 **Your Top Mixes** — Chill, Focus, Energy & Sad mood mixes curated for you
 - 👤 **Artist Pages** — Browse any artist's discography, albums & related artists
-- 🎨 **Modern Dark UI** — A gorgeous dark theme interface inspired by YouTube Music
+- 🎨 **Modern Dark UI** — A gorgeous dark theme interface inspired by Spotify
 
 ## 🏗️ Architecture
 
