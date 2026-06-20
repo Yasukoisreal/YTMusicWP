@@ -594,6 +594,9 @@ namespace YTMusicWP
         // ══════════════════════════════════════════
         // SYNC LIKED VIDEOS (YouTube Data API v3)
         // ══════════════════════════════════════════
+        private string _likedSongsContinuation = null;
+        private bool _isLoadingMoreLiked = false;
+
         private async Task SyncLikedVideosAsync(string accessToken)
         {
             try
@@ -602,6 +605,7 @@ namespace YTMusicWP
 
                 // Clear stale entries from previous syncs
                 favoriteTracks.Clear();
+                _likedSongsContinuation = null;
 
                 // Use TVHTML5 client (only client that works with TV OAuth token)
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
@@ -613,73 +617,112 @@ namespace YTMusicWP
                     return;
                 }
 
-                bool hasNew = false;
-                
-                // Find ALL videoId values anywhere in TV format response
-                var allVideoIds = json.SelectTokens("$..videoId").ToList();
+                // Save continuation token for lazy loading
+                _likedSongsContinuation = json.SelectToken("$..nextContinuationData.continuation")?.ToString()
+                    ?? json.SelectToken("$..continuationEndpoint..continuation")?.ToString()
+                    ?? json.SelectToken("$..continuations[0]..continuation")?.ToString();
 
-                if (allVideoIds.Count == 0)
-                {
-                    LoginStatusText.Text = "No liked videos found";
-                    LoginStatusText.Foreground = _authOrangeBrush;
-                    return;
-                }
-
-                LoginStatusText.Text = "Found " + allVideoIds.Count + " videos, resolving...";
-                LoginStatusText.Foreground = _authOrangeBrush;
-
-                // Collect unique videoIds, maintaining YouTube order
-                var uniqueVideoIds = new List<string>();
-                foreach (var vidToken in allVideoIds)
-                {
-                    string vid = vidToken.ToString();
-                    if (!string.IsNullOrEmpty(vid) && !uniqueVideoIds.Contains(vid))
-                        uniqueVideoIds.Add(vid);
-                }
-
-                // Fetch metadata for each video via InnerTube player — filter music only
-                int skippedNonMusic = 0;
-                foreach (var vidId in uniqueVideoIds)
-                {
-                    if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
-
-                    try
-                    {
-                        var meta = await InnerTubeClient.GetVideoMetadataAsync(vidId);
-                        string title = meta.Item1 ?? "Video " + vidId;
-                        string channel = CleanChannelName(meta.Item2 ?? "");
-                        string thumbUrl = meta.Item3;
-                        bool isMusic = meta.Item4;
-                        string chId = meta.Item5;
-
-                        if (!isMusic) { skippedNonMusic++; continue; }
-
-                        favoriteTracks.Add(new YouTubeTrack
-                        {
-                            VideoId = vidId,
-                            Title = title,
-                            ChannelName = channel,
-                            ChannelId = chId,
-                            ThumbnailUrl = thumbUrl
-                        });
-                        hasNew = true;
-                    }
-                    catch { continue; }
-                }
-
-                if (hasNew) SaveFavoritesAsync();
-
-                if (hasNew)
-                {
-                    LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
-                    LoginStatusText.Foreground = _greenBrush;
-                }
+                await ProcessLikedVideoIds(json);
             }
             catch (Exception ex)
             {
                 LoginStatusText.Text = "Sync Error: " + ex.Message;
                 LoginStatusText.Foreground = _authRedBrush;
             }
+        }
+
+        /// <summary>
+        /// Load more liked songs when user scrolls to bottom
+        /// </summary>
+        public async Task LoadMoreLikedSongsAsync()
+        {
+            if (_isLoadingMoreLiked || string.IsNullOrEmpty(_likedSongsContinuation)) return;
+
+            _isLoadingMoreLiked = true;
+            try
+            {
+                string token = await GetAccessTokenAsync();
+                if (token == null) return;
+
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["continuation"] = _likedSongsContinuation }, token);
+                if (json["_error"] != null) { _likedSongsContinuation = null; return; }
+
+                // Update continuation for next page
+                _likedSongsContinuation = json.SelectToken("$..nextContinuationData.continuation")?.ToString()
+                    ?? json.SelectToken("$..continuationEndpoint..continuation")?.ToString()
+                    ?? json.SelectToken("$..continuations[0]..continuation")?.ToString();
+
+                await ProcessLikedVideoIds(json);
+            }
+            catch { _likedSongsContinuation = null; }
+            finally { _isLoadingMoreLiked = false; }
+        }
+
+        public bool HasMoreLikedSongs => !string.IsNullOrEmpty(_likedSongsContinuation);
+
+        private async Task ProcessLikedVideoIds(JObject json)
+        {
+            bool hasNew = false;
+
+            // Find ALL videoId values anywhere in TV format response
+            var allVideoIds = json.SelectTokens("$..videoId").ToList();
+
+            if (allVideoIds.Count == 0 && favoriteTracks.Count == 0)
+            {
+                LoginStatusText.Text = "No liked videos found";
+                LoginStatusText.Foreground = _authOrangeBrush;
+                return;
+            }
+
+            // Collect unique videoIds, maintaining YouTube order
+            var uniqueVideoIds = new List<string>();
+            foreach (var vidToken in allVideoIds)
+            {
+                string vid = vidToken.ToString();
+                if (!string.IsNullOrEmpty(vid) && !uniqueVideoIds.Contains(vid))
+                    uniqueVideoIds.Add(vid);
+            }
+
+            // Fetch metadata for each video via InnerTube player — filter music only
+            int skippedNonMusic = 0;
+            foreach (var vidId in uniqueVideoIds)
+            {
+                if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
+
+                try
+                {
+                    var meta = await InnerTubeClient.GetVideoMetadataAsync(vidId);
+                    string title = meta.Item1 ?? "Video " + vidId;
+                    string channel = CleanChannelName(meta.Item2 ?? "");
+                    string thumbUrl = meta.Item3;
+                    bool isMusic = meta.Item4;
+                    string chId = meta.Item5;
+
+                    if (!isMusic) { skippedNonMusic++; continue; }
+
+                    favoriteTracks.Add(new YouTubeTrack
+                    {
+                        VideoId = vidId,
+                        Title = title,
+                        ChannelName = channel,
+                        ChannelId = chId,
+                        ThumbnailUrl = thumbUrl
+                    });
+                    hasNew = true;
+                }
+                catch { continue; }
+            }
+
+            if (hasNew) SaveFavoritesAsync();
+
+            if (hasNew)
+            {
+                LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
+                LoginStatusText.Foreground = _greenBrush;
+            }
+
+            // Update track count display if viewing liked songs
+            try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs"; } catch { }
         }
 
         // ══════════════════════════════════════════

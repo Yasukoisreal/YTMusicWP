@@ -18,6 +18,7 @@ namespace YTMusicWP
     {
         private string _libraryFilter = "all";
         private ObservableCollection<LibraryItem> _libraryItems = new ObservableCollection<LibraryItem>();
+        private bool _isViewingLikedSongs = false;
 
         private static readonly SolidColorBrush _libChipActiveTextBrush = new SolidColorBrush(Windows.UI.Colors.Black);
 
@@ -152,6 +153,7 @@ namespace YTMusicWP
                     // Open a pseudo-playlist view showing favorites
                     _currentViewingPlaylist = null;
                     _currentViewingYtPlaylistId = null;
+                    _isViewingLikedSongs = true;
                     PlaylistDetailsTitle.Text = "Liked Songs";
                     if (favoriteTracks.Count > 0 && !string.IsNullOrEmpty(favoriteTracks[0].ThumbnailUrl))
                     {
@@ -163,9 +165,10 @@ namespace YTMusicWP
                         PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     }
                     PlaylistSongsList.ItemsSource = favoriteTracks;
-                    PlaylistDetailsTrackCount.Text = favoriteTracks.Count + " songs";
+                    PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs";
                     PlaylistDetailsView.Visibility = Visibility.Visible;
                     PlaylistSlideInStoryboard.Begin();
+                    HookPlaylistSongsScroll();
                     break;
 
                 case "playlist":
@@ -348,6 +351,7 @@ namespace YTMusicWP
             PlaylistDetailsView.Visibility = Visibility.Collapsed;
             PlaylistDetailsCoverBrush.ImageSource = null;
             PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+            _isViewingLikedSongs = false;
         }
 
         private void PlayAllPlaylist_Click(object sender, RoutedEventArgs e)
@@ -808,6 +812,66 @@ namespace YTMusicWP
             {
                 LibrarySyncBtn.IsEnabled = true;
             }
+        }
+
+        // ══════════════════════════════════════════
+        // INFINITE SCROLL — Load more liked songs
+        // ══════════════════════════════════════════
+        private ScrollViewer _playlistSongsScrollViewer;
+        private bool _scrollHooked = false;
+
+        private void HookPlaylistSongsScroll()
+        {
+            if (_scrollHooked) return;
+
+            // Find ScrollViewer inside ListView (deferred since it's created by template)
+            PlaylistSongsList.Loaded += (s, e) =>
+            {
+                _playlistSongsScrollViewer = FindChildOfType<ScrollViewer>(PlaylistSongsList);
+                if (_playlistSongsScrollViewer != null)
+                {
+                    _playlistSongsScrollViewer.ViewChanged += PlaylistSongsScroll_ViewChanged;
+                    _scrollHooked = true;
+                }
+            };
+
+            // Try immediately if already loaded
+            _playlistSongsScrollViewer = FindChildOfType<ScrollViewer>(PlaylistSongsList);
+            if (_playlistSongsScrollViewer != null)
+            {
+                _playlistSongsScrollViewer.ViewChanged += PlaylistSongsScroll_ViewChanged;
+                _scrollHooked = true;
+            }
+        }
+
+        private async void PlaylistSongsScroll_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+        {
+            if (!_isViewingLikedSongs || !HasMoreLikedSongs) return;
+            if (e.IsIntermediate) return; // Wait until scroll settles
+
+            var sv = sender as ScrollViewer;
+            if (sv == null) return;
+
+            // Trigger when within 200px of the bottom
+            if (sv.VerticalOffset >= sv.ScrollableHeight - 200)
+            {
+                await LoadMoreLikedSongsAsync();
+            }
+        }
+
+        private static T FindChildOfType<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                var result = child as T;
+                if (result != null) return result;
+                var found = FindChildOfType<T>(child);
+                if (found != null) return found;
+            }
+            return null;
         }
 
     }
