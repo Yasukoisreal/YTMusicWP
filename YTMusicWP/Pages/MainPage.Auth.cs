@@ -848,53 +848,71 @@ namespace YTMusicWP
                     LoginStatusText.Text = "PL: pId=" + allPlaylistIds.Count + " bId=" + allBrowseIds.Count + " unique=" + uniqueIds.Count + " keys=" + topKeys.Substring(0, Math.Min(60, topKeys.Length));
                 });
 
-                // For each playlist, browse it to get real title
-                foreach (var plId in uniqueIds)
+                // Try to extract playlist info directly from FElibrary response
+                // Look for lockupViewModel items with playlist contentType
+                var lockups = json.SelectTokens("$..lockupViewModel").ToList();
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    LoginStatusText.Text = "PL: lockups=" + lockups.Count + " pId=" + allPlaylistIds.Count + " bId=" + allBrowseIds.Count;
+                });
+
+                foreach (var lockup in lockups)
                 {
                     try
                     {
-                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
-                        if (plJson["_error"] != null)
-                        {
-                            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                            {
-                                LoginStatusText.Text = "PL browse VL" + plId + " err:" + plJson["_error"];
-                            });
-                            continue;
-                        }
+                        string contentId = lockup["contentId"]?.ToString() ?? "";
+                        string contentType = lockup["contentType"]?.ToString() ?? "";
+                        // Only take PLAYLIST type
+                        if (contentType != "LOCKUP_CONTENT_TYPE_PLAYLIST" && !contentType.Contains("PLAYLIST")) continue;
+                        if (string.IsNullOrEmpty(contentId)) continue;
+                        if (contentId == "LL" || contentId == "WL" || contentId == "LM" || contentId.StartsWith("RDMM")) continue;
 
-                        string title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                            ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                            ?? "Playlist " + plId;
-                        string thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
-                        var videoIds = plJson.SelectTokens("$..videoId").ToList();
+                        string title = lockup.SelectToken("$.metadata.lockupMetadataViewModel.title.content")?.ToString() ?? "Playlist";
+                        string thumbUrl = "";
+                        var sources = lockup.SelectTokens("$..thumbnailViewModel.image.sources").FirstOrDefault();
+                        if (sources != null && sources.HasValues)
+                            thumbUrl = sources[0]?["url"]?.ToString() ?? "";
+
+                        // Try to get track count from metadata
+                        int count = 0;
+                        var metaRows = lockup.SelectTokens("$..metadataRows").FirstOrDefault();
+                        if (metaRows != null)
+                        {
+                            string metaStr = metaRows.ToString();
+                            var match = System.Text.RegularExpressions.Regex.Match(metaStr, @"(\d+)\s*(video|track|bài)");
+                            if (match.Success) count = int.Parse(match.Groups[1].Value);
+                        }
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
-                            PlaylistId = plId,
+                            PlaylistId = contentId,
                             Title = title,
-                            TrackCount = videoIds.Count,
+                            TrackCount = count,
                             ThumbnailUrl = thumbUrl
                         });
-
-                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                        {
-                            LoginStatusText.Text = "PL added: " + title + " (" + videoIds.Count + " tracks)";
-                        });
                     }
-                    catch (Exception ex2)
-                    {
-                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                        {
-                            LoginStatusText.Text = "PL loop err: " + ex2.Message;
-                        });
-                    }
+                    catch { continue; }
                     if (_youtubeUserPlaylists.Count >= 200) break;
+                }
+
+                // Fallback: if lockupViewModel didn't work, add from uniqueIds directly
+                if (_youtubeUserPlaylists.Count == 0 && uniqueIds.Count > 0)
+                {
+                    foreach (var plId in uniqueIds)
+                    {
+                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                        {
+                            PlaylistId = plId,
+                            Title = "Playlist " + plId.Substring(0, Math.Min(8, plId.Length)),
+                            TrackCount = 0,
+                            ThumbnailUrl = ""
+                        });
+                    }
                 }
 
                 await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
-                    LoginStatusText.Text = "PL done: " + _youtubeUserPlaylists.Count + " playlists synced";
+                    LoginStatusText.Text = "PL done: " + _youtubeUserPlaylists.Count + " playlists";
                 });
             }
             catch (Exception ex)
