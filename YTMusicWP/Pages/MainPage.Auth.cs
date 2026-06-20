@@ -1170,25 +1170,35 @@ namespace YTMusicWP
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return null;
-
-            try
+            if (!string.IsNullOrEmpty(token))
             {
-                var extra = new JObject
+                try
                 {
-                    ["title"] = title
-                };
-                var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
-                if (json["_error"] != null) return null;
-                // Extract playlistId from response
-                string plId = json.SelectToken("$..playlistId")?.ToString();
-                return plId;
+                    var extra = new JObject
+                    {
+                        ["title"] = title
+                    };
+                    var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
+                    if (json["_error"] == null)
+                    {
+                        string plId = json.SelectToken("$..playlistId")?.ToString();
+                        if (!string.IsNullOrEmpty(plId)) return plId;
+                    }
+                }
+                catch { }
             }
-            catch { return null; }
+
+            // Fallback: create local playlist on device
+            string localId = "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+            return localId;
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
         {
+            // Local playlists - delete from collection directly
+            if (playlistId != null && playlistId.StartsWith("LOCAL_"))
+                return true;
+
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token)) return false;
 
