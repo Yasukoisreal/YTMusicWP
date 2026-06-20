@@ -854,7 +854,14 @@ namespace YTMusicWP
                     try
                     {
                         var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
-                        if (plJson["_error"] != null) continue;
+                        if (plJson["_error"] != null)
+                        {
+                            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                            {
+                                LoginStatusText.Text = "PL browse VL" + plId + " err:" + plJson["_error"];
+                            });
+                            continue;
+                        }
 
                         string title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
                             ?? plJson.SelectToken("$..title.simpleText")?.ToString()
@@ -869,10 +876,26 @@ namespace YTMusicWP
                             TrackCount = videoIds.Count,
                             ThumbnailUrl = thumbUrl
                         });
+
+                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                        {
+                            LoginStatusText.Text = "PL added: " + title + " (" + videoIds.Count + " tracks)";
+                        });
                     }
-                    catch { }
+                    catch (Exception ex2)
+                    {
+                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                        {
+                            LoginStatusText.Text = "PL loop err: " + ex2.Message;
+                        });
+                    }
                     if (_youtubeUserPlaylists.Count >= 200) break;
                 }
+
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    LoginStatusText.Text = "PL done: " + _youtubeUserPlaylists.Count + " playlists synced";
+                });
             }
             catch (Exception ex)
             {
