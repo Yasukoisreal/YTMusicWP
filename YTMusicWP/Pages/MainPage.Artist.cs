@@ -185,7 +185,10 @@ namespace YTMusicWP
                         }
                     }
                 }
-                catch { useFallback = true; }
+                catch (Exception ex) { 
+                    useFallback = true;
+                    PlaylistDetailsTitle.Text = "ERR:" + ex.GetType().Name + " " + ex.Message.Substring(0, Math.Min(80, ex.Message.Length));
+                }
 
                 if (useFallback)
                 {
