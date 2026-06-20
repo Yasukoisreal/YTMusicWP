@@ -239,35 +239,18 @@ namespace YTMusicWP
             if (string.IsNullOrEmpty(name)) return;
 
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
-            ShowToast("Creating playlist...");
 
-            try
+            string plId = await CreateYouTubePlaylistAsync(name);
+            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
             {
-                string token = await GetAccessTokenAsync();
-                ShowToast("Token: " + (string.IsNullOrEmpty(token) ? "NULL" : token.Substring(0, Math.Min(10, token.Length)) + "..."));
-                
-                string plId = await CreateYouTubePlaylistAsync(name);
-                if (!string.IsNullOrEmpty(plId) && !plId.StartsWith("ERR:"))
-                {
-                    _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                    {
-                        PlaylistId = plId,
-                        Title = name,
-                        TrackCount = 0,
-                        ThumbnailUrl = ""
-                    });
-                    RefreshLibraryList();
-                    ShowToast("Playlist created!");
-                }
-                else
-                {
-                    ShowToast("PL fail: " + (plId ?? "null"));
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowToast("Create PL crash: " + ex.Message);
-            }
+                PlaylistId = plId,
+                Title = name,
+                TrackCount = 0,
+                ThumbnailUrl = ""
+            });
+            SaveYouTubePlaylistsCacheAsync();
+            RefreshLibraryList();
+            ShowToast("Playlist created!");
         }
 
         private void PlaylistItem_Holding(object sender, HoldingRoutedEventArgs e)

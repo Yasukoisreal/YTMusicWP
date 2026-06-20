@@ -556,43 +556,6 @@ namespace YTMusicWP
             return JObject.Parse(resultJson);
         }
 
-        // WEB_REMIX client for write operations (playlist create/delete/edit)
-        // TVHTML5 returns 400 Precondition for these because YouTube TV doesn't support playlist management
-        // WEB_REMIX is the YouTube Music web client — supports all playlist CRUD with Bearer token
-        private async Task<JObject> AndroidInnerTubePostAsync(string endpoint, JObject extraParams, string accessToken)
-        {
-            var clientObj = new JObject
-            {
-                ["clientName"] = "WEB_REMIX",
-                ["clientVersion"] = "1.20241016.01.00",
-                ["hl"] = InnerTubeClient.CurrentLanguage,
-                ["gl"] = InnerTubeClient.CurrentRegion
-            };
-
-            var body = new JObject
-            {
-                ["context"] = new JObject { ["client"] = clientObj }
-            };
-            foreach (var prop in extraParams.Properties())
-                body[prop.Name] = prop.Value;
-
-            string url = "https://music.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            request.Headers.Add("Authorization", "Bearer " + accessToken);
-            request.Headers.Add("Origin", "https://music.youtube.com");
-            request.Headers.Add("Referer", "https://music.youtube.com/");
-
-            var response = await _apiClient.SendAsync(request);
-            string resultJson = await response.Content.ReadAsStringAsync();
-            
-            if (!response.IsSuccessStatusCode)
-                return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
-            
-            return JObject.Parse(resultJson);
-        }
-
         // WEB client for browse requests — returns standard web format with videoId, title etc.
         private async Task<JObject> WebBrowseAsync(string browseId, string accessToken)
         {
@@ -1112,87 +1075,64 @@ namespace YTMusicWP
 
         private async Task<bool> AddToYouTubePlaylistAsync(string playlistId, string videoId)
         {
+            // Local playlists can't add videos to YouTube
+            if (playlistId.StartsWith("LOCAL_")) return true;
+
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token)) return false;
 
             try
             {
-                string url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&key=" + _beatoraApiKey;
-                var body = new JObject
+                var extra = new JObject
                 {
-                    ["snippet"] = new JObject
+                    ["playlistId"] = playlistId,
+                    ["actions"] = new JArray
                     {
-                        ["playlistId"] = playlistId,
-                        ["resourceId"] = new JObject
+                        new JObject
                         {
-                            ["kind"] = "youtube#video",
-                            ["videoId"] = videoId
+                            ["addedVideoId"] = videoId,
+                            ["action"] = "ACTION_ADD_VIDEO"
                         }
                     }
                 };
-
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                return json["_error"] == null;
             }
             catch { return false; }
         }
 
-        private const string _beatoraApiKey = "AIzaSyBuyqL9Wwj8NIWlRr3HdwTJLGYN6sXqepY";
-
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
-            string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return "ERR:no_token";
-
-            try
-            {
-                // Use YouTube Data API v3 with Beatora API key
-                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,status&key=" + _beatoraApiKey;
-                var body = new JObject
-                {
-                    ["snippet"] = new JObject { ["title"] = title },
-                    ["status"] = new JObject { ["privacyStatus"] = "private" }
-                };
-
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                string resultJson = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                    return "ERR:" + (int)response.StatusCode + " " + (resultJson.Length > 150 ? resultJson.Substring(0, 150) : resultJson);
-
-                var json = JObject.Parse(resultJson);
-                return json["id"]?.ToString();
-            }
-            catch (Exception ex) { return "ERR:ex " + ex.Message; }
+            // Create local-only playlist (YouTube API blocked for TV client)
+            string plId = "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+            return plId;
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
         {
+            // Local playlists just get removed from cache
+            if (playlistId.StartsWith("LOCAL_")) return true;
+
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token)) return false;
 
             try
             {
-                string url = "https://www.googleapis.com/youtube/v3/playlists?id=" + playlistId + "&key=" + _beatoraApiKey;
-                var request = new HttpRequestMessage(HttpMethod.Delete, url);
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
+                var extra = new JObject
+                {
+                    ["playlistId"] = playlistId
+                };
+                var json = await AuthInnerTubePostAsync("playlist/delete", extra, token);
+                return json["_error"] == null;
             }
             catch { return false; }
         }
 
         private async Task<bool> RemoveFromYouTubePlaylistAsync(string playlistId, string videoId)
         {
+            // Local playlists don't sync to YouTube
+            if (playlistId.StartsWith("LOCAL_")) return true;
+
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token)) return false;
 
@@ -1210,7 +1150,7 @@ namespace YTMusicWP
                         }
                     }
                 };
-                var json = await AndroidInnerTubePostAsync("browse/edit_playlist", extra, token);
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
                 return json["_error"] == null;
             }
             catch { return false; }
