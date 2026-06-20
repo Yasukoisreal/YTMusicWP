@@ -405,9 +405,15 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Width="45" Height="45" CornerRadius="8" Margin="0,0,10,0" Background="#252525">
-                    <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill"/>
-                </Border>
+                <Rectangle Grid.Column="0" Width="45" Height="45" RadiusX="8" RadiusY="8" Margin="0,0,10,0">
+                    <Rectangle.Fill>
+                        <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
+                            <ImageBrush.ImageSource>
+                                <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="100"/>
+                            </ImageBrush.ImageSource>
+                        </ImageBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,5,0">
                     <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="13" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
