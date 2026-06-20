@@ -45,8 +45,15 @@ namespace YTMusicWP
                     // For albums (MPREb_/OLAK5), skip auth browse — go straight to BrowsePlaylistAsync
                     // which uses WEB_REMIX and handles album format correctly
                     bool isAlbumBrowse = playlistId.StartsWith("MPREb_") || playlistId.StartsWith("OLAK5");
+                    bool isLocalPlaylist = playlistId.StartsWith("LOCAL_");
                     
-                    if (!isAlbumBrowse)
+                    // Local playlists: load tracks from device cache
+                    if (isLocalPlaylist)
+                    {
+                        var localTracks = await LoadLocalPlaylistTracksAsync(playlistId);
+                        foreach (var t in localTracks) tracks.Add(t);
+                    }
+                    else if (!isAlbumBrowse)
                     {
                     // Try authenticated browse first (needed for private/user playlists)
                     string token = await GetAccessTokenAsync();
@@ -166,7 +173,7 @@ namespace YTMusicWP
                     } // end if (!isAlbumBrowse)
 
                     // Fallback: unauthenticated browse (for public playlists/albums)
-                    if (tracks.Count == 0)
+                    if (tracks.Count == 0 && !isLocalPlaylist)
                     {
                         var plResult = await InnerTubeClient.BrowsePlaylistAsync(playlistId);
                         proxyThumbnail = plResult.ThumbnailUrl;
@@ -533,7 +540,7 @@ namespace YTMusicWP
                             {
                                 ChannelId = _currentArtistChannelId,
                                 Title = ArtistProfileTitle.Text,
-                                ThumbnailUrl = _currentArtistAvatarUrl ?? ""
+                        ThumbnailUrl = _currentArtistAvatarUrl ?? ""
                             });
                         }
                         UpdateFollowButton();

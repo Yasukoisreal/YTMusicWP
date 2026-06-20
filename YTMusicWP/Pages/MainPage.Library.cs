@@ -301,6 +301,15 @@ namespace YTMusicWP
                 bool success = await RemoveFromYouTubePlaylistAsync(_currentViewingYtPlaylistId, track.VideoId);
                 if (success)
                 {
+                    // Remove from local cache for local playlists
+                    if (_currentViewingYtPlaylistId.StartsWith("LOCAL_"))
+                    {
+                        var localTracks = await LoadLocalPlaylistTracksAsync(_currentViewingYtPlaylistId);
+                        localTracks.RemoveAll(t => t.VideoId == track.VideoId);
+                        await SaveLocalPlaylistTracksAsync(_currentViewingYtPlaylistId, localTracks);
+                        var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == _currentViewingYtPlaylistId);
+                        if (pl != null) { pl.TrackCount = localTracks.Count; SaveYouTubePlaylistsCacheAsync(); }
+                    }
                     var ytTracks = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
                     if (ytTracks != null) ytTracks.Remove(track);
                     ShowToast("Removed from playlist");
@@ -392,7 +401,13 @@ namespace YTMusicWP
                 bool success = await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist.VideoId);
                 if (success)
                 {
+                    // Save track to local cache for local playlists
+                    if (ytPlaylist.PlaylistId.StartsWith("LOCAL_"))
+                    {
+                        await AddTrackToLocalPlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist);
+                    }
                     ytPlaylist.TrackCount++;
+                    SaveYouTubePlaylistsCacheAsync();
                     ShowToast("Added to " + ytPlaylist.Title);
                 }
                 else

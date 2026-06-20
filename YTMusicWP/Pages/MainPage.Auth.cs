@@ -844,6 +844,70 @@ namespace YTMusicWP
             }
             catch { }
         }
+        // ══════════════════════════════════════════
+        // LOCAL PLAYLIST TRACK STORAGE
+        // ══════════════════════════════════════════
+        private string GetLocalPlaylistFileName(string playlistId)
+        {
+            return "pl_tracks_" + playlistId.Replace("LOCAL_", "") + ".json";
+        }
+
+        private async Task AddTrackToLocalPlaylistAsync(string playlistId, YouTubeTrack track)
+        {
+            try
+            {
+                var tracks = await LoadLocalPlaylistTracksAsync(playlistId);
+                if (tracks.Any(t => t.VideoId == track.VideoId)) return;
+                tracks.Add(track);
+                await SaveLocalPlaylistTracksAsync(playlistId, tracks);
+            }
+            catch { }
+        }
+
+        private async Task<List<YouTubeTrack>> LoadLocalPlaylistTracksAsync(string playlistId)
+        {
+            var result = new List<YouTubeTrack>();
+            try
+            {
+                var file = await ApplicationData.Current.LocalFolder.GetFileAsync(GetLocalPlaylistFileName(playlistId));
+                string json = await FileIO.ReadTextAsync(file);
+                var arr = JArray.Parse(json);
+                foreach (var item in arr)
+                {
+                    result.Add(new YouTubeTrack
+                    {
+                        VideoId = item["VideoId"]?.ToString() ?? "",
+                        Title = item["Title"]?.ToString() ?? "",
+                        ChannelName = item["ChannelName"]?.ToString() ?? "",
+                        ThumbnailUrl = item["ThumbnailUrl"]?.ToString() ?? ""
+                    });
+                }
+            }
+            catch { }
+            return result;
+        }
+
+        private async Task SaveLocalPlaylistTracksAsync(string playlistId, List<YouTubeTrack> tracks)
+        {
+            try
+            {
+                var arr = new JArray();
+                foreach (var t in tracks)
+                {
+                    arr.Add(new JObject
+                    {
+                        ["VideoId"] = t.VideoId,
+                        ["Title"] = t.Title,
+                        ["ChannelName"] = t.ChannelName,
+                        ["ThumbnailUrl"] = t.ThumbnailUrl ?? ""
+                    });
+                }
+                var file = await ApplicationData.Current.LocalFolder.CreateFileAsync(
+                    GetLocalPlaylistFileName(playlistId), CreationCollisionOption.ReplaceExisting);
+                await FileIO.WriteTextAsync(file, arr.ToString());
+            }
+            catch { }
+        }
 
         // ══════════════════════════════════════════
         // SYNC SUBSCRIPTIONS
