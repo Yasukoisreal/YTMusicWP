@@ -556,15 +556,15 @@ namespace YTMusicWP
             return JObject.Parse(resultJson);
         }
 
-        // ANDROID client for write operations (playlist create/delete/edit)
+        // WEB_REMIX client for write operations (playlist create/delete/edit)
         // TVHTML5 returns 400 Precondition for these because YouTube TV doesn't support playlist management
+        // WEB_REMIX is the YouTube Music web client — supports all playlist CRUD with Bearer token
         private async Task<JObject> AndroidInnerTubePostAsync(string endpoint, JObject extraParams, string accessToken)
         {
             var clientObj = new JObject
             {
-                ["clientName"] = "ANDROID",
-                ["clientVersion"] = "19.29.37",
-                ["androidSdkVersion"] = 30,
+                ["clientName"] = "WEB_REMIX",
+                ["clientVersion"] = "1.20241016.01.00",
                 ["hl"] = InnerTubeClient.CurrentLanguage,
                 ["gl"] = InnerTubeClient.CurrentRegion
             };
@@ -576,11 +576,13 @@ namespace YTMusicWP
             foreach (var prop in extraParams.Properties())
                 body[prop.Name] = prop.Value;
 
-            string url = "https://www.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w&prettyPrint=false";
+            string url = "https://music.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-            request.Headers.Add("User-Agent", "com.google.android.youtube/19.29.37 (Linux; U; Android 11) gzip");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             request.Headers.Add("Authorization", "Bearer " + accessToken);
+            request.Headers.Add("Origin", "https://music.youtube.com");
+            request.Headers.Add("Referer", "https://music.youtube.com/");
 
             var response = await _apiClient.SendAsync(request);
             string resultJson = await response.Content.ReadAsStringAsync();
