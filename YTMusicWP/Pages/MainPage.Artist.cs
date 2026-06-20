@@ -14,6 +14,7 @@ namespace YTMusicWP
     public sealed partial class MainPage
     {
         private string _currentArtistChannelId;
+        private string _currentArtistAvatarUrl;
         private bool _isFollowingArtist;
 
         private async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
@@ -99,6 +100,7 @@ namespace YTMusicWP
         private async void OpenArtistProfile(string channelId, string channelName, bool trustChannelId = false)
         {
             _currentArtistChannelId = channelId;
+            _currentArtistAvatarUrl = "";
             _isFollowingArtist = _youtubeSubscriptions.Any(s => s.ChannelId == channelId);
             ArtistProfileView.Visibility = Visibility.Visible;
             ArtistSlideInStoryboard.Begin();
@@ -130,6 +132,7 @@ namespace YTMusicWP
                     {
                         tracks = artistResult.Tracks;
                         avatarUrl = artistResult.AvatarUrl;
+                        _currentArtistAvatarUrl = avatarUrl;
 
                         if (!string.IsNullOrEmpty(artistResult.CoverUrl))
                             ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
@@ -172,6 +175,7 @@ namespace YTMusicWP
                         if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
                             tracks = artistResult.Tracks;
                         avatarUrl = artistResult.AvatarUrl;
+                        _currentArtistAvatarUrl = avatarUrl;
 
                         if (!string.IsNullOrEmpty(artistResult.CoverUrl))
                             ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
@@ -199,6 +203,7 @@ namespace YTMusicWP
                     {
                         tracks = artistResult.Tracks;
                         avatarUrl = artistResult.AvatarUrl;
+                        _currentArtistAvatarUrl = avatarUrl;
 
                         if (!string.IsNullOrEmpty(artistResult.CoverUrl))
                             ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
@@ -405,7 +410,7 @@ namespace YTMusicWP
                             {
                                 ChannelId = _currentArtistChannelId,
                                 Title = ArtistProfileTitle.Text,
-                                ThumbnailUrl = ""
+                                ThumbnailUrl = _currentArtistAvatarUrl ?? ""
                             });
                         }
                         UpdateFollowButton();
