@@ -1137,8 +1137,7 @@ namespace YTMusicWP
                             ["gl"] = InnerTubeClient.CurrentRegion
                         }
                     },
-                    ["title"] = title,
-                    ["privacyStatus"] = "UNLISTED"
+                    ["title"] = title
                 };
 
                 string url = "https://www.youtube.com/youtubei/v1/playlist/create?prettyPrint=false";
@@ -1154,8 +1153,9 @@ namespace YTMusicWP
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    string errBody = resultJson.Length > 120 ? resultJson.Substring(0, 120) : resultJson;
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                        LoginStatusText.Text = "CPL err: " + (int)response.StatusCode);
+                        LoginStatusText.Text = "CPL " + (int)response.StatusCode + ": " + errBody);
                     return null;
                 }
 
