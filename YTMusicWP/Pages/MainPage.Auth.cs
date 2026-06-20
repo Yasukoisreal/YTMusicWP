@@ -738,6 +738,8 @@ namespace YTMusicWP
             await SyncSubscriptionsAsync(accessToken);
             // Fetch YouTube profile avatar
             await FetchAndCacheAvatarAsync(accessToken);
+            // Refresh Library UI to show synced playlists/subs
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => RefreshLibraryList());
         }
 
         // ══════════════════════════════════════════
