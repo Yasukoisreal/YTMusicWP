@@ -960,7 +960,7 @@ namespace YTMusicWP
 
                             string name = (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
                                 ? artistResult.Name : chId;
-                            string avatarUrl = artistResult.AvatarUrl ?? "";
+                            string avatarUrl = GetArtistAvatar(artistResult.AvatarUrl ?? "");
                             return new YouTubeSubscription { ChannelId = chId, Title = name, ThumbnailUrl = avatarUrl };
                         }
                         catch { return null; }

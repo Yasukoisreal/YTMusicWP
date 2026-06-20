@@ -38,6 +38,24 @@ namespace YTMusicWP
         }
 
         /// <summary>
+        /// Get properly-sized avatar for artist display (72dp circles).
+        /// Requests 176px (72dp × ~2.5x for sharp rendering on high DPI).
+        /// </summary>
+        private static string GetArtistAvatar(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            // Google CDN (lh3/yt3) — request exact square size
+            if (url.Contains("lh3.googleusercontent.com") || url.Contains("yt3.ggpht.com"))
+            {
+                int eqIdx = url.LastIndexOf("=");
+                if (eqIdx > 0)
+                    return url.Substring(0, eqIdx) + "=s176-c-k-c0x00000000-no-rj";
+                return url + "=s176-c-k-c0x00000000-no-rj";
+            }
+            return url;
+        }
+
+        /// <summary>
         /// Get best thumbnail for 1:1 square display (playlist covers).
         /// YouTube Music thumbnails (lh3.googleusercontent.com) → request 1:1 crop.
         /// YouTube thumbnails (i.ytimg.com) → use mqdefault (16:9, no letterbox bars).

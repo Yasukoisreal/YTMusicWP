@@ -98,7 +98,7 @@ namespace YTMusicWP
                                         {
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
-                                                artistItems[idx].ThumbnailUrl = GetHighResThumbnail(result.AvatarUrl);
+                                                artistItems[idx].ThumbnailUrl = GetArtistAvatar(result.AvatarUrl);
                                                 artistItems[idx].ChannelId = ytmChannelId;
                                             });
                                         }
@@ -111,7 +111,7 @@ namespace YTMusicWP
                                         {
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
-                                                artistItems[idx].ThumbnailUrl = GetHighResThumbnail(result.AvatarUrl);
+                                                artistItems[idx].ThumbnailUrl = GetArtistAvatar(result.AvatarUrl);
                                             });
                                         }
                                     }
