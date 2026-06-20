@@ -38,9 +38,28 @@ namespace YTMusicWP
                 result.Title = data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString() ?? "";
 
                 // Title from microformat (album responses often use this instead of header)
+                // Format: "Come My Way - Album by Sơn Tùng M-TP" → extract artist + clean title
+                string _microformatArtist = "";
                 if (string.IsNullOrEmpty(result.Title))
                 {
-                    result.Title = data?["microformat"]?["microformatDataRenderer"]?["title"]?.ToString() ?? "";
+                    string mfTitle = data?["microformat"]?["microformatDataRenderer"]?["title"]?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(mfTitle))
+                    {
+                        // Try to parse " - Album by ", " - Single by ", " - EP by "
+                        string[] patterns = { " - Album by ", " - Single by ", " - EP by ", " - Playlist by " };
+                        foreach (var pattern in patterns)
+                        {
+                            int pIdx = mfTitle.IndexOf(pattern);
+                            if (pIdx > 0)
+                            {
+                                result.Title = mfTitle.Substring(0, pIdx).Trim();
+                                _microformatArtist = mfTitle.Substring(pIdx + pattern.Length).Trim();
+                                break;
+                            }
+                        }
+                        if (string.IsNullOrEmpty(result.Title))
+                            result.Title = mfTitle;
+                    }
                 }
                 // Title from tab title
                 if (string.IsNullOrEmpty(result.Title))
@@ -355,8 +374,10 @@ namespace YTMusicWP
                 {
                     if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
                         track.ThumbnailUrl = result.ThumbnailUrl;
-                    if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtist))
-                        track.ChannelName = CleanChannelName(albumArtist);
+                    // Use albumArtist, fallback to microformat artist
+                    string effectiveArtist = !string.IsNullOrEmpty(albumArtist) ? albumArtist : _microformatArtist;
+                    if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(effectiveArtist))
+                        track.ChannelName = CleanChannelName(effectiveArtist);
                 }
 
 
