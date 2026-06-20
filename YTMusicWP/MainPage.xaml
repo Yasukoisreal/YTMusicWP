@@ -1065,254 +1065,340 @@
         </Grid>
 
         <!-- ═══════════════════════════════════ SETTINGS PANEL (overlay) ═══════════════════════════════════ -->
-        <Grid x:Name="SettingsPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212">
+        <Grid x:Name="SettingsPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#1A1A2E" Offset="0"/>
+                    <GradientStop Color="#0D0D0D" Offset="0.4"/>
+                    <GradientStop Color="#121212" Offset="1"/>
+                </LinearGradientBrush>
+            </Grid.Background>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0" Margin="10,15,10,5">
-                <TextBlock Text="Settings" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
-                <Button Click="CloseSettings_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Width="45" Height="45">
-                    <Viewbox Width="20" Height="20"><Path Data="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12Z" Fill="White"/></Viewbox>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="20,15,15,0">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Settings" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Customize your experience" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Button Click="CloseSettings_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Width="40" Height="40" VerticalAlignment="Top">
+                    <Border Background="#1A1A1A" CornerRadius="20" Width="36" Height="36">
+                        <Viewbox Width="14" Height="14"><Path Data="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12Z" Fill="#999"/></Viewbox>
+                    </Border>
                 </Button>
             </Grid>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="10,0,15,0">
-                <StackPanel Margin="0,10,0,40">
-                    <TextBlock Text="TRENDING REGION" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
-                    <ComboBox x:Name="RegionComboBox" Background="#222222" Foreground="White" BorderThickness="0" Margin="0,0,0,20">
-                        <ComboBoxItem Content="Auto-detect" Tag="AUTO"/>
-                        <ComboBoxItem Content="Worldwide" Tag=""/>
-                        <ComboBoxItem Content="Algeria (DZ)" Tag="DZ"/>
-                        <ComboBoxItem Content="Argentina (AR)" Tag="AR"/>
-                        <ComboBoxItem Content="Australia (AU)" Tag="AU"/>
-                        <ComboBoxItem Content="Austria (AT)" Tag="AT"/>
-                        <ComboBoxItem Content="Azerbaijan (AZ)" Tag="AZ"/>
-                        <ComboBoxItem Content="Bahrain (BH)" Tag="BH"/>
-                        <ComboBoxItem Content="Bangladesh (BD)" Tag="BD"/>
-                        <ComboBoxItem Content="Belarus (BY)" Tag="BY"/>
-                        <ComboBoxItem Content="Belgium (BE)" Tag="BE"/>
-                        <ComboBoxItem Content="Bolivia (BO)" Tag="BO"/>
-                        <ComboBoxItem Content="Bosnia (BA)" Tag="BA"/>
-                        <ComboBoxItem Content="Brazil (BR)" Tag="BR"/>
-                        <ComboBoxItem Content="Bulgaria (BG)" Tag="BG"/>
-                        <ComboBoxItem Content="Canada (CA)" Tag="CA"/>
-                        <ComboBoxItem Content="Chile (CL)" Tag="CL"/>
-                        <ComboBoxItem Content="Colombia (CO)" Tag="CO"/>
-                        <ComboBoxItem Content="Costa Rica (CR)" Tag="CR"/>
-                        <ComboBoxItem Content="Croatia (HR)" Tag="HR"/>
-                        <ComboBoxItem Content="Czech Republic (CZ)" Tag="CZ"/>
-                        <ComboBoxItem Content="Denmark (DK)" Tag="DK"/>
-                        <ComboBoxItem Content="Dominican Republic (DO)" Tag="DO"/>
-                        <ComboBoxItem Content="Ecuador (EC)" Tag="EC"/>
-                        <ComboBoxItem Content="Egypt (EG)" Tag="EG"/>
-                        <ComboBoxItem Content="El Salvador (SV)" Tag="SV"/>
-                        <ComboBoxItem Content="Estonia (EE)" Tag="EE"/>
-                        <ComboBoxItem Content="Finland (FI)" Tag="FI"/>
-                        <ComboBoxItem Content="France (FR)" Tag="FR"/>
-                        <ComboBoxItem Content="Georgia (GE)" Tag="GE"/>
-                        <ComboBoxItem Content="Germany (DE)" Tag="DE"/>
-                        <ComboBoxItem Content="Ghana (GH)" Tag="GH"/>
-                        <ComboBoxItem Content="Greece (GR)" Tag="GR"/>
-                        <ComboBoxItem Content="Guatemala (GT)" Tag="GT"/>
-                        <ComboBoxItem Content="Honduras (HN)" Tag="HN"/>
-                        <ComboBoxItem Content="Hong Kong (HK)" Tag="HK"/>
-                        <ComboBoxItem Content="Hungary (HU)" Tag="HU"/>
-                        <ComboBoxItem Content="Iceland (IS)" Tag="IS"/>
-                        <ComboBoxItem Content="India (IN)" Tag="IN"/>
-                        <ComboBoxItem Content="Indonesia (ID)" Tag="ID"/>
-                        <ComboBoxItem Content="Iraq (IQ)" Tag="IQ"/>
-                        <ComboBoxItem Content="Ireland (IE)" Tag="IE"/>
-                        <ComboBoxItem Content="Israel (IL)" Tag="IL"/>
-                        <ComboBoxItem Content="Italy (IT)" Tag="IT"/>
-                        <ComboBoxItem Content="Japan (JP)" Tag="JP"/>
-                        <ComboBoxItem Content="Jordan (JO)" Tag="JO"/>
-                        <ComboBoxItem Content="Kenya (KE)" Tag="KE"/>
-                        <ComboBoxItem Content="Kuwait (KW)" Tag="KW"/>
-                        <ComboBoxItem Content="Latvia (LV)" Tag="LV"/>
-                        <ComboBoxItem Content="Lebanon (LB)" Tag="LB"/>
-                        <ComboBoxItem Content="Lithuania (LT)" Tag="LT"/>
-                        <ComboBoxItem Content="Macedonia (MK)" Tag="MK"/>
-                        <ComboBoxItem Content="Malaysia (MY)" Tag="MY"/>
-                        <ComboBoxItem Content="Mexico (MX)" Tag="MX"/>
-                        <ComboBoxItem Content="Montenegro (ME)" Tag="ME"/>
-                        <ComboBoxItem Content="Morocco (MA)" Tag="MA"/>
-                        <ComboBoxItem Content="Netherlands (NL)" Tag="NL"/>
-                        <ComboBoxItem Content="New Zealand (NZ)" Tag="NZ"/>
-                        <ComboBoxItem Content="Nigeria (NG)" Tag="NG"/>
-                        <ComboBoxItem Content="Norway (NO)" Tag="NO"/>
-                        <ComboBoxItem Content="Oman (OM)" Tag="OM"/>
-                        <ComboBoxItem Content="Peru (PE)" Tag="PE"/>
-                        <ComboBoxItem Content="Philippines (PH)" Tag="PH"/>
-                        <ComboBoxItem Content="Poland (PL)" Tag="PL"/>
-                        <ComboBoxItem Content="Portugal (PT)" Tag="PT"/>
-                        <ComboBoxItem Content="Puerto Rico (PR)" Tag="PR"/>
-                        <ComboBoxItem Content="Qatar (QA)" Tag="QA"/>
-                        <ComboBoxItem Content="Romania (RO)" Tag="RO"/>
-                        <ComboBoxItem Content="Russia (RU)" Tag="RU"/>
-                        <ComboBoxItem Content="Saudi Arabia (SA)" Tag="SA"/>
-                        <ComboBoxItem Content="Senegal (SN)" Tag="SN"/>
-                        <ComboBoxItem Content="Serbia (RS)" Tag="RS"/>
-                        <ComboBoxItem Content="Singapore (SG)" Tag="SG"/>
-                        <ComboBoxItem Content="Slovakia (SK)" Tag="SK"/>
-                        <ComboBoxItem Content="Slovenia (SI)" Tag="SI"/>
-                        <ComboBoxItem Content="South Africa (ZA)" Tag="ZA"/>
-                        <ComboBoxItem Content="South Korea (KR)" Tag="KR"/>
-                        <ComboBoxItem Content="Spain (ES)" Tag="ES"/>
-                        <ComboBoxItem Content="Sweden (SE)" Tag="SE"/>
-                        <ComboBoxItem Content="Switzerland (CH)" Tag="CH"/>
-                        <ComboBoxItem Content="Taiwan (TW)" Tag="TW"/>
-                        <ComboBoxItem Content="Thailand (TH)" Tag="TH"/>
-                        <ComboBoxItem Content="Tunisia (TN)" Tag="TN"/>
-                        <ComboBoxItem Content="Turkey (TR)" Tag="TR"/>
-                        <ComboBoxItem Content="Uganda (UG)" Tag="UG"/>
-                        <ComboBoxItem Content="Ukraine (UA)" Tag="UA"/>
-                        <ComboBoxItem Content="UAE (AE)" Tag="AE"/>
-                        <ComboBoxItem Content="United Kingdom (GB)" Tag="GB"/>
-                        <ComboBoxItem Content="United States (US)" Tag="US"/>
-                        <ComboBoxItem Content="Vietnam (VN)" Tag="VN"/>
-                        <ComboBoxItem Content="Yemen (YE)" Tag="YE"/>
-                    </ComboBox>
 
-                    <TextBlock Text="GOOGLE ACCOUNT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
-                    <!-- Hidden: OAuth credentials (auto-filled by app) -->
-                    <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,10" Visibility="Collapsed">
-                        <TextBox x:Name="ClientIdTextBox" PlaceholderText="Client ID..." Style="{StaticResource DarkTextBoxStyle}"/>
-                    </Border>
-                    <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,15" Visibility="Collapsed">
-                        <TextBox x:Name="ClientSecretTextBox" PlaceholderText="Client Secret..." Style="{StaticResource DarkTextBoxStyle}"/>
-                    </Border>
-                    <TextBlock Text="Sign in to sync your liked songs, playlists, and subscriptions from YouTube." Foreground="#888888" FontSize="13" Margin="5,0,0,15" TextWrapping="Wrap"/>
-                    <Button Click="LoginGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="50">
-                        <Border Background="#1DB954" CornerRadius="8">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="&#xE13D;" FontFamily="Segoe UI Symbol" FontSize="18" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Sign in with Google" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" VerticalAlignment="Center"/>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,15,0,0">
+                <StackPanel Margin="16,0,16,50">
+
+                    <!-- ═══════ ACCOUNT SECTION ═══════ -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <Border Background="#1DB954" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE13D;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Account" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                             </StackPanel>
-                        </Border>
-                    </Button>
-                    <Button x:Name="SyncNowBtn" Click="SyncNow_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="42" Visibility="Collapsed">
-                        <Border Background="#333333" CornerRadius="8">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="#1DB954" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Sync Now" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+
+                            <!-- Hidden: OAuth credentials (auto-filled by app) -->
+                            <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,10" Visibility="Collapsed">
+                                <TextBox x:Name="ClientIdTextBox" PlaceholderText="Client ID..." Style="{StaticResource DarkTextBoxStyle}"/>
+                            </Border>
+                            <Border Background="#1E1E1E" CornerRadius="10" Margin="0,0,0,10" Visibility="Collapsed">
+                                <TextBox x:Name="ClientSecretTextBox" PlaceholderText="Client Secret..." Style="{StaticResource DarkTextBoxStyle}"/>
+                            </Border>
+
+                            <TextBlock Text="Sign in to sync liked songs, playlists, and subscriptions." Foreground="#777" FontSize="12" Margin="0,0,0,14" TextWrapping="Wrap"/>
+
+                            <Button Click="LoginGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="46">
+                                <Border CornerRadius="12" Padding="0,0,0,0">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#1DB954" Offset="0"/>
+                                            <GradientStop Color="#1ED760" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE13D;" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Sign in with Google" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <Button x:Name="SyncNowBtn" Click="SyncNow_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="42" Visibility="Collapsed">
+                                <Border Background="#252525" CornerRadius="12">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="15" Foreground="#1DB954" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Sync Now" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <TextBlock x:Name="LoginStatusText" Text="Status: Not Logged In" Foreground="#555" FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══════ REGION ═══════ -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <Border Background="#3B82F6" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                    <TextBlock Text="🌐" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Region" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                             </StackPanel>
-                        </Border>
-                    </Button>
-                    <TextBlock x:Name="LoginStatusText" Text="Status: Not Logged In" Foreground="#B3B3B3" FontSize="14" Margin="0,0,0,25" HorizontalAlignment="Center"/>
-                    <Button Content="Save Settings" Click="SaveSettingsButton_Click" Background="#1DB954" Foreground="White" FontWeight="Bold" Margin="0,0,0,30" HorizontalAlignment="Stretch" BorderThickness="0" Height="50">
+                            <TextBlock Text="Choose your trending music region" Foreground="#777" FontSize="12" Margin="0,0,0,10"/>
+                            <ComboBox x:Name="RegionComboBox" Background="#252525" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch">
+                                <ComboBoxItem Content="Auto-detect" Tag="AUTO"/>
+                                <ComboBoxItem Content="Worldwide" Tag=""/>
+                                <ComboBoxItem Content="Algeria (DZ)" Tag="DZ"/>
+                                <ComboBoxItem Content="Argentina (AR)" Tag="AR"/>
+                                <ComboBoxItem Content="Australia (AU)" Tag="AU"/>
+                                <ComboBoxItem Content="Austria (AT)" Tag="AT"/>
+                                <ComboBoxItem Content="Azerbaijan (AZ)" Tag="AZ"/>
+                                <ComboBoxItem Content="Bahrain (BH)" Tag="BH"/>
+                                <ComboBoxItem Content="Bangladesh (BD)" Tag="BD"/>
+                                <ComboBoxItem Content="Belarus (BY)" Tag="BY"/>
+                                <ComboBoxItem Content="Belgium (BE)" Tag="BE"/>
+                                <ComboBoxItem Content="Bolivia (BO)" Tag="BO"/>
+                                <ComboBoxItem Content="Bosnia (BA)" Tag="BA"/>
+                                <ComboBoxItem Content="Brazil (BR)" Tag="BR"/>
+                                <ComboBoxItem Content="Bulgaria (BG)" Tag="BG"/>
+                                <ComboBoxItem Content="Canada (CA)" Tag="CA"/>
+                                <ComboBoxItem Content="Chile (CL)" Tag="CL"/>
+                                <ComboBoxItem Content="Colombia (CO)" Tag="CO"/>
+                                <ComboBoxItem Content="Costa Rica (CR)" Tag="CR"/>
+                                <ComboBoxItem Content="Croatia (HR)" Tag="HR"/>
+                                <ComboBoxItem Content="Czech Republic (CZ)" Tag="CZ"/>
+                                <ComboBoxItem Content="Denmark (DK)" Tag="DK"/>
+                                <ComboBoxItem Content="Dominican Republic (DO)" Tag="DO"/>
+                                <ComboBoxItem Content="Ecuador (EC)" Tag="EC"/>
+                                <ComboBoxItem Content="Egypt (EG)" Tag="EG"/>
+                                <ComboBoxItem Content="El Salvador (SV)" Tag="SV"/>
+                                <ComboBoxItem Content="Estonia (EE)" Tag="EE"/>
+                                <ComboBoxItem Content="Finland (FI)" Tag="FI"/>
+                                <ComboBoxItem Content="France (FR)" Tag="FR"/>
+                                <ComboBoxItem Content="Georgia (GE)" Tag="GE"/>
+                                <ComboBoxItem Content="Germany (DE)" Tag="DE"/>
+                                <ComboBoxItem Content="Ghana (GH)" Tag="GH"/>
+                                <ComboBoxItem Content="Greece (GR)" Tag="GR"/>
+                                <ComboBoxItem Content="Guatemala (GT)" Tag="GT"/>
+                                <ComboBoxItem Content="Honduras (HN)" Tag="HN"/>
+                                <ComboBoxItem Content="Hong Kong (HK)" Tag="HK"/>
+                                <ComboBoxItem Content="Hungary (HU)" Tag="HU"/>
+                                <ComboBoxItem Content="Iceland (IS)" Tag="IS"/>
+                                <ComboBoxItem Content="India (IN)" Tag="IN"/>
+                                <ComboBoxItem Content="Indonesia (ID)" Tag="ID"/>
+                                <ComboBoxItem Content="Iraq (IQ)" Tag="IQ"/>
+                                <ComboBoxItem Content="Ireland (IE)" Tag="IE"/>
+                                <ComboBoxItem Content="Israel (IL)" Tag="IL"/>
+                                <ComboBoxItem Content="Italy (IT)" Tag="IT"/>
+                                <ComboBoxItem Content="Japan (JP)" Tag="JP"/>
+                                <ComboBoxItem Content="Jordan (JO)" Tag="JO"/>
+                                <ComboBoxItem Content="Kenya (KE)" Tag="KE"/>
+                                <ComboBoxItem Content="Kuwait (KW)" Tag="KW"/>
+                                <ComboBoxItem Content="Latvia (LV)" Tag="LV"/>
+                                <ComboBoxItem Content="Lebanon (LB)" Tag="LB"/>
+                                <ComboBoxItem Content="Lithuania (LT)" Tag="LT"/>
+                                <ComboBoxItem Content="Macedonia (MK)" Tag="MK"/>
+                                <ComboBoxItem Content="Malaysia (MY)" Tag="MY"/>
+                                <ComboBoxItem Content="Mexico (MX)" Tag="MX"/>
+                                <ComboBoxItem Content="Montenegro (ME)" Tag="ME"/>
+                                <ComboBoxItem Content="Morocco (MA)" Tag="MA"/>
+                                <ComboBoxItem Content="Netherlands (NL)" Tag="NL"/>
+                                <ComboBoxItem Content="New Zealand (NZ)" Tag="NZ"/>
+                                <ComboBoxItem Content="Nigeria (NG)" Tag="NG"/>
+                                <ComboBoxItem Content="Norway (NO)" Tag="NO"/>
+                                <ComboBoxItem Content="Oman (OM)" Tag="OM"/>
+                                <ComboBoxItem Content="Peru (PE)" Tag="PE"/>
+                                <ComboBoxItem Content="Philippines (PH)" Tag="PH"/>
+                                <ComboBoxItem Content="Poland (PL)" Tag="PL"/>
+                                <ComboBoxItem Content="Portugal (PT)" Tag="PT"/>
+                                <ComboBoxItem Content="Puerto Rico (PR)" Tag="PR"/>
+                                <ComboBoxItem Content="Qatar (QA)" Tag="QA"/>
+                                <ComboBoxItem Content="Romania (RO)" Tag="RO"/>
+                                <ComboBoxItem Content="Russia (RU)" Tag="RU"/>
+                                <ComboBoxItem Content="Saudi Arabia (SA)" Tag="SA"/>
+                                <ComboBoxItem Content="Senegal (SN)" Tag="SN"/>
+                                <ComboBoxItem Content="Serbia (RS)" Tag="RS"/>
+                                <ComboBoxItem Content="Singapore (SG)" Tag="SG"/>
+                                <ComboBoxItem Content="Slovakia (SK)" Tag="SK"/>
+                                <ComboBoxItem Content="Slovenia (SI)" Tag="SI"/>
+                                <ComboBoxItem Content="South Africa (ZA)" Tag="ZA"/>
+                                <ComboBoxItem Content="South Korea (KR)" Tag="KR"/>
+                                <ComboBoxItem Content="Spain (ES)" Tag="ES"/>
+                                <ComboBoxItem Content="Sweden (SE)" Tag="SE"/>
+                                <ComboBoxItem Content="Switzerland (CH)" Tag="CH"/>
+                                <ComboBoxItem Content="Taiwan (TW)" Tag="TW"/>
+                                <ComboBoxItem Content="Thailand (TH)" Tag="TH"/>
+                                <ComboBoxItem Content="Tunisia (TN)" Tag="TN"/>
+                                <ComboBoxItem Content="Turkey (TR)" Tag="TR"/>
+                                <ComboBoxItem Content="Uganda (UG)" Tag="UG"/>
+                                <ComboBoxItem Content="Ukraine (UA)" Tag="UA"/>
+                                <ComboBoxItem Content="UAE (AE)" Tag="AE"/>
+                                <ComboBoxItem Content="United Kingdom (GB)" Tag="GB"/>
+                                <ComboBoxItem Content="United States (US)" Tag="US"/>
+                                <ComboBoxItem Content="Vietnam (VN)" Tag="VN"/>
+                                <ComboBoxItem Content="Yemen (YE)" Tag="YE"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══════ PLAYBACK ═══════ -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <Border Background="#A855F7" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                    <TextBlock Text="♫" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Playback" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Audio Quality -->
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Audio Quality" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Higher quality uses more data" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ComboBox x:Name="AudioQualityComboBox" Grid.Column="1" Background="#252525" Foreground="White" BorderThickness="0" Width="130" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="Low (48kbps)" Tag="48"/>
+                                    <ComboBoxItem Content="Normal (128kbps)" Tag="128"/>
+                                    <ComboBoxItem Content="High (256kbps)" Tag="256"/>
+                                </ComboBox>
+                            </Grid>
+                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                            <!-- Crossfade -->
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Crossfade" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Smooth transition between songs" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock x:Name="CrossfadeValueText" Text="0s" Foreground="#1DB954" FontSize="14" FontFamily="{StaticResource MontserratBold}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <Slider x:Name="CrossfadeSlider" Minimum="0" Maximum="12" StepFrequency="1" Value="0" Width="100"/>
+                                </StackPanel>
+                            </Grid>
+                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                            <!-- Autoplay -->
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Autoplay" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Play similar songs when queue ends" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="AutoplayToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            </Grid>
+                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                            <!-- Gapless Playback -->
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Gapless Playback" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="No silence between tracks" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="GaplessToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            </Grid>
+                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                            <!-- Normalize Volume -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Normalize Volume" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Set the same volume for all songs" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="NormalizeVolumeToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Save Settings Button -->
+                    <Button Content="Save Settings" Click="SaveSettingsButton_Click" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Margin="0,0,0,16" HorizontalAlignment="Stretch" BorderThickness="0" Height="50">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
-                                <Border Background="{TemplateBinding Background}" CornerRadius="25">
+                                <Border CornerRadius="14">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                            <GradientStop Color="#1DB954" Offset="0"/>
+                                            <GradientStop Color="#1ED760" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
                                     <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
 
-                    <!-- ═══════ PLAYBACK SETTINGS ═══════ -->
-                    <TextBlock Text="PLAYBACK" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
-                    
-                    <!-- Audio Quality -->
-                    <Grid Margin="5,10,0,15">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Audio Quality" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
-                            <TextBlock Text="Higher quality uses more data" Foreground="#666666" FontSize="12"/>
-                        </StackPanel>
-                        <ComboBox x:Name="AudioQualityComboBox" Grid.Column="1" Background="#333333" Foreground="White" BorderThickness="0" Width="130" VerticalAlignment="Center">
-                            <ComboBoxItem Content="Low (48kbps)" Tag="48"/>
-                            <ComboBoxItem Content="Normal (128kbps)" Tag="128"/>
-                            <ComboBoxItem Content="High (256kbps)" Tag="256"/>
-                        </ComboBox>
-                    </Grid>
-                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
-
-                    <!-- Crossfade -->
-                    <Grid Margin="5,10,0,15">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Crossfade" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
-                            <TextBlock Text="Smooth transition between songs" Foreground="#666666" FontSize="12"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock x:Name="CrossfadeValueText" Text="0s" Foreground="#1DB954" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <Slider x:Name="CrossfadeSlider" Minimum="0" Maximum="12" StepFrequency="1" Value="0" Width="100"/>
-                        </StackPanel>
-                    </Grid>
-                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
-
-                    <!-- Autoplay -->
-                    <Grid Margin="5,10,0,15">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Autoplay" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
-                            <TextBlock Text="Play similar songs when queue ends" Foreground="#666666" FontSize="12"/>
-                        </StackPanel>
-                        <ToggleSwitch x:Name="AutoplayToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                    </Grid>
-                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
-
-                    <!-- Gapless Playback -->
-                    <Grid Margin="5,10,0,15">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Gapless Playback" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
-                            <TextBlock Text="No silence between tracks" Foreground="#666666" FontSize="12"/>
-                        </StackPanel>
-                        <ToggleSwitch x:Name="GaplessToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                    </Grid>
-                    <Rectangle Height="1" Fill="#1E1E1E" Margin="0,0,0,5"/>
-
-                    <!-- Normalize Volume -->
-                    <Grid Margin="5,10,0,25">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel>
-                            <TextBlock Text="Normalize Volume" Foreground="White" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}"/>
-                            <TextBlock Text="Set the same volume for all songs" Foreground="#666666" FontSize="12"/>
-                        </StackPanel>
-                        <ToggleSwitch x:Name="NormalizeVolumeToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
-                    </Grid>
-
                     <!-- ═══════ DATA MANAGEMENT ═══════ -->
-                    <TextBlock Text="DATA MANAGEMENT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
-                    <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
-                        <Border Background="#8C1932" CornerRadius="8">
-                            <TextBlock Text="Clear Recent History" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Button>
-                    <Button Click="ClearCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="45">
-                        <Border Background="#333333" CornerRadius="8">
-                            <TextBlock Text="Clear Image Cache" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Button>
-                    <Button Click="LogoutGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,25" Height="45">
-                        <Border Background="#333333" CornerRadius="8">
-                            <TextBlock Text="Logout Google Account" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="15" Foreground="#FF6B6B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Button>
+                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <Border Background="#EF4444" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE107;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Storage &amp; Data" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="44">
+                                <Border Background="#2A1215" CornerRadius="12">
+                                    <Grid Margin="16,0">
+                                        <TextBlock Text="Clear Recent History" FontFamily="{StaticResource MontserratSemiBold}" FontSize="14" Foreground="#FF6B6B" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Button>
+
+                            <Button Click="ClearCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="44">
+                                <Border Background="#252525" CornerRadius="12">
+                                    <Grid Margin="16,0">
+                                        <TextBlock Text="Clear Image Cache" FontFamily="{StaticResource MontserratSemiBold}" FontSize="14" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Button>
+
+                            <Button Click="LogoutGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,0" Height="44">
+                                <Border Background="#2A1215" CornerRadius="12">
+                                    <Grid Margin="16,0">
+                                        <TextBlock Text="Logout Google Account" FontFamily="{StaticResource MontserratSemiBold}" FontSize="14" Foreground="#FF6B6B" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Button>
+                        </StackPanel>
+                    </Border>
 
                     <!-- ═══════ ABOUT ═══════ -->
-                    <TextBlock Text="ABOUT" Foreground="#B3B3B3" FontSize="14" Margin="5,0,0,5"/>
-                    <StackPanel Margin="5,10,0,20">
-                        <TextBlock Text="Beatora" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954"/>
-                        <TextBlock Text="Version 1.0.0" FontSize="13" Foreground="#666666" Margin="0,3,0,0"/>
-                        <TextBlock Text="A music streaming client for Windows Phone 8.1" FontSize="13" Foreground="#666666" Margin="0,3,0,0" TextWrapping="Wrap"/>
-                    </StackPanel>
+                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,18">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="Beatora" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Version 1.0.0" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                            <TextBlock Text="A music streaming client for Windows Phone 8.1" FontSize="12" Foreground="#444" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
+                            <TextBlock Text="Made with ♥" FontSize="11" Foreground="#333" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
                 </StackPanel>
             </ScrollViewer>
         </Grid>
