@@ -1125,23 +1125,28 @@ namespace YTMusicWP
 
             try
             {
-                // Use YouTube Data API v3 (proper REST API, works with any OAuth token)
+                // Use WEB_REMIX (YouTube Music) client
                 var body = new JObject
                 {
-                    ["snippet"] = new JObject
+                    ["context"] = new JObject
                     {
-                        ["title"] = title,
-                        ["description"] = ""
+                        ["client"] = new JObject
+                        {
+                            ["clientName"] = "WEB_REMIX",
+                            ["clientVersion"] = "1.20241016.01.00",
+                            ["hl"] = InnerTubeClient.CurrentLanguage,
+                            ["gl"] = InnerTubeClient.CurrentRegion
+                        }
                     },
-                    ["status"] = new JObject
-                    {
-                        ["privacyStatus"] = "unlisted"
-                    }
+                    ["title"] = title
                 };
 
-                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,status";
+                string url = "https://music.youtube.com/youtubei/v1/playlist/create?prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://music.youtube.com");
+                request.Headers.Add("Referer", "https://music.youtube.com/");
                 request.Headers.Add("Authorization", "Bearer " + token);
 
                 var response = await _apiClient.SendAsync(request);
@@ -1156,7 +1161,7 @@ namespace YTMusicWP
                 }
 
                 var json = JObject.Parse(resultJson);
-                string plId = json["id"]?.ToString();
+                string plId = json.SelectToken("$..playlistId")?.ToString();
                 return plId;
             }
             catch (Exception ex)
