@@ -989,6 +989,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Grid Width="32" Height="32" Margin="0,0,10,0">
                     <Border x:Name="LibAvatarFallback" Width="32" Height="32" CornerRadius="16" Background="#1DB954">
@@ -1009,6 +1010,15 @@
                 </Button>
                 <Button Grid.Column="4" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
                     <Viewbox Width="20" Height="20"><Path Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z" Fill="White"/></Viewbox>
+                </Button>
+                <Button Grid.Column="5" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
+                    <TextBlock Text="⋮" FontSize="22" Foreground="White" FontWeight="Bold"/>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Export Playlists" Click="ExportPlaylists_Click"/>
+                            <MenuFlyoutItem Text="Import Playlists" Click="ImportPlaylists_Click"/>
+                        </MenuFlyout>
+                    </Button.Flyout>
                 </Button>
             </Grid>
 

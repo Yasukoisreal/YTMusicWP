@@ -1,11 +1,13 @@
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Networking.BackgroundTransfer;
 using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -883,6 +885,121 @@ namespace YTMusicWP
                 if (found != null) return found;
             }
             return null;
+        }
+
+        // ══════════════════════════════════════════
+        // EXPORT / IMPORT PLAYLISTS
+        // ══════════════════════════════════════════
+        private async void ExportPlaylists_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var export = new JObject();
+                var playlistsArr = new JArray();
+                foreach (var pl in _youtubeUserPlaylists)
+                {
+                    var plObj = new JObject
+                    {
+                        ["PlaylistId"] = pl.PlaylistId,
+                        ["Title"] = pl.Title,
+                        ["TrackCount"] = pl.TrackCount,
+                        ["ThumbnailUrl"] = pl.ThumbnailUrl ?? ""
+                    };
+                    // Include tracks for local playlists
+                    if (pl.PlaylistId.StartsWith("LOCAL_"))
+                    {
+                        var tracks = await LoadLocalPlaylistTracksAsync(pl.PlaylistId);
+                        var tracksArr = new JArray();
+                        foreach (var t in tracks)
+                        {
+                            tracksArr.Add(new JObject
+                            {
+                                ["VideoId"] = t.VideoId,
+                                ["Title"] = t.Title,
+                                ["ChannelName"] = t.ChannelName,
+                                ["ThumbnailUrl"] = t.ThumbnailUrl ?? ""
+                            });
+                        }
+                        plObj["Tracks"] = tracksArr;
+                    }
+                    playlistsArr.Add(plObj);
+                }
+                export["version"] = 1;
+                export["exportDate"] = DateTimeOffset.Now.ToString("o");
+                export["playlists"] = playlistsArr;
+
+                var picker = new FileSavePicker();
+                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                picker.FileTypeChoices.Add("JSON", new List<string> { ".json" });
+                picker.SuggestedFileName = "beatora_playlists";
+                var file = await picker.PickSaveFileAsync();
+                if (file != null)
+                {
+                    await FileIO.WriteTextAsync(file, export.ToString(Newtonsoft.Json.Formatting.Indented));
+                    ShowToast("Exported " + _youtubeUserPlaylists.Count + " playlists!");
+                }
+            }
+            catch (Exception ex) { ShowToast("Export failed: " + ex.Message); }
+        }
+
+        private async void ImportPlaylists_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var picker = new FileOpenPicker();
+                picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                picker.FileTypeFilter.Add(".json");
+                var file = await picker.PickSingleFileAsync();
+                if (file == null) return;
+
+                string json = await FileIO.ReadTextAsync(file);
+                var data = JObject.Parse(json);
+                var playlists = data["playlists"] as JArray;
+                if (playlists == null) { ShowToast("Invalid file"); return; }
+
+                int imported = 0;
+                foreach (var item in playlists)
+                {
+                    string plId = item["PlaylistId"]?.ToString() ?? "";
+                    string title = item["Title"]?.ToString() ?? "";
+                    if (string.IsNullOrEmpty(plId)) continue;
+
+                    // Skip if already exists
+                    if (_youtubeUserPlaylists.Any(p => p.PlaylistId == plId)) continue;
+
+                    _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                    {
+                        PlaylistId = plId,
+                        Title = title,
+                        TrackCount = item["TrackCount"]?.Value<int>() ?? 0,
+                        ThumbnailUrl = item["ThumbnailUrl"]?.ToString() ?? ""
+                    });
+
+                    // Restore tracks for local playlists
+                    var tracks = item["Tracks"] as JArray;
+                    if (tracks != null && plId.StartsWith("LOCAL_"))
+                    {
+                        var trackList = new List<YouTubeTrack>();
+                        foreach (var t in tracks)
+                        {
+                            trackList.Add(new YouTubeTrack
+                            {
+                                VideoId = t["VideoId"]?.ToString() ?? "",
+                                Title = t["Title"]?.ToString() ?? "",
+                                ChannelName = t["ChannelName"]?.ToString() ?? "",
+                                ThumbnailUrl = t["ThumbnailUrl"]?.ToString() ?? ""
+                            });
+                        }
+                        await SaveLocalPlaylistTracksAsync(plId, trackList);
+                    }
+                    imported++;
+                }
+
+                SaveYouTubePlaylistsCacheAsync();
+                RefreshLibraryList();
+                ShowToast("Imported " + imported + " playlists!");
+            }
+            catch (Exception ex) { ShowToast("Import failed: " + ex.Message); }
         }
 
     }
