@@ -1127,16 +1127,23 @@ namespace YTMusicWP
             {
                 var extra = new JObject
                 {
-                    ["title"] = title,
-                    ["privacyStatus"] = "UNLISTED"
+                    ["title"] = title
                 };
                 var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
-                if (json["_error"] != null) return null;
+                if (json["_error"] != null)
+                {
+                    System.Diagnostics.Debug.WriteLine("[CreatePlaylist] Error: " + json["_error"]);
+                    return null;
+                }
                 // Extract playlistId from response
                 string plId = json.SelectToken("$..playlistId")?.ToString();
                 return plId;
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[CreatePlaylist] Exception: " + ex.Message);
+                return null;
+            }
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
