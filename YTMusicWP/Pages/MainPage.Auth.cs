@@ -817,38 +817,21 @@ namespace YTMusicWP
                     return;
                 }
 
-                // Log what keys exist in response to understand format
-                var topKeys = string.Join(",", json.Properties().Select(p => p.Name));
+
+                // Collect unique playlist IDs from FElibrary response
+                var plIdTokens = json.SelectTokens("$..playlistId").Select(t => t.ToString()).Distinct().ToList();
+                var browseIdTokens = json.SelectTokens("$..browseId").Select(t => t.ToString())
+                    .Where(id => id.StartsWith("VL") && id.Length > 4).Select(id => id.Substring(2)).Distinct().ToList();
                 
-                // Search for ALL browseId values containing user playlist patterns
-                var allBrowseIds = json.SelectTokens("$..browseId")
-                    .Select(t => t.ToString())
-                    .Where(id => id.StartsWith("VL") && id.Length > 4)
-                    .Select(id => id.Substring(2))
-                    .Distinct()
-                    .ToList();
-
-                // Also search for playlistId
-                var allPlaylistIds = json.SelectTokens("$..playlistId")
-                    .Select(t => t.ToString())
-                    .Distinct()
-                    .ToList();
-
-                // Merge
                 var uniqueIds = new List<string>();
-                foreach (var id in allPlaylistIds.Concat(allBrowseIds))
+                foreach (var id in plIdTokens.Concat(browseIdTokens))
                 {
                     if (string.IsNullOrEmpty(id)) continue;
                     if (id == "LL" || id == "WL" || id == "LM" || id.StartsWith("RDMM")) continue;
                     if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
                 }
 
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    LoginStatusText.Text = "PL: pId=" + allPlaylistIds.Count + " bId=" + allBrowseIds.Count + " unique=" + uniqueIds.Count + " keys=" + topKeys.Substring(0, Math.Min(60, topKeys.Length));
-                });
-
-                // For each playlist, browse it to get real title
+                // For each playlist, browse to get real title
                 foreach (var plId in uniqueIds)
                 {
                     try
@@ -873,6 +856,11 @@ namespace YTMusicWP
                     catch { }
                     if (_youtubeUserPlaylists.Count >= 200) break;
                 }
+
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    LoginStatusText.Text = "PL: " + _youtubeUserPlaylists.Count + " synced";
+                });
             }
             catch (Exception ex)
             {
@@ -887,45 +875,6 @@ namespace YTMusicWP
                 SaveYouTubePlaylistsCacheAsync();
         }
 
-        private async Task SyncUserPlaylistsFallbackAsync(string accessToken)
-        {
-            try
-            {
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
-                if (json["_error"] != null) return;
-
-                var allIds = json.SelectTokens("$..playlistId").Select(t => t.ToString()).Distinct().ToList();
-                var browseIds = json.SelectTokens("$..browseId").Select(t => t.ToString()).Where(id => id.StartsWith("VL")).Select(id => id.Substring(2)).ToList();
-                allIds.AddRange(browseIds);
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync Fallback] Found " + allIds.Distinct().Count() + " IDs");
-
-                foreach (var plId in allIds.Distinct())
-                {
-                    if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
-                    try
-                    {
-                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
-                        if (plJson["_error"] != null) continue;
-                        string title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                            ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                            ?? "Playlist " + plId;
-                        string thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
-                        var videoIds = plJson.SelectTokens("$..videoId").ToList();
-
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                        {
-                            PlaylistId = plId,
-                            Title = title,
-                            TrackCount = videoIds.Count,
-                            ThumbnailUrl = thumbUrl
-                        });
-                    }
-                    catch { }
-                    if (_youtubeUserPlaylists.Count >= 200) break;
-                }
-            }
-            catch { }
-        }
 
         private async void SaveYouTubePlaylistsCacheAsync()
         {
@@ -1170,35 +1119,25 @@ namespace YTMusicWP
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
             string token = await GetAccessTokenAsync();
-            if (!string.IsNullOrEmpty(token))
-            {
-                try
-                {
-                    var extra = new JObject
-                    {
-                        ["title"] = title
-                    };
-                    var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
-                    if (json["_error"] == null)
-                    {
-                        string plId = json.SelectToken("$..playlistId")?.ToString();
-                        if (!string.IsNullOrEmpty(plId)) return plId;
-                    }
-                }
-                catch { }
-            }
+            if (string.IsNullOrEmpty(token)) return null;
 
-            // Fallback: create local playlist on device
-            string localId = "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
-            return localId;
+            try
+            {
+                var extra = new JObject
+                {
+                    ["title"] = title
+                };
+                var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
+                if (json["_error"] != null) return null;
+                // Extract playlistId from response
+                string plId = json.SelectToken("$..playlistId")?.ToString();
+                return plId;
+            }
+            catch { return null; }
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
         {
-            // Local playlists - delete from collection directly
-            if (playlistId != null && playlistId.StartsWith("LOCAL_"))
-                return true;
-
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token)) return false;
 
