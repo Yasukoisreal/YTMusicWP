@@ -42,15 +42,131 @@ namespace YTMusicWP
 
                 try
                 {
-                    var plResult = await InnerTubeClient.BrowsePlaylistAsync(playlistId);
-                    proxyThumbnail = plResult.ThumbnailUrl;
-                    if (!string.IsNullOrEmpty(plResult.Title))
+                    // Try authenticated browse first (needed for private/user playlists)
+                    string token = await GetAccessTokenAsync();
+                    if (!string.IsNullOrEmpty(token))
                     {
-                        PlaylistDetailsTitle.Text = plResult.Title;
+                        string browseId = playlistId.StartsWith("VL") ? playlistId : "VL" + playlistId;
+                        var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = browseId }, token);
+                        if (json["_error"] == null)
+                        {
+                            // Parse title
+                            string plTitle = json?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString();
+                            if (!string.IsNullOrEmpty(plTitle))
+                                PlaylistDetailsTitle.Text = plTitle;
+
+                            // Parse tracks using lockupViewModel format
+                            var tabs = json?["contents"]?["twoColumnBrowseResultsRenderer"]?["tabs"];
+                            if (tabs != null && tabs.HasValues)
+                            {
+                                var sections = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
+                                if (sections != null)
+                                {
+                                    foreach (var sec in sections)
+                                    {
+                                        var isr = sec["itemSectionRenderer"];
+                                        if (isr == null) continue;
+                                        var items = isr["contents"];
+                                        if (items == null) continue;
+                                        foreach (var item in items)
+                                        {
+                                            try
+                                            {
+                                                // Try lockupViewModel (new YouTube format)
+                                                var lvm = item["lockupViewModel"];
+                                                if (lvm != null)
+                                                {
+                                                    string videoId = lvm["contentId"]?.ToString();
+                                                    if (string.IsNullOrEmpty(videoId)) continue;
+                                                    string title = lvm["metadata"]?["lockupMetadataViewModel"]
+                                                        ?["title"]?["content"]?.ToString() ?? "";
+                                                    string artist = "";
+                                                    var rows = lvm["metadata"]?["lockupMetadataViewModel"]
+                                                        ?["metadata"]?["contentMetadataViewModel"]?["metadataRows"];
+                                                    if (rows != null && rows.HasValues)
+                                                    {
+                                                        var parts = rows[0]?["metadataParts"];
+                                                        if (parts != null && parts.HasValues)
+                                                            artist = parts[0]?["text"]?["content"]?.ToString() ?? "";
+                                                    }
+                                                    string thumbUrl = "";
+                                                    var sources = lvm["contentImage"]?["collectionThumbnailViewModel"]
+                                                        ?["primaryThumbnail"]?["thumbnailViewModel"]?["image"]?["sources"];
+                                                    if (sources != null && sources.HasValues)
+                                                        thumbUrl = sources[0]?["url"]?.ToString() ?? "";
+                                                    if (string.IsNullOrEmpty(thumbUrl))
+                                                        thumbUrl = "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
+
+                                                    tracks.Add(new YouTubeTrack
+                                                    {
+                                                        VideoId = videoId,
+                                                        Title = title,
+                                                        ChannelName = artist,
+                                                        ThumbnailUrl = thumbUrl
+                                                    });
+                                                }
+
+                                                // Try playlistVideoRenderer (classic format)
+                                                var pvr = item["playlistVideoRenderer"];
+                                                if (pvr != null)
+                                                {
+                                                    string videoId = pvr["videoId"]?.ToString();
+                                                    if (string.IsNullOrEmpty(videoId)) continue;
+                                                    string title = pvr["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                                    string artist = pvr["shortBylineText"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                                    string thumbUrl = "";
+                                                    var thumbs = pvr["thumbnail"]?["thumbnails"];
+                                                    if (thumbs != null && thumbs.HasValues)
+                                                        thumbUrl = thumbs.Last?["url"]?.ToString() ?? "";
+                                                    if (string.IsNullOrEmpty(thumbUrl))
+                                                        thumbUrl = "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
+
+                                                    tracks.Add(new YouTubeTrack
+                                                    {
+                                                        VideoId = videoId,
+                                                        Title = title,
+                                                        ChannelName = artist,
+                                                        ThumbnailUrl = thumbUrl
+                                                    });
+                                                }
+                                            }
+                                            catch { continue; }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Try sidebar thumbnail
+                            try
+                            {
+                                var sidebar = json?["sidebar"];
+                                if (sidebar != null)
+                                {
+                                    string sidebarStr = sidebar.ToString();
+                                    string tMarker = "\"url\":\"https://i.ytimg.com";
+                                    int tIdx = sidebarStr.IndexOf(tMarker);
+                                    if (tIdx >= 0)
+                                    {
+                                        int tStart = tIdx + 7;
+                                        int tEnd = sidebarStr.IndexOf("\"", tStart);
+                                        if (tEnd > tStart)
+                                            proxyThumbnail = sidebarStr.Substring(tStart, tEnd - tStart);
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
                     }
-                    foreach (var t in plResult.Tracks)
+
+                    // Fallback: unauthenticated browse (for public playlists/albums)
+                    if (tracks.Count == 0)
                     {
-                        tracks.Add(t);
+                        var plResult = await InnerTubeClient.BrowsePlaylistAsync(playlistId);
+                        proxyThumbnail = plResult.ThumbnailUrl;
+                        if (!string.IsNullOrEmpty(plResult.Title))
+                            PlaylistDetailsTitle.Text = plResult.Title;
+                        foreach (var t in plResult.Tracks)
+                            tracks.Add(t);
                     }
                 }
                 catch { useFallback = true; }
