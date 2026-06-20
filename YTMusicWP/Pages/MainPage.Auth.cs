@@ -1176,14 +1176,70 @@ namespace YTMusicWP
         {
             try
             {
+                // Use YouTube Data API — works with youtube scope we already have
+                var request = new HttpRequestMessage(HttpMethod.Get,
+                    "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&fields=items(snippet(title,thumbnails))");
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+                var response = await _apiClient.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // Fallback: try InnerTube account_menu
+                    await FetchAvatarFromInnerTubeAsync(accessToken);
+                    return;
+                }
+
+                string resultJson = await response.Content.ReadAsStringAsync();
+                var json = JObject.Parse(resultJson);
+                var items = json["items"] as JArray;
+                if (items == null || items.Count == 0)
+                {
+                    await FetchAvatarFromInnerTubeAsync(accessToken);
+                    return;
+                }
+
+                var snippet = items[0]["snippet"];
+                string name = snippet?["title"]?.ToString() ?? "";
+                // Try high → medium → default thumbnail
+                string avatarUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
+                    ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
+                    ?? snippet?.SelectToken("thumbnails.default.url")?.ToString() ?? "";
+
+                if (!string.IsNullOrEmpty(avatarUrl))
+                {
+                    var settings = ApplicationData.Current.LocalSettings.Values;
+                    settings["GoogleAvatarUrl"] = avatarUrl;
+                    if (!string.IsNullOrEmpty(name))
+                        settings["GoogleUserName"] = name;
+
+                    LoadHomeAvatar();
+                }
+            }
+            catch
+            {
+                try { await FetchAvatarFromInnerTubeAsync(accessToken); } catch { }
+            }
+        }
+
+        private async Task FetchAvatarFromInnerTubeAsync(string accessToken)
+        {
+            try
+            {
                 var json = await AuthInnerTubePostAsync("account/account_menu", new JObject(), accessToken);
                 if (json["_error"] != null) return;
 
-                // Extract name and avatar from account menu response
+                // Extract name and avatar — try multiple paths
                 string name = json.SelectToken("$..accountName..text")?.ToString()
                     ?? json.SelectToken("$..channelHandle..text")?.ToString() ?? "";
-                string avatarUrl = json.SelectToken("$..accountPhoto..thumbnails[-1:].url")?.ToString()
-                    ?? json.SelectToken("$..accountPhoto..thumbnails[0].url")?.ToString() ?? "";
+
+                // Find avatar thumbnail — iterate to get largest
+                string avatarUrl = "";
+                var thumbs = json.SelectTokens("$..accountPhoto..thumbnails[*]");
+                foreach (var t in thumbs)
+                {
+                    string u = t["url"]?.ToString();
+                    if (!string.IsNullOrEmpty(u)) avatarUrl = u; // last = largest
+                }
 
                 if (!string.IsNullOrEmpty(avatarUrl))
                 {
