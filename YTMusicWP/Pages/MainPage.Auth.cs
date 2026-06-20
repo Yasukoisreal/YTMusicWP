@@ -1125,28 +1125,23 @@ namespace YTMusicWP
 
             try
             {
+                // Use YouTube Data API v3 (proper REST API, works with any OAuth token)
                 var body = new JObject
                 {
-                    ["context"] = new JObject
+                    ["snippet"] = new JObject
                     {
-                        ["client"] = new JObject
-                        {
-                            ["clientName"] = "WEB",
-                            ["clientVersion"] = "2.20241016.00.00",
-                            ["hl"] = InnerTubeClient.CurrentLanguage,
-                            ["gl"] = InnerTubeClient.CurrentRegion
-                        }
+                        ["title"] = title,
+                        ["description"] = ""
                     },
-                    ["title"] = title,
-                    ["videoIds"] = new JArray()
+                    ["status"] = new JObject
+                    {
+                        ["privacyStatus"] = "unlisted"
+                    }
                 };
 
-                string url = "https://www.youtube.com/youtubei/v1/playlist/create?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8&prettyPrint=false";
+                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,status";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://www.youtube.com");
-                request.Headers.Add("Referer", "https://www.youtube.com/");
                 request.Headers.Add("Authorization", "Bearer " + token);
 
                 var response = await _apiClient.SendAsync(request);
@@ -1154,14 +1149,14 @@ namespace YTMusicWP
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    string errBody = resultJson.Length > 120 ? resultJson.Substring(0, 120) : resultJson;
+                    string errBody = resultJson.Length > 150 ? resultJson.Substring(0, 150) : resultJson;
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                         LoginStatusText.Text = "CPL " + (int)response.StatusCode + ": " + errBody);
                     return null;
                 }
 
                 var json = JObject.Parse(resultJson);
-                string plId = json.SelectToken("$..playlistId")?.ToString();
+                string plId = json["id"]?.ToString();
                 return plId;
             }
             catch (Exception ex)
