@@ -405,6 +405,9 @@ namespace YTMusicWP
                     if (ytPlaylist.PlaylistId.StartsWith("LOCAL_"))
                     {
                         await AddTrackToLocalPlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist);
+                        // Use first track's thumbnail as playlist cover
+                        if (string.IsNullOrEmpty(ytPlaylist.ThumbnailUrl) && !string.IsNullOrEmpty(_trackPendingForPlaylist.ThumbnailUrl))
+                            ytPlaylist.ThumbnailUrl = _trackPendingForPlaylist.ThumbnailUrl;
                     }
                     ytPlaylist.TrackCount++;
                     SaveYouTubePlaylistsCacheAsync();
