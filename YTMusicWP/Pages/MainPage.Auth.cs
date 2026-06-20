@@ -817,8 +817,7 @@ namespace YTMusicWP
                     return;
                 }
 
-                // Log what keys exist in response to understand format
-                var topKeys = string.Join(",", json.Properties().Select(p => p.Name));
+
                 // Collect unique playlist IDs from FElibrary response
                 var plIdTokens = json.SelectTokens("$..playlistId").Select(t => t.ToString()).Distinct().ToList();
                 var browseIdTokens = json.SelectTokens("$..browseId").Select(t => t.ToString())
@@ -878,45 +877,6 @@ namespace YTMusicWP
                 SaveYouTubePlaylistsCacheAsync();
         }
 
-        private async Task SyncUserPlaylistsFallbackAsync(string accessToken)
-        {
-            try
-            {
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
-                if (json["_error"] != null) return;
-
-                var allIds = json.SelectTokens("$..playlistId").Select(t => t.ToString()).Distinct().ToList();
-                var browseIds = json.SelectTokens("$..browseId").Select(t => t.ToString()).Where(id => id.StartsWith("VL")).Select(id => id.Substring(2)).ToList();
-                allIds.AddRange(browseIds);
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync Fallback] Found " + allIds.Distinct().Count() + " IDs");
-
-                foreach (var plId in allIds.Distinct())
-                {
-                    if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
-                    try
-                    {
-                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
-                        if (plJson["_error"] != null) continue;
-                        string title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                            ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                            ?? "Playlist " + plId;
-                        string thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
-                        var videoIds = plJson.SelectTokens("$..videoId").ToList();
-
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                        {
-                            PlaylistId = plId,
-                            Title = title,
-                            TrackCount = videoIds.Count,
-                            ThumbnailUrl = thumbUrl
-                        });
-                    }
-                    catch { }
-                    if (_youtubeUserPlaylists.Count >= 200) break;
-                }
-            }
-            catch { }
-        }
 
         private async void SaveYouTubePlaylistsCacheAsync()
         {
