@@ -888,7 +888,9 @@ namespace YTMusicWP
             catch { }
 
             // Cache playlists locally for instant load on next startup
-            SaveYouTubePlaylistsCacheAsync();
+            // Only save if we actually found playlists (don't overwrite cache with empty)
+            if (_youtubeUserPlaylists.Count > 0)
+                SaveYouTubePlaylistsCacheAsync();
         }
 
         private async void SaveYouTubePlaylistsCacheAsync()
