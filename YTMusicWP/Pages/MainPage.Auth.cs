@@ -804,7 +804,12 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
+                var json = await WebBrowseAsync("FElibrary", accessToken);
+                if (json["_error"] != null)
+                {
+                    // Fallback to TVHTML5
+                    json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
+                }
                 if (json["_error"] != null) return;
 
                 // Find all playlistId values in TV format response
@@ -830,7 +835,9 @@ namespace YTMusicWP
                         int count = 0;
 
                         // Browse the playlist directly to get title
-                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
+                        var plJson = await WebBrowseAsync("VL" + plId, accessToken);
+                        if (plJson["_error"] != null)
+                            plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
                         if (plJson["_error"] == null)
                         {
                             // Title is usually in header
