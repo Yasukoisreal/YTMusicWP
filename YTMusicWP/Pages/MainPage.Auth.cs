@@ -1120,23 +1120,20 @@ namespace YTMusicWP
 
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
-            // TV OAuth tokens cannot create YouTube playlists via any API.
-            // Create local-only playlists stored on device instead.
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token)) return null;
+
             try
             {
-                string plId = "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
-                
-                _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                // TVHTML5 playlist/create works with just title (creates as private)
+                var extra = new JObject
                 {
-                    PlaylistId = plId,
-                    Title = title,
-                    TrackCount = 0,
-                    ThumbnailUrl = ""
-                });
-
-                // Save to cache
-                SaveYouTubePlaylistsCacheAsync();
-
+                    ["title"] = title
+                };
+                var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
+                if (json["_error"] != null) return null;
+                
+                string plId = json.SelectToken("$..playlistId")?.ToString();
                 return plId;
             }
             catch { return null; }
