@@ -158,6 +158,68 @@ namespace YTMusicWP
                     }
                 }
 
+                // Fallback: playlistPanelVideoRenderer (used by some album formats)
+                if (result.Tracks.Count == 0)
+                {
+                    var panelItems = data?.SelectTokens("$..playlistPanelVideoRenderer");
+                    if (panelItems != null)
+                    {
+                        foreach (var pv in panelItems)
+                        {
+                            try
+                            {
+                                string vid = pv["videoId"]?.ToString();
+                                if (string.IsNullOrEmpty(vid)) continue;
+                                string title2 = pv["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                string art2 = "";
+                                var shortBy = pv["shortBylineText"]?["runs"];
+                                if (shortBy != null && shortBy.HasValues)
+                                    art2 = shortBy[0]?["text"]?.ToString() ?? "";
+                                else
+                                {
+                                    var longBy = pv["longBylineText"]?["runs"];
+                                    if (longBy != null && longBy.HasValues)
+                                        art2 = longBy[0]?["text"]?.ToString() ?? "";
+                                }
+                                result.Tracks.Add(new YouTubeTrack
+                                {
+                                    VideoId = vid,
+                                    Title = title2,
+                                    ChannelName = CleanChannelName(art2),
+                                    ThumbnailUrl = "https://i.ytimg.com/vi/" + vid + "/hqdefault.jpg"
+                                });
+                            }
+                            catch { continue; }
+                        }
+                    }
+                }
+
+                // Ultimate fallback: find all playlistItemData videoIds
+                if (result.Tracks.Count == 0)
+                {
+                    var allVideoIds = data?.SelectTokens("$..playlistItemData.videoId")
+                        .Select(t => t.ToString()).Distinct().ToList();
+                    if (allVideoIds != null && allVideoIds.Count > 0)
+                    {
+                        // Try to pair with titles from flexColumns
+                        var allTitles = data?.SelectTokens("$..flexColumns[0]..runs[0].text")
+                            .Select(t => t.ToString()).ToList() ?? new List<string>();
+
+                        for (int i = 0; i < allVideoIds.Count; i++)
+                        {
+                            string vid = allVideoIds[i];
+                            string title2 = (i < allTitles.Count) ? allTitles[i] : "Track " + (i + 1);
+                            result.Tracks.Add(new YouTubeTrack
+                            {
+                                VideoId = vid,
+                                Title = title2,
+                                ChannelName = "",
+                                ThumbnailUrl = "https://i.ytimg.com/vi/" + vid + "/hqdefault.jpg"
+                            });
+                        }
+                    }
+                }
+
                 // Album title fallback
                 if (string.IsNullOrEmpty(result.Title))
                 {
