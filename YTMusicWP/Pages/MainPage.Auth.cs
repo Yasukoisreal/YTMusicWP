@@ -19,6 +19,26 @@ namespace YTMusicWP
         private static readonly SolidColorBrush _authOrangeBrush = new SolidColorBrush(Windows.UI.Colors.Orange);
         private static readonly SolidColorBrush _authRedBrush = new SolidColorBrush(Windows.UI.Colors.Red);
 
+        /// <summary>
+        /// Toggle Account section between signed-out and signed-in panels
+        /// </summary>
+        private void UpdateAccountPanel(bool isLoggedIn, string statusText = null)
+        {
+            AccountSignedOutPanel.Visibility = isLoggedIn ? Visibility.Collapsed : Visibility.Visible;
+            AccountSignedInPanel.Visibility = isLoggedIn ? Visibility.Visible : Visibility.Collapsed;
+
+            if (isLoggedIn)
+            {
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                string userName = settings.ContainsKey("GoogleUserName") ? settings["GoogleUserName"]?.ToString() : null;
+                AccountUserName.Text = !string.IsNullOrEmpty(userName) ? userName : "Google Account";
+                if (statusText != null)
+                {
+                    LoginStatusText.Text = statusText;
+                }
+            }
+        }
+
         // Built-in OAuth credentials (YouTube TV public client — used by NewPipe, yt-dlp, etc.)
         private const string _builtInClientId = "861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com";
         private const string _builtInClientSecret = "SboVhoG9s0rNafixCSGGKXAT";
@@ -93,9 +113,8 @@ namespace YTMusicWP
 
                 if (settings.ContainsKey("GoogleAccessToken"))
                 {
-                    LoginStatusText.Text = "Status: Logged In & Synced!";
+                    UpdateAccountPanel(true, "Synced");
                     LoginStatusText.Foreground = _greenBrush;
-                    SyncNowBtn.Visibility = Visibility.Visible;
                     // Load cached avatar
                     LoadHomeAvatar();
                 }
@@ -231,10 +250,11 @@ namespace YTMusicWP
             try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("favorites.json"); await f.DeleteAsync(); } catch { }
             try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("history.json"); await f.DeleteAsync(); } catch { }
 
-            LoginStatusText.Text = "Status: Not Logged In";
+            LoginStatusText.Text = "Not logged in";
             LoginStatusText.Foreground = _authGrayBrush;
             ClientIdTextBox.Text = "";
             ClientSecretTextBox.Text = "";
+            UpdateAccountPanel(false);
 
             // Reset avatar to default
             HomeAvatarImage.Visibility = Visibility.Collapsed;
@@ -381,11 +401,12 @@ namespace YTMusicWP
                         settings["GoogleRefreshToken"] = refreshToken;
                         long expiresInSec = json["expires_in"]?.Value<long>() ?? 3600;
                         settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresInSec - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                        SyncNowBtn.Visibility = Visibility.Visible;
 
                         DeviceCodeStatus.Text = "Success! Syncing...";
                         DeviceCodeProgress.Visibility = Visibility.Collapsed;
 
-                        LoginStatusText.Text = "Status: Logged In & Synced!";
+                        UpdateAccountPanel(true, "Logged In & Syncing...");
                         LoginStatusText.Foreground = _greenBrush;
                         ShowToast("Login successful! Syncing...");
 
