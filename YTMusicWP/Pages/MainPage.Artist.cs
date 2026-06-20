@@ -29,7 +29,7 @@ namespace YTMusicWP
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                 if (!string.IsNullOrEmpty(coverUrl))
                 {
-                    PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(coverUrl), UriKind.Absolute)) { DecodePixelWidth = 150 };
+                    PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(coverUrl), UriKind.Absolute)) { DecodePixelWidth = 220 };
                     PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
                 }
                 PlaylistSongsList.ItemsSource = null;
@@ -205,7 +205,7 @@ namespace YTMusicWP
                     {
                         try
                         {
-                            PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(fallbackCover), UriKind.Absolute)) { DecodePixelWidth = 150 };
+                            PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(fallbackCover), UriKind.Absolute)) { DecodePixelWidth = 220 };
                             PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
                         }
                         catch { }
