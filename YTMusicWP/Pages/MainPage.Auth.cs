@@ -820,6 +820,35 @@ namespace YTMusicWP
                 // Log what keys exist in response to understand format
                 var topKeys = string.Join(",", json.Properties().Select(p => p.Name));
 
+                // DEBUG: Find the parent renderer/container of playlistId tokens
+                var plIdTokens = json.SelectTokens("$..playlistId").ToList();
+                string debugInfo = "pId=" + plIdTokens.Count;
+                foreach (var tok in plIdTokens)
+                {
+                    string plIdVal = tok.ToString();
+                    if (plIdVal == "LL" || plIdVal == "WL" || plIdVal == "LM") continue;
+                    
+                    // Walk up to find the container object name
+                    var parent = tok.Parent; // property "playlistId"
+                    if (parent != null) parent = parent.Parent; // container object
+                    if (parent != null && parent.Parent != null)
+                    {
+                        var grandParent = parent.Parent; // property that holds the container
+                        string containerName = grandParent is Newtonsoft.Json.Linq.JProperty ? ((Newtonsoft.Json.Linq.JProperty)grandParent).Name : "arr";
+                        
+                        // Get sibling keys in the container
+                        var siblingKeys = "";
+                        if (parent is JObject)
+                            siblingKeys = string.Join(",", ((JObject)parent).Properties().Take(8).Select(p => p.Name));
+                        
+                        debugInfo += " | " + containerName + "={" + siblingKeys + "}";
+                    }
+                }
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    LoginStatusText.Text = debugInfo.Substring(0, Math.Min(200, debugInfo.Length));
+                });
+
                 // Search for playlist renderers directly in FElibrary response
                 // Try multiple known renderer types
                 var rendererTypes = new[] {
