@@ -831,29 +831,31 @@ namespace YTMusicWP
                     if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
                 }
 
-                // For each playlist, browse to get real title
+                // For each playlist, fetch title via oEmbed (works for unlisted playlists)
                 foreach (var plId in uniqueIds)
                 {
+                    string title = "Playlist";
+                    string thumbUrl = "";
                     try
                     {
-                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
-                        if (plJson["_error"] != null) continue;
-
-                        string title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                            ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                            ?? "Playlist " + plId;
-                        string thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
-                        var videoIds = plJson.SelectTokens("$..videoId").ToList();
-
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                        string oembedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/playlist?list=" + plId + "&format=json";
+                        var oembedResp = await _apiClient.GetAsync(oembedUrl);
+                        if (oembedResp.IsSuccessStatusCode)
                         {
-                            PlaylistId = plId,
-                            Title = title,
-                            TrackCount = videoIds.Count,
-                            ThumbnailUrl = thumbUrl
-                        });
+                            var oembedJson = JObject.Parse(await oembedResp.Content.ReadAsStringAsync());
+                            title = oembedJson["title"]?.ToString() ?? "Playlist";
+                            thumbUrl = oembedJson["thumbnail_url"]?.ToString() ?? "";
+                        }
                     }
                     catch { }
+
+                    _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                    {
+                        PlaylistId = plId,
+                        Title = title,
+                        TrackCount = 0,
+                        ThumbnailUrl = thumbUrl
+                    });
                     if (_youtubeUserPlaylists.Count >= 200) break;
                 }
 
