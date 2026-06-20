@@ -1121,7 +1121,12 @@ namespace YTMusicWP
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return null;
+            if (string.IsNullOrEmpty(token))
+            {
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    LoginStatusText.Text = "CPL: no token");
+                return null;
+            }
 
             try
             {
@@ -1132,16 +1137,20 @@ namespace YTMusicWP
                 var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
                 if (json["_error"] != null)
                 {
-                    System.Diagnostics.Debug.WriteLine("[CreatePlaylist] Error: " + json["_error"]);
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                        LoginStatusText.Text = "CPL err: " + json["_error"] + " " + (json["_body"] != null ? json["_body"].ToString() : ""));
                     return null;
                 }
                 // Extract playlistId from response
                 string plId = json.SelectToken("$..playlistId")?.ToString();
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    LoginStatusText.Text = "CPL ok: " + (plId ?? "null"));
                 return plId;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("[CreatePlaylist] Exception: " + ex.Message);
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    LoginStatusText.Text = "CPL ex: " + ex.Message);
                 return null;
             }
         }
