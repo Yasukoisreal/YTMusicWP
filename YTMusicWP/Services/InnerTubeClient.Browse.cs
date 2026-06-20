@@ -231,8 +231,11 @@ namespace YTMusicWP
                 }
                 if (string.IsNullOrEmpty(result.Title))
                 {
-                    // Brute-force: any header title
-                    result.Title = data?.SelectToken("$..header..title..text")?.ToString() ?? "";
+                    result.Title = data?["header"]?["musicVisualHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                }
+                if (string.IsNullOrEmpty(result.Title))
+                {
+                    result.Title = data?["header"]?["musicHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
                 }
                 // Album thumbnail fallback
                 if (string.IsNullOrEmpty(result.ThumbnailUrl))
@@ -246,6 +249,59 @@ namespace YTMusicWP
                     var hdrThumbs2 = data?["header"]?["musicDetailHeaderRenderer"]?["thumbnail"]?["croppedSquareThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
                     if (hdrThumbs2 != null && hdrThumbs2.HasValues)
                         result.ThumbnailUrl = hdrThumbs2.Last?["url"]?.ToString() ?? "";
+                }
+                if (string.IsNullOrEmpty(result.ThumbnailUrl))
+                {
+                    // Try any thumbnail in header
+                    var anyThumb = data?.SelectToken("$..header..thumbnails[0].url");
+                    if (anyThumb != null)
+                        result.ThumbnailUrl = anyThumb.ToString();
+                }
+
+                // Extract album artist from header subtitle
+                string albumArtist = "";
+                try
+                {
+                    var subtitleRuns = data?["header"]?["musicImmersiveHeaderRenderer"]?["subtitle"]?["runs"]
+                        ?? data?["header"]?["musicDetailHeaderRenderer"]?["subtitle"]?["runs"]
+                        ?? data?["header"]?["musicVisualHeaderRenderer"]?["subtitle"]?["runs"];
+                    if (subtitleRuns != null)
+                    {
+                        foreach (var sr in subtitleRuns)
+                        {
+                            string t = sr["text"]?.ToString();
+                            if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == "Album" || t == "Single" || t == "EP") continue;
+                            if (t.Length <= 6 && t.All(c => char.IsDigit(c))) continue; // year like "2024"
+                            var browseEp = sr["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                            if (!string.IsNullOrEmpty(browseEp) && browseEp.StartsWith("UC"))
+                            {
+                                albumArtist = t;
+                                break;
+                            }
+                        }
+                        // Fallback: first non-label text
+                        if (string.IsNullOrEmpty(albumArtist))
+                        {
+                            foreach (var sr in subtitleRuns)
+                            {
+                                string t = sr["text"]?.ToString();
+                                if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == "Album" || t == "Single" || t == "EP") continue;
+                                if (t.Length <= 6 && t.All(c => char.IsDigit(c))) continue;
+                                albumArtist = t;
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                // Fill in missing thumbnail/artist for tracks
+                foreach (var track in result.Tracks)
+                {
+                    if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                        track.ThumbnailUrl = result.ThumbnailUrl;
+                    if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtist))
+                        track.ChannelName = CleanChannelName(albumArtist);
                 }
             }
             catch { }
