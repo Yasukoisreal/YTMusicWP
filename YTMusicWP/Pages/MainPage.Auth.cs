@@ -801,153 +801,86 @@ namespace YTMusicWP
 
         private async Task SyncUserPlaylistsAsync(string accessToken)
         {
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Syncing playlists..."; });
             try
             {
                 _youtubeUserPlaylists.Clear();
 
-                // Use YouTube Music InnerTube (WEB_REMIX) for FEmusic_liked_playlists
-                string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-                var body = new JObject
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
+                if (json["_error"] != null)
                 {
-                    ["context"] = new JObject
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
-                        ["client"] = new JObject
-                        {
-                            ["clientName"] = "WEB_REMIX",
-                            ["clientVersion"] = "1.20241016.01.00",
-                            ["hl"] = InnerTubeClient.CurrentLanguage,
-                            ["gl"] = InnerTubeClient.CurrentRegion
-                        }
-                    },
-                    ["browseId"] = "FEmusic_liked_playlists"
-                };
-                if (!string.IsNullOrEmpty(visitorData))
-                    body["context"]["client"]["visitorData"] = visitorData;
-
-                string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var response = await _apiClient.SendAsync(request);
-                if (!response.IsSuccessStatusCode)
-                {
-                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Playlists: YTM err " + (int)response.StatusCode; });
-                    // Fallback: try TVHTML5 FElibrary
-                    await SyncUserPlaylistsFallbackAsync(accessToken);
+                        LoginStatusText.Text = "PL: FElibrary err " + json["_error"];
+                    });
                     return;
                 }
 
-                string resultJson = await response.Content.ReadAsStringAsync();
-                var json = JObject.Parse(resultJson);
+                // Log what keys exist in response to understand format
+                var topKeys = string.Join(",", json.Properties().Select(p => p.Name));
+                
+                // Search for ALL browseId values containing user playlist patterns
+                var allBrowseIds = json.SelectTokens("$..browseId")
+                    .Select(t => t.ToString())
+                    .Where(id => id.StartsWith("VL") && id.Length > 4)
+                    .Select(id => id.Substring(2))
+                    .Distinct()
+                    .ToList();
 
-                // Parse playlists from YT Music response
-                // Look for musicTwoRowItemRenderer (playlist items)
-                var twoRowItems = json.SelectTokens("$..musicTwoRowItemRenderer").ToList();
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Playlists: " + twoRowItems.Count + " items found"; });
+                // Also search for playlistId
+                var allPlaylistIds = json.SelectTokens("$..playlistId")
+                    .Select(t => t.ToString())
+                    .Distinct()
+                    .ToList();
 
-                foreach (var item in twoRowItems)
+                // Merge
+                var uniqueIds = new List<string>();
+                foreach (var id in allPlaylistIds.Concat(allBrowseIds))
+                {
+                    if (string.IsNullOrEmpty(id)) continue;
+                    if (id == "LL" || id == "WL" || id == "LM" || id.StartsWith("RDMM")) continue;
+                    if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
+                }
+
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    LoginStatusText.Text = "PL: pId=" + allPlaylistIds.Count + " bId=" + allBrowseIds.Count + " unique=" + uniqueIds.Count + " keys=" + topKeys.Substring(0, Math.Min(60, topKeys.Length));
+                });
+
+                // For each playlist, browse it to get real title
+                foreach (var plId in uniqueIds)
                 {
                     try
                     {
-                        // Extract playlist ID from navigationEndpoint
-                        string plId = item.SelectToken("$.navigationEndpoint.browseEndpoint.browseId")?.ToString() ?? "";
-                        if (plId.StartsWith("VL")) plId = plId.Substring(2);
-                        if (string.IsNullOrEmpty(plId)) continue;
-                        if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM") || plId.StartsWith("SE")) continue;
+                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
+                        if (plJson["_error"] != null) continue;
 
-                        string title = item.SelectToken("$.title.runs[0].text")?.ToString() ?? "Playlist";
-                        // Skip system entries like "New playlist", "Episodes"
-                        if (title == "New playlist" || title == "Danh sách phát mới") continue;
-
-                        string thumbUrl = "";
-                        var thumbs = item.SelectTokens("$..thumbnail.thumbnails").FirstOrDefault();
-                        if (thumbs != null && thumbs.HasValues)
-                            thumbUrl = thumbs[0]?["url"]?.ToString() ?? "";
-
-                        // Get track count from subtitle
-                        int count = 0;
-                        var subtitle = item.SelectToken("$.subtitle.runs");
-                        if (subtitle != null)
-                        {
-                            string subtitleText = string.Join("", subtitle.Select(r => r["text"]?.ToString() ?? ""));
-                            var match = System.Text.RegularExpressions.Regex.Match(subtitleText, @"(\d+)");
-                            if (match.Success) count = int.Parse(match.Groups[1].Value);
-                        }
+                        string title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
+                            ?? plJson.SelectToken("$..title.simpleText")?.ToString()
+                            ?? "Playlist " + plId;
+                        string thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
+                        var videoIds = plJson.SelectTokens("$..videoId").ToList();
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
                             PlaylistId = plId,
                             Title = title,
-                            TrackCount = count,
+                            TrackCount = videoIds.Count,
                             ThumbnailUrl = thumbUrl
                         });
-
-                        System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found: " + title + " (" + plId + ") " + count + " tracks");
-                        if (_youtubeUserPlaylists.Count >= 200) break;
                     }
-                    catch { continue; }
-                }
-
-                // If musicTwoRowItemRenderer didn't work, try generic playlistId search
-                if (_youtubeUserPlaylists.Count == 0)
-                {
-                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] No twoRowItems, trying generic search...");
-                    var allPIds = json.SelectTokens("$..playlistId").Select(t => t.ToString()).Distinct().ToList();
-                    var allBIds = json.SelectTokens("$..browseId").Select(t => t.ToString()).Where(id => id.StartsWith("VL")).Select(id => id.Substring(2)).ToList();
-                    allPIds.AddRange(allBIds);
-                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] Generic: " + allPIds.Count + " playlist IDs");
-
-                    foreach (var plId in allPIds.Distinct())
-                    {
-                        if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
-                        // Browse each to get title
-                        try
-                        {
-                            var plBody = new JObject
-                            {
-                                ["context"] = body["context"].DeepClone(),
-                                ["browseId"] = "VL" + plId
-                            };
-                            var plReq = new HttpRequestMessage(HttpMethod.Post, url);
-                            plReq.Content = new StringContent(plBody.ToString(), System.Text.Encoding.UTF8, "application/json");
-                            plReq.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                            plReq.Headers.Add("Origin", "https://music.youtube.com");
-                            plReq.Headers.Add("Referer", "https://music.youtube.com/");
-                            plReq.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                            var plResp = await _apiClient.SendAsync(plReq);
-                            if (plResp.IsSuccessStatusCode)
-                            {
-                                var plJson = JObject.Parse(await plResp.Content.ReadAsStringAsync());
-                                string title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                                    ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                                    ?? "Playlist " + plId;
-                                _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                                {
-                                    PlaylistId = plId,
-                                    Title = title,
-                                    TrackCount = 0,
-                                    ThumbnailUrl = ""
-                                });
-                            }
-                        }
-                        catch { }
-                        if (_youtubeUserPlaylists.Count >= 200) break;
-                    }
+                    catch { }
+                    if (_youtubeUserPlaylists.Count >= 200) break;
                 }
             }
             catch (Exception ex)
             {
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Playlists err: " + ex.Message; });
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    LoginStatusText.Text = "PL err: " + ex.Message;
+                });
             }
 
             // Cache playlists locally for instant load on next startup
-            // Only save if we actually found playlists (don't overwrite cache with empty)
             if (_youtubeUserPlaylists.Count > 0)
                 SaveYouTubePlaylistsCacheAsync();
         }
