@@ -174,6 +174,15 @@ namespace YTMusicWP
                             PlaylistDetailsTitle.Text = plResult.Title;
                         foreach (var t in plResult.Tracks)
                             tracks.Add(t);
+                        // DEBUG: show what we got
+                        PlaylistDetailsTitle.Text = "BrPl:" + plResult.Tracks.Count + "t T:" + (plResult.Title ?? "null").Substring(0, Math.Min(15, (plResult.Title ?? "").Length)) 
+                            + " th:" + (!string.IsNullOrEmpty(plResult.ThumbnailUrl) ? "Y" : "N")
+                            + " id:" + playlistId.Substring(0, Math.Min(15, playlistId.Length));
+                        if (plResult.Tracks.Count > 0)
+                        {
+                            var t0 = plResult.Tracks[0];
+                            PlaylistDetailsTitle.Text += " [" + (t0.ThumbnailUrl ?? "null").Length + "ch " + (t0.ChannelName ?? "null") + "]";
+                        }
                     }
                 }
                 catch { useFallback = true; }
