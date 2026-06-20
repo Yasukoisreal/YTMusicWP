@@ -247,7 +247,7 @@ namespace YTMusicWP
                 ShowToast("Token: " + (string.IsNullOrEmpty(token) ? "NULL" : token.Substring(0, Math.Min(10, token.Length)) + "..."));
                 
                 string plId = await CreateYouTubePlaylistAsync(name);
-                if (!string.IsNullOrEmpty(plId))
+                if (!string.IsNullOrEmpty(plId) && !plId.StartsWith("ERR:"))
                 {
                     _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                     {
@@ -261,7 +261,7 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    ShowToast("Failed to create playlist (null result)");
+                    ShowToast("PL fail: " + (plId ?? "null"));
                 }
             }
             catch (Exception ex)

@@ -1121,7 +1121,7 @@ namespace YTMusicWP
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return null;
+            if (string.IsNullOrEmpty(token)) return "ERR:no_token";
 
             try
             {
@@ -1133,16 +1133,14 @@ namespace YTMusicWP
                 var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
                 if (json["_error"] != null)
                 {
-                    // Show error detail for debugging
                     string errCode = json["_error"]?.ToString() ?? "?";
                     string errBody = json["_body"]?.ToString() ?? "";
-                    ShowToast("PL err " + errCode + ": " + errBody);
-                    return null;
+                    return "ERR:" + errCode + " " + errBody;
                 }
                 string plId = json.SelectToken("$..playlistId")?.ToString();
                 return plId;
             }
-            catch (Exception ex) { ShowToast("PL ex: " + ex.Message); return null; }
+            catch (Exception ex) { return "ERR:ex " + ex.Message; }
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
