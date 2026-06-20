@@ -819,92 +819,44 @@ namespace YTMusicWP
 
                 // Log what keys exist in response to understand format
                 var topKeys = string.Join(",", json.Properties().Select(p => p.Name));
-
-                // Find playlists by walking up from each playlistId token
-                var plIdTokens = json.SelectTokens("$..playlistId").ToList();
+                // Collect unique playlist IDs from FElibrary response
+                var plIdTokens = json.SelectTokens("$..playlistId").Select(t => t.ToString()).Distinct().ToList();
+                var browseIdTokens = json.SelectTokens("$..browseId").Select(t => t.ToString())
+                    .Where(id => id.StartsWith("VL") && id.Length > 4).Select(id => id.Substring(2)).Distinct().ToList();
                 
-                foreach (var tok in plIdTokens)
+                var uniqueIds = new List<string>();
+                foreach (var id in plIdTokens.Concat(browseIdTokens))
                 {
+                    if (string.IsNullOrEmpty(id)) continue;
+                    if (id == "LL" || id == "WL" || id == "LM" || id.StartsWith("RDMM")) continue;
+                    if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
+                }
+
+                // For each playlist, fetch title via oEmbed (works for unlisted playlists)
+                foreach (var plId in uniqueIds)
+                {
+                    string title = "Playlist";
+                    string thumbUrl = "";
                     try
                     {
-                        string plId = tok.ToString();
-                        if (string.IsNullOrEmpty(plId)) continue;
-                        if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
-                        if (_youtubeUserPlaylists.Any(p => p.PlaylistId == plId)) continue;
-
-                        // Walk up to find the enclosing renderer object (parent of the property containing playlistId)
-                        JObject container = null;
-                        var current = tok.Parent; // JProperty "playlistId"
-                        if (current != null) current = current.Parent; // containing JObject
-                        
-                        // Walk up several levels to find a large-enough container with title info
-                        for (int i = 0; i < 6 && current != null; i++)
+                        string oembedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/playlist?list=" + plId + "&format=json";
+                        var oembedResp = await _apiClient.GetAsync(oembedUrl);
+                        if (oembedResp.IsSuccessStatusCode)
                         {
-                            var objCheck = current as JObject;
-                            if (objCheck != null)
-                            {
-                                // Check if this level has a "title" property
-                                if (objCheck["title"] != null)
-                                {
-                                    container = objCheck;
-                                    break;
-                                }
-                            }
-                            current = current.Parent;
+                            var oembedJson = JObject.Parse(await oembedResp.Content.ReadAsStringAsync());
+                            title = oembedJson["title"]?.ToString() ?? "Playlist";
+                            thumbUrl = oembedJson["thumbnail_url"]?.ToString() ?? "";
                         }
-
-                        // If no container with title found, use immediate parent
-                        if (container == null)
-                        {
-                            current = tok.Parent != null ? tok.Parent.Parent : null;
-                            var obj2Check = current as JObject;
-                            if (obj2Check != null) container = obj2Check;
-                        }
-
-                        // Extract title from container
-                        string title = "Playlist";
-                        if (container != null)
-                        {
-                            title = container.SelectToken("$.title.runs[0].text")?.ToString()
-                                ?? container.SelectToken("$.title.simpleText")?.ToString()
-                                ?? container.SelectToken("$.title.content")?.ToString()
-                                ?? container.SelectToken("$..title.content")?.ToString()
-                                ?? "Playlist";
-                        }
-
-                        // Extract thumbnail from container or nearby
-                        string thumbUrl = "";
-                        if (container != null)
-                        {
-                            thumbUrl = container.SelectToken("$.thumbnail.thumbnails[0].url")?.ToString()
-                                ?? container.SelectToken("$..thumbnails[0].url")?.ToString()
-                                ?? "";
-                        }
-
-                        // Extract video count
-                        int count = 0;
-                        if (container != null)
-                        {
-                            string countStr = container.SelectToken("$.videoCountText.runs[0].text")?.ToString()
-                                ?? container.SelectToken("$.videoCountShortText.simpleText")?.ToString()
-                                ?? container.SelectToken("$.videoCount")?.ToString()
-                                ?? "";
-                            if (!string.IsNullOrEmpty(countStr))
-                            {
-                                var m = System.Text.RegularExpressions.Regex.Match(countStr, @"(\d+)");
-                                if (m.Success) count = int.Parse(m.Groups[1].Value);
-                            }
-                        }
-
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                        {
-                            PlaylistId = plId,
-                            Title = title,
-                            TrackCount = count,
-                            ThumbnailUrl = thumbUrl
-                        });
                     }
-                    catch { continue; }
+                    catch { }
+
+                    _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                    {
+                        PlaylistId = plId,
+                        Title = title,
+                        TrackCount = 0,
+                        ThumbnailUrl = thumbUrl
+                    });
                     if (_youtubeUserPlaylists.Count >= 200) break;
                 }
 
