@@ -33,6 +33,7 @@ namespace YTMusicWP
                 var data = await PostInnerTubeAsync(apiUrl, body, isAlbum);
 
                 // Debug: dump response structure for albums
+                string _albumDebug = "";
                 if (isAlbum && data != null)
                 {
                     var topKeys = string.Join(",", ((JObject)data).Properties().Select(p => p.Name));
@@ -48,14 +49,18 @@ namespace YTMusicWP
                         var ho = data["header"] as JObject;
                         if (ho != null) headerType = string.Join(",", ho.Properties().Select(p => p.Name));
                     }
-                    // Show track count from each path
                     int mrlirCount = data.SelectTokens("$..musicResponsiveListItemRenderer").Count();
-                    int ppvrCount = data.SelectTokens("$..playlistPanelVideoRenderer").Count();
                     int pidCount = data.SelectTokens("$..playlistItemData.videoId").Count();
-                    result.Title = "K:" + topKeys.Substring(0, Math.Min(40, topKeys.Length)) 
-                        + " C:" + contentsType.Substring(0, Math.Min(30, contentsType.Length))
-                        + " H:" + headerType.Substring(0, Math.Min(30, headerType.Length))
-                        + " mrlir=" + mrlirCount + " ppvr=" + ppvrCount + " pid=" + pidCount;
+                    _albumDebug = "K:" + topKeys.Substring(0, Math.Min(50, topKeys.Length)) 
+                        + "|C:" + contentsType.Substring(0, Math.Min(40, contentsType.Length))
+                        + "|H:" + headerType.Substring(0, Math.Min(40, headerType.Length))
+                        + "|mrlir=" + mrlirCount + " pid=" + pidCount;
+                    // Save raw header first 300 chars for diagnosis
+                    if (data["header"] != null)
+                    {
+                        string rawH = data["header"].ToString();
+                        _albumDebug += "|RAW:" + rawH.Substring(0, Math.Min(200, rawH.Length));
+                    }
                 }
 
                 // Title
@@ -329,6 +334,10 @@ namespace YTMusicWP
                     if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtist))
                         track.ChannelName = CleanChannelName(albumArtist);
                 }
+
+                // DEBUG: override title with debug info
+                if (!string.IsNullOrEmpty(_albumDebug))
+                    result.Title = _albumDebug;
             }
             catch { }
             return result;
