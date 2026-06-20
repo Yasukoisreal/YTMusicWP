@@ -1120,60 +1120,40 @@ namespace YTMusicWP
 
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
-            string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return null;
-
+            // TV OAuth tokens cannot create YouTube playlists via any API.
+            // Create local-only playlists stored on device instead.
             try
             {
-                // Use WEB_REMIX (YouTube Music) client
-                var body = new JObject
+                string plId = "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+                
+                _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                 {
-                    ["context"] = new JObject
-                    {
-                        ["client"] = new JObject
-                        {
-                            ["clientName"] = "WEB_REMIX",
-                            ["clientVersion"] = "1.20241016.01.00",
-                            ["hl"] = InnerTubeClient.CurrentLanguage,
-                            ["gl"] = InnerTubeClient.CurrentRegion
-                        }
-                    },
-                    ["title"] = title
-                };
+                    PlaylistId = plId,
+                    Title = title,
+                    TrackCount = 0,
+                    ThumbnailUrl = ""
+                });
 
-                string url = "https://music.youtube.com/youtubei/v1/playlist/create?prettyPrint=false";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("Authorization", "Bearer " + token);
+                // Save to cache
+                SaveYouTubePlaylistsCacheAsync();
 
-                var response = await _apiClient.SendAsync(request);
-                string resultJson = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    string errBody = resultJson.Length > 150 ? resultJson.Substring(0, 150) : resultJson;
-                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                        LoginStatusText.Text = "CPL " + (int)response.StatusCode + ": " + errBody);
-                    return null;
-                }
-
-                var json = JObject.Parse(resultJson);
-                string plId = json.SelectToken("$..playlistId")?.ToString();
                 return plId;
             }
-            catch (Exception ex)
-            {
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    LoginStatusText.Text = "CPL ex: " + ex.Message);
-                return null;
-            }
+            catch { return null; }
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
         {
+            // Local playlists can be deleted directly
+            if (playlistId != null && playlistId.StartsWith("LOCAL_"))
+            {
+                var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == playlistId);
+                if (pl != null) _youtubeUserPlaylists.Remove(pl);
+                SaveYouTubePlaylistsCacheAsync();
+                return true;
+            }
+
+            // YouTube playlists - try API (may fail with TV token)
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token)) return false;
 
