@@ -32,6 +32,32 @@ namespace YTMusicWP
 
                 var data = await PostInnerTubeAsync(apiUrl, body, isAlbum);
 
+                // Debug: dump response structure for albums
+                if (isAlbum && data != null)
+                {
+                    var topKeys = string.Join(",", ((JObject)data).Properties().Select(p => p.Name));
+                    string contentsType = "";
+                    if (data["contents"] != null)
+                    {
+                        var co = data["contents"] as JObject;
+                        if (co != null) contentsType = string.Join(",", co.Properties().Select(p => p.Name));
+                    }
+                    string headerType = "";
+                    if (data["header"] != null)
+                    {
+                        var ho = data["header"] as JObject;
+                        if (ho != null) headerType = string.Join(",", ho.Properties().Select(p => p.Name));
+                    }
+                    // Show track count from each path
+                    int mrlirCount = data.SelectTokens("$..musicResponsiveListItemRenderer").Count();
+                    int ppvrCount = data.SelectTokens("$..playlistPanelVideoRenderer").Count();
+                    int pidCount = data.SelectTokens("$..playlistItemData.videoId").Count();
+                    result.Title = "K:" + topKeys.Substring(0, Math.Min(40, topKeys.Length)) 
+                        + " C:" + contentsType.Substring(0, Math.Min(30, contentsType.Length))
+                        + " H:" + headerType.Substring(0, Math.Min(30, headerType.Length))
+                        + " mrlir=" + mrlirCount + " ppvr=" + ppvrCount + " pid=" + pidCount;
+                }
+
                 // Title
                 result.Title = data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString() ?? "";
 
