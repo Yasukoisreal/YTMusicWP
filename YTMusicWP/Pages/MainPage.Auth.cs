@@ -804,16 +804,26 @@ namespace YTMusicWP
             try
             {
                 _youtubeUserPlaylists.Clear();
-                var json = await WebBrowseAsync("FElibrary", accessToken);
+                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
                 if (json["_error"] != null)
                 {
-                    // Fallback to TVHTML5
-                    json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FElibrary" }, accessToken);
+                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] FElibrary error: " + json["_error"]);
+                    return;
                 }
-                if (json["_error"] != null) return;
 
                 // Find all playlistId values in TV format response
+                // Find all playlistId values in response
                 var allPlaylistIds = json.SelectTokens("$..playlistId").ToList();
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found " + allPlaylistIds.Count + " playlistId tokens");
+
+                // Also search for browseId values starting with VL (alternative format)
+                var allBrowseIds = json.SelectTokens("$..browseId")
+                    .Select(t => t.ToString())
+                    .Where(id => id.StartsWith("VL"))
+                    .Select(id => id.Substring(2))
+                    .ToList();
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found " + allBrowseIds.Count + " VL browseId tokens");
+
                 var uniqueIds = new List<string>();
                 foreach (var token in allPlaylistIds)
                 {
@@ -824,6 +834,15 @@ namespace YTMusicWP
                     if (!uniqueIds.Contains(plId))
                         uniqueIds.Add(plId);
                 }
+                // Merge browseId-based playlist IDs
+                foreach (var plId in allBrowseIds)
+                {
+                    if (string.IsNullOrEmpty(plId)) continue;
+                    if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
+                    if (!uniqueIds.Contains(plId))
+                        uniqueIds.Add(plId);
+                }
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Unique playlist IDs: " + uniqueIds.Count);
 
                 // For each playlist, browse it to get real title
                 foreach (var plId in uniqueIds)
@@ -835,9 +854,7 @@ namespace YTMusicWP
                         int count = 0;
 
                         // Browse the playlist directly to get title
-                        var plJson = await WebBrowseAsync("VL" + plId, accessToken);
-                        if (plJson["_error"] != null)
-                            plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
+                        var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
                         if (plJson["_error"] == null)
                         {
                             // Title is usually in header
