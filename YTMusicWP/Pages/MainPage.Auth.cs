@@ -1131,19 +1131,21 @@ namespace YTMusicWP
                     {
                         ["client"] = new JObject
                         {
-                            ["clientName"] = "WEB",
-                            ["clientVersion"] = "2.20241016.00.00",
+                            ["clientName"] = "ANDROID",
+                            ["clientVersion"] = "19.29.37",
+                            ["androidSdkVersion"] = 30,
                             ["hl"] = InnerTubeClient.CurrentLanguage,
                             ["gl"] = InnerTubeClient.CurrentRegion
                         }
                     },
-                    ["title"] = title
+                    ["title"] = title,
+                    ["videoIds"] = new JArray()
                 };
 
                 string url = "https://www.youtube.com/youtubei/v1/playlist/create?prettyPrint=false";
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("User-Agent", "com.google.android.youtube/19.29.37 (Linux; U; Android 11) gzip");
                 request.Headers.Add("Origin", "https://www.youtube.com");
                 request.Headers.Add("Referer", "https://www.youtube.com/");
                 request.Headers.Add("Authorization", "Bearer " + token);
