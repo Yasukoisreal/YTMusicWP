@@ -1121,30 +1121,46 @@ namespace YTMusicWP
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
-            {
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    LoginStatusText.Text = "CPL: no token");
-                return null;
-            }
+            if (string.IsNullOrEmpty(token)) return null;
 
             try
             {
-                var extra = new JObject
+                var body = new JObject
                 {
-                    ["title"] = title
+                    ["context"] = new JObject
+                    {
+                        ["client"] = new JObject
+                        {
+                            ["clientName"] = "WEB",
+                            ["clientVersion"] = "2.20241016.00.00",
+                            ["hl"] = InnerTubeClient.CurrentLanguage,
+                            ["gl"] = InnerTubeClient.CurrentRegion
+                        }
+                    },
+                    ["title"] = title,
+                    ["privacyStatus"] = "UNLISTED"
                 };
-                var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
-                if (json["_error"] != null)
+
+                string url = "https://www.youtube.com/youtubei/v1/playlist/create?prettyPrint=false";
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("Origin", "https://www.youtube.com");
+                request.Headers.Add("Referer", "https://www.youtube.com/");
+                request.Headers.Add("Authorization", "Bearer " + token);
+
+                var response = await _apiClient.SendAsync(request);
+                string resultJson = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
                 {
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                        LoginStatusText.Text = "CPL err: " + json["_error"] + " " + (json["_body"] != null ? json["_body"].ToString() : ""));
+                        LoginStatusText.Text = "CPL err: " + (int)response.StatusCode);
                     return null;
                 }
-                // Extract playlistId from response
+
+                var json = JObject.Parse(resultJson);
                 string plId = json.SelectToken("$..playlistId")?.ToString();
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    LoginStatusText.Text = "CPL ok: " + (plId ?? "null"));
                 return plId;
             }
             catch (Exception ex)
