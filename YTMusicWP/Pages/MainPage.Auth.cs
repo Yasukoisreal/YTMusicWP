@@ -801,6 +801,7 @@ namespace YTMusicWP
 
         private async Task SyncUserPlaylistsAsync(string accessToken)
         {
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Syncing playlists..."; });
             try
             {
                 _youtubeUserPlaylists.Clear();
@@ -835,7 +836,7 @@ namespace YTMusicWP
                 var response = await _apiClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
-                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] YTMusic error: " + (int)response.StatusCode);
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Playlists: YTM err " + (int)response.StatusCode; });
                     // Fallback: try TVHTML5 FElibrary
                     await SyncUserPlaylistsFallbackAsync(accessToken);
                     return;
@@ -847,7 +848,7 @@ namespace YTMusicWP
                 // Parse playlists from YT Music response
                 // Look for musicTwoRowItemRenderer (playlist items)
                 var twoRowItems = json.SelectTokens("$..musicTwoRowItemRenderer").ToList();
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found " + twoRowItems.Count + " musicTwoRowItemRenderer items");
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Playlists: " + twoRowItems.Count + " items found"; });
 
                 foreach (var item in twoRowItems)
                 {
@@ -942,7 +943,7 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Exception: " + ex.Message);
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { LoginStatusText.Text = "Playlists err: " + ex.Message; });
             }
 
             // Cache playlists locally for instant load on next startup
