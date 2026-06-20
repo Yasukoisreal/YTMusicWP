@@ -1100,27 +1100,20 @@ namespace YTMusicWP
 
             try
             {
-                // YouTube Data API v3 — playlistItems.insert
-                var body = new JObject
+                var extra = new JObject
                 {
-                    ["snippet"] = new JObject
+                    ["playlistId"] = playlistId,
+                    ["actions"] = new JArray
                     {
-                        ["playlistId"] = playlistId,
-                        ["resourceId"] = new JObject
+                        new JObject
                         {
-                            ["kind"] = "youtube#video",
-                            ["videoId"] = videoId
+                            ["addedVideoId"] = videoId,
+                            ["action"] = "ACTION_ADD_VIDEO"
                         }
                     }
                 };
-
-                string url = "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                return response.IsSuccessStatusCode;
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                return json["_error"] == null;
             }
             catch { return false; }
         }
@@ -1132,31 +1125,15 @@ namespace YTMusicWP
 
             try
             {
-                // YouTube Data API v3 — supports Bearer OAuth tokens
-                var body = new JObject
+                var extra = new JObject
                 {
-                    ["snippet"] = new JObject
-                    {
-                        ["title"] = title,
-                        ["description"] = "Created by Beatora"
-                    },
-                    ["status"] = new JObject
-                    {
-                        ["privacyStatus"] = "private"
-                    }
+                    ["title"] = title,
+                    ["privacyStatus"] = "PRIVATE"
                 };
-
-                string url = "https://www.googleapis.com/youtube/v3/playlists?part=snippet,status";
-                var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                string resultJson = await response.Content.ReadAsStringAsync();
-                if (!response.IsSuccessStatusCode) return null;
-
-                var json = JObject.Parse(resultJson);
-                return json["id"]?.ToString();
+                var json = await AuthInnerTubePostAsync("playlist/create", extra, token);
+                if (json["_error"] != null) return null;
+                string plId = json.SelectToken("$..playlistId")?.ToString();
+                return plId;
             }
             catch { return null; }
         }
@@ -1168,13 +1145,12 @@ namespace YTMusicWP
 
             try
             {
-                // YouTube Data API v3
-                string url = "https://www.googleapis.com/youtube/v3/playlists?id=" + Uri.EscapeDataString(playlistId);
-                var request = new HttpRequestMessage(HttpMethod.Delete, url);
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                var response = await _apiClient.SendAsync(request);
-                return response.IsSuccessStatusCode || (int)response.StatusCode == 204;
+                var extra = new JObject
+                {
+                    ["playlistId"] = playlistId
+                };
+                var json = await AuthInnerTubePostAsync("playlist/delete", extra, token);
+                return json["_error"] == null;
             }
             catch { return false; }
         }
@@ -1186,41 +1162,20 @@ namespace YTMusicWP
 
             try
             {
-                // First, find the playlistItem ID for this video
-                string listUrl = "https://www.googleapis.com/youtube/v3/playlistItems?part=id&playlistId=" 
-                    + Uri.EscapeDataString(playlistId) + "&videoId=" + Uri.EscapeDataString(videoId) + "&maxResults=1";
-                var listReq = new HttpRequestMessage(HttpMethod.Get, listUrl);
-                listReq.Headers.Add("Authorization", "Bearer " + token);
-                var listResp = await _apiClient.SendAsync(listReq);
-                if (!listResp.IsSuccessStatusCode) return false;
-
-                var listJson = JObject.Parse(await listResp.Content.ReadAsStringAsync());
-                string itemId = listJson["items"]?[0]?["id"]?.ToString();
-                if (string.IsNullOrEmpty(itemId))
+                var extra = new JObject
                 {
-                    // Fallback: try InnerTube browse/edit_playlist
-                    var extra = new JObject
+                    ["playlistId"] = playlistId,
+                    ["actions"] = new JArray
                     {
-                        ["playlistId"] = playlistId,
-                        ["actions"] = new JArray
+                        new JObject
                         {
-                            new JObject
-                            {
-                                ["removedVideoId"] = videoId,
-                                ["action"] = "ACTION_REMOVE_VIDEO"
-                            }
+                            ["removedVideoId"] = videoId,
+                            ["action"] = "ACTION_REMOVE_VIDEO"
                         }
-                    };
-                    var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
-                    return json["_error"] == null;
-                }
-
-                // Delete the playlistItem
-                string delUrl = "https://www.googleapis.com/youtube/v3/playlistItems?id=" + Uri.EscapeDataString(itemId);
-                var delReq = new HttpRequestMessage(HttpMethod.Delete, delUrl);
-                delReq.Headers.Add("Authorization", "Bearer " + token);
-                var delResp = await _apiClient.SendAsync(delReq);
-                return delResp.IsSuccessStatusCode || (int)delResp.StatusCode == 204;
+                    }
+                };
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
+                return json["_error"] == null;
             }
             catch { return false; }
         }
