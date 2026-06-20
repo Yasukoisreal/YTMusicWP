@@ -32,57 +32,66 @@ namespace YTMusicWP
 
                 var data = await PostInnerTubeAsync(apiUrl, body, isAlbum);
 
-                // Debug: dump response structure for albums
-                string _albumDebug = "";
-                if (isAlbum && data != null)
-                {
-                    var topKeys = string.Join(",", ((JObject)data).Properties().Select(p => p.Name));
-                    string contentsType = "";
-                    if (data["contents"] != null)
-                    {
-                        var co = data["contents"] as JObject;
-                        if (co != null) contentsType = string.Join(",", co.Properties().Select(p => p.Name));
-                    }
-                    string headerType = "";
-                    if (data["header"] != null)
-                    {
-                        var ho = data["header"] as JObject;
-                        if (ho != null) headerType = string.Join(",", ho.Properties().Select(p => p.Name));
-                    }
-                    int mrlirCount = data.SelectTokens("$..musicResponsiveListItemRenderer").Count();
-                    int pidCount = data.SelectTokens("$..playlistItemData.videoId").Count();
-                    _albumDebug = "K:" + topKeys.Substring(0, Math.Min(50, topKeys.Length)) 
-                        + "|C:" + contentsType.Substring(0, Math.Min(40, contentsType.Length))
-                        + "|H:" + headerType.Substring(0, Math.Min(40, headerType.Length))
-                        + "|mrlir=" + mrlirCount + " pid=" + pidCount;
-                    // Save raw header first 300 chars for diagnosis
-                    if (data["header"] != null)
-                    {
-                        string rawH = data["header"].ToString();
-                        _albumDebug += "|RAW:" + rawH.Substring(0, Math.Min(200, rawH.Length));
-                    }
-                }
+
 
                 // Title
                 result.Title = data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString() ?? "";
 
+                // Title from microformat (album responses often use this instead of header)
+                if (string.IsNullOrEmpty(result.Title))
+                {
+                    result.Title = data?["microformat"]?["microformatDataRenderer"]?["title"]?.ToString() ?? "";
+                }
+                // Title from tab title
+                if (string.IsNullOrEmpty(result.Title))
+                {
+                    result.Title = data?["contents"]?["twoColumnBrowseResultsRenderer"]?["tabs"]?[0]
+                        ?["tabRenderer"]?["title"]?.ToString() ?? "";
+                }
+
+                // Thumbnail from microformat
+                try
+                {
+                    if (string.IsNullOrEmpty(result.ThumbnailUrl))
+                    {
+                        var mfThumbs = data?["microformat"]?["microformatDataRenderer"]?["thumbnail"]?["thumbnails"];
+                        if (mfThumbs != null && mfThumbs.HasValues)
+                            result.ThumbnailUrl = mfThumbs.Last?["url"]?.ToString() ?? "";
+                    }
+                }
+                catch { }
+
                 // Thumbnail from sidebar
                 try
                 {
-                    var sidebar = data?["sidebar"];
-                    if (sidebar != null)
+                    if (string.IsNullOrEmpty(result.ThumbnailUrl))
                     {
-                        string sidebarStr = sidebar.ToString();
-                        // Quick search for thumbnail URL
-                        string tMarker = "\"url\":\"https://i.ytimg.com";
-                        int tIdx = sidebarStr.IndexOf(tMarker);
-                        if (tIdx >= 0)
+                        var sidebar = data?["sidebar"];
+                        if (sidebar != null)
                         {
-                            int tStart = tIdx + 7; // skip "url":"
-                            int tEnd = sidebarStr.IndexOf("\"", tStart);
-                            if (tEnd > tStart)
-                                result.ThumbnailUrl = sidebarStr.Substring(tStart, tEnd - tStart);
+                            string sidebarStr = sidebar.ToString();
+                            string tMarker = "\"url\":\"https://i.ytimg.com";
+                            int tIdx = sidebarStr.IndexOf(tMarker);
+                            if (tIdx >= 0)
+                            {
+                                int tStart = tIdx + 7;
+                                int tEnd = sidebarStr.IndexOf("\"", tStart);
+                                if (tEnd > tStart)
+                                    result.ThumbnailUrl = sidebarStr.Substring(tStart, tEnd - tStart);
+                            }
                         }
+                    }
+                }
+                catch { }
+
+                // Brute-force thumbnail: any thumbnail in response
+                try
+                {
+                    if (string.IsNullOrEmpty(result.ThumbnailUrl))
+                    {
+                        var anyThumb = data?.SelectToken("$..thumbnail.thumbnails[0].url");
+                        if (anyThumb != null)
+                            result.ThumbnailUrl = anyThumb.ToString();
                     }
                 }
                 catch { }
@@ -326,6 +335,21 @@ namespace YTMusicWP
                 }
                 catch { }
 
+                // Fallback: extract artist from microformat description
+                if (string.IsNullOrEmpty(albumArtist))
+                {
+                    try
+                    {
+                        string mfDesc = data?["microformat"]?["microformatDataRenderer"]?["description"]?.ToString() ?? "";
+                        // microformat description often contains: "Provided to YouTube by ..." or "Album · Year"
+                        // Try to get from pageOwnerDetails
+                        string pageOwner = data?["microformat"]?["microformatDataRenderer"]?["pageOwnerDetails"]?["name"]?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(pageOwner))
+                            albumArtist = pageOwner;
+                    }
+                    catch { }
+                }
+
                 // Fill in missing thumbnail/artist for tracks
                 foreach (var track in result.Tracks)
                 {
@@ -335,9 +359,7 @@ namespace YTMusicWP
                         track.ChannelName = CleanChannelName(albumArtist);
                 }
 
-                // DEBUG: override title with debug info
-                if (!string.IsNullOrEmpty(_albumDebug))
-                    result.Title = _albumDebug;
+
             }
             catch { }
             return result;

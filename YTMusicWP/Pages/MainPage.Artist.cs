@@ -174,14 +174,9 @@ namespace YTMusicWP
                             PlaylistDetailsTitle.Text = plResult.Title;
                         foreach (var t in plResult.Tracks)
                             tracks.Add(t);
-                        // DEBUG: show full debug from BrowsePlaylistAsync
-                        PlaylistDetailsTitle.Text = plResult.Title ?? "(null title)";
                     }
                 }
-                catch (Exception ex) { 
-                    useFallback = true;
-                    PlaylistDetailsTitle.Text = "ERR:" + ex.GetType().Name + " " + ex.Message.Substring(0, Math.Min(80, ex.Message.Length));
-                }
+                catch { useFallback = true; }
 
                 if (useFallback)
                 {
