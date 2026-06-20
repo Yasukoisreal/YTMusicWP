@@ -819,140 +819,135 @@ namespace YTMusicWP
 
                 // Log what keys exist in response to understand format
                 var topKeys = string.Join(",", json.Properties().Select(p => p.Name));
-                
-                // Search for ALL browseId values containing user playlist patterns
-                var allBrowseIds = json.SelectTokens("$..browseId")
-                    .Select(t => t.ToString())
-                    .Where(id => id.StartsWith("VL") && id.Length > 4)
-                    .Select(id => id.Substring(2))
-                    .Distinct()
-                    .ToList();
 
-                // Also search for playlistId
-                var allPlaylistIds = json.SelectTokens("$..playlistId")
-                    .Select(t => t.ToString())
-                    .Distinct()
-                    .ToList();
+                // Search for playlist renderers directly in FElibrary response
+                // Try multiple known renderer types
+                var rendererTypes = new[] {
+                    "gridPlaylistRenderer", "compactPlaylistRenderer", 
+                    "playlistRenderer", "lockupViewModel"
+                };
 
-                // Merge
-                var uniqueIds = new List<string>();
-                foreach (var id in allPlaylistIds.Concat(allBrowseIds))
+                foreach (var rType in rendererTypes)
                 {
-                    if (string.IsNullOrEmpty(id)) continue;
-                    if (id == "LL" || id == "WL" || id == "LM" || id.StartsWith("RDMM")) continue;
-                    if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
-                }
-
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    LoginStatusText.Text = "PL: pId=" + allPlaylistIds.Count + " bId=" + allBrowseIds.Count + " unique=" + uniqueIds.Count + " keys=" + topKeys.Substring(0, Math.Min(60, topKeys.Length));
-                });
-
-                // Try to extract playlist info directly from FElibrary response
-                // Look for lockupViewModel items with playlist contentType
-                var lockups = json.SelectTokens("$..lockupViewModel").ToList();
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    LoginStatusText.Text = "PL: lockups=" + lockups.Count + " pId=" + allPlaylistIds.Count + " bId=" + allBrowseIds.Count;
-                });
-
-                foreach (var lockup in lockups)
-                {
-                    try
+                    var renderers = json.SelectTokens("$.." + rType).ToList();
+                    foreach (var renderer in renderers)
                     {
-                        string contentId = lockup["contentId"]?.ToString() ?? "";
-                        string contentType = lockup["contentType"]?.ToString() ?? "";
-                        // Only take PLAYLIST type
-                        if (contentType != "LOCKUP_CONTENT_TYPE_PLAYLIST" && !contentType.Contains("PLAYLIST")) continue;
-                        if (string.IsNullOrEmpty(contentId)) continue;
-                        if (contentId == "LL" || contentId == "WL" || contentId == "LM" || contentId.StartsWith("RDMM")) continue;
-
-                        string title = lockup.SelectToken("$.metadata.lockupMetadataViewModel.title.content")?.ToString() ?? "Playlist";
-                        string thumbUrl = "";
-                        var sources = lockup.SelectTokens("$..thumbnailViewModel.image.sources").FirstOrDefault();
-                        if (sources != null && sources.HasValues)
-                            thumbUrl = sources[0]?["url"]?.ToString() ?? "";
-
-                        // Try to get track count from metadata
-                        int count = 0;
-                        var metaRows = lockup.SelectTokens("$..metadataRows").FirstOrDefault();
-                        if (metaRows != null)
+                        try
                         {
-                            string metaStr = metaRows.ToString();
-                            var match = System.Text.RegularExpressions.Regex.Match(metaStr, @"(\d+)\s*(video|track|bài)");
-                            if (match.Success) count = int.Parse(match.Groups[1].Value);
+                            string plId = renderer["playlistId"]?.ToString()
+                                ?? renderer["contentId"]?.ToString()
+                                ?? "";
+                            
+                            // For browseEndpoint-based IDs
+                            if (string.IsNullOrEmpty(plId))
+                            {
+                                plId = renderer.SelectToken("$.navigationEndpoint.browseEndpoint.browseId")?.ToString() ?? "";
+                                if (plId.StartsWith("VL")) plId = plId.Substring(2);
+                            }
+
+                            if (string.IsNullOrEmpty(plId)) continue;
+                            if (plId == "LL" || plId == "WL" || plId == "LM" || plId.StartsWith("RDMM")) continue;
+                            if (_youtubeUserPlaylists.Any(p => p.PlaylistId == plId)) continue;
+
+                            // Title
+                            string title = renderer.SelectToken("$.title.runs[0].text")?.ToString()
+                                ?? renderer.SelectToken("$.title.simpleText")?.ToString()
+                                ?? renderer.SelectToken("$.metadata.lockupMetadataViewModel.title.content")?.ToString()
+                                ?? "Playlist";
+
+                            // Thumbnail
+                            string thumbUrl = renderer.SelectToken("$.thumbnail.thumbnails[0].url")?.ToString()
+                                ?? renderer.SelectToken("$..thumbnailViewModel.image.sources[0].url")?.ToString()
+                                ?? "";
+
+                            // Track count
+                            int count = 0;
+                            string countStr = renderer.SelectToken("$.videoCountText.runs[0].text")?.ToString()
+                                ?? renderer.SelectToken("$.videoCountShortText.simpleText")?.ToString()
+                                ?? "";
+                            if (!string.IsNullOrEmpty(countStr))
+                            {
+                                var match = System.Text.RegularExpressions.Regex.Match(countStr, @"(\d+)");
+                                if (match.Success) count = int.Parse(match.Groups[1].Value);
+                            }
+
+                            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                            {
+                                PlaylistId = plId,
+                                Title = title,
+                                TrackCount = count,
+                                ThumbnailUrl = thumbUrl
+                            });
                         }
-
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
-                        {
-                            PlaylistId = contentId,
-                            Title = title,
-                            TrackCount = count,
-                            ThumbnailUrl = thumbUrl
-                        });
+                        catch { continue; }
+                        if (_youtubeUserPlaylists.Count >= 200) break;
                     }
-                    catch { continue; }
-                    if (_youtubeUserPlaylists.Count >= 200) break;
+                    if (_youtubeUserPlaylists.Count > 0) break; // Found with this renderer type
                 }
 
-                // Fallback: if lockupViewModel didn't work, add from uniqueIds
-                if (_youtubeUserPlaylists.Count == 0 && uniqueIds.Count > 0)
+                // Last resort: raw string search for playlist title near the ID
+                if (_youtubeUserPlaylists.Count == 0)
                 {
+                    // Search for any playlistId or VL browseId
+                    var allBrowseIds = json.SelectTokens("$..browseId")
+                        .Select(t => t.ToString())
+                        .Where(id => id.StartsWith("VL") && id.Length > 4)
+                        .Select(id => id.Substring(2))
+                        .Distinct().ToList();
+                    var allPlaylistIds = json.SelectTokens("$..playlistId")
+                        .Select(t => t.ToString()).Distinct().ToList();
+                    
+                    var uniqueIds = new List<string>();
+                    foreach (var id in allPlaylistIds.Concat(allBrowseIds))
+                    {
+                        if (string.IsNullOrEmpty(id) || id == "LL" || id == "WL" || id == "LM" || id.StartsWith("RDMM")) continue;
+                        if (!uniqueIds.Contains(id)) uniqueIds.Add(id);
+                    }
+
+                    // Try to find title from raw JSON string near the playlist ID
+                    string rawJson = json.ToString();
                     foreach (var plId in uniqueIds)
                     {
                         string title = "Playlist";
-                        string thumbUrl = "";
-                        int count = 0;
-
-                        // Try WebBrowseAsync (WEB client) for title
-                        try
+                        // Search for "title":{"runs":[{"text":"TITLE"}]} near the playlistId
+                        int idIdx = rawJson.IndexOf("\"" + plId + "\"");
+                        if (idIdx >= 0)
                         {
-                            var plJson = await WebBrowseAsync("VL" + plId, accessToken);
-                            if (plJson["_error"] == null)
+                            // Search nearby (±500 chars) for title
+                            int searchStart = Math.Max(0, idIdx - 500);
+                            int searchEnd = Math.Min(rawJson.Length, idIdx + 500);
+                            string nearby = rawJson.Substring(searchStart, searchEnd - searchStart);
+                            
+                            var titleMatch = System.Text.RegularExpressions.Regex.Match(nearby, @"""title"":\s*\{""runs"":\[\{""text"":""([^""]+)""\}");
+                            if (titleMatch.Success)
+                                title = titleMatch.Groups[1].Value;
+                            else
                             {
-                                title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                                    ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                                    ?? plJson.SelectToken("$..playlistMetadataRenderer.title")?.ToString()
-                                    ?? "Playlist";
-                                thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
-                                var vids = plJson.SelectTokens("$..videoId").ToList();
-                                count = vids.Count;
-                            }
-                        }
-                        catch { }
-
-                        // If WEB failed, try TVHTML5
-                        if (title == "Playlist")
-                        {
-                            try
-                            {
-                                var plJson = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VL" + plId }, accessToken);
-                                if (plJson["_error"] == null)
+                                titleMatch = System.Text.RegularExpressions.Regex.Match(nearby, @"""title"":\s*\{""simpleText"":""([^""]+)""\}");
+                                if (titleMatch.Success)
+                                    title = titleMatch.Groups[1].Value;
+                                else
                                 {
-                                    title = plJson.SelectToken("$..title.runs[0].text")?.ToString()
-                                        ?? plJson.SelectToken("$..title.simpleText")?.ToString()
-                                        ?? "Playlist";
-                                    thumbUrl = plJson.SelectToken("$..thumbnail.thumbnails[0].url")?.ToString() ?? "";
-                                    var vids = plJson.SelectTokens("$..videoId").ToList();
-                                    count = vids.Count;
+                                    titleMatch = System.Text.RegularExpressions.Regex.Match(nearby, @"""title"":\s*\{""content"":""([^""]+)""\}");
+                                    if (titleMatch.Success)
+                                        title = titleMatch.Groups[1].Value;
                                 }
                             }
-                            catch { }
                         }
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
                             PlaylistId = plId,
                             Title = title,
-                            TrackCount = count,
-                            ThumbnailUrl = thumbUrl
+                            TrackCount = 0,
+                            ThumbnailUrl = ""
                         });
                     }
                 }
 
                 await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
-                    LoginStatusText.Text = "PL done: " + _youtubeUserPlaylists.Count + " playlists";
+                    LoginStatusText.Text = "PL: " + _youtubeUserPlaylists.Count + " synced | " + topKeys.Substring(0, Math.Min(40, topKeys.Length));
                 });
             }
             catch (Exception ex)
