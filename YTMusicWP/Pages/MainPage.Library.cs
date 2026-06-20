@@ -241,22 +241,32 @@ namespace YTMusicWP
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
             ShowToast("Creating playlist...");
 
-            string plId = await CreateYouTubePlaylistAsync(name);
-            if (!string.IsNullOrEmpty(plId))
+            try
             {
-                _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                string token = await GetAccessTokenAsync();
+                ShowToast("Token: " + (string.IsNullOrEmpty(token) ? "NULL" : token.Substring(0, Math.Min(10, token.Length)) + "..."));
+                
+                string plId = await CreateYouTubePlaylistAsync(name);
+                if (!string.IsNullOrEmpty(plId))
                 {
-                    PlaylistId = plId,
-                    Title = name,
-                    TrackCount = 0,
-                    ThumbnailUrl = ""
-                });
-                RefreshLibraryList();
-                ShowToast("Playlist created!");
+                    _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                    {
+                        PlaylistId = plId,
+                        Title = name,
+                        TrackCount = 0,
+                        ThumbnailUrl = ""
+                    });
+                    RefreshLibraryList();
+                    ShowToast("Playlist created!");
+                }
+                else
+                {
+                    ShowToast("Failed to create playlist (null result)");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                ShowToast("Failed to create playlist");
+                ShowToast("Create PL crash: " + ex.Message);
             }
         }
 
