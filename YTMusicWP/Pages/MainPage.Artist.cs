@@ -42,6 +42,12 @@ namespace YTMusicWP
 
                 try
                 {
+                    // For albums (MPREb_/OLAK5), skip auth browse — go straight to BrowsePlaylistAsync
+                    // which uses WEB_REMIX and handles album format correctly
+                    bool isAlbumBrowse = playlistId.StartsWith("MPREb_") || playlistId.StartsWith("OLAK5");
+                    
+                    if (!isAlbumBrowse)
+                    {
                     // Try authenticated browse first (needed for private/user playlists)
                     string token = await GetAccessTokenAsync();
                     if (!string.IsNullOrEmpty(token))
@@ -157,6 +163,7 @@ namespace YTMusicWP
                             catch { }
                         }
                     }
+                    } // end if (!isAlbumBrowse)
 
                     // Fallback: unauthenticated browse (for public playlists/albums)
                     if (tracks.Count == 0)
