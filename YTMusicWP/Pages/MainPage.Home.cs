@@ -365,12 +365,14 @@ namespace YTMusicWP
                         "<tile><visual version=\"2\">" +
                         "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                         "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding>" +
-                        "<binding template=\"TileWide310x150ImageAndText01\"><image id=\"1\" src=\"{0}\" placement=\"background\"/><text id=\"1\">{1}</text></binding>" +
+                        "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
                         "</visual></tile>", safeThumb, safeTitle, safeArtist);
 
                     var doc = new Windows.Data.Xml.Dom.XmlDocument();
                     doc.LoadXml(xml);
-                    updater.Update(new Windows.UI.Notifications.TileNotification(doc));
+                    var notif = new Windows.UI.Notifications.TileNotification(doc);
+                    notif.Tag = "rec_" + count;
+                    updater.Update(notif);
 
                     count++;
                     if (count >= 5) break;

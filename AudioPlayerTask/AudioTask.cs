@@ -635,11 +635,20 @@ namespace AudioPlayerTask
             catch { }
             try
             {
-                var updater = TileUpdateManager.CreateTileUpdaterForApplication(); updater.EnableNotificationQueue(true); updater.Clear();
-                string safeThumb = System.Net.WebUtility.HtmlEncode(thumb ?? "");
-                string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
-                string xml = string.Format("<tile><visual version=\"2\"><binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding><binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding><binding template=\"TileWide310x150ImageAndText01\"><image id=\"1\" src=\"{0}\" placement=\"background\"/><text id=\"1\">{1}</text></binding></visual></tile>", safeThumb, safeTitle);
-                var doc = new XmlDocument(); doc.LoadXml(xml); updater.Update(new TileNotification(doc));
+                if (!string.IsNullOrEmpty(thumb))
+                {
+                    var updater = TileUpdateManager.CreateTileUpdaterForApplication();
+                    updater.EnableNotificationQueue(true);
+                    string safeThumb = System.Net.WebUtility.HtmlEncode(thumb ?? "");
+                    string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
+                    string safeArtist = System.Net.WebUtility.HtmlEncode(artist ?? "");
+                    string xml = string.Format("<tile><visual version=\"2\"><binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding><binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding><binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding></visual></tile>", safeThumb, safeTitle, safeArtist);
+                    var doc = new XmlDocument();
+                    doc.LoadXml(xml);
+                    var notif = new TileNotification(doc);
+                    notif.Tag = "nowplaying";
+                    updater.Update(notif);
+                }
             }
             catch { }
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }
