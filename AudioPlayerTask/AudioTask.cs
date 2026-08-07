@@ -636,7 +636,9 @@ namespace AudioPlayerTask
             try
             {
                 var updater = TileUpdateManager.CreateTileUpdaterForApplication(); updater.EnableNotificationQueue(true); updater.Clear();
-                string xml = string.Format("<tile><visual version=\"2\"><binding template=\"TileSquare150x150Image\"><image id=\"1\" src=\"{0}\" placement=\"background\"/></binding><binding template=\"TileWide310x150ImageAndText01\"><image id=\"1\" src=\"{0}\" placement=\"background\"/><text id=\"1\">{1}</text></binding></visual></tile>", System.Net.WebUtility.HtmlEncode(thumb), System.Net.WebUtility.HtmlEncode(title));
+                string safeThumb = System.Net.WebUtility.HtmlEncode(thumb ?? "");
+                string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
+                string xml = string.Format("<tile><visual version=\"2\"><binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding><binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding><binding template=\"TileWide310x150ImageAndText01\"><image id=\"1\" src=\"{0}\" placement=\"background\"/><text id=\"1\">{1}</text></binding></visual></tile>", safeThumb, safeTitle);
                 var doc = new XmlDocument(); doc.LoadXml(xml); updater.Update(new TileNotification(doc));
             }
             catch { }
