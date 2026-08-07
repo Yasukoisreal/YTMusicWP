@@ -135,6 +135,11 @@ namespace YTMusicWP
                 GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
                 NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
 
+                LiveTileToggle.IsOn = YTMusicWP.Services.TileService.IsLiveTileEnabled;
+                int tileMode = YTMusicWP.Services.TileService.LiveTileMode;
+                if (tileMode >= 0 && tileMode < LiveTileModeComboBox.Items.Count)
+                    LiveTileModeComboBox.SelectedIndex = tileMode;
+
                 // Now attach handlers — changes will save & apply immediately
                 AudioQualityComboBox.SelectionChanged += AudioQualityComboBox_SelectionChanged;
                 CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
@@ -142,6 +147,8 @@ namespace YTMusicWP
                 GaplessToggle.Toggled += GaplessToggle_Toggled;
                 NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
                 RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
+                LiveTileToggle.Toggled += LiveTileToggle_Toggled;
+                LiveTileModeComboBox.SelectionChanged += LiveTileModeComboBox_SelectionChanged;
             }
             catch { }
         }
@@ -207,6 +214,24 @@ namespace YTMusicWP
         {
             ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
             try { _appMediaPlayer.Volume = NormalizeVolumeToggle.IsOn ? 0.75 : 1.0; } catch { }
+        }
+
+        private void LiveTileToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            YTMusicWP.Services.TileService.IsLiveTileEnabled = LiveTileToggle.IsOn;
+            if (LiveTileToggle.IsOn && homeTracks != null && homeTracks.Count > 0)
+            {
+                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks);
+            }
+        }
+
+        private void LiveTileModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            YTMusicWP.Services.TileService.LiveTileMode = LiveTileModeComboBox.SelectedIndex;
+            if (LiveTileModeComboBox.SelectedIndex == 0 && homeTracks != null && homeTracks.Count > 0)
+            {
+                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks);
+            }
         }
 
         private async void RefreshStorageStats_Click(object sender, RoutedEventArgs e)

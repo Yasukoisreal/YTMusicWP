@@ -205,7 +205,7 @@ namespace YTMusicWP
                     {
                         _currentHomeQuery = homeSections[0].Title;
                         var topTracks = homeSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
-                        UpdateRecommendedLiveTile(topTracks);
+                        YTMusicWP.Services.TileService.UpdateRecommendations(topTracks);
                     }
                     HomeLoading.Visibility = Visibility.Collapsed;
                     return;
@@ -316,7 +316,7 @@ namespace YTMusicWP
             if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
-            UpdateRecommendedLiveTile(homeTracks);
+            YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks);
 
             var batch3a = FetchMusicList(queries[4], "", "songs");
             var batch3b = FetchMusicList(queries[5], "", "songs");
@@ -341,44 +341,6 @@ namespace YTMusicWP
             string title = (t.Title ?? "").ToLowerInvariant();
             if (title.Contains("(storyteller)") || title.Contains("full audiobook") || title.Contains("full audio book")) return false;
             return true;
-        }
-
-        private void UpdateRecommendedLiveTile(System.Collections.Generic.IEnumerable<YouTubeTrack> tracks)
-        {
-            try
-            {
-                if (tracks == null) return;
-                var updater = Windows.UI.Notifications.TileUpdateManager.CreateTileUpdaterForApplication();
-                updater.EnableNotificationQueue(true);
-                updater.Clear();
-
-                int count = 0;
-                foreach (var t in tracks)
-                {
-                    if (t == null || string.IsNullOrEmpty(t.ThumbnailUrl) || string.IsNullOrEmpty(t.Title)) continue;
-
-                    string safeThumb = System.Net.WebUtility.HtmlEncode(t.ThumbnailUrl);
-                    string safeTitle = System.Net.WebUtility.HtmlEncode(t.Title);
-                    string safeArtist = System.Net.WebUtility.HtmlEncode(t.ChannelName ?? "YouTube Music");
-
-                    string xml = string.Format(
-                        "<tile><visual version=\"2\">" +
-                        "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                        "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding>" +
-                        "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
-                        "</visual></tile>", safeThumb, safeTitle, safeArtist);
-
-                    var doc = new Windows.Data.Xml.Dom.XmlDocument();
-                    doc.LoadXml(xml);
-                    var notif = new Windows.UI.Notifications.TileNotification(doc);
-                    notif.Tag = "rec_" + count;
-                    updater.Update(notif);
-
-                    count++;
-                    if (count >= 5) break;
-                }
-            }
-            catch { }
         }
 
         private void MoodChill_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)

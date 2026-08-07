@@ -1387,6 +1387,50 @@
                     </Border>
 
 
+                    <!-- ═══════ LIVE TILE (START SCREEN) ═══════ -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <Border Background="#0078D7" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                    <TextBlock Text="&#xE17C;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Live Tile (Start Screen)" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Enable Live Tile Toggle -->
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Dynamic Live Tile" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Flip &amp; cycle music artwork on Start screen" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="LiveTileToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            </Grid>
+                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                            <!-- Live Tile Mode Selector -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Display Mode" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Choose what appears on Live Tile" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ComboBox x:Name="LiveTileModeComboBox" Grid.Column="1" Background="#252525" Foreground="White" BorderThickness="0" Width="140" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="Now Playing &amp; Recs" Tag="0"/>
+                                    <ComboBoxItem Content="Now Playing Only" Tag="1"/>
+                                    <ComboBoxItem Content="Transparent Only" Tag="2"/>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+
                     <!-- ═══════ STORAGE & CACHE MANAGEMENT ═══════ -->
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
                         <StackPanel>
