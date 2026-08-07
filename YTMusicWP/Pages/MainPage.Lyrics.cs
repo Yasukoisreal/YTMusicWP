@@ -46,9 +46,15 @@ namespace YTMusicWP
             catch { }
             return TimeSpan.Zero;
         }
-        // ── Lyrics Cache (in-memory, keyed by cleaned title+artist) ──
-        private static readonly Dictionary<string, string> _lyricsCache = new Dictionary<string, string>();
-        private static readonly Dictionary<string, string> _plainLyricsCache = new Dictionary<string, string>();
+        private class LyricsCacheEntry
+        {
+            public string Synced { get; set; }
+            public string Plain { get; set; }
+        }
+
+        // ── Lyrics Cache (in-memory LRU, keyed by cleaned title+artist) ──
+        private static readonly Dictionary<string, LyricsCacheEntry> _lyricsCache = new Dictionary<string, LyricsCacheEntry>();
+        private static readonly List<string> _lyricsCacheOrder = new List<string>();
         private const int MAX_LYRICS_CACHE = 20;
 
         private async Task UpdateLyricsAsync(string title, string artist)
@@ -118,20 +124,27 @@ namespace YTMusicWP
 
                 string cacheKey = (cleanTitle + "|" + cleanArtist).ToLowerInvariant();
 
-                // ── Check Cache First ──
-                if (_lyricsCache.ContainsKey(cacheKey))
+                // ── Check Cache First (LRU Touch) ──
+                LyricsCacheEntry cachedEntry;
+                if (_lyricsCache.TryGetValue(cacheKey, out cachedEntry))
                 {
-                    ParseAndDisplaySyncedLyrics(_lyricsCache[cacheKey]);
-                    LyricsLoadingBar.Visibility = Visibility.Collapsed;
-                    return;
-                }
-                if (_plainLyricsCache.ContainsKey(cacheKey))
-                {
-                    LyricsFallbackText.Text = _plainLyricsCache[cacheKey];
-                    LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
-                    LyricsListView.Visibility = Visibility.Collapsed;
-                    LyricsLoadingBar.Visibility = Visibility.Collapsed;
-                    return;
+                    _lyricsCacheOrder.Remove(cacheKey);
+                    _lyricsCacheOrder.Add(cacheKey);
+
+                    if (!string.IsNullOrWhiteSpace(cachedEntry.Synced))
+                    {
+                        ParseAndDisplaySyncedLyrics(cachedEntry.Synced);
+                        LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                        return;
+                    }
+                    if (!string.IsNullOrWhiteSpace(cachedEntry.Plain))
+                    {
+                        LyricsFallbackText.Text = cachedEntry.Plain;
+                        LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
+                        LyricsListView.Visibility = Visibility.Collapsed;
+                        LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                        return;
+                    }
                 }
 
                 token.ThrowIfCancellationRequested();
@@ -253,20 +266,32 @@ namespace YTMusicWP
 
                 token.ThrowIfCancellationRequested();
 
-                if (!string.IsNullOrWhiteSpace(syncedLyrics))
+                if (!string.IsNullOrWhiteSpace(syncedLyrics) || !string.IsNullOrWhiteSpace(plainLyrics))
                 {
-                    // Cache for later
-                    if (_lyricsCache.Count >= MAX_LYRICS_CACHE) _lyricsCache.Remove(_lyricsCache.Keys.First());
-                    _lyricsCache[cacheKey] = syncedLyrics;
-                    ParseAndDisplaySyncedLyrics(syncedLyrics);
-                }
-                else if (!string.IsNullOrWhiteSpace(plainLyrics))
-                {
-                    if (_plainLyricsCache.Count >= MAX_LYRICS_CACHE) _plainLyricsCache.Remove(_plainLyricsCache.Keys.First());
-                    _plainLyricsCache[cacheKey] = plainLyrics;
-                    LyricsFallbackText.Text = plainLyrics;
-                    LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
-                    LyricsListView.Visibility = Visibility.Collapsed;
+                    // Cache for later (LRU)
+                    if (_lyricsCache.ContainsKey(cacheKey))
+                    {
+                        _lyricsCacheOrder.Remove(cacheKey);
+                    }
+                    else if (_lyricsCacheOrder.Count >= MAX_LYRICS_CACHE)
+                    {
+                        string oldest = _lyricsCacheOrder[0];
+                        _lyricsCacheOrder.RemoveAt(0);
+                        _lyricsCache.Remove(oldest);
+                    }
+                    _lyricsCacheOrder.Add(cacheKey);
+                    _lyricsCache[cacheKey] = new LyricsCacheEntry { Synced = syncedLyrics, Plain = plainLyrics };
+
+                    if (!string.IsNullOrWhiteSpace(syncedLyrics))
+                    {
+                        ParseAndDisplaySyncedLyrics(syncedLyrics);
+                    }
+                    else
+                    {
+                        LyricsFallbackText.Text = plainLyrics;
+                        LyricsFallbackScrollViewer.Visibility = Visibility.Visible;
+                        LyricsListView.Visibility = Visibility.Collapsed;
+                    }
                 }
                 else
                 {

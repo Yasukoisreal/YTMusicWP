@@ -642,8 +642,10 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Viewbox Width="18" Height="18" Margin="14,0,0,0"><Path Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.49L20.49,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14Z" Fill="#B3B3B3"/></Viewbox>
-                    <TextBox x:Name="SearchBox" Grid.Column="1" TextChanged="SearchBox_TextChanged" PlaceholderText="What do you want to listen to?" Margin="6,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
+                    <Grid Grid.Column="0" Background="Transparent" Tapped="SearchIcon_Tapped" Width="36" VerticalAlignment="Stretch">
+                        <Viewbox Width="18" Height="18" Margin="14,0,0,0" HorizontalAlignment="Left"><Path Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.49L20.49,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14Z" Fill="#B3B3B3"/></Viewbox>
+                    </Grid>
+                    <TextBox x:Name="SearchBox" Grid.Column="1" TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown" PlaceholderText="What do you want to listen to?" Margin="6,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
                     <Grid x:Name="SearchClearBtn" Grid.Column="2" Tapped="SearchClear_Click" VerticalAlignment="Center" Margin="0,0,14,0" Width="20" Height="20" Visibility="Collapsed">
                         <Ellipse Fill="#666666" Width="20" Height="20"/>
                         <Viewbox Width="10" Height="10"><Path Data="M1,0 L5,4 L9,0 L10,1 L6,5 L10,9 L9,10 L5,6 L1,10 L0,9 L4,5 L0,1 Z" Fill="White"/></Viewbox>
@@ -1385,32 +1387,113 @@
                     </Border>
 
 
-                    <!-- ═══════ DATA MANAGEMENT ═══════ -->
+                    <!-- ═══════ STORAGE & CACHE MANAGEMENT ═══════ -->
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
                         <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                                <Border Background="#EF4444" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
-                                    <TextBlock Text="&#xE107;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Storage &amp; Data" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <!-- Header with Refresh Button -->
+                            <Grid Margin="0,0,0,14">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Background="#3B82F6" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                        <TextBlock Text="&#xE14E;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="Storage &amp; Cache" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button Click="RefreshStorageStats_Click" HorizontalAlignment="Right" Padding="6" Background="Transparent" BorderThickness="0">
+                                    <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="14" Foreground="#888"/>
+                                </Button>
+                            </Grid>
+
+                            <!-- Total Storage Banner Card -->
+                            <Border Background="#252525" CornerRadius="12" Padding="14,12" Margin="0,0,0,14">
+                                <Grid>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="TOTAL APP STORAGE" FontSize="10" FontFamily="{StaticResource MontserratBold}" Foreground="#888"/>
+                                        <TextBlock x:Name="StorageTotalText" Text="Calculating..." FontSize="20" FontFamily="{StaticResource MontserratBold}" Foreground="#1DB954" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ProgressRing x:Name="StorageLoadingRing" IsActive="True" Width="22" Height="22" Foreground="#1DB954" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Breakdown Items Grid -->
+                            <StackPanel Margin="0,0,0,14">
+                                <!-- Downloaded Music Item -->
+                                <Grid Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="🎵" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Downloaded Songs" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="StorageDownloadsCountText" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="StorageDownloadsSizeText" Text="-- MB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Image Cache Item -->
+                                <Grid Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="🖼️" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Image Cache" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="StorageImagesCountText" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="StorageImagesSizeText" Text="-- MB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Temp Stream Files Item -->
+                                <Grid Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="⚡" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Temporary Streams" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="StorageTempCountText" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="StorageTempSizeText" Text="-- MB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Data & Database Item -->
+                                <Grid Margin="0,0,0,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="📄" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="App Data &amp; Playlists" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="StorageDataSizeText" Text="-- KB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
                             </StackPanel>
 
-                            <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="44">
-                                <Border Background="#2A1215" CornerRadius="12">
+                            <!-- Primary Action: Clean All Cache (Safe) -->
+                            <Button Click="CleanAllCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="44">
+                                <Border Background="#1DB954" CornerRadius="12">
                                     <Grid Margin="16,0">
-                                        <TextBlock Text="Clear Recent History" FontFamily="{StaticResource MontserratSemiBold}" FontSize="14" Foreground="#FF6B6B" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="&#xE107;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="Black" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Clean All Cache" FontFamily="{StaticResource MontserratBold}" FontSize="14" Foreground="Black" VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </Button>
 
-                            <Button Click="ClearCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="44">
-                                <Border Background="#252525" CornerRadius="12">
+                            <!-- Secondary Action 1: Clear Image Cache -->
+                            <Button Click="ClearCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="40">
+                                <Border Background="#252525" CornerRadius="10">
                                     <Grid Margin="16,0">
-                                        <TextBlock Text="Clear Image Cache" FontFamily="{StaticResource MontserratSemiBold}" FontSize="14" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Clear Image Cache" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                     </Grid>
                                 </Border>
                             </Button>
 
+                            <!-- Secondary Action 2: Clear Temp Streams -->
+                            <Button Click="ClearTempStreams_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="40">
+                                <Border Background="#252525" CornerRadius="10">
+                                    <Grid Margin="16,0">
+                                        <TextBlock Text="Clear Temporary Streams" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Button>
+
+                            <!-- Secondary Action 3: Clear History -->
+                            <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,0" Height="40">
+                                <Border Background="#2A1215" CornerRadius="10">
+                                    <Grid Margin="16,0">
+                                        <TextBlock Text="Clear Recent History" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#FF6B6B" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Button>
 
                         </StackPanel>
                     </Border>
@@ -2247,6 +2330,12 @@
                             <TextBlock Grid.Column="1" Text="Share" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
+                    <Button x:Name="BottomSheetDeleteBtn" Click="BottomSheetDelete_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch" Visibility="Collapsed">
+                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Fill="#FF4444"/></Viewbox>
+                            <TextBlock Grid.Column="1" Text="Delete from device" FontSize="17" Foreground="#FF4444" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
                     <Button Click="CloseBottomSheet_Click" Style="{StaticResource IconButtonStyle}" Height="55" Margin="0,5,0,15">
                         <TextBlock Text="Close" FontSize="17" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold"/>
                     </Button>
@@ -2283,34 +2372,40 @@
                 </Grid>
             </Border>
             <ScrollViewer Grid.Row="1">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="30,40,30,30">
-                    <!-- Icon -->
-                    <TextBlock Text="🔐" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,15"/>
-                    
-                    <!-- Instructions - CLEAR: use PC or other phone -->
-                    <TextBlock Text="On your PC or other phone, open Chrome/Firefox and go to:" Foreground="#B3B3B3" FontSize="15" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,12"/>
-                    
-                    <!-- URL -->
-                    <Border Background="#1E1E1E" CornerRadius="10" Padding="15,10" Margin="0,0,0,15">
-                        <TextBlock Text="google.com/device" Foreground="#1DB954" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" IsTextSelectionEnabled="True"/>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,20,24,30">
+                    <!-- QR Code Card -->
+                    <Border x:Name="DeviceCodeQrContainer" Background="White" CornerRadius="16" Padding="12" Width="196" Height="196" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <Grid>
+                            <Image x:Name="DeviceCodeQrImage" Stretch="Uniform" Width="172" Height="172"/>
+                            <ProgressRing x:Name="DeviceCodeQrLoading" IsActive="True" Foreground="#1DB954" Width="36" Height="36" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
                     </Border>
                     
-                    <!-- Then enter code -->
-                    <TextBlock Text="Enter this code:" Foreground="#B3B3B3" FontSize="15" TextAlignment="Center" Margin="0,0,0,8"/>
+                    <!-- Scan Instructions -->
+                    <TextBlock Text="Scan QR code with your phone camera to sign in instantly" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,16"/>
                     
-                    <!-- User Code (big, prominent) -->
-                    <Border Background="#282828" CornerRadius="12" Padding="20,15" Margin="0,0,0,15">
-                        <TextBlock x:Name="DeviceCodeText" Text="----" Foreground="White" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" CharacterSpacing="80" IsTextSelectionEnabled="True"/>
+                    <!-- Divider with OR -->
+                    <Grid Margin="0,0,0,14">
+                        <Rectangle Height="1" Fill="#333333" VerticalAlignment="Center"/>
+                        <Border Background="#121212" Padding="12,0" HorizontalAlignment="Center">
+                            <TextBlock Text="OR ENTER CODE MANUALLY" Foreground="#777777" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}"/>
+                        </Border>
+                    </Grid>
+                    
+                    <!-- URL and Code in compact card -->
+                    <Border Background="#1E1E1E" CornerRadius="12" Padding="16,12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="1. Go to google.com/device" Foreground="#B3B3B3" FontSize="13" TextAlignment="Center" Margin="0,0,0,4"/>
+                            <TextBlock Text="2. Enter this code:" Foreground="#B3B3B3" FontSize="13" TextAlignment="Center" Margin="0,0,0,8"/>
+                            <Border Background="#282828" CornerRadius="8" Padding="12,8">
+                                <TextBlock x:Name="DeviceCodeText" Text="----" Foreground="#1DB954" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" CharacterSpacing="60" IsTextSelectionEnabled="True"/>
+                            </Border>
+                        </StackPanel>
                     </Border>
-                    
-                    <!-- Note -->
-                    <TextBlock Text="⚠ IE on Windows Phone can't open this page. Use a PC or another phone's browser (Chrome, Firefox, Safari)." Foreground="#FF9800" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,20"/>
                     
                     <!-- Status -->
                     <ProgressBar x:Name="DeviceCodeProgress" IsIndeterminate="True" Foreground="#1DB954" Margin="0,0,0,8"/>
-                    <TextBlock x:Name="DeviceCodeStatus" Text="Waiting for you to sign in..." Foreground="#888888" FontSize="13" TextAlignment="Center" Margin="0,0,0,20"/>
-                    
-                    <!-- Buttons removed: no point opening IE which can't handle Google's JS -->
+                    <TextBlock x:Name="DeviceCodeStatus" Text="Waiting for you to sign in..." Foreground="#888888" FontSize="13" TextAlignment="Center" Margin="0,0,0,10"/>
                 </StackPanel>
             </ScrollViewer>
             <!-- Hidden: old WebView (kept for code compatibility) -->

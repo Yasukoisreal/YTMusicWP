@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Media.Playback;
+using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -226,6 +228,10 @@ namespace YTMusicWP
                 } catch {}
             }
 
+            // Show delete button only for downloaded (LOCAL:) tracks
+            BottomSheetDeleteBtn.Visibility = (track.VideoId != null && track.VideoId.StartsWith("LOCAL:"))
+                ? Visibility.Visible : Visibility.Collapsed;
+
             CustomBottomSheet.Visibility = Visibility.Visible;
             BottomSheetSlideUpStoryboard.Begin();
         }
@@ -300,6 +306,91 @@ namespace YTMusicWP
             }
         }
 
+        private async void BottomSheetDelete_Click(object sender, RoutedEventArgs e)
+        {
+            CloseBottomSheet_Click(null, null);
+            var track = _bottomSheetTrack;
+            if (track == null || !track.VideoId.StartsWith("LOCAL:")) return;
+
+            try
+            {
+                // If deleting the currently playing track, stop/skip first and wait for player to release file lock
+                bool wasPlaying = (currentTrack != null && currentTrack.VideoId == track.VideoId);
+                if (wasPlaying)
+                {
+                    try
+                    {
+                        if (currentQueueTracks.Count > 1)
+                        {
+                            BackgroundMediaPlayer.SendMessageToBackground(new Windows.Foundation.Collections.ValueSet { { "NextTrackMessage", "" } });
+                        }
+                        else
+                        {
+                            _appMediaPlayer.Pause();
+                        }
+                    }
+                    catch
+                    {
+                        try { _appMediaPlayer.Pause(); } catch { }
+                    }
+                    currentTrack = null;
+                    await Task.Delay(600);
+                }
+
+                StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(track.VideoId.Substring(6));
+                try
+                {
+                    await file.DeleteAsync();
+                }
+                catch
+                {
+                    // Retry once if file was still briefly locked by player
+                    await Task.Delay(500);
+                    await file.DeleteAsync();
+                }
+
+                downloadedTracks.Remove(track);
+
+                // Also remove from queue if present and sync
+                var inQueue = currentQueueTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+                if (inQueue != null)
+                {
+                    currentQueueTracks.Remove(inQueue);
+                    SyncQueueToBackground();
+                }
+
+                var fav = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+                if (fav != null) { favoriteTracks.Remove(fav); SaveFavoritesAsync(); }
+
+                var hist = historyTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+                if (hist != null)
+                {
+                    historyTracks.Remove(hist);
+                    var ignoredHist = SaveHistoryAsyncTask();
+                    RefreshHomeHistorySections();
+                }
+
+                foreach (var playlist in userPlaylists)
+                {
+                    var pt = playlist.Tracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+                    if (pt != null) playlist.Tracks.Remove(pt);
+                }
+                SavePlaylistsAsync();
+
+                // Update track count in Downloaded Songs view if currently viewing it
+                if (PlaylistDetailsView.Visibility == Visibility.Visible && PlaylistDetailsTitle.Text == "Downloaded Songs")
+                {
+                    PlaylistDetailsTrackCount.Text = downloadedTracks.Count + " tracks";
+                }
+
+                ShowToast("File deleted from device");
+            }
+            catch
+            {
+                ShowToast("Failed to delete file");
+            }
+        }
+
         private void MenuGoToArtistNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
@@ -339,6 +430,7 @@ namespace YTMusicWP
 
             if (insertIdx > currentQueueTracks.Count) insertIdx = currentQueueTracks.Count;
             currentQueueTracks.Insert(insertIdx, _bottomSheetTrack);
+            SyncQueueToBackground();
 
             ShowToast("Added to queue: " + _bottomSheetTrack.Title);
         }
@@ -430,6 +522,7 @@ namespace YTMusicWP
             if (idx > 0)
             {
                 currentQueueTracks.Move(idx, idx - 1);
+                SyncQueueToBackground();
             }
         }
 
@@ -444,6 +537,7 @@ namespace YTMusicWP
             if (idx >= 0 && idx < currentQueueTracks.Count - 1)
             {
                 currentQueueTracks.Move(idx, idx + 1);
+                SyncQueueToBackground();
             }
         }
 
@@ -462,6 +556,7 @@ namespace YTMusicWP
             }
 
             currentQueueTracks.Remove(track);
+            SyncQueueToBackground();
             ShowToast("Removed from queue");
         }
 

@@ -12,6 +12,219 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        public class AppStorageStats
+        {
+            public ulong DownloadedBytes { get; set; }
+            public int DownloadedCount { get; set; }
+            public ulong ImageCacheBytes { get; set; }
+            public int ImageCacheCount { get; set; }
+            public ulong TempStreamBytes { get; set; }
+            public int TempStreamCount { get; set; }
+            public ulong DataCacheBytes { get; set; }
+            public int DataCacheCount { get; set; }
+
+            public ulong TotalBytes
+            {
+                get { return DownloadedBytes + ImageCacheBytes + TempStreamBytes + DataCacheBytes; }
+            }
+        }
+
+        public static string FormatFileSize(ulong bytes)
+        {
+            if (bytes < 1024)
+                return bytes + " B";
+            if (bytes < 1024 * 1024)
+                return (bytes / 1024.0).ToString("F1") + " KB";
+            if (bytes < 1024 * 1024 * 1024)
+                return (bytes / (1024.0 * 1024.0)).ToString("F1") + " MB";
+            return (bytes / (1024.0 * 1024.0 * 1024.0)).ToString("F2") + " GB";
+        }
+
+        public async Task<AppStorageStats> CalculateStorageStatsAsync()
+        {
+            var stats = new AppStorageStats();
+
+            try
+            {
+                // 1. Scan LocalFolder
+                var localFolder = ApplicationData.Current.LocalFolder;
+                var localFiles = await localFolder.GetFilesAsync();
+
+                foreach (var file in localFiles)
+                {
+                    var props = await file.GetBasicPropertiesAsync();
+                    ulong size = props.Size;
+                    string nameLower = file.Name.ToLowerInvariant();
+
+                    if (nameLower.EndsWith(".m4a") && !nameLower.StartsWith("temp_play_"))
+                    {
+                        stats.DownloadedBytes += size;
+                        stats.DownloadedCount++;
+                    }
+                    else if (nameLower.EndsWith(".jpg") || nameLower.EndsWith(".jpeg") || nameLower.EndsWith(".png") || nameLower.EndsWith(".webp"))
+                    {
+                        stats.ImageCacheBytes += size;
+                        stats.ImageCacheCount++;
+                    }
+                    else if (nameLower.StartsWith("temp_play_") || nameLower.EndsWith(".tmp"))
+                    {
+                        stats.TempStreamBytes += size;
+                        stats.TempStreamCount++;
+                    }
+                    else if (nameLower.EndsWith(".json") || nameLower.EndsWith(".xml") || nameLower.EndsWith(".txt"))
+                    {
+                        stats.DataCacheBytes += size;
+                        stats.DataCacheCount++;
+                    }
+                    else
+                    {
+                        stats.DataCacheBytes += size;
+                        stats.DataCacheCount++;
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                // 2. Scan TemporaryFolder
+                var tempFolder = ApplicationData.Current.TemporaryFolder;
+                var tempFiles = await tempFolder.GetFilesAsync();
+
+                foreach (var file in tempFiles)
+                {
+                    var props = await file.GetBasicPropertiesAsync();
+                    stats.TempStreamBytes += props.Size;
+                    stats.TempStreamCount++;
+                }
+            }
+            catch { }
+
+            return stats;
+        }
+
+        public async Task UpdateStorageDisplayAsync()
+        {
+            try
+            {
+                if (StorageLoadingRing != null) StorageLoadingRing.IsActive = true;
+                if (StorageLoadingRing != null) StorageLoadingRing.Visibility = Visibility.Visible;
+
+                var stats = await CalculateStorageStatsAsync();
+
+                if (StorageTotalText != null)
+                    StorageTotalText.Text = FormatFileSize(stats.TotalBytes) + " Used";
+
+                if (StorageDownloadsSizeText != null)
+                    StorageDownloadsSizeText.Text = FormatFileSize(stats.DownloadedBytes);
+
+                if (StorageDownloadsCountText != null)
+                    StorageDownloadsCountText.Text = "(" + stats.DownloadedCount + " songs)";
+
+                if (StorageImagesSizeText != null)
+                    StorageImagesSizeText.Text = FormatFileSize(stats.ImageCacheBytes);
+
+                if (StorageImagesCountText != null)
+                    StorageImagesCountText.Text = "(" + stats.ImageCacheCount + " files)";
+
+                if (StorageTempSizeText != null)
+                    StorageTempSizeText.Text = FormatFileSize(stats.TempStreamBytes);
+
+                if (StorageTempCountText != null)
+                    StorageTempCountText.Text = "(" + stats.TempStreamCount + " files)";
+
+                if (StorageDataSizeText != null)
+                    StorageDataSizeText.Text = FormatFileSize(stats.DataCacheBytes);
+            }
+            catch { }
+            finally
+            {
+                if (StorageLoadingRing != null)
+                {
+                    StorageLoadingRing.IsActive = false;
+                    StorageLoadingRing.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        public async Task<int> CleanImageCacheInternalAsync()
+        {
+            int count = 0;
+            try
+            {
+                var folder = ApplicationData.Current.LocalFolder;
+                var files = await folder.GetFilesAsync();
+                foreach (var file in files)
+                {
+                    string name = file.Name.ToLowerInvariant();
+                    if (name.EndsWith(".jpg") || name.EndsWith(".jpeg") || name.EndsWith(".png") || name.EndsWith(".webp"))
+                    {
+                        try { await file.DeleteAsync(); count++; } catch { }
+                    }
+                }
+            }
+            catch { }
+            return count;
+        }
+
+        public async Task<int> CleanTempStreamsInternalAsync()
+        {
+            int count = 0;
+            try
+            {
+                var folder = ApplicationData.Current.LocalFolder;
+                var files = await folder.GetFilesAsync();
+                foreach (var file in files)
+                {
+                    string name = file.Name.ToLowerInvariant();
+                    if (name.StartsWith("temp_play_") || name.EndsWith(".tmp"))
+                    {
+                        try { await file.DeleteAsync(); count++; } catch { }
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                var tempFolder = ApplicationData.Current.TemporaryFolder;
+                var files = await tempFolder.GetFilesAsync();
+                foreach (var file in files)
+                {
+                    try { await file.DeleteAsync(); count++; } catch { }
+                }
+            }
+            catch { }
+
+            return count;
+        }
+
+        public async Task<int> CleanAllCacheInternalAsync()
+        {
+            int count = 0;
+            count += await CleanImageCacheInternalAsync();
+            count += await CleanTempStreamsInternalAsync();
+
+            // Clear YouTube browse/sub caches (safe: keeps user playlists & offline downloads & favorites/history)
+            try
+            {
+                var f1 = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_playlists_cache.json");
+                await f1.DeleteAsync();
+                count++;
+            }
+            catch { }
+
+            try
+            {
+                var f2 = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json");
+                await f2.DeleteAsync();
+                count++;
+            }
+            catch { }
+
+            return count;
+        }
+
         private async Task LoadFavoritesAsync()
         {
             if (favoriteTracks.Count > 0) return;
@@ -166,16 +379,8 @@ namespace YTMusicWP
             catch { }
         }
 
-        private async void OpenCreatePlaylistDialog_Click(object sender, RoutedEventArgs e)
+        private void OpenCreatePlaylistDialog_Click(object sender, RoutedEventArgs e)
         {
-            // Require login to create playlist
-            string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
-            {
-                ShowToast("Sign in to create playlists");
-                return;
-            }
-
             NewPlaylistNameTextBox.Text = "";
             CreatePlaylistDialog.Visibility = Visibility.Visible;
         }

@@ -517,6 +517,7 @@ namespace YTMusicWP
             homeHistoryCarouselTracks.Clear();
             HomeHistorySection.Visibility = Visibility.Collapsed;
             var ignored = SaveHistoryAsyncTask();
+            var ignoredStorage = UpdateStorageDisplayAsync();
             ShowToast("Recent history cleared!");
         }
 

@@ -141,6 +141,46 @@ namespace YTMusicWP
             try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
         }
 
+        private void SyncQueueToBackground()
+        {
+            int count = currentQueueTracks.Count;
+            if (count == 0) return;
+            string[] urls = new string[count];
+            string[] titles = new string[count];
+            string[] artists = new string[count];
+            string[] videoIds = new string[count];
+            string[] thumbnails = new string[count];
+
+            int currentIndex = -1;
+            for (int i = 0; i < count; i++)
+            {
+                var t = currentQueueTracks[i];
+                if (currentTrack != null && t.VideoId == currentTrack.VideoId && currentIndex == -1)
+                {
+                    currentIndex = i;
+                }
+                urls[i] = t.VideoId.StartsWith("LOCAL:")
+                    ? "ms-appdata:///local/" + t.VideoId.Substring(6)
+                    : "";
+                titles[i] = t.Title ?? "";
+                artists[i] = t.ChannelName ?? "";
+                videoIds[i] = t.VideoId ?? "";
+                thumbnails[i] = t.ThumbnailUrl ?? "";
+            }
+
+            var message = new ValueSet
+            {
+                { "UpdateQueueOnly", "" },
+                { "Urls", urls },
+                { "Titles", titles },
+                { "Artists", artists },
+                { "VideoIds", videoIds },
+                { "Thumbnails", thumbnails },
+                { "CurrentIndex", Math.Max(0, currentIndex) }
+            };
+            try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
+        }
+
         private async void HeartButton_Click(object sender, RoutedEventArgs e)
         {
             if (currentTrack == null) return;
@@ -315,9 +355,7 @@ namespace YTMusicWP
                             else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
                         }
 
-                        targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
-
-                        // Smooth center-scroll
+                        // Smooth center-scroll (replaces abrupt ScrollIntoView)
                         ScrollViewer scrollViewer;
                         if (isFullscreen)
                         {
@@ -622,57 +660,93 @@ namespace YTMusicWP
 
         // ═══════════════════════════════════════════════════════
         // Lyrics animation helpers
-        // WP8.1 requires each animation to own its EasingFunction instance —
-        // sharing a static CubicEase across concurrent storyboards causes silent failure.
-        // Duration is a value type, safe to share.
+        // WP8.1: Reuse dedicated Storyboard & Animation objects per animation channel
+        // to avoid GC churn and UI stutters on 512MB devices.
         // ═══════════════════════════════════════════════════════
         private static readonly Duration _dur400 = new Duration(TimeSpan.FromMilliseconds(400));
         private static readonly Duration _dur450 = new Duration(TimeSpan.FromMilliseconds(450));
         private static readonly Duration _dur500 = new Duration(TimeSpan.FromMilliseconds(500));
 
+        private Windows.UI.Xaml.Media.Animation.Storyboard _lyricOutSb;
+        private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricOutOpAnim;
+        private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricOutSxAnim;
+        private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricOutSyAnim;
+
         private void AnimateLyricOut(FrameworkElement container, Windows.UI.Xaml.Media.ScaleTransform scale)
         {
-            var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
-            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var opAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.35, Duration = _dur500, EasingFunction = easeInOut };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opAnim, container);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opAnim, "Opacity");
-            var sxOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = easeInOut };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxOut, scale);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxOut, "ScaleX");
-            var syOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = easeInOut };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syOut, scale);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syOut, "ScaleY");
-            sb.Children.Add(opAnim); sb.Children.Add(sxOut); sb.Children.Add(syOut);
-            sb.Begin();
+            if (_lyricOutSb == null)
+            {
+                var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
+                _lyricOutOpAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.35, Duration = _dur500, EasingFunction = easeInOut };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricOutOpAnim, "Opacity");
+
+                _lyricOutSxAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = easeInOut };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricOutSxAnim, "ScaleX");
+
+                _lyricOutSyAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = easeInOut };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricOutSyAnim, "ScaleY");
+
+                _lyricOutSb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                _lyricOutSb.Children.Add(_lyricOutOpAnim);
+                _lyricOutSb.Children.Add(_lyricOutSxAnim);
+                _lyricOutSb.Children.Add(_lyricOutSyAnim);
+            }
+            _lyricOutSb.Stop();
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricOutOpAnim, container);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricOutSxAnim, scale);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricOutSyAnim, scale);
+            _lyricOutSb.Begin();
         }
+
+        private Windows.UI.Xaml.Media.Animation.Storyboard _lyricInSb;
+        private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricInOpAnim;
+        private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricInSxAnim;
+        private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricInSyAnim;
 
         private void AnimateLyricIn(FrameworkElement container, Windows.UI.Xaml.Media.ScaleTransform scale)
         {
-            var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
-            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var opIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { From = 0.35, To = 1.0, Duration = _dur450, EasingFunction = easeOut };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(opIn, container);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(opIn, "Opacity");
-            var sxIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = easeOut };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(sxIn, scale);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(sxIn, "ScaleX");
-            var syIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = easeOut };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(syIn, scale);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(syIn, "ScaleY");
-            sb.Children.Add(opIn); sb.Children.Add(sxIn); sb.Children.Add(syIn);
-            sb.Begin();
+            if (_lyricInSb == null)
+            {
+                var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
+                _lyricInOpAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { From = 0.35, To = 1.0, Duration = _dur450, EasingFunction = easeOut };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricInOpAnim, "Opacity");
+
+                _lyricInSxAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = easeOut };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricInSxAnim, "ScaleX");
+
+                _lyricInSyAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = easeOut };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricInSyAnim, "ScaleY");
+
+                _lyricInSb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                _lyricInSb.Children.Add(_lyricInOpAnim);
+                _lyricInSb.Children.Add(_lyricInSxAnim);
+                _lyricInSb.Children.Add(_lyricInSyAnim);
+            }
+            _lyricInSb.Stop();
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricInOpAnim, container);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricInSxAnim, scale);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricInSyAnim, scale);
+            _lyricInSb.Begin();
         }
+
+        private Windows.UI.Xaml.Media.Animation.Storyboard _lyricFsOpSb;
+        private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricFsOpAnim;
 
         private void AnimateOpacity(FrameworkElement target, double toValue)
         {
-            var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
-            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = toValue, Duration = _dur400, EasingFunction = easeInOut };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, target);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
-            sb.Children.Add(anim);
-            sb.Begin();
+            if (_lyricFsOpSb == null)
+            {
+                var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
+                _lyricFsOpAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { Duration = _dur400, EasingFunction = easeInOut };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricFsOpAnim, "Opacity");
+
+                _lyricFsOpSb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                _lyricFsOpSb.Children.Add(_lyricFsOpAnim);
+            }
+            _lyricFsOpSb.Stop();
+            _lyricFsOpAnim.To = toValue;
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricFsOpAnim, target);
+            _lyricFsOpSb.Begin();
         }
 
         // [OPT-6] Cached gradient pulse objects

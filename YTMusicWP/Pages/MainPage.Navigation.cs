@@ -167,9 +167,10 @@ namespace YTMusicWP
             NavLibraryText.FontWeight = (tab == 2) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
         }
 
-        private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        private async void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
             SettingsPanel.Visibility = Visibility.Visible;
+            await UpdateStorageDisplayAsync();
         }
 
         private void CloseSettings_Click(object sender, RoutedEventArgs e)

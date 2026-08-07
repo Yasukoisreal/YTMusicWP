@@ -210,7 +210,11 @@ namespace YTMusicWP
         {
             try
             {
-                if (_bgTimer != null) _bgTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                if (_bgTimer != null)
+                {
+                    _bgTimer.Dispose();
+                    _bgTimer = null;
+                }
                 BackgroundMediaPlayer.MessageReceivedFromBackground -= BackgroundMediaPlayer_MessageReceivedFromBackground;
                 _appMediaPlayer.CurrentStateChanged -= BackgroundMediaPlayer_CurrentStateChanged;
             }
@@ -227,7 +231,10 @@ namespace YTMusicWP
                 _appMediaPlayer = BackgroundMediaPlayer.Current;
                 _isSliderManipulating = false; // Mở khóa thanh tua nhạc nếu bị kẹt
 
-                if (_bgTimer != null) _bgTimer.Change(0, 1000);
+                if (_bgTimer == null)
+                {
+                    _bgTimer = new Timer(TimerCallback, null, 0, 1000);
+                }
                 // FIX #5: Unsubscribe trước để tránh double subscription khi fast resume
                 BackgroundMediaPlayer.MessageReceivedFromBackground -= BackgroundMediaPlayer_MessageReceivedFromBackground;
                 BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;

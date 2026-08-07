@@ -185,6 +185,21 @@ namespace YTMusicWP
             SearchBox.Focus(FocusState.Programmatic);
         }
 
+        private void SearchIcon_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            SearchButton_Click(sender, null);
+        }
+
+        private void SearchBox_KeyDown(object sender, Windows.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                e.Handled = true;
+                this.Focus(FocusState.Programmatic);
+                SearchButton_Click(sender, null);
+            }
+        }
+
         private void Category_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;

@@ -103,6 +103,19 @@ namespace AudioPlayerTask
                 if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
                 StartPlaybackAsync();
             }
+            else if (e.Data.ContainsKey("UpdateQueueOnly"))
+            {
+                _trackList = new List<string>((string[])e.Data["Urls"]);
+                _titleList = new List<string>((string[])e.Data["Titles"]);
+                _artistList = new List<string>((string[])e.Data["Artists"]);
+                _videoIdList = new List<string>((string[])e.Data["VideoIds"]);
+                _thumbnailList = new List<string>((string[])e.Data["Thumbnails"]);
+                if (e.Data.ContainsKey("CurrentIndex"))
+                {
+                    _currentTrackIndex = (int)e.Data["CurrentIndex"];
+                }
+                PreResolveNextTrack();
+            }
             else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext();
             else if (e.Data.ContainsKey("PrevTrackMessage")) MovePrevious();
         }
@@ -116,10 +129,7 @@ namespace AudioPlayerTask
         }
 
         // ==========================================
-        // RESOLVE AUDIO URL — InnerTube direct
-        // Layer 1: InnerTube ANDROID_VR trực tiếp từ phone
-        // Layer 2: Invidious API fallback
-        // Layer 3: Invidious Embed proxy
+        // RESOLVE AUDIO URL — InnerTube direct (ANDROID_VR)
         // ==========================================
         private string _innerTubeDebug = "";
 
@@ -284,124 +294,12 @@ namespace AudioPlayerTask
         {
             _innerTubeDebug = "";
             
-            // Layer 1: InnerTube ANDROID_VR (giống MetroTube)
+            // InnerTube ANDROID_VR (giống MetroTube)
             string url = await TryInnerTubeClient(videoId, "ANDROID_VR", "1.60.19", "28", "Oculus", "Quest 3", "12L",
                 "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
             if (!string.IsNullOrEmpty(url)) return url;
 
-            // Layer 2: Invidious API fallback (giống MetroTube)
-            string[] invInstances = new string[] { "yewtu.be", "iv.duti.dev", "invidious.schenkel.eti.br", "inv.nadeko.net" };
-            foreach (var inst in invInstances)
-            {
-                try
-                {
-                    var req = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
-                        new Uri("https://" + inst + "/api/v1/videos/" + videoId + "?fields=adaptiveFormats,formatStreams"));
-                    req.Headers.Add("User-Agent", "Mozilla/5.0");
-                    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                    var resp = await _httpClient.SendRequestAsync(req).AsTask(cts.Token);
-                    if (resp.StatusCode != Windows.Web.Http.HttpStatusCode.Ok) continue;
-                    
-                    string json = await resp.Content.ReadAsStringAsync();
-                    
-                    // Parse itag 140 URL bằng string matching (không có Newtonsoft.Json)
-                    string audioUrl = ExtractInvidiousUrl(json, "140");
-                    if (string.IsNullOrEmpty(audioUrl))
-                        audioUrl = ExtractInvidiousUrl(json, "139");
-                    if (string.IsNullOrEmpty(audioUrl))
-                        audioUrl = ExtractInvidiousUrl(json, "18");
-                    
-                    if (!string.IsNullOrEmpty(audioUrl))
-                    {
-                        _innerTubeDebug += " inv:" + inst.Substring(0, Math.Min(6, inst.Length));
-                        return audioUrl;
-                    }
-                }
-                catch { continue; }
-            }
-
-            // Layer 3: Invidious Embed proxy (bypass geo-block)
-            foreach (var inst in invInstances)
-            {
-                try
-                {
-                    var req = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
-                        new Uri("https://" + inst + "/embed/" + videoId + "?local=1"));
-                    req.Headers.Add("User-Agent", "Mozilla/5.0");
-                    var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                    var resp = await _httpClient.SendRequestAsync(req).AsTask(cts.Token);
-                    if (resp.StatusCode != Windows.Web.Http.HttpStatusCode.Ok) continue;
-                    
-                    string html = await resp.Content.ReadAsStringAsync();
-                    
-                    // Parse <source src="...itag=140..."> from embed HTML
-                    string[] itags = new string[] { "itag=140", "itag=139", "itag=18" };
-                    foreach (var itagSearch in itags)
-                    {
-                        int srcIdx = html.IndexOf(itagSearch);
-                        if (srcIdx < 0) continue;
-                        
-                        int tagStart = html.LastIndexOf("<source", srcIdx);
-                        if (tagStart < 0) continue;
-                        
-                        int srcAttr = html.IndexOf("src=\"", tagStart);
-                        if (srcAttr < 0 || srcAttr > srcIdx + 20) continue;
-                        
-                        int urlStart = srcAttr + 5;
-                        int urlEnd = html.IndexOf("\"", urlStart);
-                        if (urlEnd <= urlStart) continue;
-                        
-                        string rawUrl = html.Substring(urlStart, urlEnd - urlStart).Replace("&amp;", "&");
-                        if (rawUrl.StartsWith("/"))
-                            rawUrl = "https://" + inst + rawUrl;
-                        
-                        if (!string.IsNullOrEmpty(rawUrl))
-                        {
-                            _innerTubeDebug += " emb:" + inst.Substring(0, Math.Min(6, inst.Length));
-                            return rawUrl;
-                        }
-                    }
-                }
-                catch { continue; }
-            }
-
             return null;
-        }
-
-        /// <summary>
-        /// Extract URL for a specific itag from Invidious JSON response using string parsing
-        /// (AudioTask doesn't have Newtonsoft.Json)
-        /// </summary>
-        private string ExtractInvidiousUrl(string json, string targetItag)
-        {
-            // Tìm pattern: "itag":"140" hoặc "itag":140 rồi tìm "url":"..." gần đó
-            string pattern1 = "\"itag\":\"" + targetItag + "\"";
-            string pattern2 = "\"itag\":" + targetItag;
-            
-            int pos = json.IndexOf(pattern1);
-            if (pos < 0) pos = json.IndexOf(pattern2);
-            if (pos < 0) return null;
-            
-            // Tìm "url":"..." trong vùng xung quanh (trước hoặc sau itag, trong cùng object {})
-            // Tìm lùi về đầu object
-            int objStart = json.LastIndexOf("{", pos);
-            // Tìm tiến đến cuối object (tìm }, nhưng cẩn thận nested)
-            int objEnd = pos + 500; // rough estimate
-            if (objEnd > json.Length) objEnd = json.Length;
-            string segment = json.Substring(objStart, objEnd - objStart);
-            
-            string urlMarker = "\"url\":\"";
-            int urlPos = segment.IndexOf(urlMarker);
-            if (urlPos < 0) return null;
-            
-            int urlStart = urlPos + urlMarker.Length;
-            int urlEnd = segment.IndexOf("\"", urlStart);
-            if (urlEnd <= urlStart) return null;
-            
-            string rawUrl = segment.Substring(urlStart, urlEnd - urlStart);
-            // Unescape JSON string
-            rawUrl = rawUrl.Replace("\\u0026", "&").Replace("\\/", "/");
-            return rawUrl;
         }
 
         private async Task<string> TryInnerTubeClient(string videoId, string clientName, string clientVersion, 

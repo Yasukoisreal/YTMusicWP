@@ -209,24 +209,52 @@ namespace YTMusicWP
             try { _appMediaPlayer.Volume = NormalizeVolumeToggle.IsOn ? 0.75 : 1.0; } catch { }
         }
 
+        private async void RefreshStorageStats_Click(object sender, RoutedEventArgs e)
+        {
+            await UpdateStorageDisplayAsync();
+            ShowToast("Storage refreshed");
+        }
+
+        private async void CleanAllCache_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                int count = await CleanAllCacheInternalAsync();
+                await UpdateStorageDisplayAsync();
+                ShowToast("Cleaned " + count + " cache items");
+            }
+            catch
+            {
+                ShowToast("Error cleaning cache");
+            }
+        }
+
         private async void ClearCache_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var folder = ApplicationData.Current.LocalFolder;
-                var files = await folder.GetFilesAsync();
-                int count = 0;
-                foreach (var file in files)
-                {
-                    if (file.Name.EndsWith(".jpg") || file.Name.EndsWith(".png") || file.Name.EndsWith(".webp"))
-                    {
-                        await file.DeleteAsync();
-                        count++;
-                    }
-                }
-                ShowToast("Cleared " + count + " cached files");
+                int count = await CleanImageCacheInternalAsync();
+                await UpdateStorageDisplayAsync();
+                ShowToast("Cleared " + count + " cached images");
             }
-            catch { ShowToast("Error clearing cache"); }
+            catch
+            {
+                ShowToast("Error clearing image cache");
+            }
+        }
+
+        private async void ClearTempStreams_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                int count = await CleanTempStreamsInternalAsync();
+                await UpdateStorageDisplayAsync();
+                ShowToast("Cleared " + count + " temp stream files");
+            }
+            catch
+            {
+                ShowToast("Error clearing temp streams");
+            }
         }
 
         private async void LogoutGoogle_Click(object sender, RoutedEventArgs e)
@@ -296,6 +324,8 @@ namespace YTMusicWP
         {
             LoginWebContainer.Visibility = Visibility.Visible;
             DeviceCodeText.Text = "----";
+            DeviceCodeQrImage.Source = null;
+            DeviceCodeQrLoading.Visibility = Visibility.Visible;
             DeviceCodeStatus.Text = "Requesting code...";
             DeviceCodeProgress.Visibility = Visibility.Visible;
 
@@ -318,6 +348,7 @@ namespace YTMusicWP
         {
             LoginWebContainer.Visibility = Visibility.Collapsed;
             _deviceCodePolling = false;
+            DeviceCodeQrImage.Source = null;
         }
 
         private async Task StartDeviceCodeFlow()
@@ -348,6 +379,22 @@ namespace YTMusicWP
                     DeviceCodeText.Text = userCode ?? "ERROR";
                     DeviceCodeStatus.Text = "Waiting for you to sign in...";
 
+                    // Generate QR Code bitmap with auto-fill URL
+                    string qrUrl = !string.IsNullOrEmpty(userCode)
+                        ? ("https://www.google.com/device?user_code=" + userCode)
+                        : verificationUrl;
+
+                    var qrBitmap = Services.QrCodeGenerator.GenerateQrBitmap(qrUrl, 4, 3);
+                    if (qrBitmap != null)
+                    {
+                        DeviceCodeQrImage.Source = qrBitmap;
+                    }
+                    else
+                    {
+                        DeviceCodeQrImage.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + Uri.EscapeDataString(qrUrl)));
+                    }
+                    DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
+
                     // Start polling for user authorization
                     _deviceCodePolling = true;
                     await PollDeviceCodeAsync(deviceCode, interval, expiresIn);
@@ -357,6 +404,7 @@ namespace YTMusicWP
                     DeviceCodeText.Text = "ERROR";
                     DeviceCodeStatus.Text = "Failed to get code. Try again.";
                     DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                    DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
                 }
             }
             catch
@@ -364,6 +412,7 @@ namespace YTMusicWP
                 DeviceCodeText.Text = "ERROR";
                 DeviceCodeStatus.Text = "Network error. Check your connection.";
                 DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
             }
         }
 
