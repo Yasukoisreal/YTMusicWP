@@ -397,8 +397,8 @@ namespace YTMusicWP
                         {
                             ["clientName"] = "WEB_REMIX",
                             ["clientVersion"] = "1.20241016.01.00",
-                            ["hl"] = "vi",
-                            ["gl"] = "VN"
+                            ["hl"] = CurrentLanguage,
+                            ["gl"] = CurrentRegion
                         }
                     },
                     ["query"] = query

@@ -692,6 +692,7 @@ namespace AudioPlayerTask
         private Windows.System.Threading.ThreadPoolTimer _crossfadeTimer;
         private bool _isCrossfading = false;
         private string _preResolvedNextUrl = null;
+        private int _preResolvedNextIndex = -1;
 
         private void StartCrossfadeMonitor()
         {
@@ -703,50 +704,63 @@ namespace AudioPlayerTask
 
         private void StopCrossfadeMonitor()
         {
-            if (_crossfadeTimer != null) { _crossfadeTimer.Cancel(); _crossfadeTimer = null; }
-            _isCrossfading = false;
+            if (_crossfadeTimer != null)
+            {
+                _crossfadeTimer.Cancel();
+                _crossfadeTimer = null;
+            }
         }
 
         private void CrossfadeTimer_Tick(Windows.System.Threading.ThreadPoolTimer timer)
         {
             try
             {
-                if (_mediaPlayer == null || _mediaPlayer.CurrentState != MediaPlayerState.Playing) return;
-                if (_isCrossfading) return;
+                if (_mediaPlayer == null || _trackList.Count <= 1) return;
+                if (_mediaPlayer.CurrentState != MediaPlayerState.Playing) return;
 
+                var pos = _mediaPlayer.Position;
+                var naturalDuration = _mediaPlayer.NaturalDuration;
+                if (naturalDuration == TimeSpan.Zero || naturalDuration.TotalSeconds < 10) return;
+
+                double remaining = (naturalDuration - pos).TotalSeconds;
+
+                // Gapless: Pre-resolve next track URL 15s before end
+                if (remaining <= 15 && remaining > 10 && string.IsNullOrEmpty(_preResolvedNextUrl))
+                {
+                    PreResolveNextTrack();
+                }
+
+                // Crossfade: start fade out when remaining <= CrossfadeDuration
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                int crossfadeSec = ls.ContainsKey("CrossfadeSeconds") ? (int)ls["CrossfadeSeconds"] : 0;
+                bool crossfade = ls.ContainsKey("Crossfade") ? (bool)ls["Crossfade"] : false;
+                if (!crossfade) return;
+
+                int crossfadeSec = ls.ContainsKey("CrossfadeDuration") ? (int)ls["CrossfadeDuration"] : 3;
                 if (crossfadeSec <= 0) return;
 
-                double pos = _mediaPlayer.Position.TotalSeconds;
-                double dur = _mediaPlayer.NaturalDuration.TotalSeconds;
-                if (dur <= 0) return;
-
-                double remaining = dur - pos;
-                if (remaining <= crossfadeSec && remaining > 0.5)
+                if (remaining <= crossfadeSec && !_isCrossfading)
                 {
                     _isCrossfading = true;
-                    // Start volume fade out
-                    StartVolumeFade(crossfadeSec);
+                    StartCrossfadeTransition(crossfadeSec);
                 }
             }
             catch { }
         }
 
-        private async void StartVolumeFade(int fadeDurationSec)
+        private async void StartCrossfadeTransition(int durationSec)
         {
             try
             {
-                double startVol = _mediaPlayer.Volume;
-                int steps = fadeDurationSec * 5; // 5 steps per second (200ms each)
-                double volStep = startVol / steps;
+                double origVol = _mediaPlayer.Volume;
+                int steps = durationSec * 10; // 100ms per step
+                double volStep = origVol / steps;
 
                 for (int i = 0; i < steps; i++)
                 {
-                    await Task.Delay(200);
+                    await Task.Delay(100);
                     try
                     {
-                        double newVol = startVol - (volStep * (i + 1));
+                        double newVol = _mediaPlayer.Volume - volStep;
                         if (newVol < 0) newVol = 0;
                         _mediaPlayer.Volume = newVol;
                     }
@@ -763,6 +777,7 @@ namespace AudioPlayerTask
         private async void PreResolveNextTrack()
         {
             _preResolvedNextUrl = null;
+            _preResolvedNextIndex = -1;
             try
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -772,6 +787,7 @@ namespace AudioPlayerTask
 
                 bool shuffle = ls.ContainsKey("ShuffleMode") ? (bool)ls["ShuffleMode"] : false;
                 int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;
+                bool autoplay = ls.ContainsKey("Autoplay") ? (bool)ls["Autoplay"] : true;
 
                 int nextIdx;
                 if (repeat == 2) nextIdx = _currentTrackIndex;
@@ -781,7 +797,7 @@ namespace AudioPlayerTask
                     nextIdx = _currentTrackIndex + 1;
                     if (nextIdx >= _trackList.Count)
                     {
-                        if (repeat == 1) nextIdx = 0;
+                        if (repeat == 1 || autoplay) nextIdx = 0;
                         else return;
                     }
                 }
@@ -790,12 +806,16 @@ namespace AudioPlayerTask
                 if (nextVidId.StartsWith("LOCAL:"))
                 {
                     _preResolvedNextUrl = _trackList[nextIdx];
+                    _preResolvedNextIndex = nextIdx;
                     return;
                 }
 
                 string url = await ResolveViaInnerTubeDirectAsync(nextVidId);
                 if (!string.IsNullOrEmpty(url))
+                {
                     _preResolvedNextUrl = PrepareStreamUrl(url);
+                    _preResolvedNextIndex = nextIdx;
+                }
             }
             catch { }
         }
@@ -812,25 +832,35 @@ namespace AudioPlayerTask
 
             // Use pre-resolved URL if available (gapless)
             string preUrl = _preResolvedNextUrl;
+            int preIdx = _preResolvedNextIndex;
             _preResolvedNextUrl = null;
+            _preResolvedNextIndex = -1;
 
-            if (shuffle) _currentTrackIndex = _rand.Next(0, _trackList.Count);
+            if (preIdx >= 0 && preIdx < _trackList.Count && !string.IsNullOrEmpty(preUrl))
+            {
+                _currentTrackIndex = preIdx;
+                _trackList[_currentTrackIndex] = preUrl;
+                _innerTubeAttempted = true;
+            }
+            else if (shuffle)
+            {
+                _currentTrackIndex = _rand.Next(0, _trackList.Count);
+            }
             else
             {
                 _currentTrackIndex++;
                 if (_currentTrackIndex >= _trackList.Count)
                 {
-                    if (repeat == 1) _currentTrackIndex = 0;
-                    else if (!autoplay) { _currentTrackIndex = _trackList.Count - 1; return; } // Stop if autoplay off
-                    else { _currentTrackIndex = _trackList.Count - 1; return; }
+                    if (repeat == 1 || autoplay)
+                    {
+                        _currentTrackIndex = 0;
+                    }
+                    else
+                    {
+                        _currentTrackIndex = _trackList.Count - 1;
+                        return; // Stop playback when queue ends and autoplay is off
+                    }
                 }
-            }
-
-            // If we have a pre-resolved URL, use it directly for gapless transition
-            if (!string.IsNullOrEmpty(preUrl))
-            {
-                _trackList[_currentTrackIndex] = preUrl;
-                _innerTubeAttempted = true;
             }
 
             StartPlaybackAsync();
