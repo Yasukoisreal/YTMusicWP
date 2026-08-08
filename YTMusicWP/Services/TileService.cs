@@ -91,7 +91,7 @@ namespace YTMusicWP.Services
         }
 
         private static DateTime _lastRecommendationUpdate = DateTime.MinValue;
-        private static readonly TimeSpan MinUpdateInterval = TimeSpan.FromMinutes(10);
+        private static readonly TimeSpan MinUpdateInterval = TimeSpan.FromSeconds(2);
 
         public static void ClearLiveTile()
         {
@@ -283,19 +283,47 @@ namespace YTMusicWP.Services
                 // Extract formatted thumbnail URLs for mosaic creation & wide collections
                 var thumbUrls = pool.Select(p => FormatSquareThumbnail(p.Track.ThumbnailUrl)).Where(u => !string.IsNullOrEmpty(u)).Distinct().ToList();
 
-                // 2. Generate People Hub Style Mosaic Tiles (3x3 = 9 boxes, 2x2 = 4 boxes)
+                // 2. Generate People Hub Style Mosaic Tiles (3x3 = 9 boxes, 2x2 = 4 boxes) & Cache Local Images
                 string mosaic3x3_Path = null;
                 string mosaic2x2_Path = null;
+                string feat0_Path = null;
+                string feat1_Path = null;
 
                 try
                 {
+                    var tasks = new List<Task>();
+                    Task<string> task9 = null;
+                    Task<string> task4 = null;
+                    Task<string> taskFeat0 = null;
+                    Task<string> taskFeat1 = null;
+
                     if (thumbUrls.Count >= 4)
                     {
-                        var task9 = GenerateMosaicTileAsync(thumbUrls.Take(9).ToList(), 3, "tile_mosaic_3x3.png");
-                        var task4 = GenerateMosaicTileAsync(thumbUrls.Take(4).ToList(), 2, "tile_mosaic_2x2.png");
-                        await Task.WhenAll(task9, task4);
-                        mosaic3x3_Path = task9.Result;
-                        mosaic2x2_Path = task4.Result;
+                        task9 = GenerateMosaicTileAsync(thumbUrls.Take(9).ToList(), 3, "tile_mosaic_3x3.png");
+                        task4 = GenerateMosaicTileAsync(thumbUrls.Take(4).ToList(), 2, "tile_mosaic_2x2.png");
+                        tasks.Add(task9);
+                        tasks.Add(task4);
+                    }
+
+                    if (pool.Count > 0)
+                    {
+                        taskFeat0 = CacheLocalTileImageAsync(FormatSquareThumbnail(pool[0].Track.ThumbnailUrl), "tile_feat_0.png");
+                        tasks.Add(taskFeat0);
+                    }
+
+                    if (pool.Count > 1)
+                    {
+                        taskFeat1 = CacheLocalTileImageAsync(FormatSquareThumbnail(pool[1].Track.ThumbnailUrl), "tile_feat_1.png");
+                        tasks.Add(taskFeat1);
+                    }
+
+                    if (tasks.Count > 0)
+                    {
+                        await Task.WhenAll(tasks);
+                        if (task9 != null) mosaic3x3_Path = task9.Result;
+                        if (task4 != null) mosaic2x2_Path = task4.Result;
+                        if (taskFeat0 != null) feat0_Path = taskFeat0.Result;
+                        if (taskFeat1 != null) feat1_Path = taskFeat1.Result;
                     }
                 }
                 catch { }
@@ -314,11 +342,11 @@ namespace YTMusicWP.Services
                 // --- Item 0: People 9-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide & Large) ---
                 if (!string.IsNullOrEmpty(mosaic3x3_Path) && pool.Count > 0)
                 {
-                    PushMosaicAndSlideTile(updater, mosaic3x3_Path, pool[0], "mosaic_9_tile", 0);
+                    PushMosaicAndSlideTile(updater, mosaic3x3_Path, pool[0], feat0_Path, "mosaic_9_tile", 0);
                 }
                 else if (pool.Count > 0)
                 {
-                    PushSingleItemTile(updater, pool[0], 0);
+                    PushSingleItemTile(updater, pool[0], feat0_Path, 0);
                 }
 
                 // --- Item 1: People 4-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide & Large) ---
@@ -326,7 +354,7 @@ namespace YTMusicWP.Services
                 {
                     if (!string.IsNullOrEmpty(mosaic2x2_Path))
                     {
-                        PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], "mosaic_4_tile", 1);
+                        PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], feat1_Path, "mosaic_4_tile", 1);
                     }
                     else
                     {
@@ -345,13 +373,13 @@ namespace YTMusicWP.Services
                 // --- Item 3: Featured Favorite Track with Photos-Style Vertical Slide ---
                 if (maxQueueItems >= 4 && pool.Count > 2)
                 {
-                    PushSingleItemTile(updater, pool[2], 3);
+                    PushSingleItemTile(updater, pool[2], null, 3);
                 }
 
                 // --- Item 4: Featured Track with Photos-Style Vertical Slide ---
                 if (maxQueueItems >= 5 && pool.Count > 3)
                 {
-                    PushSingleItemTile(updater, pool[3], 4);
+                    PushSingleItemTile(updater, pool[3], null, 4);
                 }
 
                 // 4. Schedule Daypart Notifications (Morning / Afternoon / Evening)
@@ -454,16 +482,16 @@ namespace YTMusicWP.Services
 
                 if (!string.IsNullOrEmpty(mosaicPath))
                 {
-                    PushMosaicAndSlideTile(updater, mosaicPath, new TileItem { Track = tracks[0], Label = displayName }, "sec_mosaic", 0);
+                    PushMosaicAndSlideTile(updater, mosaicPath, new TileItem { Track = tracks[0], Label = displayName }, null, "sec_mosaic", 0);
                 }
                 else
                 {
-                    PushSingleItemTile(updater, new TileItem { Track = tracks[0], Label = displayName }, 0);
+                    PushSingleItemTile(updater, new TileItem { Track = tracks[0], Label = displayName }, null, 0);
                 }
 
                 if (tracks.Count > 1)
                 {
-                    PushSingleItemTile(updater, new TileItem { Track = tracks[1], Label = displayName }, 1);
+                    PushSingleItemTile(updater, new TileItem { Track = tracks[1], Label = displayName }, null, 1);
                 }
             }
             catch { }
@@ -588,9 +616,9 @@ namespace YTMusicWP.Services
             updater.Update(notif);
         }
 
-        private static void PushSingleItemTile(TileUpdater updater, TileItem item, int index)
+        private static void PushSingleItemTile(TileUpdater updater, TileItem item, string localImageUri, int index)
         {
-            string squareThumb = FormatSquareThumbnail(item.Track.ThumbnailUrl);
+            string squareThumb = string.IsNullOrEmpty(localImageUri) ? FormatSquareThumbnail(item.Track.ThumbnailUrl) : localImageUri;
             string safeThumb = WebUtility.HtmlEncode(squareThumb ?? "");
             string safeTitle = WebUtility.HtmlEncode(item.Track.Title ?? "");
             string safeArtist = WebUtility.HtmlEncode(item.Track.ChannelName ?? "YouTube Music");
@@ -617,10 +645,16 @@ namespace YTMusicWP.Services
             updater.Update(notif);
         }
 
-        private static void PushMosaicAndSlideTile(TileUpdater updater, string mediumMosaicUri, TileItem wideItem, string tag, int index)
+        private static void PushMosaicAndSlideTile(
+            TileUpdater updater,
+            string mediumMosaicUri,
+            TileItem wideItem,
+            string wideLocalImageUri,
+            string tag,
+            int index)
         {
             string safeMediumThumb = WebUtility.HtmlEncode(mediumMosaicUri ?? "");
-            string wideThumb = FormatSquareThumbnail(wideItem.Track.ThumbnailUrl);
+            string wideThumb = string.IsNullOrEmpty(wideLocalImageUri) ? FormatSquareThumbnail(wideItem.Track.ThumbnailUrl) : wideLocalImageUri;
             string safeWideThumb = WebUtility.HtmlEncode(wideThumb ?? "");
             string safeTitle = WebUtility.HtmlEncode(wideItem.Track.Title ?? "");
             string safeArtist = WebUtility.HtmlEncode(wideItem.Track.ChannelName ?? "YouTube Music");
@@ -647,43 +681,32 @@ namespace YTMusicWP.Services
             updater.Update(notif);
         }
 
-        private static void PushImageCollectionTile(TileUpdater updater, string mediumThumbUri, List<string> wideThumbs5, string tag, int index)
+        // ── Local Image Caching & People Hub Mosaic Generator ──
+
+        public static async Task<string> CacheLocalTileImageAsync(string url, string fileName)
         {
-            string safeMediumThumb = WebUtility.HtmlEncode(mediumThumbUri ?? "");
-            while (wideThumbs5.Count < 5) wideThumbs5.Add(wideThumbs5.FirstOrDefault() ?? "");
-
-            string t1 = WebUtility.HtmlEncode(wideThumbs5[0] ?? "");
-            string t2 = WebUtility.HtmlEncode(wideThumbs5[1] ?? "");
-            string t3 = WebUtility.HtmlEncode(wideThumbs5[2] ?? "");
-            string t4 = WebUtility.HtmlEncode(wideThumbs5[3] ?? "");
-            string t5 = WebUtility.HtmlEncode(wideThumbs5[4] ?? "");
-
-            // Medium tile: People-style mosaic or primary artwork
-            // Wide tile: TileWide310x150ImageCollection (5 album arts with native flipping & sliding transitions)
-            // Large tile: TileSquare310x310ImageCollection
-            string xml = string.Format(
-                "<tile><visual version=\"2\">" +
-                "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                "<binding template=\"TileSquare150x150Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                "<binding template=\"TileWide310x150ImageCollection\" fallback=\"TileWideImageCollection\">" +
-                "<image id=\"1\" src=\"{1}\"/><image id=\"2\" src=\"{2}\"/><image id=\"3\" src=\"{3}\"/><image id=\"4\" src=\"{4}\"/><image id=\"5\" src=\"{5}\"/>" +
-                "</binding>" +
-                "<binding template=\"TileSquare310x310ImageCollection\">" +
-                "<image id=\"1\" src=\"{1}\"/><image id=\"2\" src=\"{2}\"/><image id=\"3\" src=\"{3}\"/><image id=\"4\" src=\"{4}\"/><image id=\"5\" src=\"{5}\"/>" +
-                "</binding>" +
-                "</visual></tile>", safeMediumThumb, t1, t2, t3, t4, t5);
-
-            var doc = new XmlDocument();
-            doc.LoadXml(xml);
-            var notif = new TileNotification(doc)
+            if (string.IsNullOrEmpty(url)) return null;
+            try
             {
-                Tag = tag ?? ("rec_" + index),
-                ExpirationTime = DateTimeOffset.UtcNow.AddDays(1)
-            };
-            updater.Update(notif);
+                byte[] raw = await _httpClient.GetByteArrayAsync(url);
+                if (raw == null || raw.Length == 0) return null;
+                var file = await ApplicationData.Current.LocalFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
+                using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
+                {
+                    using (var writer = new DataWriter(stream))
+                    {
+                        writer.WriteBytes(raw);
+                        await writer.StoreAsync();
+                        await writer.FlushAsync();
+                    }
+                }
+                return "ms-appdata:///local/" + fileName;
+            }
+            catch
+            {
+                return null;
+            }
         }
-
-        // ── People Hub Mosaic Generator (WinRT Bitmap Composition) ──
 
         public static async Task<string> GenerateMosaicTileAsync(List<string> thumbUrls, int gridSize, string fileName)
         {
@@ -705,7 +728,28 @@ namespace YTMusicWP.Services
                 canvasPixels[i + 3] = 255;// A
             }
 
-            // Download and decode each thumbnail slot
+            // Prepare URLs
+            var urlsToFetch = new List<string>();
+            for (int idx = 0; idx < targetCount; idx++)
+            {
+                string url = idx < thumbUrls.Count ? thumbUrls[idx] : thumbUrls[idx % thumbUrls.Count];
+                urlsToFetch.Add(url);
+            }
+
+            // Download all in parallel
+            var downloadTasks = urlsToFetch.Select(async u =>
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(u)) return null;
+                    return await _httpClient.GetByteArrayAsync(u);
+                }
+                catch { return null; }
+            }).ToArray();
+
+            byte[][] downloadedBytes = await Task.WhenAll(downloadTasks);
+
+            // Decode and blit each thumbnail slot
             for (int idx = 0; idx < targetCount; idx++)
             {
                 int r = idx / gridSize;
@@ -713,14 +757,13 @@ namespace YTMusicWP.Services
                 int destX = pad + c * (tileSize + pad);
                 int destY = pad + r * (tileSize + pad);
 
-                string url = idx < thumbUrls.Count ? thumbUrls[idx] : thumbUrls[idx % thumbUrls.Count];
+                byte[] raw = downloadedBytes[idx];
                 byte[] tileBytes = null;
 
-                try
+                if (raw != null && raw.Length > 0)
                 {
-                    if (!string.IsNullOrEmpty(url))
+                    try
                     {
-                        byte[] raw = await _httpClient.GetByteArrayAsync(url);
                         using (var ms = new InMemoryRandomAccessStream())
                         {
                             using (var writer = new DataWriter(ms.GetOutputStreamAt(0)))
@@ -745,8 +788,8 @@ namespace YTMusicWP.Services
                             tileBytes = pixelData.DetachPixelData();
                         }
                     }
+                    catch { }
                 }
-                catch { }
 
                 // Blit pixel data into canvas
                 if (tileBytes != null && tileBytes.Length >= tileSize * tileSize * 4)
