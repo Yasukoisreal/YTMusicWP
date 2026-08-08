@@ -356,33 +356,78 @@ namespace AudioPlayerTask
 
                 string json = await response.Content.ReadAsStringAsync();
 
-                // Kiểm tra playabilityStatus
-                string status = "";
-                int statusPos = json.IndexOf("\"status\":\"");
-                if (statusPos >= 0)
+                Windows.Data.Json.JsonObject data;
+                if (Windows.Data.Json.JsonObject.TryParse(json, out data))
                 {
-                    int sStart = statusPos + 10;
-                    int sEnd = json.IndexOf("\"", sStart);
-                    if (sEnd > sStart)
-                        status = json.Substring(sStart, sEnd - sStart);
-                }
+                    string status = "";
+                    if (data.ContainsKey("playabilityStatus"))
+                    {
+                        var pStatus = data.GetNamedObject("playabilityStatus");
+                        if (pStatus.ContainsKey("status"))
+                            status = pStatus.GetNamedString("status");
+                    }
 
-                if (status != "OK")
-                {
-                    _innerTubeDebug = clientName + ":" + status;
-                    return null;
-                }
+                    if (status != "OK")
+                    {
+                        _innerTubeDebug = clientName + ":" + status;
+                        return null;
+                    }
 
-                string audioUrl = FindUrlByItag(json, "140");
-                if (string.IsNullOrEmpty(audioUrl))
-                    audioUrl = FindUrlByItag(json, "139");
-                if (string.IsNullOrEmpty(audioUrl))
-                    audioUrl = FindUrlByItag(json, "18");
+                    var qualitySettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                    string qualityKbps = qualitySettings.ContainsKey("AudioQualityKbps") ? qualitySettings["AudioQualityKbps"].ToString() : "128";
+                    int[] preferredItags;
+                    if (qualityKbps == "48") preferredItags = new[] { 139, 140, 18 };
+                    else if (qualityKbps == "256") preferredItags = new[] { 251, 141, 140, 18 };
+                    else preferredItags = new[] { 140, 139, 18 };
 
-                if (!string.IsNullOrEmpty(audioUrl))
-                {
-                    _innerTubeDebug = clientName + ":OK";
-                    return audioUrl;
+                    if (data.ContainsKey("streamingData"))
+                    {
+                        var streamingData = data.GetNamedObject("streamingData");
+                        if (streamingData.ContainsKey("adaptiveFormats"))
+                        {
+                            var formats = streamingData.GetNamedArray("adaptiveFormats");
+                            foreach (int targetItag in preferredItags)
+                            {
+                                foreach (var fmtVal in formats)
+                                {
+                                    if (fmtVal.ValueType == Windows.Data.Json.JsonValueType.Object)
+                                    {
+                                        var fmt = fmtVal.GetObject();
+                                        if (fmt.ContainsKey("itag"))
+                                        {
+                                            int itag = (int)fmt.GetNamedNumber("itag");
+                                            if (itag == targetItag && fmt.ContainsKey("url"))
+                                            {
+                                                _innerTubeDebug = clientName + ":OK";
+                                                return fmt.GetNamedString("url");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (streamingData.ContainsKey("formats"))
+                        {
+                            var formats = streamingData.GetNamedArray("formats");
+                            foreach (var fmtVal in formats)
+                            {
+                                if (fmtVal.ValueType == Windows.Data.Json.JsonValueType.Object)
+                                {
+                                    var fmt = fmtVal.GetObject();
+                                    if (fmt.ContainsKey("itag"))
+                                    {
+                                        int itag = (int)fmt.GetNamedNumber("itag");
+                                        if (itag == 18 && fmt.ContainsKey("url"))
+                                        {
+                                            _innerTubeDebug = clientName + ":OK";
+                                            return fmt.GetNamedString("url");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 _innerTubeDebug = clientName + ":NO_URL";
@@ -394,39 +439,6 @@ namespace AudioPlayerTask
                 _innerTubeDebug = clientName + ":EX:" + ex.Message.Substring(0, Math.Min(30, ex.Message.Length));
                 return null;
             }
-        }
-
-        /// <summary>
-        /// Parse JSON thủ công để tìm URL theo itag.
-        /// Tìm pattern: "itag":140,..."url":"https://..."
-        /// </summary>
-        private string FindUrlByItag(string json, string itag)
-        {
-            // Tìm "itag":140 hoặc "itag": 140
-            string marker = "\"itag\":" + itag;
-            int pos = json.IndexOf(marker);
-            if (pos < 0)
-            {
-                marker = "\"itag\": " + itag;
-                pos = json.IndexOf(marker);
-            }
-            if (pos < 0) return null;
-
-            // Tìm "url":"..." gần nhất SAU itag
-            string urlMarker = "\"url\":\"";
-            int urlPos = json.IndexOf(urlMarker, pos);
-            if (urlPos < 0 || urlPos - pos > 500) return null; // Quá xa = sai format
-
-            int urlStart = urlPos + urlMarker.Length;
-            int urlEnd = json.IndexOf("\"", urlStart);
-            if (urlEnd <= urlStart) return null;
-
-            string url = json.Substring(urlStart, urlEnd - urlStart)
-                .Replace("\\/", "/")
-                .Replace("\\u0026", "&");
-
-            if (url.StartsWith("http")) return url;
-            return null;
         }
 
 
