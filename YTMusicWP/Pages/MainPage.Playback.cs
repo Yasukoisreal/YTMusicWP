@@ -562,11 +562,6 @@ namespace YTMusicWP
                         catch { }
                     }
 
-                    if (!string.IsNullOrEmpty(title))
-                    {
-                        YTMusicWP.Services.TileService.UpdateNowPlaying(title, artist, thumb);
-                    }
-
                     if (!string.IsNullOrEmpty(vid))
                     {
                         currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
