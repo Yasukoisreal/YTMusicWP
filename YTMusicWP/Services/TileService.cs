@@ -148,6 +148,7 @@ namespace YTMusicWP.Services
 
                 var updater = TileUpdateManager.CreateTileUpdaterForApplication();
                 updater.EnableNotificationQueue(true);
+                updater.Clear();
 
                 string squareThumb = FormatSquareThumbnail(thumbUrl);
                 string safeThumb = WebUtility.HtmlEncode(squareThumb);
@@ -668,7 +669,7 @@ namespace YTMusicWP.Services
                 "<tile><visual version=\"2\">" +
                 "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                 "<binding template=\"TileSquare150x150Image\"><image id=\"1\" src=\"{1}\"/></binding>" +
-                "<binding template=\"TileWide310x150ImageCollection\" fallback=\"TileWideImageCollection\">" +
+                "<binding template=\"TileWide310x150ImageCollection\">" +
                 "<image id=\"1\" src=\"{0}\"/><image id=\"2\" src=\"{2}\"/><image id=\"3\" src=\"{3}\"/><image id=\"4\" src=\"{4}\"/><image id=\"5\" src=\"{5}\"/>" +
                 "</binding>" +
                 "<binding template=\"TileSquare310x310Image\"><image id=\"1\" src=\"{1}\"/></binding>" +
@@ -693,12 +694,80 @@ namespace YTMusicWP.Services
             {
                 byte[] raw = await _httpClient.GetByteArrayAsync(url);
                 if (raw == null || raw.Length == 0) return null;
+
+                byte[] squarePngBytes = null;
+                try
+                {
+                    using (var inStream = new InMemoryRandomAccessStream())
+                    {
+                        using (var writer = new DataWriter(inStream.GetOutputStreamAt(0)))
+                        {
+                            writer.WriteBytes(raw);
+                            await writer.StoreAsync();
+                        }
+
+                        var decoder = await BitmapDecoder.CreateAsync(inStream);
+                        uint srcW = decoder.PixelWidth;
+                        uint srcH = decoder.PixelHeight;
+                        uint cropSize = Math.Min(srcW, srcH);
+                        uint cropX = (srcW - cropSize) / 2;
+                        uint cropY = (srcH - cropSize) / 2;
+                        uint targetSize = Math.Min(cropSize, 480);
+                        if (targetSize < 120) targetSize = cropSize;
+
+                        var transform = new BitmapTransform
+                        {
+                            Bounds = new BitmapBounds
+                            {
+                                X = cropX,
+                                Y = cropY,
+                                Width = cropSize,
+                                Height = cropSize
+                            },
+                            ScaledWidth = targetSize,
+                            ScaledHeight = targetSize,
+                            InterpolationMode = BitmapInterpolationMode.Fant
+                        };
+
+                        var pixelData = await decoder.GetPixelDataAsync(
+                            BitmapPixelFormat.Bgra8,
+                            BitmapAlphaMode.Premultiplied,
+                            transform,
+                            ExifOrientationMode.RespectExifOrientation,
+                            ColorManagementMode.ColorManageToSRgb);
+
+                        byte[] pixels = pixelData.DetachPixelData();
+
+                        using (var outStream = new InMemoryRandomAccessStream())
+                        {
+                            var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, outStream);
+                            encoder.SetPixelData(
+                                BitmapPixelFormat.Bgra8,
+                                BitmapAlphaMode.Premultiplied,
+                                targetSize,
+                                targetSize,
+                                96,
+                                96,
+                                pixels);
+                            await encoder.FlushAsync();
+
+                            squarePngBytes = new byte[outStream.Size];
+                            using (var reader = new DataReader(outStream.GetInputStreamAt(0)))
+                            {
+                                await reader.LoadAsync((uint)outStream.Size);
+                                reader.ReadBytes(squarePngBytes);
+                            }
+                        }
+                    }
+                }
+                catch { }
+
                 var file = await ApplicationData.Current.LocalFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
                 using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
                 {
                     using (var writer = new DataWriter(stream))
                     {
-                        writer.WriteBytes(raw);
+                        writer.WriteBytes(squarePngBytes ?? raw);
                         await writer.StoreAsync();
                         await writer.FlushAsync();
                     }
@@ -717,7 +786,10 @@ namespace YTMusicWP.Services
 
             int targetCount = gridSize * gridSize; // 4 for 2x2, 9 for 3x3
             int canvasSize = 336; // Native WP8.1 medium tile rendering canvas
-            int pad = gridSize == 3 ? 4 : 6;
+            // Perfect pixel symmetry:
+            // 3x3: pad = 3 -> 336 - 12 = 324 / 3 = 108px per tile (margins = 3px, gaps = 3px)
+            // 2x2: pad = 6 -> 336 - 18 = 318 / 2 = 159px per tile (margins = 6px, gaps = 6px)
+            int pad = gridSize == 3 ? 3 : 6;
             int tileSize = (canvasSize - pad * (gridSize + 1)) / gridSize;
 
             byte[] canvasPixels = new byte[canvasSize * canvasSize * 4];
@@ -752,7 +824,7 @@ namespace YTMusicWP.Services
 
             byte[][] downloadedBytes = await Task.WhenAll(downloadTasks);
 
-            // Decode and blit each thumbnail slot
+            // Decode, center-crop to 1:1, and blit each thumbnail slot
             for (int idx = 0; idx < targetCount; idx++)
             {
                 int r = idx / gridSize;
@@ -776,8 +848,21 @@ namespace YTMusicWP.Services
                             }
 
                             var decoder = await BitmapDecoder.CreateAsync(ms);
+                            uint srcW = decoder.PixelWidth;
+                            uint srcH = decoder.PixelHeight;
+                            uint cropSize = Math.Min(srcW, srcH);
+                            uint cropX = (srcW - cropSize) / 2;
+                            uint cropY = (srcH - cropSize) / 2;
+
                             var transform = new BitmapTransform
                             {
+                                Bounds = new BitmapBounds
+                                {
+                                    X = cropX,
+                                    Y = cropY,
+                                    Width = cropSize,
+                                    Height = cropSize
+                                },
                                 ScaledWidth = (uint)tileSize,
                                 ScaledHeight = (uint)tileSize,
                                 InterpolationMode = BitmapInterpolationMode.Fant
