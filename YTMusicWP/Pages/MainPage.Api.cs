@@ -57,63 +57,55 @@ namespace YTMusicWP
 
         /// <summary>
         /// Get best thumbnail for 1:1 square display (playlist covers).
-        /// YouTube Music thumbnails (lh3.googleusercontent.com) → request 1:1 crop.
-        /// YouTube thumbnails (i.ytimg.com) → use mqdefault (16:9, no letterbox bars).
+        /// <summary>
+        /// Convert any thumbnail URL to 1:1 square crop for UI display and tiles.
+        /// Google CDN / YouTube Music thumbnails (*.googleusercontent.com, *.ggpht.com) -> =w480-h480-l90-rj
+        /// YouTube video thumbnails (i.ytimg.com) -> mqdefault / maxresdefault
         /// </summary>
-        private static string GetSquareThumbnail(string url)
+        public static string GetSquareThumbnail(string url)
         {
             if (string.IsNullOrEmpty(url)) return url;
-            // YouTube Music thumbnails — request square crop
-            if (url.Contains("lh3.googleusercontent.com") || url.Contains("yt3.ggpht.com"))
+
+            // Google CDN / YouTube Music thumbnails — request 1:1 square crop
+            if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
             {
-                // Remove any existing size params and request square
                 int eqIdx = url.LastIndexOf("=");
                 if (eqIdx > 0)
                     return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
                 return url + "=w480-h480-l90-rj";
             }
-            // YouTube video thumbnails — use mqdefault (320x180, true 16:9 without letterbox)
-            // hqdefault is 480x360 (4:3 with black bars baked in)
+
+            // YouTube video thumbnails — use mqdefault (16:9, no 4:3 letterbox bars)
             if (url.Contains("hqdefault.jpg"))
                 return url.Replace("hqdefault.jpg", "mqdefault.jpg");
             if (url.Contains("sddefault.jpg"))
                 return url.Replace("sddefault.jpg", "mqdefault.jpg");
+
             return url;
         }
 
         /// <summary>
         /// High-res thumbnail for Now Playing (300×300 display).
-        /// YTM thumbnails → 1:1 square crop at 480px.
-        /// YouTube thumbnails → maxresdefault (1280×720, true 16:9, no letterbox).
-        /// DecodePixelWidth=480 limits memory usage on 512MB devices.
         /// </summary>
-        private static string GetNowPlayingThumbnail(string url)
+        public static string GetNowPlayingThumbnail(string url)
         {
             if (string.IsNullOrEmpty(url)) return url;
-            // YouTube Music thumbnails — request high-res square
-            if (url.Contains("lh3.googleusercontent.com") || url.Contains("yt3.ggpht.com"))
+
+            if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
             {
                 int eqIdx = url.LastIndexOf("=");
                 if (eqIdx > 0)
                     return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
                 return url + "=w480-h480-l90-rj";
             }
-            // YouTube video thumbnails — use maxresdefault (true 16:9, no letterbox bars)
-            // hqdefault is 480×360 (4:3 with black bars) — UNUSABLE for 1:1
-            // maxresdefault is 1280×720 (true 16:9) — DecodePixelWidth keeps RAM low
+
             if (url.Contains("hqdefault.jpg"))
                 return url.Replace("hqdefault.jpg", "maxresdefault.jpg");
             if (url.Contains("mqdefault.jpg"))
                 return url.Replace("mqdefault.jpg", "maxresdefault.jpg");
             if (url.Contains("sddefault.jpg"))
                 return url.Replace("sddefault.jpg", "maxresdefault.jpg");
-            // General size params
-            if (url.Contains("=w120-h120"))
-                return url.Replace("=w120-h120", "=w480-h480-l90-rj");
-            if (url.Contains("=w60-h60"))
-                return url.Replace("=w60-h60", "=w480-h480-l90-rj");
-            if (url.Contains("=w226-h226"))
-                return url.Replace("=w226-h226", "=w480-h480-l90-rj");
+
             return url;
         }
 

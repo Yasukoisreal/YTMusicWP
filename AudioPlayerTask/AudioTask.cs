@@ -644,7 +644,8 @@ namespace AudioPlayerTask
                     {
                         var updater = TileUpdateManager.CreateTileUpdaterForApplication();
                         updater.EnableNotificationQueue(true);
-                        string safeThumb = System.Net.WebUtility.HtmlEncode(thumb ?? "");
+                        string squareThumb = FormatSquareThumbnail(thumb);
+                        string safeThumb = System.Net.WebUtility.HtmlEncode(squareThumb ?? "");
                         string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
                         string safeArtist = System.Net.WebUtility.HtmlEncode(artist ?? "");
                         string xml = string.Format("<tile><visual version=\"2\"><binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding><binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding><binding template=\"TileWide310x150SmallImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding></visual></tile>", safeThumb, safeTitle, safeArtist);
@@ -892,6 +893,22 @@ namespace AudioPlayerTask
                 case SystemMediaTransportControlsButton.Next: MoveNext(); break;
                 case SystemMediaTransportControlsButton.Previous: MovePrevious(); break;
             }
+        }
+        private static string FormatSquareThumbnail(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
+            {
+                int eqIdx = url.LastIndexOf("=");
+                if (eqIdx > 0)
+                    return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
+                return url + "=w480-h480-l90-rj";
+            }
+            if (url.Contains("hqdefault.jpg"))
+                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+            if (url.Contains("sddefault.jpg"))
+                return url.Replace("sddefault.jpg", "mqdefault.jpg");
+            return url;
         }
     }
 }

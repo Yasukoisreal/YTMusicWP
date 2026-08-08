@@ -104,7 +104,8 @@ namespace YTMusicWP.Services
                 var updater = TileUpdateManager.CreateTileUpdaterForApplication();
                 updater.EnableNotificationQueue(true);
 
-                string safeThumb = WebUtility.HtmlEncode(thumbUrl);
+                string squareThumb = FormatSquareThumbnail(thumbUrl);
+                string safeThumb = WebUtility.HtmlEncode(squareThumb);
                 string safeTitle = WebUtility.HtmlEncode(title ?? "");
                 string safeArtist = WebUtility.HtmlEncode(artist ?? "");
 
@@ -205,7 +206,8 @@ namespace YTMusicWP.Services
 
         private static void PushRecommendationTile(TileUpdater updater, TileItem item, int index)
         {
-            string safeThumb = WebUtility.HtmlEncode(item.Track.ThumbnailUrl);
+            string squareThumb = FormatSquareThumbnail(item.Track.ThumbnailUrl);
+            string safeThumb = WebUtility.HtmlEncode(squareThumb);
             string safeTitle = WebUtility.HtmlEncode(item.Track.Title);
             string safeArtist = WebUtility.HtmlEncode(item.Track.ChannelName ?? "YouTube Music");
             string safeLabel = WebUtility.HtmlEncode(item.Label);
@@ -227,6 +229,29 @@ namespace YTMusicWP.Services
                 ExpirationTime = DateTimeOffset.UtcNow.AddDays(1)
             };
             updater.Update(notif);
+        }
+
+        public static string FormatSquareThumbnail(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+
+            // Google CDN / YouTube Music thumbnails (*.googleusercontent.com, *.ggpht.com)
+            // Replace any size parameter (e.g. =w120-h120, =s192, =w60-h60-l90-rj) with 1:1 square crop =w480-h480-l90-rj
+            if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
+            {
+                int eqIdx = url.LastIndexOf("=");
+                if (eqIdx > 0)
+                    return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
+                return url + "=w480-h480-l90-rj";
+            }
+
+            // YouTube video thumbnails — avoid 4:3 letterboxed hqdefault
+            if (url.Contains("hqdefault.jpg"))
+                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+            if (url.Contains("sddefault.jpg"))
+                return url.Replace("sddefault.jpg", "mqdefault.jpg");
+
+            return url;
         }
 
         private static bool IsValidTrack(YouTubeTrack t)

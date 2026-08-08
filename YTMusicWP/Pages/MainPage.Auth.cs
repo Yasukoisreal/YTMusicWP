@@ -782,7 +782,7 @@ namespace YTMusicWP
                         Title = title,
                         ChannelName = channel,
                         ChannelId = chId,
-                        ThumbnailUrl = thumbUrl
+                        ThumbnailUrl = GetSquareThumbnail(thumbUrl)
                     });
                     hasNew = true;
                 }
