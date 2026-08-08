@@ -66,6 +66,33 @@ namespace YTMusicWP.Services
             }
         }
 
+        // 0: Calm / Slow (2 items - Recommended for relaxed & elegant flipping)
+        // 1: Moderate (3 items)
+        // 2: Dynamic (5 items - Rapid rotation)
+        public static int LiveTileSpeed
+        {
+            get
+            {
+                try
+                {
+                    var settings = ApplicationData.Current.LocalSettings.Values;
+                    return settings.ContainsKey("LiveTileSpeed") ? Convert.ToInt32(settings["LiveTileSpeed"]) : 0;
+                }
+                catch { return 0; }
+            }
+            set
+            {
+                try
+                {
+                    ApplicationData.Current.LocalSettings.Values["LiveTileSpeed"] = value;
+                }
+                catch { }
+            }
+        }
+
+        private static DateTime _lastRecommendationUpdate = DateTime.MinValue;
+        private static readonly TimeSpan MinUpdateInterval = TimeSpan.FromMinutes(10);
+
         public static void ClearLiveTile()
         {
             try
@@ -150,7 +177,7 @@ namespace YTMusicWP.Services
                 // If Up Next has tracks, push an Up Next tile to rotate with Now Playing
                 if (upNextTracks != null)
                 {
-                    var nextList = upNextTracks.Where(IsValidTrack).Take(3).ToList();
+                    var nextList = upNextTracks.Where(IsValidTrack).Take(2).ToList();
                     if (nextList.Count > 0)
                     {
                         var next1 = nextList[0];
@@ -188,28 +215,37 @@ namespace YTMusicWP.Services
             IEnumerable<YouTubeTrack> homeTracks,
             IEnumerable<YouTubeTrack> favoriteTracks = null,
             IEnumerable<YouTubeTrack> historyTracks = null,
-            int maxCount = 5)
+            int maxCount = 5,
+            bool force = false)
         {
             Task.Run(async () =>
             {
-                await UpdateRecommendationsAsync(homeTracks, favoriteTracks, historyTracks, maxCount);
+                await UpdateRecommendationsAsync(homeTracks, favoriteTracks, historyTracks, maxCount, force);
             });
         }
 
         public static void UpdateRecommendations(IEnumerable<YouTubeTrack> homeTracks, int maxCount)
         {
-            UpdateRecommendations(homeTracks, null, null, maxCount);
+            UpdateRecommendations(homeTracks, null, null, maxCount, false);
         }
 
         public static async Task UpdateRecommendationsAsync(
             IEnumerable<YouTubeTrack> homeTracks,
             IEnumerable<YouTubeTrack> favoriteTracks = null,
             IEnumerable<YouTubeTrack> historyTracks = null,
-            int maxCount = 5)
+            int maxCount = 5,
+            bool force = false)
         {
             try
             {
                 if (!IsLiveTileEnabled || LiveTileMode != 0) return;
+
+                // Throttling: Prevent updating too fast unless forced by user setting change
+                if (!force && (DateTime.UtcNow - _lastRecommendationUpdate) < MinUpdateInterval)
+                {
+                    return;
+                }
+                _lastRecommendationUpdate = DateTime.UtcNow;
 
                 // 1. Build a diverse list of valid unique tracks
                 var pool = new List<TileItem>();
@@ -268,6 +304,12 @@ namespace YTMusicWP.Services
                 updater.EnableNotificationQueue(true);
                 updater.Clear();
 
+                int speed = LiveTileSpeed;
+                // speed 0 (Calm / Slower): 2 items in queue -> Windows Phone cycles slowly & stays static longer
+                // speed 1 (Moderate): 3 items in queue
+                // speed 2 (Dynamic): 5 items in queue
+                int maxQueueItems = (speed == 0) ? 2 : (speed == 1 ? 3 : 5);
+
                 // 3. Build Notification Queue items
                 // --- Item 0: People 9-Box Mosaic (Medium) + Wide 5-Image Flipping Collection (Wide) ---
                 if (!string.IsNullOrEmpty(mosaic3x3_Path) && thumbUrls.Count >= 5)
@@ -280,36 +322,42 @@ namespace YTMusicWP.Services
                 }
 
                 // --- Item 1: Typography Block Tile (#1 Charts / Billboard Style) ---
-                if (pool.Count > 0)
+                if (maxQueueItems >= 2 && pool.Count > 0)
                 {
                     var topTrending = pool.FirstOrDefault(p => p.Label == "Trending") ?? pool[0];
                     PushBlockNumberTile(updater, topTrending, "#1", "Top Charts", 1);
                 }
 
                 // --- Item 2: People 4-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide) ---
-                if (!string.IsNullOrEmpty(mosaic2x2_Path) && pool.Count > 1)
+                if (maxQueueItems >= 3)
                 {
-                    PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], "mosaic_4_tile", 2);
-                }
-                else if (pool.Count > 1)
-                {
-                    PushSingleItemTile(updater, pool[1], 2);
+                    if (!string.IsNullOrEmpty(mosaic2x2_Path) && pool.Count > 1)
+                    {
+                        PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], "mosaic_4_tile", 2);
+                    }
+                    else if (pool.Count > 1)
+                    {
+                        PushSingleItemTile(updater, pool[1], 2);
+                    }
                 }
 
                 // --- Item 3: Featured Track with Wide 5-Image Flipping Collection ---
-                if (thumbUrls.Count >= 5 && pool.Count > 2)
+                if (maxQueueItems >= 4)
                 {
-                    var altThumbs = thumbUrls.Skip(1).Take(5).ToList();
-                    if (altThumbs.Count < 5) altThumbs = thumbUrls.Take(5).ToList();
-                    PushImageCollectionTile(updater, FormatSquareThumbnail(pool[2].Track.ThumbnailUrl), altThumbs, "alt_collection", 3);
-                }
-                else if (pool.Count > 2)
-                {
-                    PushSingleItemTile(updater, pool[2], 3);
+                    if (thumbUrls.Count >= 5 && pool.Count > 2)
+                    {
+                        var altThumbs = thumbUrls.Skip(1).Take(5).ToList();
+                        if (altThumbs.Count < 5) altThumbs = thumbUrls.Take(5).ToList();
+                        PushImageCollectionTile(updater, FormatSquareThumbnail(pool[2].Track.ThumbnailUrl), altThumbs, "alt_collection", 3);
+                    }
+                    else if (pool.Count > 2)
+                    {
+                        PushSingleItemTile(updater, pool[2], 3);
+                    }
                 }
 
                 // --- Item 4: Featured Favorite Track with Photos-Style Vertical Slide ---
-                if (pool.Count > 3)
+                if (maxQueueItems >= 5 && pool.Count > 3)
                 {
                     PushSingleItemTile(updater, pool[3], 4);
                 }

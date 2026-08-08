@@ -1427,6 +1427,24 @@
                                     <ComboBoxItem Content="Transparent Only" Tag="2"/>
                                 </ComboBox>
                             </Grid>
+                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                            <!-- Live Tile Rotation Speed / Flip Frequency -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Cycle Speed" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Pace of Live Tile rotation &amp; flips" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ComboBox x:Name="LiveTileSpeedComboBox" Grid.Column="1" Background="#252525" Foreground="White" BorderThickness="0" Width="140" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="Calm (Slow)" Tag="0"/>
+                                    <ComboBoxItem Content="Moderate" Tag="1"/>
+                                    <ComboBoxItem Content="Dynamic" Tag="2"/>
+                                </ComboBox>
+                            </Grid>
                         </StackPanel>
                     </Border>
 

@@ -139,6 +139,9 @@ namespace YTMusicWP
                 int tileMode = YTMusicWP.Services.TileService.LiveTileMode;
                 if (tileMode >= 0 && tileMode < LiveTileModeComboBox.Items.Count)
                     LiveTileModeComboBox.SelectedIndex = tileMode;
+                int tileSpeed = YTMusicWP.Services.TileService.LiveTileSpeed;
+                if (tileSpeed >= 0 && tileSpeed < LiveTileSpeedComboBox.Items.Count)
+                    LiveTileSpeedComboBox.SelectedIndex = tileSpeed;
 
                 // Now attach handlers — changes will save & apply immediately
                 AudioQualityComboBox.SelectionChanged += AudioQualityComboBox_SelectionChanged;
@@ -149,6 +152,7 @@ namespace YTMusicWP
                 RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
                 LiveTileToggle.Toggled += LiveTileToggle_Toggled;
                 LiveTileModeComboBox.SelectionChanged += LiveTileModeComboBox_SelectionChanged;
+                LiveTileSpeedComboBox.SelectionChanged += LiveTileSpeedComboBox_SelectionChanged;
             }
             catch { }
         }
@@ -230,7 +234,16 @@ namespace YTMusicWP
             YTMusicWP.Services.TileService.LiveTileMode = LiveTileModeComboBox.SelectedIndex;
             if (LiveTileModeComboBox.SelectedIndex == 0 && homeTracks != null && homeTracks.Count > 0)
             {
-                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
+                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks, 5, true);
+            }
+        }
+
+        private void LiveTileSpeedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            YTMusicWP.Services.TileService.LiveTileSpeed = LiveTileSpeedComboBox.SelectedIndex;
+            if (LiveTileToggle.IsOn && homeTracks != null && homeTracks.Count > 0)
+            {
+                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks, 5, true);
             }
         }
 
