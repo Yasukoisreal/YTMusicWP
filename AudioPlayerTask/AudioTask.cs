@@ -647,12 +647,21 @@ namespace AudioPlayerTask
                         string safeThumb = System.Net.WebUtility.HtmlEncode(thumb ?? "");
                         string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
                         string safeArtist = System.Net.WebUtility.HtmlEncode(artist ?? "");
-                        string xml = string.Format("<tile><visual version=\"2\"><binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding><binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding><binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding></visual></tile>", safeThumb, safeTitle, safeArtist);
+                        string xml = string.Format("<tile><visual version=\"2\"><binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding><binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding><binding template=\"TileWide310x150SmallImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding></visual></tile>", safeThumb, safeTitle, safeArtist);
                         var doc = new XmlDocument();
                         doc.LoadXml(xml);
                         var notif = new TileNotification(doc);
                         notif.Tag = "nowplaying";
                         updater.Update(notif);
+
+                        // Badge glyph "playing" on lock screen
+                        try
+                        {
+                            var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
+                            ((XmlElement)badgeXml.SelectSingleNode("/badge")).SetAttribute("value", "playing");
+                            BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
+                        }
+                        catch { }
                     }
                 }
             }
@@ -842,9 +851,34 @@ namespace AudioPlayerTask
                     if (!_isRetrying) _retryCount = 0;
                     _isRetrying = false;
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                    try
+                    {
+                        var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
+                        ((XmlElement)badgeXml.SelectSingleNode("/badge")).SetAttribute("value", "playing");
+                        BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
+                    }
+                    catch { }
                 }
-                else if (sender.CurrentState == MediaPlayerState.Paused) _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
-                else if (sender.CurrentState == MediaPlayerState.Closed) _systemControls.PlaybackStatus = MediaPlaybackStatus.Closed;
+                else if (sender.CurrentState == MediaPlayerState.Paused)
+                {
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
+                    try
+                    {
+                        var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
+                        ((XmlElement)badgeXml.SelectSingleNode("/badge")).SetAttribute("value", "paused");
+                        BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
+                    }
+                    catch { }
+                }
+                else if (sender.CurrentState == MediaPlayerState.Closed || sender.CurrentState == MediaPlayerState.Stopped)
+                {
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Closed;
+                    try
+                    {
+                        BadgeUpdateManager.CreateBadgeUpdaterForApplication().Clear();
+                    }
+                    catch { }
+                }
             }
             catch { }
         }

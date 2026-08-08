@@ -205,7 +205,7 @@ namespace YTMusicWP
                     {
                         _currentHomeQuery = homeSections[0].Title;
                         var topTracks = homeSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
-                        YTMusicWP.Services.TileService.UpdateRecommendations(topTracks);
+                        YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
                     }
                     HomeLoading.Visibility = Visibility.Collapsed;
                     return;
@@ -316,7 +316,7 @@ namespace YTMusicWP
             if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
-            YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks);
+            YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
 
             var batch3a = FetchMusicList(queries[4], "", "songs");
             var batch3b = FetchMusicList(queries[5], "", "songs");

@@ -221,7 +221,7 @@ namespace YTMusicWP
             YTMusicWP.Services.TileService.IsLiveTileEnabled = LiveTileToggle.IsOn;
             if (LiveTileToggle.IsOn && homeTracks != null && homeTracks.Count > 0)
             {
-                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks);
+                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
             }
         }
 
@@ -230,7 +230,7 @@ namespace YTMusicWP
             YTMusicWP.Services.TileService.LiveTileMode = LiveTileModeComboBox.SelectedIndex;
             if (LiveTileModeComboBox.SelectedIndex == 0 && homeTracks != null && homeTracks.Count > 0)
             {
-                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks);
+                YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
             }
         }
 
