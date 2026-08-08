@@ -339,28 +339,20 @@ namespace YTMusicWP.Services
                 int maxQueueItems = (speed == 0) ? 2 : (speed == 1 ? 3 : 5);
 
                 // 3. Build Notification Queue items
-                // --- Item 0: People 9-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide & Large) ---
-                if (!string.IsNullOrEmpty(mosaic3x3_Path) && pool.Count > 0)
+                // --- Item 0: People 9-Box Mosaic (Medium & Large) + 5-Cover Collection (Wide) ---
+                if (!string.IsNullOrEmpty(mosaic3x3_Path))
                 {
-                    PushMosaicAndSlideTile(updater, mosaic3x3_Path, pool[0], feat0_Path, "mosaic_9_tile", 0);
+                    PushPeopleMosaicTile(updater, mosaic3x3_Path, thumbUrls.Take(5).ToList(), "mosaic_9_tile", 0);
                 }
                 else if (pool.Count > 0)
                 {
-                    PushSingleItemTile(updater, pool[0], feat0_Path, 0);
+                    PushPhotosSlideTile(updater, pool[0], feat0_Path, "rec_0", 0);
                 }
 
-                // --- Item 1: People 4-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide & Large) ---
-                if (maxQueueItems >= 2 && pool.Count > 1)
+                // --- Item 1: Photos-Style Vertical Slide (Medium, Wide, Large) ---
+                if (maxQueueItems >= 2 && pool.Count > 0)
                 {
-                    if (!string.IsNullOrEmpty(mosaic2x2_Path))
-                    {
-                        PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], feat1_Path, "mosaic_4_tile", 1);
-                    }
-                    else
-                    {
-                        var topTrending = pool.FirstOrDefault(p => p.Label == "Trending") ?? pool[1];
-                        PushBlockNumberTile(updater, topTrending, "#1", "Top Charts", 1);
-                    }
+                    PushPhotosSlideTile(updater, pool[0], feat0_Path, "slide_0", 1);
                 }
 
                 // --- Item 2: Typography Billboard Tile (#1 Charts / Billboard Style) ---
@@ -370,16 +362,16 @@ namespace YTMusicWP.Services
                     PushBlockNumberTile(updater, topTrending, "#1", "Top Charts", 2);
                 }
 
-                // --- Item 3: Featured Favorite Track with Photos-Style Vertical Slide ---
-                if (maxQueueItems >= 4 && pool.Count > 2)
+                // --- Item 3: People 4-Box Mosaic (Medium & Large) ---
+                if (maxQueueItems >= 4 && !string.IsNullOrEmpty(mosaic2x2_Path))
                 {
-                    PushSingleItemTile(updater, pool[2], null, 3);
+                    PushPeopleMosaicTile(updater, mosaic2x2_Path, thumbUrls.Skip(4).Take(5).ToList(), "mosaic_4_tile", 3);
                 }
 
-                // --- Item 4: Featured Track with Photos-Style Vertical Slide ---
-                if (maxQueueItems >= 5 && pool.Count > 3)
+                // --- Item 4: Featured Track 2 with Photos-Style Vertical Slide ---
+                if (maxQueueItems >= 5 && pool.Count > 1)
                 {
-                    PushSingleItemTile(updater, pool[3], null, 4);
+                    PushPhotosSlideTile(updater, pool[1], feat1_Path, "slide_1", 4);
                 }
 
                 // 4. Schedule Daypart Notifications (Morning / Afternoon / Evening)
@@ -482,16 +474,16 @@ namespace YTMusicWP.Services
 
                 if (!string.IsNullOrEmpty(mosaicPath))
                 {
-                    PushMosaicAndSlideTile(updater, mosaicPath, new TileItem { Track = tracks[0], Label = displayName }, null, "sec_mosaic", 0);
+                    PushPeopleMosaicTile(updater, mosaicPath, thumbUrls.Take(5).ToList(), "sec_mosaic", 0);
                 }
                 else
                 {
-                    PushSingleItemTile(updater, new TileItem { Track = tracks[0], Label = displayName }, null, 0);
+                    PushPhotosSlideTile(updater, new TileItem { Track = tracks[0], Label = displayName }, null, "sec_0", 0);
                 }
 
                 if (tracks.Count > 1)
                 {
-                    PushSingleItemTile(updater, new TileItem { Track = tracks[1], Label = displayName }, null, 1);
+                    PushPhotosSlideTile(updater, new TileItem { Track = tracks[1], Label = displayName }, null, "sec_1", 1);
                 }
             }
             catch { }
@@ -616,7 +608,12 @@ namespace YTMusicWP.Services
             updater.Update(notif);
         }
 
-        private static void PushSingleItemTile(TileUpdater updater, TileItem item, string localImageUri, int index)
+        private static void PushPhotosSlideTile(
+            TileUpdater updater,
+            TileItem item,
+            string localImageUri,
+            string tag,
+            int index)
         {
             string squareThumb = string.IsNullOrEmpty(localImageUri) ? FormatSquareThumbnail(item.Track.ThumbnailUrl) : localImageUri;
             string safeThumb = WebUtility.HtmlEncode(squareThumb ?? "");
@@ -624,9 +621,10 @@ namespace YTMusicWP.Services
             string safeArtist = WebUtility.HtmlEncode(item.Track.ChannelName ?? "YouTube Music");
             string safeLabel = WebUtility.HtmlEncode(item.Label ?? "YouTube Music");
 
-            // Medium: TileSquare150x150PeekImageAndText04 (Peeks title over cover)
-            // Wide: TileWide310x150PeekImage01 (Photos app style: vertical sliding cover art)
-            // Large: TileSquare310x310PeekImage01 (Photos app style: vertical sliding cover art)
+            // Small: Single Cover
+            // Medium: TileSquare150x150PeekImageAndText04 (Photos-style peek text over cover)
+            // Wide: TileWide310x150PeekImage01 (Photos-style vertical slide)
+            // Large: TileSquare310x310PeekImage01 (Photos-style vertical slide)
             string xml = string.Format(
                 "<tile><visual version=\"2\">" +
                 "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
@@ -639,43 +637,48 @@ namespace YTMusicWP.Services
             doc.LoadXml(xml);
             var notif = new TileNotification(doc)
             {
-                Tag = "rec_" + index,
+                Tag = tag ?? ("slide_" + index),
                 ExpirationTime = DateTimeOffset.UtcNow.AddDays(1)
             };
             updater.Update(notif);
         }
 
-        private static void PushMosaicAndSlideTile(
+        private static void PushPeopleMosaicTile(
             TileUpdater updater,
-            string mediumMosaicUri,
-            TileItem wideItem,
-            string wideLocalImageUri,
+            string mosaicUri,
+            List<string> fiveThumbs,
             string tag,
             int index)
         {
-            string safeMediumThumb = WebUtility.HtmlEncode(mediumMosaicUri ?? "");
-            string wideThumb = string.IsNullOrEmpty(wideLocalImageUri) ? FormatSquareThumbnail(wideItem.Track.ThumbnailUrl) : wideLocalImageUri;
-            string safeWideThumb = WebUtility.HtmlEncode(wideThumb ?? "");
-            string safeTitle = WebUtility.HtmlEncode(wideItem.Track.Title ?? "");
-            string safeArtist = WebUtility.HtmlEncode(wideItem.Track.ChannelName ?? "YouTube Music");
-            string safeLabel = WebUtility.HtmlEncode(wideItem.Label ?? "YouTube Music");
+            string safeMosaic = WebUtility.HtmlEncode(mosaicUri ?? "");
+            var thumbs = new List<string>(fiveThumbs ?? new List<string>());
+            while (thumbs.Count < 5) thumbs.Add(thumbs.FirstOrDefault() ?? "");
 
-            // Medium tile: 9-Box or 4-Box Mosaic (People style)
-            // Wide tile: Photos app style vertical slide (TileWide310x150PeekImage01)
-            // Large tile: Photos app style vertical slide (TileSquare310x310PeekImage01)
+            string t1 = WebUtility.HtmlEncode(thumbs[0] ?? "");
+            string t2 = WebUtility.HtmlEncode(thumbs[1] ?? "");
+            string t3 = WebUtility.HtmlEncode(thumbs[2] ?? "");
+            string t4 = WebUtility.HtmlEncode(thumbs[3] ?? "");
+            string t5 = WebUtility.HtmlEncode(thumbs[4] ?? "");
+
+            // Small: First track cover
+            // Medium: 9-Box / 4-Box People Mosaic
+            // Wide: TileWide310x150ImageCollection (5 rotating album arts)
+            // Large: TileSquare310x310Image (Full-resolution 9-Box / 4-Box People Mosaic)
             string xml = string.Format(
                 "<tile><visual version=\"2\">" +
                 "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                "<binding template=\"TileSquare150x150Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{1}\"/><text id=\"1\">{2}</text><text id=\"2\">{3} · {4}</text></binding>" +
-                "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{1}\"/><text id=\"1\">{2}</text><text id=\"2\">{3}</text></binding>" +
-                "</visual></tile>", safeMediumThumb, safeWideThumb, safeTitle, safeArtist, safeLabel);
+                "<binding template=\"TileSquare150x150Image\"><image id=\"1\" src=\"{1}\"/></binding>" +
+                "<binding template=\"TileWide310x150ImageCollection\" fallback=\"TileWideImageCollection\">" +
+                "<image id=\"1\" src=\"{0}\"/><image id=\"2\" src=\"{2}\"/><image id=\"3\" src=\"{3}\"/><image id=\"4\" src=\"{4}\"/><image id=\"5\" src=\"{5}\"/>" +
+                "</binding>" +
+                "<binding template=\"TileSquare310x310Image\"><image id=\"1\" src=\"{1}\"/></binding>" +
+                "</visual></tile>", t1, safeMosaic, t2, t3, t4, t5);
 
             var doc = new XmlDocument();
             doc.LoadXml(xml);
             var notif = new TileNotification(doc)
             {
-                Tag = tag ?? ("rec_" + index),
+                Tag = tag ?? ("mosaic_" + index),
                 ExpirationTime = DateTimeOffset.UtcNow.AddDays(1)
             };
             updater.Update(notif);
