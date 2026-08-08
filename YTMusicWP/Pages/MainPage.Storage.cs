@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using YTMusicWP.Services;
 
 namespace YTMusicWP
 {
@@ -272,6 +273,42 @@ namespace YTMusicWP
                     });
                 }
                 RefreshHomeHistorySections();
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Asynchronously upgrade any 16:9 YouTube video thumbnails (i.ytimg.com) in Favorites
+        /// to genuine 1:1 square YouTube Music album art (googleusercontent.com).
+        /// </summary>
+        public async Task UpgradeCachedThumbnailsAsync()
+        {
+            if (!IsInternetAvailable()) return;
+
+            bool hasUpdated = false;
+            try
+            {
+                int count = 0;
+                foreach (var track in favoriteTracks.ToList())
+                {
+                    if (count >= 10) break;
+                    if (!string.IsNullOrEmpty(track.ThumbnailUrl) && (track.ThumbnailUrl.Contains("i.ytimg.com") || !track.ThumbnailUrl.Contains("googleusercontent.com")))
+                    {
+                        string squareArt = await InnerTubeClient.GetSquareArtworkForTrackAsync(track.Title, track.ChannelName, track.ThumbnailUrl);
+                        if (!string.IsNullOrEmpty(squareArt) && squareArt.Contains("googleusercontent.com"))
+                        {
+                            track.ThumbnailUrl = squareArt;
+                            hasUpdated = true;
+                            count++;
+                        }
+                    }
+                }
+
+                if (hasUpdated)
+                {
+                    SaveFavoritesAsync();
+                    TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks, 5);
+                }
             }
             catch { }
         }

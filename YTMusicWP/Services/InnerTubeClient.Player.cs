@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace YTMusicWP
@@ -359,12 +360,77 @@ namespace YTMusicWP
                         isMusic = true;
                 }
 
+                // If thumbUrl is a YouTube video thumbnail (16:9), fetch true 1:1 square album art from YTM
+                if (isMusic && !string.IsNullOrEmpty(title) && (thumbUrl.Contains("i.ytimg.com") || !thumbUrl.Contains("googleusercontent.com")))
+                {
+                    string squareArt = await GetSquareArtworkForTrackAsync(title, author, thumbUrl);
+                    if (!string.IsNullOrEmpty(squareArt) && squareArt.Contains("googleusercontent.com"))
+                    {
+                        thumbUrl = squareArt;
+                    }
+                }
+
                 return new Tuple<string, string, string, bool, string>(title, author, thumbUrl, isMusic, channelId);
             }
             catch
             {
                 return new Tuple<string, string, string, bool, string>("", "", "", false, "");
             }
+        }
+
+        /// <summary>
+        /// Search YouTube Music for genuine 1:1 square album art (googleusercontent.com).
+        /// </summary>
+        public static async Task<string> GetSquareArtworkForTrackAsync(string title, string artist, string fallbackUrl = "")
+        {
+            if (string.IsNullOrEmpty(title)) return fallbackUrl;
+
+            try
+            {
+                string query = string.IsNullOrEmpty(artist) ? title : (title + " " + artist);
+                var req = new HttpRequestMessage(HttpMethod.Post, "https://music.youtube.com/youtubei/v1/search?prettyPrint=false");
+                var bodyObj = new JObject
+                {
+                    ["context"] = new JObject
+                    {
+                        ["client"] = new JObject
+                        {
+                            ["clientName"] = "WEB_REMIX",
+                            ["clientVersion"] = "1.20241016.01.00",
+                            ["hl"] = "vi",
+                            ["gl"] = "VN"
+                        }
+                    },
+                    ["query"] = query
+                };
+
+                req.Content = new StringContent(bodyObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
+                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                req.Headers.Add("Origin", "https://music.youtube.com");
+                req.Headers.Add("Referer", "https://music.youtube.com/");
+
+                var resp = await _client.SendAsync(req);
+                if (!resp.IsSuccessStatusCode) return fallbackUrl;
+
+                string json = await resp.Content.ReadAsStringAsync();
+                int idx = json.IndexOf("googleusercontent.com");
+                if (idx != -1)
+                {
+                    int start = json.LastIndexOf("http", idx);
+                    int end = json.IndexOf("\"", idx);
+                    if (start != -1 && end != -1)
+                    {
+                        string u = json.Substring(start, end - start);
+                        int eq = u.LastIndexOf("=");
+                        if (eq > 0)
+                            return u.Substring(0, eq) + "=w480-h480-l90-rj";
+                        return u + "=w480-h480-l90-rj";
+                    }
+                }
+            }
+            catch { }
+
+            return fallbackUrl;
         }
     }
 

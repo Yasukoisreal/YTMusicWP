@@ -314,6 +314,9 @@ namespace YTMusicWP
                     await LoadHomeRecommendations();
                 }
 
+                // Upgrade old 16:9 thumbnails in favorites to genuine 1:1 YTM square album art
+                var _ = UpgradeCachedThumbnailsAsync();
+
                 // Auto-sync YouTube data in background if logged in
                 AutoSyncYouTubeAsync();
             }
