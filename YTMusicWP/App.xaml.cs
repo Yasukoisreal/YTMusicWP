@@ -69,6 +69,14 @@ namespace YTMusicWP
                     throw new Exception("Failed to create initial page");
                 }
             }
+            else if (!string.IsNullOrEmpty(e.Arguments))
+            {
+                var mainPage = rootFrame.Content as MainPage;
+                if (mainPage != null)
+                {
+                    mainPage.HandleTileDeepLink(e.Arguments);
+                }
+            }
 
             Window.Current.Activate();
         }

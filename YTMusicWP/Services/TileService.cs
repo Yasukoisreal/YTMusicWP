@@ -11,6 +11,7 @@ using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Notifications;
+using Windows.UI.StartScreen;
 
 namespace YTMusicWP.Services
 {
@@ -77,7 +78,7 @@ namespace YTMusicWP.Services
             catch { }
         }
 
-        // ── Badge: "playing" glyph on Lock Screen & Tile ──
+        // ── Badge & Lock Screen Integration ──
 
         public static void SetPlayingBadge()
         {
@@ -100,9 +101,18 @@ namespace YTMusicWP.Services
             catch { }
         }
 
-        // ── Now Playing Tile (called from foreground & background task) ──
+        // ── Now Playing & Up Next Queue Tiles ──
 
         public static void UpdateNowPlaying(string title, string artist, string thumbUrl)
+        {
+            UpdateNowPlayingWithQueue(title, artist, thumbUrl, null);
+        }
+
+        public static void UpdateNowPlayingWithQueue(
+            string title,
+            string artist,
+            string thumbUrl,
+            IEnumerable<YouTubeTrack> upNextTracks)
         {
             try
             {
@@ -136,6 +146,36 @@ namespace YTMusicWP.Services
                     ExpirationTime = DateTimeOffset.UtcNow.AddHours(12)
                 };
                 updater.Update(notif);
+
+                // If Up Next has tracks, push an Up Next tile to rotate with Now Playing
+                if (upNextTracks != null)
+                {
+                    var nextList = upNextTracks.Where(IsValidTrack).Take(3).ToList();
+                    if (nextList.Count > 0)
+                    {
+                        var next1 = nextList[0];
+                        string nextThumb = WebUtility.HtmlEncode(FormatSquareThumbnail(next1.ThumbnailUrl));
+                        string next1Title = WebUtility.HtmlEncode(next1.Title ?? "");
+                        string next1Artist = WebUtility.HtmlEncode(next1.ChannelName ?? "YouTube Music");
+
+                        string xmlUpNext = string.Format(
+                            "<tile><visual version=\"2\">" +
+                            "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
+                            "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">Up Next: {1}</text></binding>" +
+                            "<binding template=\"TileWide310x150SmallImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT</text><text id=\"2\">{1} · {2}</text></binding>" +
+                            "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">Up Next: {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "</visual></tile>", nextThumb, next1Title, next1Artist);
+
+                        var docNext = new XmlDocument();
+                        docNext.LoadXml(xmlUpNext);
+                        var notifNext = new TileNotification(docNext)
+                        {
+                            Tag = "upnext",
+                            ExpirationTime = DateTimeOffset.UtcNow.AddHours(12)
+                        };
+                        updater.Update(notifNext);
+                    }
+                }
 
                 SetPlayingBadge();
             }
@@ -228,7 +268,7 @@ namespace YTMusicWP.Services
                 updater.EnableNotificationQueue(true);
                 updater.Clear();
 
-                // 3. Build Notification Queue items (up to 5 tiles with People Hub + Photos style)
+                // 3. Build Notification Queue items
                 // --- Item 0: People 9-Box Mosaic (Medium) + Wide 5-Image Flipping Collection (Wide) ---
                 if (!string.IsNullOrEmpty(mosaic3x3_Path) && thumbUrls.Count >= 5)
                 {
@@ -239,44 +279,267 @@ namespace YTMusicWP.Services
                     PushSingleItemTile(updater, pool[0], 0);
                 }
 
-                // --- Item 1: Featured Track with Photos-Style Vertical Slide (Wide) & Peek (Medium) ---
-                if (pool.Count > 1)
+                // --- Item 1: Typography Block Tile (#1 Charts / Billboard Style) ---
+                if (pool.Count > 0)
                 {
-                    PushSingleItemTile(updater, pool[1], 1);
+                    var topTrending = pool.FirstOrDefault(p => p.Label == "Trending") ?? pool[0];
+                    PushBlockNumberTile(updater, topTrending, "#1", "Top Charts", 1);
                 }
 
                 // --- Item 2: People 4-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide) ---
-                if (!string.IsNullOrEmpty(mosaic2x2_Path) && pool.Count > 2)
+                if (!string.IsNullOrEmpty(mosaic2x2_Path) && pool.Count > 1)
                 {
-                    PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[2], "mosaic_4_tile", 2);
+                    PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], "mosaic_4_tile", 2);
                 }
-                else if (pool.Count > 2)
+                else if (pool.Count > 1)
                 {
-                    PushSingleItemTile(updater, pool[2], 2);
+                    PushSingleItemTile(updater, pool[1], 2);
                 }
 
-                // --- Item 3: Featured Track 2 with Wide 5-Image Flipping Collection ---
-                if (thumbUrls.Count >= 5 && pool.Count > 3)
+                // --- Item 3: Featured Track with Wide 5-Image Flipping Collection ---
+                if (thumbUrls.Count >= 5 && pool.Count > 2)
                 {
                     var altThumbs = thumbUrls.Skip(1).Take(5).ToList();
                     if (altThumbs.Count < 5) altThumbs = thumbUrls.Take(5).ToList();
-                    PushImageCollectionTile(updater, FormatSquareThumbnail(pool[3].Track.ThumbnailUrl), altThumbs, "alt_collection", 3);
+                    PushImageCollectionTile(updater, FormatSquareThumbnail(pool[2].Track.ThumbnailUrl), altThumbs, "alt_collection", 3);
                 }
-                else if (pool.Count > 3)
+                else if (pool.Count > 2)
                 {
-                    PushSingleItemTile(updater, pool[3], 3);
+                    PushSingleItemTile(updater, pool[2], 3);
                 }
 
-                // --- Item 4: Featured Track 3 with Photos-Style Vertical Slide ---
-                if (pool.Count > 4)
+                // --- Item 4: Featured Favorite Track with Photos-Style Vertical Slide ---
+                if (pool.Count > 3)
                 {
-                    PushSingleItemTile(updater, pool[4], 4);
+                    PushSingleItemTile(updater, pool[3], 4);
+                }
+
+                // 4. Schedule Daypart Notifications (Morning / Afternoon / Evening)
+                ScheduleDaypartNotifications(pool.Select(p => p.Track));
+            }
+            catch { }
+        }
+
+        // ── Secondary Tiles (Pin to Start Screen) ──
+
+        public static bool IsSecondaryTilePinned(string rawTileId)
+        {
+            try
+            {
+                return SecondaryTile.Exists(SanitizeTileId(rawTileId));
+            }
+            catch { return false; }
+        }
+
+        public static async Task<bool> PinSecondaryTileAsync(
+            string rawTileId,
+            string displayName,
+            string arguments,
+            IEnumerable<YouTubeTrack> tracks = null)
+        {
+            try
+            {
+                string tileId = SanitizeTileId(rawTileId);
+                if (SecondaryTile.Exists(tileId)) return true;
+
+                var squareLogo = new Uri("ms-appx:///Assets/Logo.png");
+                var wideLogo = new Uri("ms-appx:///Assets/WideLogo.png");
+                var smallLogo = new Uri("ms-appx:///Assets/Square71x71Logo.png");
+
+                var tile = new SecondaryTile(
+                    tileId,
+                    displayName,
+                    arguments,
+                    squareLogo,
+                    TileSize.Square150x150);
+
+                tile.VisualElements.Wide310x150Logo = wideLogo;
+                tile.VisualElements.Square71x71Logo = smallLogo;
+                tile.VisualElements.ShowNameOnSquare150x150Logo = true;
+                tile.VisualElements.ShowNameOnWide310x150Logo = true;
+                tile.VisualElements.ForegroundText = ForegroundText.Light;
+
+                bool created = await tile.RequestCreateAsync();
+                if (created && tracks != null)
+                {
+                    var trackList = tracks.Where(IsValidTrack).ToList();
+                    if (trackList.Count > 0)
+                    {
+                        var _ = Task.Run(async () =>
+                        {
+                            await UpdateSecondaryTileLiveContentAsync(tileId, displayName, trackList);
+                        });
+                    }
+                }
+                return created;
+            }
+            catch { return false; }
+        }
+
+        public static async Task<bool> UnpinSecondaryTileAsync(string rawTileId)
+        {
+            try
+            {
+                string tileId = SanitizeTileId(rawTileId);
+                if (SecondaryTile.Exists(tileId))
+                {
+                    var tile = new SecondaryTile(tileId);
+                    return await tile.RequestDeleteAsync();
+                }
+                return true;
+            }
+            catch { return false; }
+        }
+
+        public static async Task UpdateSecondaryTileLiveContentAsync(
+            string tileId,
+            string displayName,
+            List<YouTubeTrack> tracks)
+        {
+            try
+            {
+                if (!SecondaryTile.Exists(tileId) || tracks == null || tracks.Count == 0) return;
+
+                var updater = TileUpdateManager.CreateTileUpdaterForSecondaryTile(tileId);
+                updater.EnableNotificationQueue(true);
+                updater.Clear();
+
+                var thumbUrls = tracks.Select(t => FormatSquareThumbnail(t.ThumbnailUrl)).Where(u => !string.IsNullOrEmpty(u)).Distinct().Take(9).ToList();
+                string mosaicPath = null;
+                if (thumbUrls.Count >= 4)
+                {
+                    string fileName = "tile_sec_" + tileId.Replace(".", "_") + ".png";
+                    mosaicPath = await GenerateMosaicTileAsync(thumbUrls, thumbUrls.Count >= 9 ? 3 : 2, fileName);
+                }
+
+                if (!string.IsNullOrEmpty(mosaicPath) && thumbUrls.Count >= 5)
+                {
+                    PushImageCollectionTile(updater, mosaicPath, thumbUrls.Take(5).ToList(), "sec_mosaic", 0);
+                }
+                else
+                {
+                    PushSingleItemTile(updater, new TileItem { Track = tracks[0], Label = displayName }, 0);
+                }
+
+                if (tracks.Count > 1)
+                {
+                    PushSingleItemTile(updater, new TileItem { Track = tracks[1], Label = displayName }, 1);
                 }
             }
             catch { }
         }
 
+        private static string SanitizeTileId(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return "tile_default";
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in id)
+            {
+                if (char.IsLetterOrDigit(c) || c == '.' || c == '_')
+                    sb.Append(c);
+                else
+                    sb.Append('_');
+            }
+            return sb.ToString();
+        }
+
+        // ── Scheduled Daypart Notifications (Morning, Afternoon, Evening) ──
+
+        public static void ScheduleDaypartNotifications(IEnumerable<YouTubeTrack> tracks)
+        {
+            try
+            {
+                if (!IsLiveTileEnabled || LiveTileMode != 0) return;
+                var validTracks = tracks != null ? tracks.Where(IsValidTrack).ToList() : new List<YouTubeTrack>();
+                if (validTracks.Count == 0) return;
+
+                var updater = TileUpdateManager.CreateTileUpdaterForApplication();
+
+                // Clear outdated scheduled notifications
+                try
+                {
+                    var scheduled = updater.GetScheduledTileNotifications();
+                    foreach (var s in scheduled) updater.RemoveFromSchedule(s);
+                }
+                catch { }
+
+                DateTime now = DateTime.Now;
+                var r = new Random();
+
+                // Morning (06:00): Good Morning Mix
+                DateTime morningTime = now.Date.AddDays(now.Hour >= 6 ? 1 : 0).AddHours(6);
+                var morningTrack = validTracks[r.Next(validTracks.Count)];
+                ScheduleSingleDaypart(updater, morningTrack, "☀️ Good Morning Mix", "daypart_morning", morningTime);
+
+                // Afternoon (12:00): Afternoon Energy
+                DateTime afternoonTime = now.Date.AddDays(now.Hour >= 12 ? 1 : 0).AddHours(12);
+                var afternoonTrack = validTracks[r.Next(validTracks.Count)];
+                ScheduleSingleDaypart(updater, afternoonTrack, "⚡ Afternoon Energy", "daypart_afternoon", afternoonTime);
+
+                // Evening (18:00): Night Chill & Relax
+                DateTime eveningTime = now.Date.AddDays(now.Hour >= 18 ? 1 : 0).AddHours(18);
+                var eveningTrack = validTracks[r.Next(validTracks.Count)];
+                ScheduleSingleDaypart(updater, eveningTrack, "🌙 Night Chill & Relax", "daypart_evening", eveningTime);
+            }
+            catch { }
+        }
+
+        private static void ScheduleSingleDaypart(TileUpdater updater, YouTubeTrack track, string greeting, string tag, DateTime deliveryTime)
+        {
+            try
+            {
+                string thumb = WebUtility.HtmlEncode(FormatSquareThumbnail(track.ThumbnailUrl));
+                string title = WebUtility.HtmlEncode(track.Title ?? "");
+                string artist = WebUtility.HtmlEncode(track.ChannelName ?? "YouTube Music");
+                string safeGreeting = WebUtility.HtmlEncode(greeting);
+
+                string xml = string.Format(
+                    "<tile><visual version=\"2\">" +
+                    "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
+                    "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}: {2}</text></binding>" +
+                    "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
+                    "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
+                    "</visual></tile>", thumb, safeGreeting, title, artist);
+
+                var doc = new XmlDocument();
+                doc.LoadXml(xml);
+
+                var notif = new ScheduledTileNotification(doc, new DateTimeOffset(deliveryTime))
+                {
+                    Tag = tag,
+                    ExpirationTime = new DateTimeOffset(deliveryTime.AddHours(5))
+                };
+                updater.AddToSchedule(notif);
+            }
+            catch { }
+        }
+
         // ── Tile Push Helpers ──
+
+        private static void PushBlockNumberTile(TileUpdater updater, TileItem item, string blockText, string blockLabel, int index)
+        {
+            string safeTitle = WebUtility.HtmlEncode(item.Track.Title ?? "");
+            string safeArtist = WebUtility.HtmlEncode(item.Track.ChannelName ?? "YouTube Music");
+            string safeBlockText = WebUtility.HtmlEncode(blockText ?? "#1");
+            string safeBlockLabel = WebUtility.HtmlEncode(blockLabel ?? "Top Charts");
+
+            // Wide: TileWide310x150BlockAndText01 (Big #1 block on left, title & artist on right)
+            // Medium: TileSquare150x150Block (Big #1 block with label)
+            string xml = string.Format(
+                "<tile><visual version=\"2\">" +
+                "<binding template=\"TileSquare150x150Block\"><text id=\"1\">{0}</text><text id=\"2\">{1}</text></binding>" +
+                "<binding template=\"TileWide310x150BlockAndText01\"><text id=\"1\">{0}</text><text id=\"2\">{1}</text><text id=\"3\">{2}</text><text id=\"4\">{3}</text></binding>" +
+                "</visual></tile>", safeBlockText, safeBlockLabel, safeTitle, safeArtist);
+
+            var doc = new XmlDocument();
+            doc.LoadXml(xml);
+            var notif = new TileNotification(doc)
+            {
+                Tag = "block_" + index,
+                ExpirationTime = DateTimeOffset.UtcNow.AddDays(1)
+            };
+            updater.Update(notif);
+        }
 
         private static void PushSingleItemTile(TileUpdater updater, TileItem item, int index)
         {

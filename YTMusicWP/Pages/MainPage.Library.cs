@@ -230,6 +230,101 @@ namespace YTMusicWP
                     break;
             }
         }
+
+        public void OpenLikedSongsView()
+        {
+            _currentViewingPlaylist = null;
+            _currentViewingYtPlaylistId = null;
+            _isViewingLikedSongs = true;
+            PlaylistDetailsTitle.Text = "Liked Songs";
+            if (favoriteTracks.Count > 0 && !string.IsNullOrEmpty(favoriteTracks[0].ThumbnailUrl))
+            {
+                PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(favoriteTracks[0].ThumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 220 };
+                PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+            }
+            PlaylistSongsList.ItemsSource = favoriteTracks;
+            PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs";
+            PlaylistDetailsView.Visibility = Visibility.Visible;
+            PlaylistSlideInStoryboard.Begin();
+            HookPlaylistSongsScroll();
+        }
+
+        public void OpenUserPlaylist(UserPlaylist pl)
+        {
+            if (pl == null) return;
+            _currentViewingPlaylist = pl;
+            _currentViewingYtPlaylistId = null;
+            _isViewingLikedSongs = false;
+            PlaylistDetailsTitle.Text = pl.Name;
+            if (pl.Tracks != null && pl.Tracks.Count > 0 && !string.IsNullOrEmpty(pl.Tracks[0].ThumbnailUrl))
+            {
+                PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(pl.Tracks[0].ThumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 220 };
+                PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+            }
+            PlaylistSongsList.ItemsSource = pl.Tracks;
+            PlaylistDetailsTrackCount.Text = (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks";
+            PlaylistDetailsView.Visibility = Visibility.Visible;
+            PlaylistSlideInStoryboard.Begin();
+        }
+
+        private async void PlaylistPinToStart_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string title = PlaylistDetailsTitle.Text ?? "Playlist";
+                string tileId;
+                string args;
+                List<YouTubeTrack> tracks = null;
+
+                if (_isViewingLikedSongs || title == "Liked Songs")
+                {
+                    tileId = "ytmusic_favs";
+                    args = "playlist:liked";
+                    tracks = favoriteTracks.ToList();
+                }
+                else if (_currentViewingPlaylist != null)
+                {
+                    tileId = "ytmusic_pl_" + _currentViewingPlaylist.Name.Replace(" ", "_");
+                    args = "playlist:" + _currentViewingPlaylist.Name;
+                    tracks = _currentViewingPlaylist.Tracks != null ? _currentViewingPlaylist.Tracks.ToList() : new List<YouTubeTrack>();
+                }
+                else if (!string.IsNullOrEmpty(_currentViewingYtPlaylistId))
+                {
+                    tileId = "ytmusic_ytpl_" + _currentViewingYtPlaylistId;
+                    args = "ytplaylist:" + _currentViewingYtPlaylistId;
+                    var list = PlaylistSongsList.ItemsSource as IEnumerable<YouTubeTrack>;
+                    if (list != null) tracks = list.ToList();
+                }
+                else
+                {
+                    tileId = "ytmusic_pl_" + title.Replace(" ", "_");
+                    args = "playlist:" + title;
+                    var list = PlaylistSongsList.ItemsSource as IEnumerable<YouTubeTrack>;
+                    if (list != null) tracks = list.ToList();
+                }
+
+                if (YTMusicWP.Services.TileService.IsSecondaryTilePinned(tileId))
+                {
+                    bool unpinned = await YTMusicWP.Services.TileService.UnpinSecondaryTileAsync(tileId);
+                    if (unpinned) ShowToast("Unpinned from Start");
+                }
+                else
+                {
+                    bool pinned = await YTMusicWP.Services.TileService.PinSecondaryTileAsync(tileId, title, args, tracks);
+                    if (pinned) ShowToast("📌 Pinned to Start Screen!");
+                }
+            }
+            catch { }
+        }
+
         private void CancelCreatePlaylist_Click(object sender, RoutedEventArgs e)
         {
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;

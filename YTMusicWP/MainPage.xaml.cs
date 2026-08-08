@@ -320,6 +320,49 @@ namespace YTMusicWP
                 // Auto-sync YouTube data in background if logged in
                 AutoSyncYouTubeAsync();
             }
+
+            // Handle Secondary Tile deep link
+            string args = e.Parameter as string;
+            if (!string.IsNullOrEmpty(args))
+            {
+                HandleTileDeepLink(args);
+            }
+        }
+
+        public void HandleTileDeepLink(string args)
+        {
+            if (string.IsNullOrEmpty(args)) return;
+            var _ = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
+            {
+                await Task.Delay(350); // Ensure collections are populated
+                if (args == "playlist:liked" || args == "favorites")
+                {
+                    SwitchTab(2); // Library tab
+                    OpenLikedSongsView();
+                }
+                else if (args.StartsWith("ytplaylist:"))
+                {
+                    SwitchTab(2);
+                    string ytplId = args.Substring("ytplaylist:".Length);
+                    var ytpl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == ytplId);
+                    OpenYouTubePlaylist(ytplId, ytpl != null ? ytpl.Title : "Playlist", ytpl != null ? ytpl.ThumbnailUrl : null);
+                }
+                else if (args.StartsWith("playlist:"))
+                {
+                    SwitchTab(2);
+                    string plName = args.Substring("playlist:".Length);
+                    var pl = userPlaylists.FirstOrDefault(p => p.Name == plName);
+                    if (pl != null)
+                    {
+                        OpenUserPlaylist(pl);
+                    }
+                }
+                else if (args.StartsWith("artist:"))
+                {
+                    string artist = args.Substring("artist:".Length);
+                    OpenArtistProfile(artist, artist, true);
+                }
+            });
         }
 
         private async void AutoSyncYouTubeAsync()

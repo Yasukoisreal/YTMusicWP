@@ -65,6 +65,7 @@ namespace YTMusicWP
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
             UpdateNowPlayingGradient(track.Title, track.ChannelName);
+            YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, null);
 
             // BUG FIX: Xác định activeList TRƯỚC khi insert vào history.
             // Nếu detect sau khi insert, historyTracks.Contains(track) sẽ luôn true,
@@ -133,6 +134,9 @@ namespace YTMusicWP
                 videoIds[i] = t.VideoId ?? "";
                 thumbnails[i] = t.ThumbnailUrl ?? "";
             }
+
+            // Update Live Tile with upcoming queue
+            YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, activeList.Skip(startIndex + 1));
 
             var message = new ValueSet {
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
@@ -572,6 +576,7 @@ namespace YTMusicWP
 
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist);
+                        YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(title, artist, thumb, currentQueueTracks);
 
                         // Restart marquee if NowPlaying is visible
                         if (NowPlayingView.Visibility == Visibility.Visible)
