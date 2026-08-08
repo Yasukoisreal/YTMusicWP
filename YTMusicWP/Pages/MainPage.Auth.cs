@@ -128,7 +128,7 @@ namespace YTMusicWP
                 int quality = SafeGetInt(settings, "AudioQuality", 1);
                 if (quality >= 0 && quality < AudioQualityComboBox.Items.Count)
                     AudioQualityComboBox.SelectedIndex = quality;
-                int crossfade = SafeGetInt(settings, "CrossfadeSeconds", 0);
+                int crossfade = SafeGetInt(settings, "CrossfadeSeconds", SafeGetInt(settings, "CrossfadeDuration", 0));
                 CrossfadeSlider.Value = crossfade;
                 CrossfadeValueText.Text = crossfade + "s";
                 AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
@@ -192,9 +192,12 @@ namespace YTMusicWP
 
         private void CrossfadeSlider_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
         {
+            int sec = (int)e.NewValue;
             if (CrossfadeValueText != null)
-                CrossfadeValueText.Text = (int)e.NewValue + "s";
-            ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = (int)e.NewValue;
+                CrossfadeValueText.Text = sec + "s";
+            ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = sec;
+            ApplicationData.Current.LocalSettings.Values["Crossfade"] = (sec > 0);
+            ApplicationData.Current.LocalSettings.Values["CrossfadeDuration"] = sec;
         }
 
         private void AudioQualityComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
