@@ -277,6 +277,8 @@ namespace YTMusicWP
             catch { }
         }
 
+        private static readonly HashSet<string> _attemptedThumbnailUpgradeIds = new HashSet<string>();
+
         /// <summary>
         /// Asynchronously upgrade any 16:9 YouTube video thumbnails (i.ytimg.com) in Favorites
         /// to genuine 1:1 square YouTube Music album art (googleusercontent.com).
@@ -291,15 +293,20 @@ namespace YTMusicWP
                 int count = 0;
                 foreach (var track in favoriteTracks.ToList())
                 {
-                    if (count >= 10) break;
+                    if (count >= 5) break;
+                    if (string.IsNullOrEmpty(track.VideoId)) continue;
+                    if (_attemptedThumbnailUpgradeIds.Contains(track.VideoId)) continue;
+
                     if (!string.IsNullOrEmpty(track.ThumbnailUrl) && (track.ThumbnailUrl.Contains("i.ytimg.com") || !track.ThumbnailUrl.Contains("googleusercontent.com")))
                     {
+                        _attemptedThumbnailUpgradeIds.Add(track.VideoId);
+                        count++;
+
                         string squareArt = await InnerTubeClient.GetSquareArtworkForTrackAsync(track.Title, track.ChannelName, track.ThumbnailUrl);
                         if (!string.IsNullOrEmpty(squareArt) && squareArt.Contains("googleusercontent.com"))
                         {
                             track.ThumbnailUrl = squareArt;
                             hasUpdated = true;
-                            count++;
                         }
                     }
                 }

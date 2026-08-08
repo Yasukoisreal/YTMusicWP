@@ -261,10 +261,13 @@ namespace YTMusicWP
 
         private async void ShowToast(string message, int durationMs = 2500)
         {
-            // Dispose CTS cũ trước để tránh memory leak, rồi cancel
+            // Cancel CTS cũ an toàn (không gọi Dispose() ngay để tránh race condition với Task.Delay)
             var oldCts = _toastCts;
             _toastCts = new CancellationTokenSource();
-            if (oldCts != null) { oldCts.Cancel(); oldCts.Dispose(); }
+            if (oldCts != null)
+            {
+                try { oldCts.Cancel(); } catch { }
+            }
             var token = _toastCts.Token;
 
             ToastText.Text = message;

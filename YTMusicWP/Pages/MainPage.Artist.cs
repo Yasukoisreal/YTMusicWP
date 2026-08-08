@@ -227,6 +227,30 @@ namespace YTMusicWP
             catch { ShowToast("Failed to load playlist"); }
         }
 
+        private bool ApplyArtistProfileResult(ArtistResult artistResult, ref List<YouTubeTrack> tracks, ref List<ArtistAlbum> albums, ref string subscriberCount, ref string description, ref string avatarUrl)
+        {
+            if (artistResult != null && artistResult.Tracks != null && artistResult.Tracks.Count > 0)
+            {
+                tracks = artistResult.Tracks;
+                avatarUrl = artistResult.AvatarUrl;
+                _currentArtistAvatarUrl = avatarUrl;
+
+                if (!string.IsNullOrEmpty(artistResult.CoverUrl))
+                    ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
+                else if (!string.IsNullOrEmpty(avatarUrl))
+                    ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
+
+                if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
+                    ArtistProfileTitle.Text = artistResult.Name;
+                if (artistResult.Albums != null && artistResult.Albums.Count > 0)
+                    albums = artistResult.Albums;
+                subscriberCount = artistResult.SubscriberCount;
+                description = artistResult.Description;
+                return true;
+            }
+            return false;
+        }
+
         private async void OpenArtistProfile(string channelId, string channelName, bool trustChannelId = false)
         {
             _currentArtistChannelId = channelId;
@@ -258,24 +282,7 @@ namespace YTMusicWP
                 try
                 {
                     var artistResult = await InnerTubeClient.BrowseArtistAsync(channelId);
-                    if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
-                    {
-                        tracks = artistResult.Tracks;
-                        avatarUrl = artistResult.AvatarUrl;
-                        _currentArtistAvatarUrl = avatarUrl;
-
-                        if (!string.IsNullOrEmpty(artistResult.CoverUrl))
-                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
-                        else if (!string.IsNullOrEmpty(avatarUrl))
-                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
-
-                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
-                            ArtistProfileTitle.Text = artistResult.Name;
-                        if (artistResult.Albums != null && artistResult.Albums.Count > 0)
-                            albums = artistResult.Albums;
-                        subscriberCount = artistResult.SubscriberCount;
-                        description = artistResult.Description;
-                    }
+                    ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
                 }
                 catch { }
             }
@@ -302,22 +309,7 @@ namespace YTMusicWP
                         _currentArtistChannelId = ytmChannelId;
 
                         var artistResult = await InnerTubeClient.BrowseArtistAsync(ytmChannelId);
-                        if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
-                            tracks = artistResult.Tracks;
-                        avatarUrl = artistResult.AvatarUrl;
-                        _currentArtistAvatarUrl = avatarUrl;
-
-                        if (!string.IsNullOrEmpty(artistResult.CoverUrl))
-                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
-                        else if (!string.IsNullOrEmpty(avatarUrl))
-                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
-
-                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
-                            ArtistProfileTitle.Text = artistResult.Name;
-                        if (artistResult.Albums != null && artistResult.Albums.Count > 0)
-                            albums = artistResult.Albums;
-                        subscriberCount = artistResult.SubscriberCount;
-                        description = artistResult.Description;
+                        ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
                     }
                 }
                 catch { }
@@ -329,24 +321,7 @@ namespace YTMusicWP
                 try
                 {
                     var artistResult = await InnerTubeClient.BrowseArtistAsync(channelId);
-                    if (artistResult.Tracks != null && artistResult.Tracks.Count > 0)
-                    {
-                        tracks = artistResult.Tracks;
-                        avatarUrl = artistResult.AvatarUrl;
-                        _currentArtistAvatarUrl = avatarUrl;
-
-                        if (!string.IsNullOrEmpty(artistResult.CoverUrl))
-                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = 480 };
-                        else if (!string.IsNullOrEmpty(avatarUrl))
-                            ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 480 };
-
-                        if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
-                            ArtistProfileTitle.Text = artistResult.Name;
-                        if (artistResult.Albums != null && artistResult.Albums.Count > 0)
-                            albums = artistResult.Albums;
-                        subscriberCount = artistResult.SubscriberCount;
-                        description = artistResult.Description;
-                    }
+                    ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
                 }
                 catch { }
             }

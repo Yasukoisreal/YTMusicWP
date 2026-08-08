@@ -1046,22 +1046,8 @@ namespace YTMusicWP
                             string name = (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
                                 ? artistResult.Name : chId;
 
-                            // Get avatar from search results (matches YouTube display)
-                            // BrowseArtistAsync's musicThumbnailRenderer uses tighter crop
-                            string avatarUrl = "";
-                            try
-                            {
-                                var searchHits = await InnerTubeClient.SearchAsync(name, 3);
-                                var match = searchHits.FirstOrDefault(r =>
-                                    r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
-                                    r.Title.Equals(name, StringComparison.OrdinalIgnoreCase));
-                                if (match != null && !string.IsNullOrEmpty(match.ThumbnailUrl))
-                                    avatarUrl = GetArtistAvatar(match.ThumbnailUrl);
-                            }
-                            catch { }
-                            // Fallback to BrowseArtist avatar
-                            if (string.IsNullOrEmpty(avatarUrl))
-                                avatarUrl = GetArtistAvatar(artistResult.AvatarUrl ?? "");
+                            // Use avatar directly from BrowseArtistAsync (eliminates 30 redundant search requests)
+                            string avatarUrl = GetArtistAvatar(artistResult.AvatarUrl ?? artistResult.CoverUrl ?? "");
 
                             return new YouTubeSubscription { ChannelId = chId, Title = name, ThumbnailUrl = avatarUrl };
                         }

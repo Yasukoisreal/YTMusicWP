@@ -134,7 +134,7 @@ namespace AudioPlayerTask
         private string _innerTubeDebug = "";
 
         /// <summary>
-        /// Lấy visitorData — cache + 2 nguồn (sw.js_data + youtube.com homepage)
+        /// Lấy visitorData — cache + sw.js_data endpoint (~2KB, an toàn RAM cho background task)
         /// </summary>
         private static string _cachedVisitorData = null;
 
@@ -144,53 +144,14 @@ namespace AudioPlayerTask
             if (!string.IsNullOrEmpty(_cachedVisitorData))
                 return _cachedVisitorData;
 
-            // Nguồn 1: Watch page (chính xác nhất — visitorData đi kèm video)
-            if (!string.IsNullOrEmpty(videoId))
+            string vd = await FetchVisitorDataFromSwJs();
+            if (!string.IsNullOrEmpty(vd))
             {
-                string vd = await FetchVisitorDataFromWatchPage(videoId);
-                if (!string.IsNullOrEmpty(vd))
-                {
-                    _cachedVisitorData = vd;
-                    return vd;
-                }
-            }
-
-            // Nguồn 2: sw.js_data (giống MetroTube)
-            string vd2 = await FetchVisitorDataFromSwJs();
-            if (!string.IsNullOrEmpty(vd2))
-            {
-                _cachedVisitorData = vd2;
-                return vd2;
-            }
-
-            // Nguồn 3: youtube.com homepage
-            vd2 = await FetchVisitorDataFromHomepage();
-            if (!string.IsNullOrEmpty(vd2))
-            {
-                _cachedVisitorData = vd2;
-                return vd2;
+                _cachedVisitorData = vd;
+                return vd;
             }
 
             return null;
-        }
-
-        private async Task<string> FetchVisitorDataFromWatchPage(string videoId)
-        {
-            try
-            {
-                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
-                    new Uri("https://www.youtube.com/watch?v=" + videoId));
-                request.Headers.Add("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
-                request.Headers.Add("Accept-Language", "en-US,en;q=0.9");
-
-                var response = await _httpClient.SendRequestAsync(request);
-                if (!response.IsSuccessStatusCode) return null;
-
-                string html = await response.Content.ReadAsStringAsync();
-                return ExtractVisitorData(html);
-            }
-            catch { return null; }
         }
 
         private async Task<string> FetchVisitorDataFromSwJs()
@@ -213,26 +174,6 @@ namespace AudioPlayerTask
 
                 // Tìm visitorData bằng Regex: base64 protobuf string bắt đầu bằng Cg
                 return ExtractVisitorData(result);
-            }
-            catch { return null; }
-        }
-
-        private async Task<string> FetchVisitorDataFromHomepage()
-        {
-            try
-            {
-                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
-                    new Uri("https://www.youtube.com/"));
-                request.Headers.Add("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-
-                var response = await _httpClient.SendRequestAsync(request);
-                if (!response.IsSuccessStatusCode) return null;
-
-                string html = await response.Content.ReadAsStringAsync();
-
-                // HTML chứa: "visitorData":"CgXXXXX"
-                return ExtractVisitorData(html);
             }
             catch { return null; }
         }

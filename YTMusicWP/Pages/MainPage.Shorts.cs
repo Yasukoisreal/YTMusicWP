@@ -290,6 +290,14 @@ namespace YTMusicWP
             sb.Completed += (s, e) =>
             {
                 ShortsView.Visibility = Visibility.Collapsed;
+                try
+                {
+                    ShortsBlurBg.ImageSource = null;
+                    ShortsCoverArt.ImageSource = null;
+                    ShortsMiniCover.ImageSource = null;
+                    ShortsArtistAvatarBrush.ImageSource = null;
+                }
+                catch { }
             };
             sb.Begin();
         }
@@ -427,7 +435,16 @@ namespace YTMusicWP
             ShortsArtistName.Text = track.ChannelName;
             ShortsArtistSub.Text = "";
 
-            // Thumbnail
+            // Thumbnail — release previous image surfaces first to avoid RAM inflation during swipes
+            try
+            {
+                ShortsBlurBg.ImageSource = null;
+                ShortsCoverArt.ImageSource = null;
+                ShortsMiniCover.ImageSource = null;
+                ShortsArtistAvatarBrush.ImageSource = null;
+            }
+            catch { }
+
             string thumbUrl = GetHighResThumbnail(track.ThumbnailUrl);
             if (!string.IsNullOrEmpty(thumbUrl))
             {
