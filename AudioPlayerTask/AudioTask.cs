@@ -377,7 +377,7 @@ namespace AudioPlayerTask
                     string qualityKbps = qualitySettings.ContainsKey("AudioQualityKbps") ? qualitySettings["AudioQualityKbps"].ToString() : "128";
                     int[] preferredItags;
                     if (qualityKbps == "48") preferredItags = new[] { 139, 140, 18 };
-                    else if (qualityKbps == "256") preferredItags = new[] { 251, 141, 140, 18 };
+                    else if (qualityKbps == "256") preferredItags = new[] { 141, 140, 18 };
                     else preferredItags = new[] { 140, 139, 18 };
 
                     if (data.ContainsKey("streamingData"))

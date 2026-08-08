@@ -88,7 +88,7 @@ namespace YTMusicWP
                     string qualityKbps = qualitySettings.ContainsKey("AudioQualityKbps") ? qualitySettings["AudioQualityKbps"].ToString() : "128";
                     int[] preferredItags;
                     if (qualityKbps == "48") preferredItags = new[] { 139, 140, 18 };        // Low: 48kbps first
-                    else if (qualityKbps == "256") preferredItags = new[] { 251, 141, 140, 18 }; // High: 256kbps opus/m4a
+                    else if (qualityKbps == "256") preferredItags = new[] { 141, 140, 18 };  // High: 256kbps m4a (WP8.1 doesn't support Opus 251)
                     else preferredItags = new[] { 140, 139, 18 };                            // Normal: 128kbps (default)
 
                     var formats = data["streamingData"]?["adaptiveFormats"];
