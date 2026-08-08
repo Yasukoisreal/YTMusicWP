@@ -156,13 +156,13 @@ namespace YTMusicWP.Services
 
                 // Medium tile: peek with "♪ Now Playing" prefix
                 // Wide tile: Photo-style vertical slide/peek with song & artist
-                // Large tile (Windows 10 / 8.1): full image and text
+                // Large tile: Photo-style vertical slide/peek with song & artist
                 string xml = string.Format(
                     "<tile><visual version=\"2\">" +
                     "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                     "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
                     "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                    "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                    "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
                     "</visual></tile>", safeThumb, safeTitle, safeArtist);
 
                 var doc = new XmlDocument();
@@ -189,8 +189,8 @@ namespace YTMusicWP.Services
                             "<tile><visual version=\"2\">" +
                             "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                             "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">Up Next: {1}</text></binding>" +
-                            "<binding template=\"TileWide310x150SmallImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT</text><text id=\"2\">{1} · {2}</text></binding>" +
-                            "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">Up Next: {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT: {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT: {1}</text><text id=\"2\">{2}</text></binding>" +
                             "</visual></tile>", nextThumb, next1Title, next1Artist);
 
                         var docNext = new XmlDocument();
@@ -311,52 +311,44 @@ namespace YTMusicWP.Services
                 int maxQueueItems = (speed == 0) ? 2 : (speed == 1 ? 3 : 5);
 
                 // 3. Build Notification Queue items
-                // --- Item 0: People 9-Box Mosaic (Medium) + Wide 5-Image Flipping Collection (Wide) ---
-                if (!string.IsNullOrEmpty(mosaic3x3_Path) && thumbUrls.Count >= 5)
+                // --- Item 0: People 9-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide & Large) ---
+                if (!string.IsNullOrEmpty(mosaic3x3_Path) && pool.Count > 0)
                 {
-                    PushImageCollectionTile(updater, mosaic3x3_Path, thumbUrls.Take(5).ToList(), "mosaic_9_tile", 0);
+                    PushMosaicAndSlideTile(updater, mosaic3x3_Path, pool[0], "mosaic_9_tile", 0);
                 }
                 else if (pool.Count > 0)
                 {
                     PushSingleItemTile(updater, pool[0], 0);
                 }
 
-                // --- Item 1: Typography Block Tile (#1 Charts / Billboard Style) ---
-                if (maxQueueItems >= 2 && pool.Count > 0)
+                // --- Item 1: People 4-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide & Large) ---
+                if (maxQueueItems >= 2 && pool.Count > 1)
+                {
+                    if (!string.IsNullOrEmpty(mosaic2x2_Path))
+                    {
+                        PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], "mosaic_4_tile", 1);
+                    }
+                    else
+                    {
+                        var topTrending = pool.FirstOrDefault(p => p.Label == "Trending") ?? pool[1];
+                        PushBlockNumberTile(updater, topTrending, "#1", "Top Charts", 1);
+                    }
+                }
+
+                // --- Item 2: Typography Billboard Tile (#1 Charts / Billboard Style) ---
+                if (maxQueueItems >= 3 && pool.Count > 0)
                 {
                     var topTrending = pool.FirstOrDefault(p => p.Label == "Trending") ?? pool[0];
-                    PushBlockNumberTile(updater, topTrending, "#1", "Top Charts", 1);
+                    PushBlockNumberTile(updater, topTrending, "#1", "Top Charts", 2);
                 }
 
-                // --- Item 2: People 4-Box Mosaic (Medium) + Photos-Style Vertical Slide (Wide) ---
-                if (maxQueueItems >= 3)
+                // --- Item 3: Featured Favorite Track with Photos-Style Vertical Slide ---
+                if (maxQueueItems >= 4 && pool.Count > 2)
                 {
-                    if (!string.IsNullOrEmpty(mosaic2x2_Path) && pool.Count > 1)
-                    {
-                        PushMosaicAndSlideTile(updater, mosaic2x2_Path, pool[1], "mosaic_4_tile", 2);
-                    }
-                    else if (pool.Count > 1)
-                    {
-                        PushSingleItemTile(updater, pool[1], 2);
-                    }
+                    PushSingleItemTile(updater, pool[2], 3);
                 }
 
-                // --- Item 3: Featured Track with Wide 5-Image Flipping Collection ---
-                if (maxQueueItems >= 4)
-                {
-                    if (thumbUrls.Count >= 5 && pool.Count > 2)
-                    {
-                        var altThumbs = thumbUrls.Skip(1).Take(5).ToList();
-                        if (altThumbs.Count < 5) altThumbs = thumbUrls.Take(5).ToList();
-                        PushImageCollectionTile(updater, FormatSquareThumbnail(pool[2].Track.ThumbnailUrl), altThumbs, "alt_collection", 3);
-                    }
-                    else if (pool.Count > 2)
-                    {
-                        PushSingleItemTile(updater, pool[2], 3);
-                    }
-                }
-
-                // --- Item 4: Featured Favorite Track with Photos-Style Vertical Slide ---
+                // --- Item 4: Featured Track with Photos-Style Vertical Slide ---
                 if (maxQueueItems >= 5 && pool.Count > 3)
                 {
                     PushSingleItemTile(updater, pool[3], 4);
@@ -460,9 +452,9 @@ namespace YTMusicWP.Services
                     mosaicPath = await GenerateMosaicTileAsync(thumbUrls, thumbUrls.Count >= 9 ? 3 : 2, fileName);
                 }
 
-                if (!string.IsNullOrEmpty(mosaicPath) && thumbUrls.Count >= 5)
+                if (!string.IsNullOrEmpty(mosaicPath))
                 {
-                    PushImageCollectionTile(updater, mosaicPath, thumbUrls.Take(5).ToList(), "sec_mosaic", 0);
+                    PushMosaicAndSlideTile(updater, mosaicPath, new TileItem { Track = tracks[0], Label = displayName }, "sec_mosaic", 0);
                 }
                 else
                 {
@@ -519,20 +511,25 @@ namespace YTMusicWP.Services
                 var morningTrack = validTracks[r.Next(validTracks.Count)];
                 ScheduleSingleDaypart(updater, morningTrack, "☀️ Good Morning Mix", "daypart_morning", morningTime);
 
-                // Afternoon (12:00): Afternoon Energy
-                DateTime afternoonTime = now.Date.AddDays(now.Hour >= 12 ? 1 : 0).AddHours(12);
+                // Afternoon (13:00): Energy Boost
+                DateTime afternoonTime = now.Date.AddDays(now.Hour >= 13 ? 1 : 0).AddHours(13);
                 var afternoonTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, afternoonTrack, "⚡ Afternoon Energy", "daypart_afternoon", afternoonTime);
+                ScheduleSingleDaypart(updater, afternoonTrack, "⚡ Energy Boost", "daypart_afternoon", afternoonTime);
 
-                // Evening (18:00): Night Chill & Relax
-                DateTime eveningTime = now.Date.AddDays(now.Hour >= 18 ? 1 : 0).AddHours(18);
+                // Evening (20:00): Chill & Relax
+                DateTime eveningTime = now.Date.AddDays(now.Hour >= 20 ? 1 : 0).AddHours(20);
                 var eveningTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, eveningTrack, "🌙 Night Chill & Relax", "daypart_evening", eveningTime);
+                ScheduleSingleDaypart(updater, eveningTrack, "🌙 Chill & Relax", "daypart_evening", eveningTime);
             }
             catch { }
         }
 
-        private static void ScheduleSingleDaypart(TileUpdater updater, YouTubeTrack track, string greeting, string tag, DateTime deliveryTime)
+        private static void ScheduleSingleDaypart(
+            TileUpdater updater,
+            YouTubeTrack track,
+            string greeting,
+            string tag,
+            DateTime deliveryTime)
         {
             try
             {
@@ -546,7 +543,7 @@ namespace YTMusicWP.Services
                     "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                     "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}: {2}</text></binding>" +
                     "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
-                    "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
+                    "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
                     "</visual></tile>", thumb, safeGreeting, title, artist);
 
                 var doc = new XmlDocument();
@@ -573,10 +570,12 @@ namespace YTMusicWP.Services
 
             // Wide: TileWide310x150BlockAndText01 (Big #1 block on left, title & artist on right)
             // Medium: TileSquare150x150Block (Big #1 block with label)
+            // Large: TileSquare310x310BlockAndText01
             string xml = string.Format(
                 "<tile><visual version=\"2\">" +
                 "<binding template=\"TileSquare150x150Block\"><text id=\"1\">{0}</text><text id=\"2\">{1}</text></binding>" +
                 "<binding template=\"TileWide310x150BlockAndText01\"><text id=\"1\">{0}</text><text id=\"2\">{1}</text><text id=\"3\">{2}</text><text id=\"4\">{3}</text></binding>" +
+                "<binding template=\"TileSquare310x310BlockAndText01\"><text id=\"1\">{0}</text><text id=\"2\">{1}</text><text id=\"3\">{2}</text><text id=\"4\">{3}</text></binding>" +
                 "</visual></tile>", safeBlockText, safeBlockLabel, safeTitle, safeArtist);
 
             var doc = new XmlDocument();
@@ -599,13 +598,13 @@ namespace YTMusicWP.Services
 
             // Medium: TileSquare150x150PeekImageAndText04 (Peeks title over cover)
             // Wide: TileWide310x150PeekImage01 (Photos app style: vertical sliding cover art)
-            // Large: TileSquare310x310ImageAndText01
+            // Large: TileSquare310x310PeekImage01 (Photos app style: vertical sliding cover art)
             string xml = string.Format(
                 "<tile><visual version=\"2\">" +
                 "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                 "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding>" +
                 "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
-                "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
+                "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
                 "</visual></tile>", safeThumb, safeTitle, safeArtist, safeLabel);
 
             var doc = new XmlDocument();
@@ -627,14 +626,15 @@ namespace YTMusicWP.Services
             string safeArtist = WebUtility.HtmlEncode(wideItem.Track.ChannelName ?? "YouTube Music");
             string safeLabel = WebUtility.HtmlEncode(wideItem.Label ?? "YouTube Music");
 
-            // Medium tile: 4-Box Mosaic (People style)
-            // Wide tile: Photos app style vertical slide
+            // Medium tile: 9-Box or 4-Box Mosaic (People style)
+            // Wide tile: Photos app style vertical slide (TileWide310x150PeekImage01)
+            // Large tile: Photos app style vertical slide (TileSquare310x310PeekImage01)
             string xml = string.Format(
                 "<tile><visual version=\"2\">" +
                 "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                 "<binding template=\"TileSquare150x150Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                 "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{1}\"/><text id=\"1\">{2}</text><text id=\"2\">{3} · {4}</text></binding>" +
-                "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{1}\"/><text id=\"1\">{2}</text><text id=\"2\">{3}</text></binding>" +
+                "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{1}\"/><text id=\"1\">{2}</text><text id=\"2\">{3}</text></binding>" +
                 "</visual></tile>", safeMediumThumb, safeWideThumb, safeTitle, safeArtist, safeLabel);
 
             var doc = new XmlDocument();
