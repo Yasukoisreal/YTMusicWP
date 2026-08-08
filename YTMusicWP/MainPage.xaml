@@ -1564,7 +1564,7 @@
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,18">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="YTMusicWP" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Version 2.0 BETA" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                            <TextBlock Text="Version 2.1 BETA" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                             <TextBlock Text="A music streaming client for Windows Phone 8.1" FontSize="12" Foreground="#444" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
                             <TextBlock Text="Made with ♥" FontSize="11" Foreground="#333" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                         </StackPanel>

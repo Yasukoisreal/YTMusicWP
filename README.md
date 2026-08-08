@@ -13,7 +13,7 @@
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Platform-Windows%20Phone%208.1%20%7C%20W10M-0078D7?logo=windows" alt="Platform"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Language-C%23%20%2F%20XAML-239120?logo=c-sharp" alt="Language"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/RAM%20Target-512MB%20Optimized-orange" alt="RAM Target"></a>
-  <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Version-2.0%20BETA-blue" alt="Version"></a>
+  <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Version-2.1%20BETA-blue" alt="Version"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"></a>
 </p>
 
@@ -124,7 +124,7 @@ cd YTMusicWP
 
 ## 📝 Changelog
 
-### v2.0 BETA (Latest)
+### v2.1 BETA (Latest)
 - 🚀 **InnerTube Direct Integration:** Replaced legacy backend with native, high-speed InnerTube protocol.
 - 🎨 **Redesigned Metro UI:** Spotify-inspired dark layout with Montserrat typography, fluent animations, and responsive layout.
 - 🖼️ **People Hub Mosaic Live Tiles:** Added 2x2 and 3x3 dynamic artwork mosaic grid tiles.
