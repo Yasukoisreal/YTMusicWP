@@ -134,20 +134,39 @@ namespace AudioPlayerTask
         private string _innerTubeDebug = "";
 
         /// <summary>
-        /// Lấy visitorData — cache + sw.js_data endpoint (~2KB, an toàn RAM cho background task)
+        /// Lấy visitorData — cache + LocalSettings + sw.js_data endpoint (~2KB, an toàn RAM cho background task)
         /// </summary>
         private static string _cachedVisitorData = null;
 
         private async Task<string> GetVisitorDataAsync(string videoId = null)
         {
-            // Dùng cache nếu có
             if (!string.IsNullOrEmpty(_cachedVisitorData))
                 return _cachedVisitorData;
+
+            try
+            {
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (settings.ContainsKey("CachedVisitorData"))
+                {
+                    string savedVd = settings["CachedVisitorData"] as string;
+                    if (!string.IsNullOrEmpty(savedVd) && savedVd.StartsWith("Cg"))
+                    {
+                        _cachedVisitorData = savedVd;
+                        return savedVd;
+                    }
+                }
+            }
+            catch { }
 
             string vd = await FetchVisitorDataFromSwJs();
             if (!string.IsNullOrEmpty(vd))
             {
                 _cachedVisitorData = vd;
+                try
+                {
+                    Windows.Storage.ApplicationData.Current.LocalSettings.Values["CachedVisitorData"] = vd;
+                }
+                catch { }
                 return vd;
             }
 
@@ -161,7 +180,7 @@ namespace AudioPlayerTask
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
                     new Uri("https://www.youtube.com/sw.js_data"));
                 request.Headers.Add("User-Agent",
-                    "Mozilla/5.0 (Linux; Android 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36");
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 request.Headers.Add("Accept", "application/json");
 
                 var response = await _httpClient.SendRequestAsync(request);
@@ -172,7 +191,6 @@ namespace AudioPlayerTask
                 if (result.StartsWith(")]}'"))
                     result = result.Substring(4);
 
-                // Tìm visitorData bằng Regex: base64 protobuf string bắt đầu bằng Cg
                 return ExtractVisitorData(result);
             }
             catch { return null; }
@@ -180,7 +198,9 @@ namespace AudioPlayerTask
 
         private string ExtractVisitorData(string text)
         {
-            // Tìm visitorData":"CgXXX" hoặc "visitorData":"CgXXX"
+            if (string.IsNullOrEmpty(text)) return null;
+
+            // 1. Tìm visitorData":"CgXXX"
             string[] markers = { "visitorData\":\"", "\"visitorData\":\"" };
             foreach (string marker in markers)
             {
@@ -191,14 +211,13 @@ namespace AudioPlayerTask
                     int end = text.IndexOf("\"", start);
                     if (end > start && end - start >= 20 && end - start < 600)
                     {
-                        string vd = text.Substring(start, end - start);
+                        string vd = System.Net.WebUtility.UrlDecode(text.Substring(start, end - start));
                         if (vd.StartsWith("Cg")) return vd;
                     }
                 }
             }
 
-            // Tìm "CgXXX" (không có key name, trong array format)
-            // Scan for quoted strings starting with "Cg" that are 20+ chars (visitorData length)
+            // 2. Tìm "CgXXX" trong array format của sw.js_data
             int searchPos = 0;
             while (searchPos < text.Length)
             {
@@ -212,17 +231,19 @@ namespace AudioPlayerTask
                     int len = end2 - start2;
                     if (len >= 20 && len < 600)
                     {
-                        string candidate = text.Substring(start2, len);
-                        // Verify: visitorData là base64 protobuf, chỉ chứa A-Za-z0-9_-=
-                        bool valid = true;
-                        for (int i = 0; i < candidate.Length && valid; i++)
+                        string candidate = System.Net.WebUtility.UrlDecode(text.Substring(start2, len));
+                        if (candidate.StartsWith("Cg"))
                         {
-                            char c = candidate[i];
-                            if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-                                  (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '=' || c == '+' || c == '/'))
-                                valid = false;
+                            bool valid = true;
+                            for (int i = 0; i < candidate.Length && valid; i++)
+                            {
+                                char c = candidate[i];
+                                if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                                      (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '=' || c == '+' || c == '/'))
+                                    valid = false;
+                            }
+                            if (valid) return candidate;
                         }
-                        if (valid) return candidate;
                     }
                 }
                 searchPos = quotePos + 3;

@@ -52,6 +52,22 @@ namespace YTMusicWP
 
             try
             {
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (settings.ContainsKey("CachedVisitorData"))
+                {
+                    string savedVd = settings["CachedVisitorData"] as string;
+                    if (!string.IsNullOrEmpty(savedVd) && savedVd.StartsWith("Cg"))
+                    {
+                        _cachedVisitorData = savedVd;
+                        _vdCacheTime = DateTime.Now;
+                        return savedVd;
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
                 // Use lightweight sw.js_data endpoint instead of full homepage (~500KB → ~2KB)
                 var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/sw.js_data");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
@@ -59,61 +75,75 @@ namespace YTMusicWP
                 if (resp.IsSuccessStatusCode)
                 {
                     string body = await resp.Content.ReadAsStringAsync();
-                    string marker = "\"visitorData\":\"";
-                    int idx = body.IndexOf(marker);
-                    if (idx >= 0)
+                    string vd = ExtractVisitorData(body);
+                    if (!string.IsNullOrEmpty(vd))
                     {
-                        int start = idx + marker.Length;
-                        int end = body.IndexOf("\"", start);
-                        if (end > start && end - start >= 20 && end - start < 600)
-                        {
-                            string vd = body.Substring(start, end - start);
-                            if (vd.StartsWith("Cg"))
-                            {
-                                _cachedVisitorData = vd;
-                                _vdCacheTime = DateTime.Now;
-                                return vd;
-                            }
-                        }
+                        _cachedVisitorData = vd;
+                        _vdCacheTime = DateTime.Now;
+                        try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["CachedVisitorData"] = vd; } catch { }
+                        return vd;
                     }
                 }
             }
             catch { }
 
-            // Fallback: try homepage if sw.js_data failed (first time only)
-            if (_cachedVisitorData == null)
+            return _cachedVisitorData;
+        }
+
+        private static string ExtractVisitorData(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return null;
+
+            // 1. Tìm visitorData":"CgXXX"
+            string[] markers = { "visitorData\":\"", "\"visitorData\":\"" };
+            foreach (string marker in markers)
             {
-                try
+                int pos = text.IndexOf(marker);
+                if (pos >= 0)
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/");
-                    request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                    var resp = await _client.SendAsync(request);
-                    if (resp.IsSuccessStatusCode)
+                    int start = pos + marker.Length;
+                    int end = text.IndexOf("\"", start);
+                    if (end > start && end - start >= 20 && end - start < 600)
                     {
-                        string html = await resp.Content.ReadAsStringAsync();
-                        string marker = "\"visitorData\":\"";
-                        int idx = html.IndexOf(marker);
-                        if (idx >= 0)
+                        string vd = System.Net.WebUtility.UrlDecode(text.Substring(start, end - start));
+                        if (vd.StartsWith("Cg")) return vd;
+                    }
+                }
+            }
+
+            // 2. Tìm "CgXXX" trong array format của sw.js_data
+            int searchPos = 0;
+            while (searchPos < text.Length)
+            {
+                int quotePos = text.IndexOf("\"Cg", searchPos);
+                if (quotePos < 0) break;
+
+                int start2 = quotePos + 1;
+                int end2 = text.IndexOf("\"", start2);
+                if (end2 > start2)
+                {
+                    int len = end2 - start2;
+                    if (len >= 20 && len < 600)
+                    {
+                        string candidate = System.Net.WebUtility.UrlDecode(text.Substring(start2, len));
+                        if (candidate.StartsWith("Cg"))
                         {
-                            int start = idx + marker.Length;
-                            int end = html.IndexOf("\"", start);
-                            if (end > start && end - start >= 20 && end - start < 600)
+                            bool valid = true;
+                            for (int i = 0; i < candidate.Length && valid; i++)
                             {
-                                string vd = html.Substring(start, end - start);
-                                if (vd.StartsWith("Cg"))
-                                {
-                                    _cachedVisitorData = vd;
-                                    _vdCacheTime = DateTime.Now;
-                                    return vd;
-                                }
+                                char c = candidate[i];
+                                if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+                                      (c >= '0' && c <= '9') || c == '_' || c == '-' || c == '=' || c == '+' || c == '/'))
+                                    valid = false;
                             }
+                            if (valid) return candidate;
                         }
                     }
                 }
-                catch { }
+                searchPos = quotePos + 3;
             }
 
-            return _cachedVisitorData;
+            return null;
         }
 
         // ==========================================
