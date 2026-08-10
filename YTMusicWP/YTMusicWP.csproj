@@ -14,12 +14,12 @@
     <MinimumVisualStudioVersion>12</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{76F1466A-8B6D-4E39-A767-685A06062A39};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
-    <AppxBundlePlatforms>neutral</AppxBundlePlatforms>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+    <AppxBundlePlatforms>arm</AppxBundlePlatforms>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
-    <AppxBundle>Auto</AppxBundle>
+    <AppxBundle>Never</AppxBundle>
     <PackageCertificateKeyFile>YTMusicWP_TemporaryKey.pfx</PackageCertificateKeyFile>
-    <PackageCertificateThumbprint>12A1DCF00C44BD4F03839D554E95FEC4FA0C9802</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>B83810F5C50DDA285335B845348961A25EB91CBE</PackageCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>

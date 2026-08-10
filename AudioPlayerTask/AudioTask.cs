@@ -620,8 +620,7 @@ namespace AudioPlayerTask
                         var updater = TileUpdateManager.CreateTileUpdaterForApplication();
                         bool isDynamic = (tileMode == 0);
                         updater.EnableNotificationQueue(isDynamic);
-                        if (!isDynamic) updater.Clear(); // Xoá hàng đợi nếu chọn chế độ Now Playing Only
-
+                        
                         string squareThumb = FormatSquareThumbnail(thumb);
                         string safeThumb = System.Net.WebUtility.HtmlEncode(squareThumb ?? "");
                         string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
