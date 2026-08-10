@@ -1,6 +1,7 @@
 # Build output
 bin/
 obj/
+obj_old/
 packages/
 nuget.exe
 *.suo
