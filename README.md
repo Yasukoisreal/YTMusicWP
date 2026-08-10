@@ -53,6 +53,23 @@
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="Pictures/01.png" width="24%">
+  <img src="Pictures/02.png" width="24%">
+  <img src="Pictures/03.png" width="24%">
+  <img src="Pictures/04.png" width="24%">
+</p>
+<p align="center">
+  <img src="Pictures/05.png" width="24%">
+  <img src="Pictures/06.png" width="24%">
+  <img src="Pictures/07.png" width="24%">
+  <img src="Pictures/08.png" width="24%">
+</p>
+
+---
+
 ## 🏛️ Architecture
 
 YTMusicWP is built natively on the **Windows Runtime (WinRT)** architecture for maximum speed and battery efficiency:
