@@ -71,6 +71,7 @@ namespace AudioPlayerTask
                 _mediaPlayer.CurrentStateChanged -= MediaPlayer_CurrentStateChanged;
                 BackgroundMediaPlayer.MessageReceivedFromForeground -= BackgroundMediaPlayer_MessageReceivedFromForeground;
                 BackgroundMediaPlayer.Shutdown();
+                StopCrossfadeMonitor();
                 _httpClient?.Dispose();
             }
             catch { }
@@ -184,10 +185,12 @@ namespace AudioPlayerTask
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 request.Headers.Add("Accept", "application/json");
 
-                var response = await _httpClient.SendRequestAsync(request);
-                if (!response.IsSuccessStatusCode) return null;
-
-                string result = await response.Content.ReadAsStringAsync();
+                string result;
+                using (var response = await _httpClient.SendRequestAsync(request))
+                {
+                    if (!response.IsSuccessStatusCode) return null;
+                    result = await response.Content.ReadAsStringAsync();
+                }
 
                 if (result.StartsWith(")]}'"))
                     result = result.Substring(4);
@@ -309,15 +312,16 @@ namespace AudioPlayerTask
                 request.Headers.Add("X-YouTube-Client-Name", clientId);
                 request.Headers.Add("X-YouTube-Client-Version", clientVersion);
 
-                var response = await _httpClient.SendRequestAsync(request);
-
-                if (!response.IsSuccessStatusCode)
+                string json;
+                using (var response = await _httpClient.SendRequestAsync(request))
                 {
-                    _innerTubeDebug = clientName + ":HTTP" + (int)response.StatusCode;
-                    return null;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _innerTubeDebug = clientName + ":HTTP" + (int)response.StatusCode;
+                        return null;
+                    }
+                    json = await response.Content.ReadAsStringAsync();
                 }
-
-                string json = await response.Content.ReadAsStringAsync();
 
                 Windows.Data.Json.JsonObject data;
                 if (Windows.Data.Json.JsonObject.TryParse(json, out data))

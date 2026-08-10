@@ -56,14 +56,16 @@ namespace YTMusicWP
                     req.Headers.Add("X-YouTube-Client-Name", "28");
                     req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
 
-                    var resp = await _client.SendAsync(req);
-                    if (!resp.IsSuccessStatusCode)
+                    string json;
+                    using (var resp = await _client.SendAsync(req))
                     {
-                        LastResolveDebug += " H" + (int)resp.StatusCode;
-                        return null;
+                        if (!resp.IsSuccessStatusCode)
+                        {
+                            LastResolveDebug += " H" + (int)resp.StatusCode;
+                            return null;
+                        }
+                        json = await resp.Content.ReadAsStringAsync();
                     }
-
-                    string json = await resp.Content.ReadAsStringAsync();
                     LastResolveDebug += " len:" + json.Length;
                     var data = JObject.Parse(json);
 
@@ -209,10 +211,12 @@ namespace YTMusicWP
                     req.Headers.Add("User-Agent",
                         "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
 
-                    var resp = await _client.SendAsync(req);
-                    if (!resp.IsSuccessStatusCode) return tracks;
-
-                    string json = await resp.Content.ReadAsStringAsync();
+                    string json;
+                    using (var resp = await _client.SendAsync(req))
+                    {
+                        if (!resp.IsSuccessStatusCode) return tracks;
+                        json = await resp.Content.ReadAsStringAsync();
+                    }
                     var data = JObject.Parse(json);
                     captionsNode = data?["captions"];
                 }
@@ -247,10 +251,12 @@ namespace YTMusicWP
                 if (!url.Contains("fmt="))
                     url += "&fmt=srv3";
 
-                var resp = await _client.GetAsync(url);
-                if (!resp.IsSuccessStatusCode) return lines;
-
-                string xml = await resp.Content.ReadAsStringAsync();
+                string xml;
+                using (var resp = await _client.GetAsync(url))
+                {
+                    if (!resp.IsSuccessStatusCode) return lines;
+                    xml = await resp.Content.ReadAsStringAsync();
+                }
 
                 // Parse <text start="1.5" dur="3.2">Hello world</text>
                 int pos = 0;
@@ -330,11 +336,13 @@ namespace YTMusicWP
                 req.Headers.Add("User-Agent",
                     "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
 
-                var resp = await _client.SendAsync(req);
-                if (!resp.IsSuccessStatusCode)
-                    return new Tuple<string, string, string, bool, string>("", "", "", false, "");
-
-                string json = await resp.Content.ReadAsStringAsync();
+                string json;
+                using (var resp = await _client.SendAsync(req))
+                {
+                    if (!resp.IsSuccessStatusCode)
+                        return new Tuple<string, string, string, bool, string>("", "", "", false, "");
+                    json = await resp.Content.ReadAsStringAsync();
+                }
                 var data = JObject.Parse(json);
 
                 var details = data["videoDetails"];
@@ -409,10 +417,12 @@ namespace YTMusicWP
                 req.Headers.Add("Origin", "https://music.youtube.com");
                 req.Headers.Add("Referer", "https://music.youtube.com/");
 
-                var resp = await _client.SendAsync(req);
-                if (!resp.IsSuccessStatusCode) return fallbackUrl;
-
-                string json = await resp.Content.ReadAsStringAsync();
+                string json;
+                using (var resp = await _client.SendAsync(req))
+                {
+                    if (!resp.IsSuccessStatusCode) return fallbackUrl;
+                    json = await resp.Content.ReadAsStringAsync();
+                }
                 int idx = json.IndexOf("googleusercontent.com");
                 if (idx != -1)
                 {

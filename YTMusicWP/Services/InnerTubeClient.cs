@@ -71,17 +71,19 @@ namespace YTMusicWP
                 // Use lightweight sw.js_data endpoint instead of full homepage (~500KB → ~2KB)
                 var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/sw.js_data");
                 request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                var resp = await _client.SendAsync(request);
-                if (resp.IsSuccessStatusCode)
+                using (var resp = await _client.SendAsync(request))
                 {
-                    string body = await resp.Content.ReadAsStringAsync();
-                    string vd = ExtractVisitorData(body);
-                    if (!string.IsNullOrEmpty(vd))
+                    if (resp.IsSuccessStatusCode)
                     {
-                        _cachedVisitorData = vd;
-                        _vdCacheTime = DateTime.Now;
-                        try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["CachedVisitorData"] = vd; } catch { }
-                        return vd;
+                        string body = await resp.Content.ReadAsStringAsync();
+                        string vd = ExtractVisitorData(body);
+                        if (!string.IsNullOrEmpty(vd))
+                        {
+                            _cachedVisitorData = vd;
+                            _vdCacheTime = DateTime.Now;
+                            try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["CachedVisitorData"] = vd; } catch { }
+                            return vd;
+                        }
                     }
                 }
             }
@@ -190,9 +192,11 @@ namespace YTMusicWP
                 request.Headers.Add("Referer", "https://music.youtube.com/");
             }
 
-            var resp = await _client.SendAsync(request);
-            string json = await resp.Content.ReadAsStringAsync();
-            return JObject.Parse(json);
+            using (var resp = await _client.SendAsync(request))
+            {
+                string json = await resp.Content.ReadAsStringAsync();
+                return JObject.Parse(json);
+            }
         }
 
         // ==========================================
