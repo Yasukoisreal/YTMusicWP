@@ -60,7 +60,7 @@ YTMusicWP is built natively on the **Windows Runtime (WinRT)** architecture for 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                         YTMusicWP (Foreground UI)                        │
-│  XAML Metro Pages  •  InnerTube Client  •  TileService  •  QR Generator   │
+│  XAML Metro Pages  •  InnerTube Client  •  TileService  •  QR Generator  │
 └─────────────────────────────────────┬────────────────────────────────────┘
                                       │ ValueSet IPC & LocalSettings
 ┌─────────────────────────────────────▼────────────────────────────────────┐
