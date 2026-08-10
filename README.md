@@ -125,12 +125,9 @@ cd YTMusicWP
 ## 📝 Changelog
 
 ### v2.1 BETA (Latest)
-- 🚀 **InnerTube Direct Integration:** Replaced legacy backend with native, high-speed InnerTube protocol.
-- 🎨 **Redesigned Metro UI:** Spotify-inspired dark layout with Montserrat typography, fluent animations, and responsive layout.
-- 🖼️ **People Hub Mosaic Live Tiles:** Added 2x2 and 3x3 dynamic artwork mosaic grid tiles.
-- 🎤 **Synced Lyrics Engine:** LRCLIB & YouTube Captions time-synced karaoke integration.
-- ⚡ **512MB RAM Overhaul:** Completely solved memory pressure on low-end Lumia devices with bitmap memory pooling and background worker lifecycle guards.
-- 🔐 **OAuth 2.0 QR Code Generator:** Log in effortlessly via on-screen QR code or device code.
+- 🔐 **QR Code Login:** Added QR Code to make the login process more convenient.
+- 🖼️ **Live Tiles:** Added Live Tile support for the Start Screen.
+- ⚡ **Performance:** Bug fixes and memory optimizations.
 
 ---
 
