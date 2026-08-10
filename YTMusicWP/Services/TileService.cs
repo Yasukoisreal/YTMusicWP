@@ -60,7 +60,7 @@ namespace YTMusicWP.Services
                 try
                 {
                     ApplicationData.Current.LocalSettings.Values["LiveTileMode"] = value;
-                    if (value == 2) ClearLiveTile();
+                    if (value == 1 || value == 2) ClearLiveTile();
                 }
                 catch { }
             }
@@ -148,7 +148,7 @@ namespace YTMusicWP.Services
 
                 var updater = TileUpdateManager.CreateTileUpdaterForApplication();
                 bool isDynamic = (LiveTileMode == 0);
-                updater.EnableNotificationQueue(isDynamic);
+                updater.EnableNotificationQueue(true);
                 
                 string squareThumb = FormatSquareThumbnail(thumbUrl);
                 string safeThumb = WebUtility.HtmlEncode(squareThumb);

@@ -639,7 +639,7 @@ namespace AudioPlayerTask
 
                     var updater = Windows.UI.Notifications.TileUpdateManager.CreateTileUpdaterForApplication();
                     bool isDynamic = (tileMode == 0);
-                    updater.EnableNotificationQueue(isDynamic);
+                    updater.EnableNotificationQueue(true);
                     
                     string safeThumb = System.Net.WebUtility.HtmlEncode(localThumb ?? "");
                     string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
