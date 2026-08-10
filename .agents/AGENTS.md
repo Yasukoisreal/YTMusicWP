@@ -63,6 +63,19 @@ When editing existing code:
 - **Commit upon completing tasks:** Always create a clear, meaningful Git commit after implementing a feature, refactoring, or fixing a bug once build/verification succeeds.
 - **Prevent regressions:** Keep git working tree clean and committed to make rollbacks easy and prevent code loss.
 
+## 7. WP8.1 Project-Specific Constraints (YTMusicWP)
+
+**Strict Hardware & OS Limitations:**
+- **RAM Constraints (512MB Target):** Be extremely careful with memory allocation.
+- **IPC Payload Limits:** Communication between the Foreground UI and `AudioPlayerTask` via `ValueSet` is strictly size-limited. NEVER pass full unrestricted arrays (e.g., passing thousands of tracks). Always cap queue arrays to a maximum of 100 items around the current track to prevent OutOfMemory/Serialization crashes.
+
+**Storage Leak Prevention:**
+- **No Orphaned Temp Files:** Storage space on old WP8.1 devices is critically low. Temporary streams (e.g., `temp_play_*`) must be aggressively tracked and cleaned. Always include a fallback cleanup routine on app startup (`MainPage` constructor) because Background Tasks can be killed by the OS without running their cleanup handlers.
+
+**UI Virtualization & Live Tiles:**
+- **ListView Scrolling:** `ScrollIntoView` in WinRT only brings items to the edge, it does NOT center them. To calculate center offsets for virtualized items (like Lyrics), always call `UpdateLayout()` synchronously after `ScrollIntoView` to force container generation before applying `TransformToVisual`.
+- **Background Tile Consistency:** Live Tile XML templates pushed from the Background Task must EXACTLY match the templates used in `TileService.cs` (e.g., matching `TileSquare310x310PeekImage01`). Always read and respect user settings (like `LiveTileMode`) even when running in the background.
+
 ---
 
 **These guidelines are working if:** diffs contain zero unnecessary changes, solutions avoid over-engineering, code is thoroughly grounded via complete file reading, and clarifying questions precede implementation.
