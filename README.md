@@ -55,9 +55,18 @@
 
 ## 📸 Screenshots
 
-| | | | | | | | |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| <img src="Pictures/01.png" width="250"> | <img src="Pictures/02.png" width="250"> | <img src="Pictures/03.png" width="250"> | <img src="Pictures/04.png" width="250"> | <img src="Pictures/05.png" width="250"> | <img src="Pictures/06.png" width="250"> | <img src="Pictures/07.png" width="250"> | <img src="Pictures/08.png" width="250"> |
+<p align="center">
+  <img src="Pictures/01.png" width="22%"> &nbsp;
+  <img src="Pictures/02.png" width="22%"> &nbsp;
+  <img src="Pictures/03.png" width="22%"> &nbsp;
+  <img src="Pictures/04.png" width="22%">
+</p>
+<p align="center">
+  <img src="Pictures/05.png" width="22%"> &nbsp;
+  <img src="Pictures/06.png" width="22%"> &nbsp;
+  <img src="Pictures/07.png" width="22%"> &nbsp;
+  <img src="Pictures/08.png" width="22%">
+</p>
 
 ---
 
