@@ -625,11 +625,15 @@ namespace AudioPlayerTask
                     string localThumb = "";
                     try
                     {
+                        bool toggle = ls2.ContainsKey("BgTileToggle") ? (bool)ls2["BgTileToggle"] : false;
+                        ls2["BgTileToggle"] = !toggle;
+                        string fileName = toggle ? "bg_tile_A.jpg" : "bg_tile_B.jpg";
+
                         var uri = new Uri(squareThumb);
                         var buffer = await _httpClient.GetBufferAsync(uri);
-                        var file = await Windows.Storage.ApplicationData.Current.LocalFolder.CreateFileAsync("bg_tile.jpg", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+                        var file = await Windows.Storage.ApplicationData.Current.LocalFolder.CreateFileAsync(fileName, Windows.Storage.CreationCollisionOption.ReplaceExisting);
                         await Windows.Storage.FileIO.WriteBufferAsync(file, buffer);
-                        localThumb = "ms-appdata:///local/bg_tile.jpg";
+                        localThumb = "ms-appdata:///local/" + fileName;
                     }
                     catch { localThumb = System.Net.WebUtility.HtmlEncode(squareThumb ?? ""); }
 
