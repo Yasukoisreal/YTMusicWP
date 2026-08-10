@@ -71,6 +71,7 @@ namespace AudioPlayerTask
                 _mediaPlayer.CurrentStateChanged -= MediaPlayer_CurrentStateChanged;
                 BackgroundMediaPlayer.MessageReceivedFromForeground -= BackgroundMediaPlayer_MessageReceivedFromForeground;
                 BackgroundMediaPlayer.Shutdown();
+                _httpClient?.Dispose();
             }
             catch { }
             if (_deferral != null) _deferral.Complete();
@@ -617,7 +618,10 @@ namespace AudioPlayerTask
                     if (tileEnabled && tileMode != 2)
                     {
                         var updater = TileUpdateManager.CreateTileUpdaterForApplication();
-                        updater.EnableNotificationQueue(true);
+                        bool isDynamic = (tileMode == 0);
+                        updater.EnableNotificationQueue(isDynamic);
+                        if (!isDynamic) updater.Clear(); // Xoá hàng đợi nếu chọn chế độ Now Playing Only
+
                         string squareThumb = FormatSquareThumbnail(thumb);
                         string safeThumb = System.Net.WebUtility.HtmlEncode(squareThumb ?? "");
                         string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
@@ -627,12 +631,13 @@ namespace AudioPlayerTask
                             "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                             "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
                             "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                            "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
                             "</visual></tile>", safeThumb, safeTitle, safeArtist);
                         var doc = new XmlDocument();
                         doc.LoadXml(xml);
                         var notif = new TileNotification(doc);
                         notif.Tag = "nowplaying";
+                        notif.ExpirationTime = DateTimeOffset.UtcNow.AddHours(12);
                         updater.Update(notif);
 
                         // Badge glyph "playing" on lock screen

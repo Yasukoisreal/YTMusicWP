@@ -239,6 +239,18 @@ namespace YTMusicWP
             {
                 YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks, 5, true);
             }
+            else if (LiveTileModeComboBox.SelectedIndex == 1)
+            {
+                YTMusicWP.Services.TileService.ClearLiveTile();
+                if (currentTrack != null)
+                {
+                    YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(currentTrack.Title, currentTrack.ChannelName, currentTrack.ThumbnailUrl, currentQueueTracks);
+                }
+            }
+            else if (LiveTileModeComboBox.SelectedIndex == 2)
+            {
+                YTMusicWP.Services.TileService.ClearLiveTile();
+            }
         }
 
         private void LiveTileSpeedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -108,27 +108,33 @@ namespace YTMusicWP
                 catch { resolvedUrl = ""; }
             }
 
-            // OPTIMIZATION: Gộp 2 vòng lặp activeList thành 1 duy nhất
-            int count = activeList.Count;
+            // OPTIMIZATION: Giới hạn mảng gửi sang BackgroundTask để tránh lỗi IPC Payload quá tải (RAM 512MB)
+            int maxItems = 100;
+            int half = maxItems / 2;
+            int sliceStart = Math.Max(0, activeList.IndexOf(track) - half);
+            int sliceEnd = Math.Min(activeList.Count - 1, activeList.IndexOf(track) + half);
+            int count = sliceEnd - sliceStart + 1;
+            int relativeStartIndex = activeList.IndexOf(track) - sliceStart;
+            if (relativeStartIndex < 0) relativeStartIndex = 0;
+
             string[] urls = new string[count];
             string[] titles = new string[count];
             string[] artists = new string[count];
             string[] videoIds = new string[count];
             string[] thumbnails = new string[count];
 
-            int startIndex = Math.Max(0, activeList.IndexOf(track));
-
             currentQueueTracks.Clear();
+            for (int i = 0; i < activeList.Count; i++) currentQueueTracks.Add(activeList[i]); // Vẫn giữ full cho UI
+
             for (int i = 0; i < count; i++)
             {
-                var t = activeList[i];
-                currentQueueTracks.Add(t);
-                if (i == startIndex && !string.IsNullOrEmpty(resolvedUrl))
-                    urls[i] = resolvedUrl; // Dùng URL đã resolve
+                var t = activeList[sliceStart + i];
+                if (i == relativeStartIndex && !string.IsNullOrEmpty(resolvedUrl))
+                    urls[i] = resolvedUrl; 
                 else
                     urls[i] = t.VideoId.StartsWith("LOCAL:")
                         ? "ms-appdata:///local/" + t.VideoId.Substring(6)
-                        : ""; // AudioTask sẽ tự resolve cho các bài khác khi đến lượt
+                        : ""; 
                 titles[i] = t.Title ?? "";
                 artists[i] = t.ChannelName ?? "";
                 videoIds[i] = t.VideoId ?? "";
@@ -136,33 +142,44 @@ namespace YTMusicWP
             }
 
             // Update Live Tile with upcoming queue
-            YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, activeList.Skip(startIndex + 1));
+            YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, activeList.Skip(activeList.IndexOf(track) + 1));
 
             var message = new ValueSet {
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
-                { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", startIndex }, { "FastUrl", urls[startIndex] }
+                { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }, { "FastUrl", urls[relativeStartIndex] }
             };
             try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
         }
 
         private void SyncQueueToBackground()
         {
-            int count = currentQueueTracks.Count;
-            if (count == 0) return;
+            if (currentQueueTracks.Count == 0) return;
+            
+            // Tìm currentIndex thực sự trong mảng UI
+            int actualCurrentIndex = -1;
+            if (currentTrack != null) {
+                for (int i = 0; i < currentQueueTracks.Count; i++) {
+                    if (currentQueueTracks[i].VideoId == currentTrack.VideoId) { actualCurrentIndex = i; break; }
+                }
+            }
+            if (actualCurrentIndex == -1) actualCurrentIndex = 0;
+
+            int maxItems = 100;
+            int half = maxItems / 2;
+            int sliceStart = Math.Max(0, actualCurrentIndex - half);
+            int sliceEnd = Math.Min(currentQueueTracks.Count - 1, actualCurrentIndex + half);
+            int count = sliceEnd - sliceStart + 1;
+            int relativeStartIndex = actualCurrentIndex - sliceStart;
+
             string[] urls = new string[count];
             string[] titles = new string[count];
             string[] artists = new string[count];
             string[] videoIds = new string[count];
             string[] thumbnails = new string[count];
 
-            int currentIndex = -1;
             for (int i = 0; i < count; i++)
             {
-                var t = currentQueueTracks[i];
-                if (currentTrack != null && t.VideoId == currentTrack.VideoId && currentIndex == -1)
-                {
-                    currentIndex = i;
-                }
+                var t = currentQueueTracks[sliceStart + i];
                 urls[i] = t.VideoId.StartsWith("LOCAL:")
                     ? "ms-appdata:///local/" + t.VideoId.Substring(6)
                     : "";
@@ -172,15 +189,9 @@ namespace YTMusicWP
                 thumbnails[i] = t.ThumbnailUrl ?? "";
             }
 
-            var message = new ValueSet
-            {
-                { "UpdateQueueOnly", "" },
-                { "Urls", urls },
-                { "Titles", titles },
-                { "Artists", artists },
-                { "VideoIds", videoIds },
-                { "Thumbnails", thumbnails },
-                { "CurrentIndex", Math.Max(0, currentIndex) }
+            var message = new ValueSet {
+                { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
+                { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }
             };
             try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
         }
@@ -375,6 +386,14 @@ namespace YTMusicWP
                         }
 
                         var activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                        if (activeContainer == null)
+                        {
+                            // Item is virtualized out of view because user seeked far away.
+                            targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
+                            targetListView.UpdateLayout();
+                            activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                        }
+                        
                         if (scrollViewer != null && activeContainer != null)
                         {
                             var transform    = activeContainer.TransformToVisual(scrollViewer);

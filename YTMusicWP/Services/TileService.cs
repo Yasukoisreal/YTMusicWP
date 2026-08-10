@@ -147,7 +147,8 @@ namespace YTMusicWP.Services
                 if (string.IsNullOrEmpty(thumbUrl)) return;
 
                 var updater = TileUpdateManager.CreateTileUpdaterForApplication();
-                updater.EnableNotificationQueue(true);
+                bool isDynamic = (LiveTileMode == 0);
+                updater.EnableNotificationQueue(isDynamic);
                 updater.Clear();
 
                 string squareThumb = FormatSquareThumbnail(thumbUrl);
@@ -175,8 +176,8 @@ namespace YTMusicWP.Services
                 };
                 updater.Update(notif);
 
-                // If Up Next has tracks, push an Up Next tile to rotate with Now Playing
-                if (upNextTracks != null)
+                // If Up Next has tracks, push an Up Next tile to rotate with Now Playing (Only in Dynamic Mode)
+                if (isDynamic && upNextTracks != null)
                 {
                     var nextList = upNextTracks.Where(IsValidTrack).Take(2).ToList();
                     if (nextList.Count > 0)

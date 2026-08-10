@@ -181,6 +181,7 @@ namespace YTMusicWP
             LoadSettings();
             SetupTimer();
             UpdateGreetingText();
+            var ignored = CleanTempStreamsInternalAsync();
 
             BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
             HardwareButtons.BackPressed += HardwareButtons_BackPressed;
