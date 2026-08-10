@@ -608,66 +608,7 @@ namespace AudioPlayerTask
                 if (storedThumb != thumb) ls["CurrentThumbnail"] = thumb;
             }
             catch { }
-            var ignored = UpdateLiveTileAsync(title, artist, thumb);
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }
-        }
-
-        private async Task UpdateLiveTileAsync(string title, string artist, string thumb)
-        {
-            try
-            {
-                var ls2 = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                bool tileEnabled = !ls2.ContainsKey("EnableLiveTile") || (bool)ls2["EnableLiveTile"];
-                int tileMode = ls2.ContainsKey("LiveTileMode") ? System.Convert.ToInt32(ls2["LiveTileMode"]) : 0;
-                if (tileEnabled && tileMode != 2 && !string.IsNullOrEmpty(thumb))
-                {
-                    string squareThumb = FormatSquareThumbnail(thumb);
-                    string localThumb = "";
-                    try
-                    {
-                        bool toggle = ls2.ContainsKey("BgTileToggle") ? (bool)ls2["BgTileToggle"] : false;
-                        ls2["BgTileToggle"] = !toggle;
-                        string fileName = toggle ? "bg_tile_A.jpg" : "bg_tile_B.jpg";
-
-                        var uri = new Uri(squareThumb);
-                        var buffer = await _httpClient.GetBufferAsync(uri);
-                        var file = await Windows.Storage.ApplicationData.Current.LocalFolder.CreateFileAsync(fileName, Windows.Storage.CreationCollisionOption.ReplaceExisting);
-                        await Windows.Storage.FileIO.WriteBufferAsync(file, buffer);
-                        localThumb = "ms-appdata:///local/" + fileName;
-                    }
-                    catch { localThumb = System.Net.WebUtility.HtmlEncode(squareThumb ?? ""); }
-
-                    var updater = Windows.UI.Notifications.TileUpdateManager.CreateTileUpdaterForApplication();
-                    bool isDynamic = (tileMode == 0);
-                    updater.EnableNotificationQueue(true);
-                    
-                    string safeThumb = System.Net.WebUtility.HtmlEncode(localThumb ?? "");
-                    string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
-                    string safeArtist = System.Net.WebUtility.HtmlEncode(artist ?? "");
-                    string xml = string.Format(
-                        "<tile><visual version=\"2\">" +
-                        "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                        "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
-                        "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                        "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                        "</visual></tile>", safeThumb, safeTitle, safeArtist);
-                    var doc = new Windows.Data.Xml.Dom.XmlDocument();
-                    doc.LoadXml(xml);
-                    var notif = new Windows.UI.Notifications.TileNotification(doc);
-                    notif.Tag = "nowplaying";
-                    notif.ExpirationTime = DateTimeOffset.UtcNow.AddHours(12);
-                    updater.Update(notif);
-
-                    try
-                    {
-                        var badgeXml = Windows.UI.Notifications.BadgeUpdateManager.GetTemplateContent(Windows.UI.Notifications.BadgeTemplateType.BadgeGlyph);
-                        ((Windows.Data.Xml.Dom.XmlElement)badgeXml.SelectSingleNode("/badge")).SetAttribute("value", "playing");
-                        Windows.UI.Notifications.BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new Windows.UI.Notifications.BadgeNotification(badgeXml));
-                    }
-                    catch { }
-                }
-            }
-            catch { }
         }
 
         // ── Crossfade & Gapless ──

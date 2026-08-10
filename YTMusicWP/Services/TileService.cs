@@ -148,7 +148,7 @@ namespace YTMusicWP.Services
 
                 var updater = TileUpdateManager.CreateTileUpdaterForApplication();
                 bool isDynamic = (LiveTileMode == 0);
-                updater.EnableNotificationQueue(true);
+                updater.EnableNotificationQueue(isDynamic);
                 
                 string squareThumb = FormatSquareThumbnail(thumbUrl);
                 string safeThumb = WebUtility.HtmlEncode(squareThumb);
