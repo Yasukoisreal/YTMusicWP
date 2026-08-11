@@ -759,6 +759,23 @@ namespace YTMusicWP
 
         private async void DownloadButton_Click(object sender, RoutedEventArgs e) { if (currentTrack != null) await DownloadTrackAsync(currentTrack); }
 
+        public async Task CleanStaleDownloadsAsync()
+        {
+            try
+            {
+                var downloads = await Windows.Networking.BackgroundTransfer.BackgroundDownloader.GetCurrentDownloadsAsync();
+                foreach (var download in downloads)
+                {
+                    try
+                    {
+                        download.AttachAsync().Cancel();
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
         private async Task DownloadTrackAsync(YouTubeTrack track)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
