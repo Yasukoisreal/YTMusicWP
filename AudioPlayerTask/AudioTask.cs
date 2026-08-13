@@ -399,11 +399,14 @@ namespace AudioPlayerTask
 
                 _innerTubeDebug = clientName + ":NO_URL";
                 _cachedVisitorData = null;
+                try { Windows.Storage.ApplicationData.Current.LocalSettings.Values.Remove("CachedVisitorData"); } catch { }
                 return null;
             }
             catch (Exception ex)
             {
                 _innerTubeDebug = clientName + ":EX:" + ex.Message.Substring(0, Math.Min(30, ex.Message.Length));
+                _cachedVisitorData = null;
+                try { Windows.Storage.ApplicationData.Current.LocalSettings.Values.Remove("CachedVisitorData"); } catch { }
                 return null;
             }
         }
