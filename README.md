@@ -162,6 +162,18 @@ Contributions, bug reports, and pull requests are warmly welcome!
 
 ---
 
+## 💖 Support & Donate
+
+If you enjoy using YTMusicWP and want to support the development, consider buying me a coffee! Your support helps keep this project alive for the Windows Phone & Lumia community.
+
+**MB Bank (Vietnam)**
+- **Account Number:** `700652007`
+- **Account Name:** NGUYEN TRUONG AN
+
+<img src="Pictures/donate_qr.jpg" width="300" alt="Donate QR Code">
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
