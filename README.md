@@ -17,6 +17,10 @@
   <a href="https://github.com/Yasukoisreal/YTMusicWP/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"></a>
 </p>
 
+<p align="center">
+  <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get YTMusicWP from Live Store"></a>
+</p>
+
 ---
 
 ## ✨ Features at a Glance
