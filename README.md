@@ -1,7 +1,8 @@
 # 🎵 YTMusicWP
 
 <p align="center">
-  <img src="YTMusicWP/Assets/Logo.scale-240.png" width="120" height="120" alt="YTMusicWP Logo" />
+  <img src="YTMusicWP/Assets/Logo.scale-240.png" width="120" height="120" alt="YTMusicWP Logo" /><br><br>
+  <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get YTMusicWP from Live Store"></a>
 </p>
 
 <p align="center">
@@ -15,10 +16,6 @@
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/RAM%20Target-512MB%20Optimized-orange" alt="RAM Target"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Version-2.1.2%20BETA-blue" alt="Version"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"></a>
-</p>
-
-<p align="center">
-  <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get YTMusicWP from Live Store"></a>
 </p>
 
 ---
