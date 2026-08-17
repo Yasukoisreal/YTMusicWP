@@ -1,8 +1,7 @@
 # 🎵 YTMusicWP
 
 <p align="center">
-  <img src="YTMusicWP/Assets/Logo.scale-240.png" width="120" height="120" alt="YTMusicWP Logo" /><br><br>
-  <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get YTMusicWP from Live Store"></a>
+  <img src="YTMusicWP/Assets/Logo.scale-240.png" width="120" height="120" alt="YTMusicWP Logo" />
 </p>
 
 <p align="center">
@@ -105,6 +104,10 @@ YTMusicWP is built natively on the **Windows Runtime (WinRT)** architecture for 
 ---
 
 ## 🚀 Installation Guide
+
+<p>
+  <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get YTMusicWP from Live Store"></a>
+</p>
 
 ### Option A: Windows Phone 8.1
 1. Download the latest `YTMusicWP.appx` and certificate `YTMusicWP.cer` from [Releases](https://github.com/Yasukoisreal/YTMusicWP/releases).
