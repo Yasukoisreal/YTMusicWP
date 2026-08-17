@@ -105,16 +105,21 @@ YTMusicWP is built natively on the **Windows Runtime (WinRT)** architecture for 
 
 ## 🚀 Installation Guide
 
+### Method 1: Live Store (Recommended)
+The easiest way to install and update YTMusicWP is directly from the Live Store. Click the button below to download the app seamlessly to your device:
+
 <p>
   <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get YTMusicWP from Live Store"></a>
 </p>
 
-### Option A: Windows Phone 8.1
+### Method 2: Manual Sideloading
+
+#### Option A: Windows Phone 8.1
 1. Download the latest `YTMusicWP.appx` and certificate `YTMusicWP.cer` from [Releases](https://github.com/Yasukoisreal/YTMusicWP/releases).
 2. Install the `.cer` certificate on your Lumia device first (open via email or file manager).
 3. Sideload the `.appx` using **Windows Phone Application Deployment (WPAD)**, **WPV Xap Deployer**, or **Windows Phone Power Tools**.
 
-### Option B: Windows 10 Mobile
+#### Option B: Windows 10 Mobile
 1. Navigate to **Settings** > **Update & Security** > **For developers** and enable **Developer mode**.
 2. Download the `.appx` package to your phone.
 3. Open the file in **File Explorer** and tap **Install**, or deploy via **Windows Device Portal**.
