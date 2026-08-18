@@ -19,6 +19,14 @@
 
 ---
 
+> [!WARNING]
+> **🚨 TEMPORARY OUTAGE NOTICE:** 
+> YouTube has recently implemented a major security update (Po-Token enforcement) which currently restricts or throttles media streaming for all legacy third-party Windows Phone YouTube clients (including YTMusicWP, MetroTube, myTube, etc.). 
+> You may experience issues where the app loads the UI, searches, and signs in perfectly, but fails to play music/video with a "No stream available" error. 
+> We are actively investigating solutions (e.g. proxy APIs) to bypass this block. Thank you for your patience!
+
+---
+
 ## ✨ Features at a Glance
 
 ### 🎵 1. Native Background Playback (`AudioPlayerTask`)
