@@ -201,7 +201,7 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.Add("User-Agent",
+                    req.Headers.TryAddWithoutValidation("User-Agent",
                         "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
                     req.Headers.Add("X-YouTube-Client-Name", "28");
                     req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
@@ -328,7 +328,7 @@ namespace YTMusicWP
                 var req = new HttpRequestMessage(HttpMethod.Post,
                     "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails,microformat");
                 req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                req.Headers.Add("User-Agent",
+                req.Headers.TryAddWithoutValidation("User-Agent",
                     "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
                 req.Headers.Add("X-YouTube-Client-Name", "28");
                 req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
@@ -417,7 +417,7 @@ namespace YTMusicWP
                 };
 
                 req.Content = new StringContent(bodyObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
-                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
                 req.Headers.Add("Origin", "https://music.youtube.com");
                 req.Headers.Add("Referer", "https://music.youtube.com/");
 
@@ -455,3 +455,4 @@ namespace YTMusicWP
         public string LanguageName { get; set; } = "";
     }
 }
+
