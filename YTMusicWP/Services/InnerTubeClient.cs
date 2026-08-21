@@ -70,7 +70,7 @@ namespace YTMusicWP
             {
                 // Use lightweight sw.js_data endpoint instead of full homepage (~500KB → ~2KB)
                 var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/sw.js_data");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Linux; Andr0id 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 OPR/46.0.2207.0 OMI/4.21.0.273.DIA6.149 Model/Sony-BRAVIA-8K-UR2,gzip(gfe)");
                 using (var resp = await _client.SendAsync(request))
                 {
                     if (resp.IsSuccessStatusCode)

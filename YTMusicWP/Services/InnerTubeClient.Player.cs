@@ -26,35 +26,36 @@ namespace YTMusicWP
             string vd = await GetVisitorDataAsync();
             LastResolveDebug = "vd:" + (vd != null ? "OK" : "NULL");
 
-            // Giống MetroTube: chỉ dùng ANDROID_VR (Oculus Quest 3)
+            // ANDROID_VR — returns direct URLs (no signatureCipher) + BRAVIA visitorData
             try
             {
                     string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
                     string requestBody = "{" +
                         "\"contentCheckOk\":true," +
                         "\"context\":{\"client\":{" +
-                            "\"clientName\":\"ANDROID_VR\"," +
-                            "\"clientVersion\":\"1.60.19\"," +
-                            "\"deviceMake\":\"Oculus\"," +
-                            "\"deviceModel\":\"Quest 3\"," +
-                            "\"osName\":\"ANDROID\"," +
-                            "\"osVersion\":\"12L\"," +
+                            "\"clientName\":\"ANDROID\"," +
+                            "\"clientVersion\":\"20.49.37\"," +
+                            "\"deviceMake\":\"Nokia\"," +
+                            "\"deviceModel\":\"LumiaWP\"," +
+                            "\"userAgent\":\"com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip\"," +
+                            "\"osName\":\"Android\"," +
+                            "\"osVersion\":\"11\"," +
                             "\"platform\":\"MOBILE\"," +
-                            "\"clientScreen\":0," +
+                            "\"androidSdkVersion\":30," +
+                            "\"clientFormFactor\":0," +
                             "\"hl\":\"en\",\"gl\":\"US\"" +
                             vdField +
                         "}}," +
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
-                    // Giống MetroTube: thêm &fields= để giảm response size + chỉ lấy cần thiết
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.Add("User-Agent",
-                        "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
-                    req.Headers.Add("X-YouTube-Client-Name", "28");
-                    req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
+                    req.Headers.TryAddWithoutValidation("User-Agent",
+                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+                    req.Headers.Add("X-YouTube-Client-Name", "3");
+                    req.Headers.Add("X-YouTube-Client-Version", "20.49.37");
 
                     string json;
                     using (var resp = await _client.SendAsync(req))
@@ -84,37 +85,9 @@ namespace YTMusicWP
                     _cachedCaptionsVideoId = videoId;
                     _cachedCaptionsData = data["captions"];
 
-                    // Select itag based on Audio Quality setting
-                    // Low=48kbps (itag 139), Normal=128kbps (itag 140), High=256kbps (itag 251/141)
-                    var qualitySettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                    string qualityKbps = qualitySettings.ContainsKey("AudioQualityKbps") ? qualitySettings["AudioQualityKbps"].ToString() : "128";
-                    int[] preferredItags;
-                    if (qualityKbps == "48") preferredItags = new[] { 139, 140, 18 };        // Low: 48kbps first
-                    else if (qualityKbps == "256") preferredItags = new[] { 141, 140, 18 };  // High: 256kbps m4a (WP8.1 doesn't support Opus 251)
-                    else preferredItags = new[] { 140, 139, 18 };                            // Normal: 128kbps (default)
+                    int[] preferredItags = new[] { 18, 140, 141, 139 };
 
-                    var formats = data["streamingData"]?["adaptiveFormats"];
-                    if (formats != null)
-                    {
-                        foreach (int targetItag in preferredItags)
-                        {
-                            foreach (var fmt in formats)
-                            {
-                                int itag = fmt["itag"]?.Value<int>() ?? 0;
-                                if (itag == targetItag)
-                                {
-                                    string url = fmt["url"]?.ToString();
-                                    if (!string.IsNullOrEmpty(url))
-                                    {
-                                        LastResolveDebug += " i" + itag + ":OK(q" + qualityKbps + ")";
-                                        return PrepareStreamUrl(url);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Fallback: formats (itag 18 = video+audio 360p)
+                    // 1. Ưu tiên itag 18 (video 360p) vì nó không bị bóp băng thông
                     var fmts2 = data["streamingData"]?["formats"];
                     if (fmts2 != null)
                     {
@@ -128,6 +101,28 @@ namespace YTMusicWP
                                 {
                                     LastResolveDebug += " i18:OK";
                                     return PrepareStreamUrl(url);
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Fallback xuống adaptiveFormats (có thể bị bóp/403)
+                    var formats = data["streamingData"]?["adaptiveFormats"];
+                    if (formats != null)
+                    {
+                        foreach (int targetItag in preferredItags)
+                        {
+                            foreach (var fmt in formats)
+                            {
+                                int itag = fmt["itag"]?.Value<int>() ?? 0;
+                                if (itag == targetItag)
+                                {
+                                    string url = fmt["url"]?.ToString();
+                                    if (!string.IsNullOrEmpty(url))
+                                    {
+                                        LastResolveDebug += " i" + itag + ":OK";
+                                        return PrepareStreamUrl(url);
+                                    }
                                 }
                             }
                         }
@@ -152,8 +147,6 @@ namespace YTMusicWP
             if (string.IsNullOrEmpty(url)) return url;
             if (!url.Contains("ratebypass="))
                 url += "&ratebypass=yes";
-            if (!url.Contains("range="))
-                url += "&range=0-";
             return url;
         }
 
@@ -208,8 +201,8 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.Add("User-Agent",
-                        "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                    req.Headers.TryAddWithoutValidation("User-Agent",
+                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
 
                     string json;
                     using (var resp = await _client.SendAsync(req))
@@ -333,8 +326,8 @@ namespace YTMusicWP
                 var req = new HttpRequestMessage(HttpMethod.Post,
                     "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails,microformat");
                 req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                req.Headers.Add("User-Agent",
-                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                req.Headers.TryAddWithoutValidation("User-Agent",
+                    "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
 
                 string json;
                 using (var resp = await _client.SendAsync(req))

@@ -155,7 +155,13 @@ namespace YTMusicWP
                                 catch { }
                             }));
                         }
-                        await Task.WhenAll(batch);
+                        foreach (var searchTask in batch)
+                        {
+                            await searchTask;
+                            await Task.Delay(500); // 500ms delay between each artist search to avoid API spam
+                        }
+                        
+                        await Task.Delay(1000); // 1s rest between batches
                     }
                 }
                 else
@@ -301,36 +307,40 @@ namespace YTMusicWP
 
             _currentHomeQuery = queries[0];
 
-            var batch1a = FetchMusicList(queries[0], "", "songs");
-            var batch1b = FetchMusicList(queries[1], "", "songs");
-            var trending = await batch1a;
+            // Load sequentially to avoid rate limiting
+            var trending = await FetchMusicList(queries[0], "", "songs");
             if (trending != null) foreach (var t in trending) { if (IsMusicTrack(t)) homeTracks.Add(t); }
-            var pop = await batch1b;
+            
+            var pop = await FetchMusicList(queries[1], "", "songs");
             if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
 
-            var batch2a = FetchMusicList(queries[2], "", "songs");
-            var batch2b = FetchMusicList(queries[3], "", "songs");
-            var chill = await batch2a;
+            var chill = await FetchMusicList(queries[2], "", "songs");
             if (chill != null) foreach (var t in chill) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
-            var workout = await batch2b;
-            if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
 
             HomeLoading.Visibility = Visibility.Collapsed;
             YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
 
-            var batch3a = FetchMusicList(queries[4], "", "songs");
-            var batch3b = FetchMusicList(queries[5], "", "songs");
-            var g5 = await batch3a;
-            if (g5 != null) foreach (var t in g5) { if (IsMusicTrack(t)) genre5Tracks.Add(t); }
-            var g6 = await batch3b;
-            if (g6 != null) foreach (var t in g6) { if (IsMusicTrack(t)) genre6Tracks.Add(t); }
+            // Background load the rest sequentially with delay to be safe
+            var _ = Task.Run(async () =>
+            {
+                await Task.Delay(1500);
+                var workout = await FetchMusicList(queries[3], "", "songs");
+                var genre5 = await FetchMusicList(queries[4], "", "songs");
+                
+                await Task.Delay(1500);
+                var genre6 = await FetchMusicList(queries[5], "", "songs");
+                var genre7 = await FetchMusicList(queries[6], "", "songs");
+                var genre8 = await FetchMusicList(queries[7], "", "songs");
 
-            var batch4a = FetchMusicList(queries[6], "", "songs");
-            var batch4b = FetchMusicList(queries[7], "", "songs");
-            var g7 = await batch4a;
-            if (g7 != null) foreach (var t in g7) { if (IsMusicTrack(t)) genre7Tracks.Add(t); }
-            var g8 = await batch4b;
-            if (g8 != null) foreach (var t in g8) { if (IsMusicTrack(t)) genre8Tracks.Add(t); }
+                var __ = Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
+                    if (genre5 != null) foreach (var t in genre5) { if (IsMusicTrack(t)) genre5Tracks.Add(t); }
+                    if (genre6 != null) foreach (var t in genre6) { if (IsMusicTrack(t)) genre6Tracks.Add(t); }
+                    if (genre7 != null) foreach (var t in genre7) { if (IsMusicTrack(t)) genre7Tracks.Add(t); }
+                    if (genre8 != null) foreach (var t in genre8) { if (IsMusicTrack(t)) genre8Tracks.Add(t); }
+                });
+            });
         }
 
         private static bool IsMusicTrack(YouTubeTrack t)

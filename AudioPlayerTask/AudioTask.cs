@@ -181,8 +181,8 @@ namespace AudioPlayerTask
             {
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
                     new Uri("https://www.youtube.com/sw.js_data"));
-                request.Headers.Add("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                request.Headers.TryAppendWithoutValidation("User-Agent",
+                    "Mozilla/5.0 (Linux; Andr0id 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 OPR/46.0.2207.0 OMI/4.21.0.273.DIA6.149 Model/Sony-BRAVIA-8K-UR2,gzip(gfe)");
                 request.Headers.Add("Accept", "application/json");
 
                 string result;
@@ -260,9 +260,9 @@ namespace AudioPlayerTask
         {
             _innerTubeDebug = "";
             
-            // InnerTube ANDROID_VR (giống MetroTube)
-            string url = await TryInnerTubeClient(videoId, "ANDROID_VR", "1.60.19", "28", "Oculus", "Quest 3", "12L",
-                "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+            // InnerTube ANDROID (giống LazyTube/MetroTube Patched)
+            string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "11",
+                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
             if (!string.IsNullOrEmpty(url)) return url;
 
             return null;
@@ -287,12 +287,14 @@ namespace AudioPlayerTask
                         "\"clientVersion\":\"" + clientVersion + "\"," +
                         "\"deviceMake\":\"" + deviceMake + "\"," +
                         "\"deviceModel\":\"" + deviceModel + "\"," +
-                        "\"osName\":\"ANDROID\"," +
+                        "\"userAgent\":\"" + userAgent + "\"," +
+                        "\"osName\":\"Android\"," +
                         "\"osVersion\":\"" + osVersion + "\"," +
                         "\"platform\":\"MOBILE\"," +
-                        "\"clientScreen\":0," +
+                        "\"androidSdkVersion\":30," +
                         "\"hl\":\"en\"," +
-                        "\"gl\":\"US\"" +
+                        "\"gl\":\"US\"," +
+                        "\"clientFormFactor\":0" +
                         vdField +
                     "}}," +
                     "\"videoId\":\"" + videoId + "\"" +
@@ -308,7 +310,7 @@ namespace AudioPlayerTask
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
                     new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData"));
                 request.Content = content;
-                request.Headers.Add("User-Agent", userAgent);
+                request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
                 request.Headers.Add("X-YouTube-Client-Name", clientId);
                 request.Headers.Add("X-YouTube-Client-Version", clientVersion);
 
@@ -340,16 +342,34 @@ namespace AudioPlayerTask
                         return null;
                     }
 
-                    var qualitySettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                    string qualityKbps = qualitySettings.ContainsKey("AudioQualityKbps") ? qualitySettings["AudioQualityKbps"].ToString() : "128";
-                    int[] preferredItags;
-                    if (qualityKbps == "48") preferredItags = new[] { 139, 140, 18 };
-                    else if (qualityKbps == "256") preferredItags = new[] { 141, 140, 18 };
-                    else preferredItags = new[] { 140, 139, 18 };
+                    int[] preferredItags = new[] { 18, 140, 141, 139 };
 
                     if (data.ContainsKey("streamingData"))
                     {
                         var streamingData = data.GetNamedObject("streamingData");
+                        // 1. Ưu tiên itag 18 từ formats (không bị bóp băng thông)
+                        if (streamingData.ContainsKey("formats"))
+                        {
+                            var formats = streamingData.GetNamedArray("formats");
+                            foreach (var fmtVal in formats)
+                            {
+                                if (fmtVal.ValueType == Windows.Data.Json.JsonValueType.Object)
+                                {
+                                    var fmt = fmtVal.GetObject();
+                                    if (fmt.ContainsKey("itag"))
+                                    {
+                                        int itag = (int)fmt.GetNamedNumber("itag");
+                                        if (itag == 18 && fmt.ContainsKey("url"))
+                                        {
+                                            _innerTubeDebug = clientName + ":OK(i18)";
+                                            return fmt.GetNamedString("url");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. Fallback xuống adaptiveFormats (âm thanh chuyên dụng, dễ bị bóp/403)
                         if (streamingData.ContainsKey("adaptiveFormats"))
                         {
                             var formats = streamingData.GetNamedArray("adaptiveFormats");
@@ -368,27 +388,6 @@ namespace AudioPlayerTask
                                                 _innerTubeDebug = clientName + ":OK";
                                                 return fmt.GetNamedString("url");
                                             }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (streamingData.ContainsKey("formats"))
-                        {
-                            var formats = streamingData.GetNamedArray("formats");
-                            foreach (var fmtVal in formats)
-                            {
-                                if (fmtVal.ValueType == Windows.Data.Json.JsonValueType.Object)
-                                {
-                                    var fmt = fmtVal.GetObject();
-                                    if (fmt.ContainsKey("itag"))
-                                    {
-                                        int itag = (int)fmt.GetNamedNumber("itag");
-                                        if (itag == 18 && fmt.ContainsKey("url"))
-                                        {
-                                            _innerTubeDebug = clientName + ":OK";
-                                            return fmt.GetNamedString("url");
                                         }
                                     }
                                 }
@@ -482,8 +481,6 @@ namespace AudioPlayerTask
                 return url;
             if (!url.Contains("ratebypass"))
                 url += "&ratebypass=yes";
-            if (!url.Contains("range="))
-                url += "&range=0-";
             return url;
         }
 

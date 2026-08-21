@@ -125,9 +125,6 @@ namespace YTMusicWP
                 UpdateRepeatUI(repeatMode);
 
                 // Playback settings — set values BEFORE attaching handlers to avoid triggering saves on load
-                int quality = SafeGetInt(settings, "AudioQuality", 1);
-                if (quality >= 0 && quality < AudioQualityComboBox.Items.Count)
-                    AudioQualityComboBox.SelectedIndex = quality;
                 int crossfade = SafeGetInt(settings, "CrossfadeSeconds", SafeGetInt(settings, "CrossfadeDuration", 0));
                 CrossfadeSlider.Value = crossfade;
                 CrossfadeValueText.Text = crossfade + "s";
@@ -144,7 +141,7 @@ namespace YTMusicWP
                     LiveTileSpeedComboBox.SelectedIndex = tileSpeed;
 
                 // Now attach handlers — changes will save & apply immediately
-                AudioQualityComboBox.SelectionChanged += AudioQualityComboBox_SelectionChanged;
+                
                 CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
                 AutoplayToggle.Toggled += AutoplayToggle_Toggled;
                 GaplessToggle.Toggled += GaplessToggle_Toggled;
@@ -198,13 +195,6 @@ namespace YTMusicWP
             ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = sec;
             ApplicationData.Current.LocalSettings.Values["Crossfade"] = (sec > 0);
             ApplicationData.Current.LocalSettings.Values["CrossfadeDuration"] = sec;
-        }
-
-        private void AudioQualityComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var qualityItem = AudioQualityComboBox.SelectedItem as ComboBoxItem;
-            ApplicationData.Current.LocalSettings.Values["AudioQuality"] = AudioQualityComboBox.SelectedIndex;
-            ApplicationData.Current.LocalSettings.Values["AudioQualityKbps"] = (qualityItem != null && qualityItem.Tag != null) ? qualityItem.Tag.ToString() : "128";
         }
 
         private void AutoplayToggle_Toggled(object sender, RoutedEventArgs e)
@@ -787,46 +777,73 @@ namespace YTMusicWP
                     uniqueVideoIds.Add(vid);
             }
 
-            // Fetch metadata for each video via InnerTube player — filter music only
-            int skippedNonMusic = 0;
-            foreach (var vidId in uniqueVideoIds)
+            var newVideoIds = uniqueVideoIds.Where(v => !favoriteTracks.Any(t => t.VideoId == v)).ToList();
+            if (newVideoIds.Count > 0)
             {
-                if (favoriteTracks.Any(t => t.VideoId == vidId)) continue;
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
+                    LoginStatusText.Text = $"Resolving metadata for {newVideoIds.Count} new songs...";
+                });
+            }
 
-                try
+            var semaphore = new System.Threading.SemaphoreSlim(4);
+            var tasks = new List<Task>();
+            var newTracksBag = new System.Collections.Concurrent.ConcurrentBag<YouTubeTrack>();
+
+            foreach (var vidId in newVideoIds)
+            {
+                tasks.Add(Task.Run(async () =>
                 {
-                    var meta = await InnerTubeClient.GetVideoMetadataAsync(vidId);
-                    string title = meta.Item1 ?? "Video " + vidId;
-                    string channel = CleanChannelName(meta.Item2 ?? "");
-                    string thumbUrl = meta.Item3;
-                    bool isMusic = meta.Item4;
-                    string chId = meta.Item5;
-
-                    if (!isMusic) { skippedNonMusic++; continue; }
-
-                    favoriteTracks.Add(new YouTubeTrack
+                    await semaphore.WaitAsync();
+                    try
                     {
-                        VideoId = vidId,
-                        Title = title,
-                        ChannelName = channel,
-                        ChannelId = chId,
-                        ThumbnailUrl = GetSquareThumbnail(thumbUrl)
-                    });
-                    hasNew = true;
+                        var meta = await InnerTubeClient.GetVideoMetadataAsync(vidId);
+                        string title = meta.Item1 ?? "Video " + vidId;
+                        string channel = CleanChannelName(meta.Item2 ?? "");
+                        string thumbUrl = meta.Item3;
+                        bool isMusic = meta.Item4;
+                        string chId = meta.Item5;
+
+                        if (isMusic)
+                        {
+                            newTracksBag.Add(new YouTubeTrack
+                            {
+                                VideoId = vidId,
+                                Title = title,
+                                ChannelName = channel,
+                                ChannelId = chId,
+                                ThumbnailUrl = GetSquareThumbnail(thumbUrl)
+                            });
+                        }
+                    }
+                    catch { }
+                    finally { semaphore.Release(); }
+                }));
+            }
+
+            if (tasks.Count > 0)
+            {
+                await Task.WhenAll(tasks);
+                
+                // Add back to favoriteTracks in correct order
+                foreach (var vidId in newVideoIds)
+                {
+                    var track = newTracksBag.FirstOrDefault(t => t.VideoId == vidId);
+                    if (track != null)
+                    {
+                        favoriteTracks.Add(track);
+                        hasNew = true;
+                    }
                 }
-                catch { continue; }
             }
 
             if (hasNew) SaveFavoritesAsync();
 
-            if (hasNew)
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
-                LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
+                LoginStatusText.Text = "Synced! " + favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " liked songs";
                 LoginStatusText.Foreground = _greenBrush;
-            }
-
-            // Update track count display if viewing liked songs
-            try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs"; } catch { }
+                try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs"; } catch { }
+            });
         }
 
         // ══════════════════════════════════════════
