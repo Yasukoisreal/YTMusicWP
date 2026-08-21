@@ -52,8 +52,7 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent",
-                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+                    req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
                     req.Headers.Add("X-YouTube-Client-Name", "3");
                     req.Headers.Add("X-YouTube-Client-Version", "20.49.37");
 
@@ -201,8 +200,7 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent",
-                        "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                    req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
                     req.Headers.Add("X-YouTube-Client-Name", "28");
                     req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
 
@@ -328,8 +326,7 @@ namespace YTMusicWP
                 var req = new HttpRequestMessage(HttpMethod.Post,
                     "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails,microformat");
                 req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                req.Headers.TryAddWithoutValidation("User-Agent",
-                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
                 req.Headers.Add("X-YouTube-Client-Name", "28");
                 req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
 
@@ -455,4 +452,6 @@ namespace YTMusicWP
         public string LanguageName { get; set; } = "";
     }
 }
+
+
 
