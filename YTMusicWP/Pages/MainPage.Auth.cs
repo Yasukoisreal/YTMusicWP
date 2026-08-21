@@ -701,7 +701,34 @@ namespace YTMusicWP
                 favoriteTracks.Clear();
                 _likedSongsContinuation = null;
 
-                // Use TVHTML5 client (only client that works with TV OAuth token)
+                // UUSH FAST SYNC: If we managed to extract Channel ID from account_menu
+                string channelId = Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleChannelId"]?.ToString();
+                if (!string.IsNullOrEmpty(channelId))
+                {
+                    string uushId = channelId.Replace("UC", "UUSH");
+                    // Fetch anonymously using standard InnerTubeClient (which returns standard playlistVideoRenderer)
+                    var uushTracks = await InnerTubeClient.BrowsePlaylistAsync(uushId);
+                    if (uushTracks != null && uushTracks.Tracks.Count > 0)
+                    {
+                        foreach(var t in uushTracks.Tracks) 
+                        {
+                            if (!favoriteTracks.Any(f => f.VideoId == t.VideoId))
+                                favoriteTracks.Add(t);
+                        }
+                        
+                        SaveFavoritesAsync();
+                        
+                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                        {
+                            LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
+                            LoginStatusText.Foreground = _greenBrush;
+                            try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + " songs"; } catch { }
+                        });
+                        return; // SUCCESS! Skip the slow TVHTML5/ANDROID_VR concurrent method!
+                    }
+                }
+
+                // FALLBACK: Use TVHTML5 client (only client that works with TV OAuth token)
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
 
                 if (json["_error"] != null)
@@ -1369,55 +1396,30 @@ namespace YTMusicWP
                     }
                 }
 
-                // Method 2: InnerTube account_menu with WEB client
-                var body = new JObject
+                // Method 2: TVHTML5 account_menu to extract Channel ID
+                var menuData = await AuthInnerTubePostAsync("account/account_menu", new JObject(), accessToken);
+                if (menuData != null && menuData["_error"] == null)
                 {
-                    ["context"] = new JObject
+                    string name = menuData.SelectToken("$..accountName.runs[0].text")?.ToString() 
+                        ?? menuData.SelectToken("$..accountName.simpleText")?.ToString() 
+                        ?? menuData.SelectToken("$..accountName..text")?.ToString() ?? "";
+
+                    var endpoints = menuData.SelectTokens("$..navigationEndpoint.browseEndpoint.browseId").ToList();
+                    string channelId = endpoints.FirstOrDefault(id => id.ToString().StartsWith("UC"))?.ToString();
+
+                    if (!string.IsNullOrEmpty(channelId))
                     {
-                        ["client"] = new JObject
-                        {
-                            ["clientName"] = "WEB",
-                            ["clientVersion"] = "2.20241016.00.00",
-                            ["hl"] = InnerTubeClient.CurrentLanguage,
-                            ["gl"] = InnerTubeClient.CurrentRegion
-                        }
-                    }
-                };
-
-                string menuUrl = "https://www.youtube.com/youtubei/v1/account/account_menu?prettyPrint=false";
-                var menuReq = new HttpRequestMessage(HttpMethod.Post, menuUrl);
-                menuReq.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                menuReq.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var menuResp = await _apiClient.SendAsync(menuReq);
-                if (menuResp.IsSuccessStatusCode)
-                {
-                    string menuJson = await menuResp.Content.ReadAsStringAsync();
-                    var menuData = JObject.Parse(menuJson);
-
-                    string name = menuData.SelectToken("$..accountName..text")?.ToString() ?? "";
-
-                    // Iterate thumbnails to get largest
-                    string avatarUrl = "";
-                    var thumbs = menuData.SelectTokens("$..accountPhoto..thumbnails[*]");
-                    foreach (var t in thumbs)
-                    {
-                        string u = t["url"]?.ToString();
-                        if (!string.IsNullOrEmpty(u)) avatarUrl = u;
+                        Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleChannelId"] = channelId;
                     }
 
-                    // Also try header renderer
-                    if (string.IsNullOrEmpty(avatarUrl))
+                    string avatarUrl = menuData.SelectToken("$..accountPhoto.thumbnails[0].url")?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(avatarUrl) && avatarUrl.Contains("=s"))
                     {
-                        thumbs = menuData.SelectTokens("$..thumbnail..thumbnails[*]");
-                        foreach (var t in thumbs)
-                        {
-                            string u = t["url"]?.ToString();
-                            if (!string.IsNullOrEmpty(u)) avatarUrl = u;
-                        }
+                        int idx = avatarUrl.IndexOf("=s");
+                        avatarUrl = avatarUrl.Substring(0, idx) + "=s128-c-k-c0x00ffffff-no-rj";
                     }
 
-                    SaveAvatarData(name, avatarUrl);
+                    if (SaveAvatarData(name, avatarUrl)) return;
                 }
             }
             catch { }
