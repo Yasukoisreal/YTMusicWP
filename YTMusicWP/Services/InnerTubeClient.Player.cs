@@ -201,8 +201,10 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent",
-                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+                    req.Headers.Add("User-Agent",
+                        "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                    req.Headers.Add("X-YouTube-Client-Name", "28");
+                    req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
 
                     string json;
                     using (var resp = await _client.SendAsync(req))
@@ -326,8 +328,10 @@ namespace YTMusicWP
                 var req = new HttpRequestMessage(HttpMethod.Post,
                     "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails,microformat");
                 req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                req.Headers.TryAddWithoutValidation("User-Agent",
-                    "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+                req.Headers.Add("User-Agent",
+                    "com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip");
+                req.Headers.Add("X-YouTube-Client-Name", "28");
+                req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
 
                 string json;
                 using (var resp = await _client.SendAsync(req))
@@ -350,8 +354,15 @@ namespace YTMusicWP
                 // Rejects: OMV (music videos), UGC (user content), regular YouTube videos
                 bool isMusic = false;
                 string musicVideoType = details?["musicVideoType"]?.ToString() ?? "";
-                if (musicVideoType == "MUSIC_VIDEO_TYPE_ATV")
+                if (musicVideoType == "MUSIC_VIDEO_TYPE_ATV" || musicVideoType == "MUSIC_VIDEO_TYPE_OMV")
                     isMusic = true;
+
+                if (!isMusic)
+                {
+                    string category = data["microformat"]?["playerMicroformatRenderer"]?["category"]?.ToString() ?? "";
+                    if (category.ToLowerInvariant() == "music" || category.ToLowerInvariant() == "entertainment")
+                        isMusic = true;
+                }
 
                 // Also accept Topic channel tracks (auto-generated YouTube Music content)
                 if (!isMusic)
