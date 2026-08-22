@@ -17,16 +17,6 @@
   <a href="https://github.com/Yasukoisreal/YTMusicWP/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"></a>
 </p>
 
----
-
-> [!WARNING]
-> **🚨 TEMPORARY OUTAGE NOTICE:** 
-> YouTube has recently implemented a major security update (Po-Token enforcement) which currently restricts or throttles media streaming for all legacy third-party Windows Phone YouTube clients (including YTMusicWP, MetroTube, myTube, etc.). 
-> You may experience issues where the app loads the UI, searches, and signs in perfectly, but fails to play music/video with a "No stream available" error. 
-> We are actively investigating solutions (e.g. proxy APIs) to bypass this block. Thank you for your patience!
-
----
-
 ## ✨ Features at a Glance
 
 ### 🎵 1. Native Background Playback (`AudioPlayerTask`)
@@ -160,7 +150,6 @@ cd YTMusicWP
 
 ### v2.1.3.1 BETA (Latest)
 - 🛠️ **Hotfix:** Fixed the "Liked Songs" playlist not syncing or missing information (titles, channel names, covers).
-- 🛠️ **Hotfix:** Fixed the issue where cover arts had black borders when playing liked songs.
 
 ### v2.1.3 BETA
 - 🛠️ **Hotfix:** Restored music playback after YouTube server changes caused songs to load indefinitely.
