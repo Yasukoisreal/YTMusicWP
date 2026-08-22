@@ -125,6 +125,7 @@ namespace YTMusicWP
                 UpdateRepeatUI(repeatMode);
 
                 // Playback settings — set values BEFORE attaching handlers to avoid triggering saves on load
+                // Quality setting removed since only itag 18 is available
                 int crossfade = SafeGetInt(settings, "CrossfadeSeconds", SafeGetInt(settings, "CrossfadeDuration", 0));
                 CrossfadeSlider.Value = crossfade;
                 CrossfadeValueText.Text = crossfade + "s";
@@ -141,7 +142,7 @@ namespace YTMusicWP
                     LiveTileSpeedComboBox.SelectedIndex = tileSpeed;
 
                 // Now attach handlers — changes will save & apply immediately
-                
+                // Quality handler removed
                 CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
                 AutoplayToggle.Toggled += AutoplayToggle_Toggled;
                 GaplessToggle.Toggled += GaplessToggle_Toggled;
@@ -196,6 +197,8 @@ namespace YTMusicWP
             ApplicationData.Current.LocalSettings.Values["Crossfade"] = (sec > 0);
             ApplicationData.Current.LocalSettings.Values["CrossfadeDuration"] = sec;
         }
+
+
 
         private void AutoplayToggle_Toggled(object sender, RoutedEventArgs e)
         {
@@ -686,7 +689,7 @@ namespace YTMusicWP
         // ══════════════════════════════════════════
         // SYNC LIKED VIDEOS
         // ══════════════════════════════════════════
-        // SYNC LIKED VIDEOS (YouTube Data API v3)
+        // SYNC LIKED VIDEOS (InnerTube browse VLLL)
         // ══════════════════════════════════════════
         private string _likedSongsContinuation = null;
         private bool _isLoadingMoreLiked = false;
@@ -696,54 +699,24 @@ namespace YTMusicWP
             try
             {
                 LoginStatusText.Text = "Status: Syncing Liked Songs...";
-
-                // Clear stale entries from previous syncs
                 favoriteTracks.Clear();
                 _likedSongsContinuation = null;
 
-                // UUSH FAST SYNC: If we managed to extract Channel ID from account_menu
-                string channelId = Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleChannelId"]?.ToString();
-                if (!string.IsNullOrEmpty(channelId))
-                {
-                    string uushId = channelId.Replace("UC", "UUSH");
-                    // Fetch anonymously using standard InnerTubeClient (which returns standard playlistVideoRenderer)
-                    var uushTracks = await InnerTubeClient.BrowsePlaylistAsync(uushId);
-                    if (uushTracks != null && uushTracks.Tracks.Count > 0)
-                    {
-                        foreach(var t in uushTracks.Tracks) 
-                        {
-                            if (!favoriteTracks.Any(f => f.VideoId == t.VideoId))
-                                favoriteTracks.Add(t);
-                        }
-                        
-                        SaveFavoritesAsync();
-                        
-                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                        {
-                            LoginStatusText.Text = "Synced! " + favoriteTracks.Count + " liked songs";
-                            LoginStatusText.Foreground = _greenBrush;
-                            try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + " songs"; } catch { }
-                        });
-                        return; // SUCCESS! Skip the slow TVHTML5/ANDROID_VR concurrent method!
-                    }
-                }
-
-                // FALLBACK: Use TVHTML5 client (only client that works with TV OAuth token)
+                // Browse "VLLL" = user's Liked Videos playlist via TVHTML5 client
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
 
                 if (json["_error"] != null)
                 {
-                    LoginStatusText.Text = "Sync " + json["_error"] + ": " + (json["_body"]?.ToString() ?? "");
+                    LoginStatusText.Text = "Sync Error: " + json["_error"];
                     LoginStatusText.Foreground = _authOrangeBrush;
                     return;
                 }
 
                 // Save continuation token for lazy loading
                 _likedSongsContinuation = json.SelectToken("$..nextContinuationData.continuation")?.ToString()
-                    ?? json.SelectToken("$..continuationEndpoint..continuation")?.ToString()
                     ?? json.SelectToken("$..continuations[0]..continuation")?.ToString();
 
-                await ProcessLikedVideoIds(json);
+                ProcessLikedPlaylistResponse(json);
             }
             catch (Exception ex)
             {
@@ -768,12 +741,10 @@ namespace YTMusicWP
                 var json = await AuthInnerTubePostAsync("browse", new JObject { ["continuation"] = _likedSongsContinuation }, token);
                 if (json["_error"] != null) { _likedSongsContinuation = null; return; }
 
-                // Update continuation for next page
                 _likedSongsContinuation = json.SelectToken("$..nextContinuationData.continuation")?.ToString()
-                    ?? json.SelectToken("$..continuationEndpoint..continuation")?.ToString()
                     ?? json.SelectToken("$..continuations[0]..continuation")?.ToString();
 
-                await ProcessLikedVideoIds(json);
+                ProcessLikedPlaylistResponse(json);
             }
             catch { _likedSongsContinuation = null; }
             finally { _isLoadingMoreLiked = false; }
@@ -781,96 +752,99 @@ namespace YTMusicWP
 
         public bool HasMoreLikedSongs => !string.IsNullOrEmpty(_likedSongsContinuation);
 
-        private async Task ProcessLikedVideoIds(JObject json)
+        /// <summary>
+        /// Parse InnerTube TVHTML5 playlist browse response (VLLL) to extract liked video metadata.
+        /// TV client uses tileRenderer inside playlistVideoListRenderer.contents[]
+        /// </summary>
+        private void ProcessLikedPlaylistResponse(JObject json)
         {
             bool hasNew = false;
-
-            // Find ALL videoId values anywhere in TV format response
-            var allVideoIds = json.SelectTokens("$..videoId").ToList();
-
-            if (allVideoIds.Count == 0 && favoriteTracks.Count == 0)
+            
+            // TVHTML5 returns: tvBrowseRenderer → tvSurfaceContentRenderer → twoColumnRenderer
+            //   → rightColumn → playlistVideoListRenderer → contents[] → tileRenderer
+            var renderers = json.SelectTokens("$..tileRenderer").ToList();
+            
+            // Also try other known renderer types as fallback
+            if (renderers.Count == 0)
             {
-                LoginStatusText.Text = "No liked videos found";
-                LoginStatusText.Foreground = _authOrangeBrush;
-                return;
+                renderers = json.SelectTokens("$..playlistVideoRenderer")
+                    .Union(json.SelectTokens("$..gridVideoRenderer"))
+                    .Union(json.SelectTokens("$..playlistPanelVideoRenderer"))
+                    .ToList();
             }
 
-            // Collect unique videoIds, maintaining YouTube order
-            var uniqueVideoIds = new List<string>();
-            foreach (var vidToken in allVideoIds)
-            {
-                string vid = vidToken.ToString();
-                if (!string.IsNullOrEmpty(vid) && !uniqueVideoIds.Contains(vid))
-                    uniqueVideoIds.Add(vid);
-            }
+            System.Diagnostics.Debug.WriteLine("[LikedSync] Found " + renderers.Count + " renderers");
 
-            var newVideoIds = uniqueVideoIds.Where(v => !favoriteTracks.Any(t => t.VideoId == v)).ToList();
-            if (newVideoIds.Count > 0)
+            foreach (var renderer in renderers)
             {
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
-                    LoginStatusText.Text = $"Resolving metadata for {newVideoIds.Count} new songs...";
-                });
-            }
-
-            var semaphore = new System.Threading.SemaphoreSlim(4);
-            var tasks = new List<Task>();
-            var newTracksBag = new System.Collections.Concurrent.ConcurrentBag<YouTubeTrack>();
-
-            foreach (var vidId in newVideoIds)
-            {
-                tasks.Add(Task.Run(async () =>
+                try
                 {
-                    await semaphore.WaitAsync();
+
+                    // Extract videoId
+                    string videoId = null;
+                    try { videoId = renderer.SelectToken("onSelectCommand.watchEndpoint.videoId")?.ToString(); } catch { }
+                    if (videoId == null) try { videoId = renderer.SelectToken("navigationEndpoint.watchEndpoint.videoId")?.ToString(); } catch { }
+                    if (videoId == null) try { videoId = renderer["videoId"]?.ToString(); } catch { }
+
+                    if (string.IsNullOrEmpty(videoId) || favoriteTracks.Any(t => t.VideoId == videoId)) continue;
+
+                    // Title: metadata → tileMetadataRenderer → title → simpleText
+                    string title = null;
+                    try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.simpleText")?.ToString(); } catch { }
+                    if (title == null) try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.runs[0].text")?.ToString(); } catch { }
+                    if (title == null) try { title = renderer.SelectToken("title.simpleText")?.ToString(); } catch { }
+                    if (title == null) try { title = renderer.SelectToken("title.runs[0].text")?.ToString(); } catch { }
+
+                    // Channel: metadata → tileMetadataRenderer → lines[0] → lineRenderer → items[0] → lineItemRenderer → text → runs[0] → text
+                    string channel = "";
+                    try { channel = renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.runs[0].text")?.ToString(); } catch { }
+                    if (string.IsNullOrEmpty(channel)) try { channel = renderer.SelectToken("shortBylineText.runs[0].text")?.ToString(); } catch { }
+                    if (string.IsNullOrEmpty(channel)) try { channel = renderer.SelectToken("longBylineText.runs[0].text")?.ToString(); } catch { }
+
+                    // Channel ID
+                    string chId = "";
+                    try { chId = renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.runs[0].navigationEndpoint.browseEndpoint.browseId")?.ToString() ?? ""; } catch { }
+
+                    // Thumbnail: header → tileHeaderRenderer → thumbnail → thumbnails
+                    string thumbUrl = "";
                     try
                     {
-                        var meta = await InnerTubeClient.GetVideoMetadataAsync(vidId);
-                        string title = meta.Item1 ?? "Video " + vidId;
-                        string channel = CleanChannelName(meta.Item2 ?? "");
-                        string thumbUrl = meta.Item3;
-                        bool isMusic = meta.Item4;
-                        string chId = meta.Item5;
-
-                        if (isMusic)
+                        var thumbArr = renderer.SelectToken("header.tileHeaderRenderer.thumbnail.thumbnails");
+                        if (thumbArr != null)
                         {
-                            newTracksBag.Add(new YouTubeTrack
+                            foreach (var t in thumbArr)
                             {
-                                VideoId = vidId,
-                                Title = title,
-                                ChannelName = channel,
-                                ChannelId = chId,
-                                ThumbnailUrl = GetSquareThumbnail(thumbUrl)
-                            });
+                                string u = t["url"]?.ToString();
+                                if (!string.IsNullOrEmpty(u)) thumbUrl = u;
+                            }
                         }
                     }
                     catch { }
-                    finally { semaphore.Release(); }
-                }));
-            }
 
-            if (tasks.Count > 0)
-            {
-                await Task.WhenAll(tasks);
-                
-                // Add back to favoriteTracks in correct order
-                foreach (var vidId in newVideoIds)
-                {
-                    var track = newTracksBag.FirstOrDefault(t => t.VideoId == vidId);
-                    if (track != null)
+                    if (string.IsNullOrEmpty(title)) title = "Video " + videoId;
+                    if (title == "[Deleted video]" || title == "Deleted video" || title == "Private video") continue;
+                    channel = CleanChannelName(channel ?? "");
+
+                    favoriteTracks.Add(new YouTubeTrack
                     {
-                        favoriteTracks.Add(track);
-                        hasNew = true;
-                    }
+                        VideoId = videoId,
+                        Title = title,
+                        ChannelName = channel,
+                        ChannelId = chId,
+                        ThumbnailUrl = GetSquareThumbnail(thumbUrl)
+                    });
+                    hasNew = true;
                 }
+                catch { continue; }
             }
 
             if (hasNew) SaveFavoritesAsync();
 
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                LoginStatusText.Text = "Synced! " + favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " liked songs";
-                LoginStatusText.Foreground = _greenBrush;
-                try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs"; } catch { }
-            });
+            LoginStatusText.Text = "Synced! " + favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " liked songs";
+            LoginStatusText.Foreground = _greenBrush;
+
+            // Update track count display if viewing liked songs
+            try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs"; } catch { }
         }
 
         // ══════════════════════════════════════════
@@ -1112,9 +1086,9 @@ namespace YTMusicWP
                         }
                         catch { return null; }
                     }).ToArray();
-
                     var batchResults = await Task.WhenAll(tasks);
                     results.AddRange(batchResults.Where(r => r != null));
+                    await Task.Delay(1000); // 1s rest between each batch of 5 subscriptions to avoid bot detection
                 }
 
                 foreach (var sub in results)
@@ -1396,30 +1370,55 @@ namespace YTMusicWP
                     }
                 }
 
-                // Method 2: TVHTML5 account_menu to extract Channel ID
-                var menuData = await AuthInnerTubePostAsync("account/account_menu", new JObject(), accessToken);
-                if (menuData != null && menuData["_error"] == null)
+                // Method 2: InnerTube account_menu with WEB client
+                var body = new JObject
                 {
-                    string name = menuData.SelectToken("$..accountName.runs[0].text")?.ToString() 
-                        ?? menuData.SelectToken("$..accountName.simpleText")?.ToString() 
-                        ?? menuData.SelectToken("$..accountName..text")?.ToString() ?? "";
-
-                    var endpoints = menuData.SelectTokens("$..navigationEndpoint.browseEndpoint.browseId").ToList();
-                    string channelId = endpoints.FirstOrDefault(id => id.ToString().StartsWith("UC"))?.ToString();
-
-                    if (!string.IsNullOrEmpty(channelId))
+                    ["context"] = new JObject
                     {
-                        Windows.Storage.ApplicationData.Current.LocalSettings.Values["GoogleChannelId"] = channelId;
+                        ["client"] = new JObject
+                        {
+                            ["clientName"] = "WEB",
+                            ["clientVersion"] = "2.20241016.00.00",
+                            ["hl"] = InnerTubeClient.CurrentLanguage,
+                            ["gl"] = InnerTubeClient.CurrentRegion
+                        }
+                    }
+                };
+
+                string menuUrl = "https://www.youtube.com/youtubei/v1/account/account_menu?prettyPrint=false";
+                var menuReq = new HttpRequestMessage(HttpMethod.Post, menuUrl);
+                menuReq.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                menuReq.Headers.Add("Authorization", "Bearer " + accessToken);
+
+                var menuResp = await _apiClient.SendAsync(menuReq);
+                if (menuResp.IsSuccessStatusCode)
+                {
+                    string menuJson = await menuResp.Content.ReadAsStringAsync();
+                    var menuData = JObject.Parse(menuJson);
+
+                    string name = menuData.SelectToken("$..accountName..text")?.ToString() ?? "";
+
+                    // Iterate thumbnails to get largest
+                    string avatarUrl = "";
+                    var thumbs = menuData.SelectTokens("$..accountPhoto..thumbnails[*]");
+                    foreach (var t in thumbs)
+                    {
+                        string u = t["url"]?.ToString();
+                        if (!string.IsNullOrEmpty(u)) avatarUrl = u;
                     }
 
-                    string avatarUrl = menuData.SelectToken("$..accountPhoto.thumbnails[0].url")?.ToString() ?? "";
-                    if (!string.IsNullOrEmpty(avatarUrl) && avatarUrl.Contains("=s"))
+                    // Also try header renderer
+                    if (string.IsNullOrEmpty(avatarUrl))
                     {
-                        int idx = avatarUrl.IndexOf("=s");
-                        avatarUrl = avatarUrl.Substring(0, idx) + "=s128-c-k-c0x00ffffff-no-rj";
+                        thumbs = menuData.SelectTokens("$..thumbnail..thumbnails[*]");
+                        foreach (var t in thumbs)
+                        {
+                            string u = t["url"]?.ToString();
+                            if (!string.IsNullOrEmpty(u)) avatarUrl = u;
+                        }
                     }
 
-                    if (SaveAvatarData(name, avatarUrl)) return;
+                    SaveAvatarData(name, avatarUrl);
                 }
             }
             catch { }

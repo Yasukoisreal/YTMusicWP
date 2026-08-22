@@ -52,7 +52,8 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                    req.Headers.TryAddWithoutValidation("User-Agent",
+                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
                     req.Headers.Add("X-YouTube-Client-Name", "3");
                     req.Headers.Add("X-YouTube-Client-Version", "20.49.37");
 
@@ -200,9 +201,8 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                    req.Headers.Add("X-YouTube-Client-Name", "28");
-                    req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
+                    req.Headers.TryAddWithoutValidation("User-Agent",
+                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
 
                     string json;
                     using (var resp = await _client.SendAsync(req))
@@ -326,9 +326,8 @@ namespace YTMusicWP
                 var req = new HttpRequestMessage(HttpMethod.Post,
                     "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=videoDetails,microformat");
                 req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                req.Headers.Add("X-YouTube-Client-Name", "28");
-                req.Headers.Add("X-YouTube-Client-Version", "1.60.19");
+                req.Headers.TryAddWithoutValidation("User-Agent",
+                    "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
 
                 string json;
                 using (var resp = await _client.SendAsync(req))
@@ -351,15 +350,8 @@ namespace YTMusicWP
                 // Rejects: OMV (music videos), UGC (user content), regular YouTube videos
                 bool isMusic = false;
                 string musicVideoType = details?["musicVideoType"]?.ToString() ?? "";
-                if (musicVideoType == "MUSIC_VIDEO_TYPE_ATV" || musicVideoType == "MUSIC_VIDEO_TYPE_OMV")
+                if (musicVideoType == "MUSIC_VIDEO_TYPE_ATV")
                     isMusic = true;
-
-                if (!isMusic)
-                {
-                    string category = data["microformat"]?["playerMicroformatRenderer"]?["category"]?.ToString() ?? "";
-                    if (category.ToLowerInvariant() == "music" || category.ToLowerInvariant() == "entertainment")
-                        isMusic = true;
-                }
 
                 // Also accept Topic channel tracks (auto-generated YouTube Music content)
                 if (!isMusic)
@@ -414,7 +406,7 @@ namespace YTMusicWP
                 };
 
                 req.Content = new StringContent(bodyObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
-                req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
                 req.Headers.Add("Origin", "https://music.youtube.com");
                 req.Headers.Add("Referer", "https://music.youtube.com/");
 
@@ -452,6 +444,3 @@ namespace YTMusicWP
         public string LanguageName { get; set; } = "";
     }
 }
-
-
-
