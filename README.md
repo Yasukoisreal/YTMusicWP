@@ -13,7 +13,7 @@
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Platform-Windows%20Phone%208.1%20%7C%20W10M-0078D7?logo=windows" alt="Platform"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Language-C%23%20%2F%20XAML-239120?logo=c-sharp" alt="Language"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/RAM%20Target-512MB%20Optimized-orange" alt="RAM Target"></a>
-  <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Version-2.1.2%20BETA-blue" alt="Version"></a>
+  <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Version-2.1.3.1%20BETA-blue" alt="Version"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"></a>
 </p>
 
@@ -158,7 +158,14 @@ cd YTMusicWP
 
 ## 📝 Changelog
 
-### v2.1.2 BETA (Latest)
+### v2.1.3.1 BETA (Latest)
+- 🛠️ **Hotfix:** Fixed the "Liked Songs" playlist not syncing or missing information (titles, channel names, covers).
+- 🛠️ **Hotfix:** Fixed the issue where cover arts had black borders when playing liked songs.
+
+### v2.1.3 BETA
+- 🛠️ **Hotfix:** Restored music playback after YouTube server changes caused songs to load indefinitely.
+
+### v2.1.2 BETA
 - 🛠️ **Hotfix:** Fixed a critical bug causing "No stream available" due to cached invalid visitorData tokens.
 
 ### v2.1.1 BETA
