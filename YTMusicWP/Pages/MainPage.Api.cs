@@ -99,14 +99,14 @@ namespace YTMusicWP
                 return url + "=w480-h480-l90-rj";
             }
 
-            // YouTube video thumbnails — use sddefault.jpg (640x480) for sharp display without 404
-            // maxresdefault.jpg frequently 404s on Topic channel tracks and SD uploads
+            // YouTube video thumbnails — use mqdefault.jpg (320x180, 16:9 clean)
+            // sddefault.jpg is 640x480 (4:3 with black letterbox bars)
             if (url.Contains("hqdefault.jpg"))
-                return url.Replace("hqdefault.jpg", "sddefault.jpg");
-            if (url.Contains("mqdefault.jpg"))
-                return url.Replace("mqdefault.jpg", "sddefault.jpg");
+                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+            if (url.Contains("sddefault.jpg"))
+                return url.Replace("sddefault.jpg", "mqdefault.jpg");
             if (url.Contains("maxresdefault.jpg"))
-                return url.Replace("maxresdefault.jpg", "sddefault.jpg");
+                return url.Replace("maxresdefault.jpg", "mqdefault.jpg");
 
             return url;
         }
