@@ -19,35 +19,35 @@
 
 ## ✨ Features at a Glance
 
-### 🎵 1. Native Background Playback (`AudioPlayerTask`)
-- **Direct Stream Playback:** High-performance direct m4a streaming directly from YouTube's infrastructure without third-party proxy latency.
-- **System Media Controls (SMTC):** Full hardware volume bar, lock screen controls, and headset media button integration.
-- **Gapless & Crossfade:** Continuous music streaming with pre-resolving and customizable crossfade transitions (1s – 10s).
-- **Auto-Loop & Smart Queue:** Queue manipulation, shuffle mode, repeat one/all, and automatic infinite playback recommendations.
+### 🎵 1. Background Playback
+- **Direct Streaming:** Listen to high-quality music instantly, straight from YouTube without delays.
+- **Media Controls:** Control your music using the volume buttons, from the lock screen, or with your headset.
+- **Crossfade:** Smooth transitions between songs so the music never stops (adjustable from 1s to 10s).
+- **Smart Queue:** Shuffle, repeat, and let the app automatically recommend songs to keep the music playing forever.
 
-### 🎤 2. Real-Time Synced Karaoke Lyrics
+### 🎤 2. Real-Time Synced Lyrics
 - **Synchronized Lyrics:** Smooth scrolling lyrics highlight automatically in real time as the song plays.
-- **Dual Engine:** Aggregates time-synced lyrics from LRCLIB and embedded YouTube closed-caption subtitle tracks.
-- **Customizable Experience:** Adjustable lyric font size slider, dynamic color gradients, and full-screen lyrics viewing mode.
+- **Huge Database:** Automatically finds the best lyrics for your songs.
+- **Customizable Experience:** Adjustable lyric text size, colors, and full-screen viewing mode.
 
 ### 🎨 3. Iconic Metro Live Tiles
-- **Now Playing Flip Tile:** Live album artwork and track metadata flip dynamically on your Start Screen.
-- **People Hub Style Mosaic (2x2 / 3x3):** Unique mosaic grid blending album artwork of your favorite artists and liked tracks inspired by the classic Windows Phone People Hub.
+- **Now Playing Flip Tile:** Live album artwork and track info flip dynamically on your Start Screen.
+- **People Hub Style Mosaic:** Unique mosaic grid blending album artwork of your favorite artists and liked tracks.
 - **Pin Secondary Tiles:** Pin any artist, album, or playlist directly to your Start Screen for instant one-tap access.
 
 ### 🔑 4. Seamless Google Account Integration
-- **Zero-Browser OAuth 2.0 Device Flow:** Log in securely via `google.com/device` using a code or by scanning a built-in on-screen **QR Code** (ISO/IEC 18004 native generator).
+- **Easy Login:** Log in securely by simply scanning a QR Code with your phone.
 - **Full Library Sync:** Synchronizes your Liked Music, custom YouTube playlists, and subscribed artists.
 
-### 📥 5. Offline Downloads & Library Hub
-- **Save Offline:** Download songs directly to your device storage (`.m4a`) to enjoy music with zero internet connection.
+### 📥 5. Offline Downloads & Library
+- **Save Offline:** Download songs directly to your phone to enjoy music without internet.
 - **Library Management:** Manage local downloads, create custom local playlists, and track playback history.
 
 ### 🎧 6. Shorts Music Discovery
 - **Vertical Swipe Feed:** Discover trending music snippets with smooth vertical gestures and intelligent mood/genre categorization.
 
 ### ⚡ 7. Engineered for 512MB RAM Devices
-- **Aggressive Memory Management:** Strict `DecodePixelWidth` downsampling, brush caching, and surface disposal to ensure zero Out-Of-Memory crashes even on devices like the Nokia Lumia 520 / 530.
+- **Highly Optimized:** Carefully built to run perfectly without crashing, even on older phones with just 512MB RAM like the Nokia Lumia 520.
 
 ---
 
@@ -68,28 +68,6 @@
 
 ---
 
-## 🏛️ Architecture
-
-YTMusicWP is built natively on the **Windows Runtime (WinRT)** architecture for maximum speed and battery efficiency:
-
-```text
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         YTMusicWP (Foreground UI)                        │
-│  XAML Metro Pages  •  InnerTube Client  •  TileService  •  QR Generator  │
-└─────────────────────────────────────┬────────────────────────────────────┘
-                                      │ ValueSet IPC & LocalSettings
-┌─────────────────────────────────────▼────────────────────────────────────┐
-│                      AudioPlayerTask (Background Task)                   │
-│  IBackgroundTask  •  BackgroundMediaPlayer  •  Direct m4a Stream Resolver│
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
-- **Frontend:** C# 5.0, XAML, WinRT Windows Store Apps framework.
-- **Background Task:** Isolated `Windows.ApplicationModel.Background.IBackgroundTask` running under `BackgroundMediaPlayer`.
-- **API Engine:** Custom direct `InnerTubeClient` leveraging the `ANDROID_VR` client endpoint with lightweight `sw.js_data` visitorData token generation.
-- **Storage:** `Windows.Storage.ApplicationData` with encrypted tokens in `LocalSettings` and serialized JSON collections.
-
----
 
 ## 📱 Supported Devices
 
@@ -149,16 +127,17 @@ cd YTMusicWP
 ## 📝 Changelog
 
 ### v2.1.3.1 BETA (Latest)
-- 🛠️ **Hotfix:** Fixed the "Liked Songs" playlist not syncing or missing information (titles, channel names, covers).
+- 🛠️ **Hotfix:** Fixed an issue where the "Liked Songs" playlist would not sync or was missing information (titles, covers).
+- 🛠️ **Hotfix:** Fixed an issue where the app would crash when loading the Library tab.
 
 ### v2.1.3 BETA
 - 🛠️ **Hotfix:** Restored music playback after YouTube server changes caused songs to load indefinitely.
 
 ### v2.1.2 BETA
-- 🛠️ **Hotfix:** Fixed a critical bug causing "No stream available" due to cached invalid visitorData tokens.
+- 🛠️ **Hotfix:** Fixed a critical bug causing "No stream available" errors.
 
 ### v2.1.1 BETA
-- 🛠️ **Hotfix:** Fixed a memory leak in the Library tab causing abnormal RAM usage and random app crashes on 512MB RAM devices.
+- 🛠️ **Hotfix:** Fixed a bug in the Library tab that caused the app to crash on older phones (like Lumia 520).
 
 ### v2.1 BETA
 - 🔐 **QR Code Login:** Added QR Code to make the login process more convenient.
