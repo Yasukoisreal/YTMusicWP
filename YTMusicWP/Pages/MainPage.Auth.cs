@@ -853,12 +853,140 @@ namespace YTMusicWP
         private async Task SyncAllAsync(string accessToken)
         {
             await SyncLikedVideosAsync(accessToken);
-            await LoadYouTubePlaylistsCacheAsync(); // Playlists are local-only
+            await LoadYouTubePlaylistsCacheAsync();
+            await SyncPlaylistsAsync(accessToken);
             await SyncSubscriptionsAsync(accessToken);
             // Fetch YouTube profile avatar
             await FetchAndCacheAvatarAsync(accessToken);
             // Refresh Library UI to show synced playlists/subs
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => RefreshLibraryList());
+        }
+
+        // ══════════════════════════════════════════
+        // SYNC USER PLAYLISTS — Fetch from YouTube
+        // ══════════════════════════════════════════
+        private async Task SyncPlaylistsAsync(string accessToken)
+        {
+            try
+            {
+                var extra = new JObject { ["browseId"] = "FElibrary" };
+                var json = await AuthInnerTubePostAsync("browse", extra, accessToken);
+
+                if (json["_error"] != null)
+                {
+                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] FElibrary error: " + json["_error"]);
+                    return;
+                }
+
+                // DEBUG: Dump response structure
+                string jsonStr = json.ToString();
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Response length: " + jsonStr.Length);
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Response keys: " + string.Join(", ", json.Properties().Select(p => p.Name)));
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Preview: " + jsonStr.Substring(0, Math.Min(2000, jsonStr.Length)));
+
+                // Try to find playlist renderers in the response
+                // TV client likely uses tileRenderer (same as Liked Songs)
+                var renderers = json.SelectTokens("$..tileRenderer").ToList();
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] tileRenderer count: " + renderers.Count);
+
+                // Also check for other renderer types
+                var lockups = json.SelectTokens("$..lockupViewModel").ToList();
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] lockupViewModel count: " + lockups.Count);
+
+                var gridRenderers = json.SelectTokens("$..gridPlaylistRenderer").ToList();
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] gridPlaylistRenderer count: " + gridRenderers.Count);
+
+                // Try to extract playlists from tileRenderer
+                bool hasNew = false;
+                int debugCount = 0;
+
+                foreach (var renderer in renderers)
+                {
+                    try
+                    {
+                        // DEBUG: log first 3 renderers
+                        if (debugCount < 3)
+                        {
+                            var rObj = renderer as JObject;
+                            string keys = rObj != null ? string.Join(", ", rObj.Properties().Select(p => p.Name)) : "N/A";
+                            System.Diagnostics.Debug.WriteLine("[PlaylistSync] renderer[" + debugCount + "] keys: " + keys);
+                            if (debugCount == 0)
+                            {
+                                string rStr = renderer.ToString();
+                                System.Diagnostics.Debug.WriteLine("[PlaylistSync] renderer[0] JSON: " + rStr.Substring(0, Math.Min(1500, rStr.Length)));
+                            }
+                            debugCount++;
+                        }
+
+                        // Use contentId to identify the item type
+                        string contentId = null;
+                        try { contentId = renderer["contentId"]?.ToString(); } catch { }
+                        if (string.IsNullOrEmpty(contentId)) continue;
+
+                        // FElibrary returns EVERYTHING (history, videos, channels, playlists)
+                        // Real YouTube playlists always have IDs starting with "PL"
+                        if (!contentId.StartsWith("PL")) continue;
+
+                        string playlistId = contentId;
+                        // Skip if already synced
+                        if (_youtubeUserPlaylists.Any(p => p.PlaylistId == playlistId)) continue;
+
+                        // Title
+                        string title = null;
+                        try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.simpleText")?.ToString(); } catch { }
+                        if (title == null) try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.runs[0].text")?.ToString(); } catch { }
+                        if (title == null) try { title = renderer.SelectToken("title.simpleText")?.ToString(); } catch { }
+                        if (title == null) try { title = renderer.SelectToken("title.runs[0].text")?.ToString(); } catch { }
+
+                        if (string.IsNullOrEmpty(title)) continue;
+
+                        // Thumbnail
+                        string thumbUrl = "";
+                        try
+                        {
+                            var thumbArr = renderer.SelectToken("header.tileHeaderRenderer.thumbnail.thumbnails");
+                            if (thumbArr != null)
+                                foreach (var t in thumbArr)
+                                {
+                                    string u = t["url"]?.ToString();
+                                    if (!string.IsNullOrEmpty(u)) thumbUrl = u;
+                                }
+                        }
+                        catch { }
+
+                        // Track count from subtitle/metadata lines
+                        int trackCount = 0;
+                        try
+                        {
+                            string subtitle = renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.runs[0].text")?.ToString()
+                                ?? renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.simpleText")?.ToString() ?? "";
+                            // Try to parse "42 videos" or similar
+                            var match = System.Text.RegularExpressions.Regex.Match(subtitle, @"(\d+)");
+                            if (match.Success) trackCount = int.Parse(match.Groups[1].Value);
+                        }
+                        catch { }
+
+                        System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found: " + title + " (" + playlistId + ") " + trackCount + " tracks");
+
+                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                        {
+                            PlaylistId = playlistId,
+                            Title = title,
+                            TrackCount = trackCount,
+                            ThumbnailUrl = GetSquareThumbnail(thumbUrl)
+                        });
+                        hasNew = true;
+                    }
+                    catch { continue; }
+                }
+
+                if (hasNew) SaveYouTubePlaylistsCacheAsync();
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Total playlists: " + _youtubeUserPlaylists.Count);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Exception: " + ex.Message);
+            }
         }
 
         // ══════════════════════════════════════════
@@ -1203,7 +1331,6 @@ namespace YTMusicWP
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
         {
-            // Local playlists just get removed from cache
             if (playlistId.StartsWith("LOCAL_")) return true;
 
             string token = await GetAccessTokenAsync();

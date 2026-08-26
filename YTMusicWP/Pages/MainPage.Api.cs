@@ -43,7 +43,7 @@ namespace YTMusicWP
         /// </summary>
         private static string GetArtistAvatar(string url)
         {
-            if (string.IsNullOrEmpty(url)) return url;
+            if (string.IsNullOrEmpty(url)) return "ms-appx:///Assets/Logo.scale-240.png";
             // Google CDN (lh3/yt3) — request square at exact size, no center crop
             if (url.Contains("lh3.googleusercontent.com") || url.Contains("yt3.ggpht.com"))
             {
@@ -64,7 +64,7 @@ namespace YTMusicWP
         /// </summary>
         public static string GetSquareThumbnail(string url)
         {
-            if (string.IsNullOrEmpty(url)) return url;
+            if (string.IsNullOrEmpty(url)) return "ms-appx:///Assets/Logo.scale-240.png";
 
             // Google CDN / YouTube Music thumbnails — request 1:1 square crop
             if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
@@ -89,7 +89,7 @@ namespace YTMusicWP
         /// </summary>
         public static string GetNowPlayingThumbnail(string url)
         {
-            if (string.IsNullOrEmpty(url)) return url;
+            if (string.IsNullOrEmpty(url)) return "ms-appx:///Assets/Logo.scale-240.png";
 
             if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
             {
