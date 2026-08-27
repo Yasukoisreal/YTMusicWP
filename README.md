@@ -1,4 +1,4 @@
-﻿<div align="center"> 
+<div align="center"> 
   <img src="YTMusicWP/Assets/Logo.scale-240.png" width="120" height="120" alt="YTMusicWP Logo" />
   <h1>YTMusicWP</h1>  
   A modern, lightning-fast native YouTube Music client crafted for Windows Phone 8.1 and Windows 10 Mobile.<br>
@@ -57,12 +57,12 @@
 - **Windows 10 Mobile:** Lumia 550, 640/640 XL, 650, 950/950 XL, HP Elite x3, Alcatel Idol 4S (✅ Fully Compatible)
 
 ## Data    
-- This app uses the InnerTube API (specifically the `ANDROID_VR` and `TVHTML5` client endpoints) to fetch data directly from YouTube Music.
-- Login is securely handled through Google's OAuth 2.0 Device Flow (`google.com/device`).
-- Real-time lyrics are sourced from a combination of embedded YouTube closed-captions and external lyric providers.
+- This app safely connects directly to YouTube Music to get your songs and playlists without needing a web browser.
+- Login is handled securely using Google's official device login method (`google.com/device`). We never see or store your password.
+- Real-time lyrics are gathered from YouTube subtitles and external lyric databases.
  
 ## Privacy    
-YTMusicWP is a completely free, open-source application. We do not include any third-party trackers, analytics, or telemetry. Your data stays on your device. The app communicates directly and only with YouTube's servers to fetch your music, playlists, and provide playback. No intermediate proxy servers are used to stream your music.
+YTMusicWP is a completely free, open-source application. We do not include any third-party trackers, analytics, or hidden data collection. Your data stays on your device. The app communicates directly and only with YouTube's servers to fetch your music, playlists, and provide playback. No middleman servers are used to stream your music.
 
 ## Installation Guide
 
@@ -73,7 +73,7 @@ The easiest way to install and update YTMusicWP is directly from the Live Store.
 **Windows Phone 8.1:**
 1. Download the latest `.appx` and `.cer` files from [Releases](https://github.com/Yasukoisreal/YTMusicWP/releases).
 2. Install the `.cer` certificate on your Lumia device first (open via email or file manager).
-3. Sideload the `.appx` using **Windows Phone Application Deployment (WPAD)**, **WPV Xap Deployer**, or **Windows Phone Power Tools**.
+3. Install the `.appx` app file using **Windows Phone Application Deployment (WPAD)**, **WPV Xap Deployer**, or **Windows Phone Power Tools**.
 
 **Windows 10 Mobile:**
 1. Navigate to **Settings** > **Update & Security** > **For developers** and enable **Developer mode**.
@@ -81,10 +81,10 @@ The easiest way to install and update YTMusicWP is directly from the Live Store.
 
 ## FAQ    
 #### 1. Why does the app sometimes fail to play a song?    
-Because the app relies on YouTube Music's internal APIs, changes to YouTube's backend might occasionally break streaming. We actively release hotfixes whenever YouTube updates their systems.
+Because the app connects directly to YouTube Music, changes made by YouTube can sometimes break the music streaming. We actively release small updates (hotfixes) to fix the app whenever YouTube changes their systems.
 
 #### 2. Does this work on 512MB RAM Windows Phones?    
-Yes! YTMusicWP has been heavily optimized for older Lumia devices. Memory management is strictly handled to ensure no crashes occur even on devices like the Nokia Lumia 520.
+Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses very little memory, ensuring it won't crash even on devices like the Nokia Lumia 520.
 
 ## Changelog
 
@@ -127,16 +127,16 @@ cd YTMusicWP
 ## Legal Disclaimer & Terms of Use
 
 ### 1. Free & Non-Commercial
-YTMusicWP is a fully open-source project (FOSS) created purely for educational purposes and personal use. We do not sell this application, nor do we monetize it in any way. There are no advertisements or premium features.
+YTMusicWP is a completely free, open-source project created purely for educational purposes and personal use. We do not sell this application, nor do we make any money from it. There are no advertisements or premium features.
 
 ### 2. A Custom Client
-YTMusicWP acts strictly as a specialized, third-party client. It simply parses the publicly available APIs of YouTube Music, rendering them in a custom user interface tailored for Windows Phone. 
+YTMusicWP acts strictly as a specialized, third-party client. It simply reads the publicly available data from YouTube Music and displays it in a beautiful interface made for Windows Phone.
 
 ### 3. Support Content Creators
 We deeply respect the hard work of artists, musicians, and content creators. We strongly encourage all users to subscribe to [YouTube Premium](https://www.youtube.com/premium) to financially support the creators you listen to.
 
 ### 4. No Hosting of Copyrighted Material
-We do not host, upload, distribute, or store any audio, video, or copyrighted media files on our own servers. All content accessed through this application is stored entirely on Google's/YouTube's servers.
+We do not host, upload, distribute, or store any audio, video, or copyrighted media files on our own servers. All content accessed through this application is stored entirely on Google's and YouTube's servers.
 
 ## Support & Donations 
 If you enjoy using YTMusicWP and want to support the development, consider buying me a coffee! Your support helps keep this project alive for the Windows Phone & Lumia community.
