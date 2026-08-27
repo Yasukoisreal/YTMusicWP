@@ -147,6 +147,9 @@ We do not host, upload, distribute, or store any audio, video, or copyrighted me
 ## Support & Donations 
 If you enjoy using YTMusicWP and want to support the development, consider buying me a coffee! Your support helps keep this project alive for the Windows Phone & Lumia community.
 
+**Buy Me A Coffee**
+- **Link:** [buymeacoffee.com/yasukoisreal](https://buymeacoffee.com/yasukoisreal)
+
 **International (PayPal)**
 - **PayPal.me:** [paypal.me/yasukoisreal](https://paypal.me/yasukoisreal)
 
