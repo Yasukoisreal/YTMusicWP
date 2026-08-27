@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -52,7 +52,7 @@ namespace YTMusicWP
             public string Plain { get; set; }
         }
 
-        // ── Lyrics Cache (in-memory LRU, keyed by cleaned title+artist) ──
+        // â”€â”€ Lyrics Cache (in-memory LRU, keyed by cleaned title+artist) â”€â”€
         private static readonly Dictionary<string, LyricsCacheEntry> _lyricsCache = new Dictionary<string, LyricsCacheEntry>();
         private static readonly List<string> _lyricsCacheOrder = new List<string>();
         private const int MAX_LYRICS_CACHE = 20;
@@ -124,7 +124,7 @@ namespace YTMusicWP
 
                 string cacheKey = (cleanTitle + "|" + cleanArtist).ToLowerInvariant();
 
-                // ── Check Cache First (LRU Touch) ──
+                // â”€â”€ Check Cache First (LRU Touch) â”€â”€
                 LyricsCacheEntry cachedEntry;
                 if (_lyricsCache.TryGetValue(cacheKey, out cachedEntry))
                 {
@@ -190,13 +190,36 @@ namespace YTMusicWP
                     return new string[] { null, arr[0]["plainLyrics"]?.ToString() };
                 };
 
-                // ── Fire ALL search requests IMMEDIATELY ──
+                // --- APPLE MUSIC LYRICS (TTML) ---
+                try
+                {
+                    int durSecs = 0;
+                    for (int attempt = 0; attempt < 5; attempt++)
+                    {
+                        try { durSecs = (int)Math.Round(_appMediaPlayer.NaturalDuration.TotalSeconds); } catch { }
+                        if (durSecs > 10) break;
+                        await Task.Delay(100);
+                    }
+
+                    var amLyrics = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsAsync(cleanTitle, cleanArtist, durSecs);
+                    if (amLyrics != null && amLyrics.Length >= 2 && (!string.IsNullOrWhiteSpace(amLyrics[0]) || !string.IsNullOrWhiteSpace(amLyrics[1])))
+                    {
+                        syncedLyrics = amLyrics[0];
+                        plainLyrics = amLyrics[1];
+                        System.Diagnostics.Debug.WriteLine("Fetched lyrics from Apple Music");
+                    }
+                }
+                catch { }
+
+                if (string.IsNullOrWhiteSpace(syncedLyrics) && string.IsNullOrWhiteSpace(plainLyrics))
+                {
+                // â”€â”€ Fire ALL search requests IMMEDIATELY â”€â”€
                 string url1 = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
                 string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
                 var searchTask1 = _apiClient.GetStringAsync(url1);
                 var searchTask2 = _apiClient.GetStringAsync(url2);
 
-                // ── Quick duration poll (max 500ms) — in parallel with searches ──
+                // â”€â”€ Quick duration poll (max 500ms) â€” in parallel with searches â”€â”€
                 for (int attempt = 0; attempt < 5; attempt++)
                 {
                     try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
@@ -205,7 +228,7 @@ namespace YTMusicWP
                     token.ThrowIfCancellationRequested();
                 }
 
-                // ── Fire /api/get with duration in parallel too ──
+                // â”€â”€ Fire /api/get with duration in parallel too â”€â”€
                 Task<string> getTask = null;
                 if (trackDurationSec > 10)
                 {
@@ -215,7 +238,7 @@ namespace YTMusicWP
                     getTask = _apiClient.GetStringAsync(getUrl);
                 }
 
-                // ── LAYER 0: /api/get with exact duration (best, fastest) ──
+                // â”€â”€ LAYER 0: /api/get with exact duration (best, fastest) â”€â”€
                 if (getTask != null)
                 {
                     try
@@ -229,7 +252,7 @@ namespace YTMusicWP
                     catch { }
                 }
 
-                // ── LAYER 1: Use search results (already running in parallel) ──
+                // â”€â”€ LAYER 1: Use search results (already running in parallel) â”€â”€
                 if (string.IsNullOrWhiteSpace(syncedLyrics))
                 {
                     try
@@ -264,6 +287,7 @@ namespace YTMusicWP
                     }
                 }
 
+                }
                 token.ThrowIfCancellationRequested();
 
                 if (!string.IsNullOrWhiteSpace(syncedLyrics) || !string.IsNullOrWhiteSpace(plainLyrics))
@@ -367,7 +391,7 @@ namespace YTMusicWP
 
                 if (times.Count > 0)
                 {
-                    string text = string.IsNullOrWhiteSpace(tempLine) ? "♪" : tempLine;
+                    string text = string.IsNullOrWhiteSpace(tempLine) ? "â™ª" : tempLine;
                     foreach (var t in times)
                         parsedLines.Add(new LyricLine { Time = t, Text = text, FontSize = _lyricFontSize });
                 }
@@ -381,7 +405,7 @@ namespace YTMusicWP
         private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var line = e.ClickedItem as LyricLine;
-            if (line != null && line.Text != "♪" && line.Text != "")
+            if (line != null && line.Text != "â™ª" && line.Text != "")
             {
                 try
                 {
@@ -406,9 +430,9 @@ namespace YTMusicWP
             }
         }
 
-        // ══════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         // FULLSCREEN LYRICS
-        // ══════════════════════════════════════════
+        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         private void ToggleFullscreenLyrics_Click(object sender, RoutedEventArgs e)
         {
             if (currentLyrics == null || currentLyrics.Count == 0)

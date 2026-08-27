@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -85,6 +85,12 @@
   <ItemGroup>
     <Compile Include="AudioTask.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="..\YTMusicWP\Services\SponsorBlockApi.cs">
+      <Link>SponsorBlockApi.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Models\SponsorBlockSegment.cs">
+      <Link>SponsorBlockSegment.cs</Link>
+    </Compile>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '12.0' ">
     <VisualStudioVersion>12.0</VisualStudioVersion>
