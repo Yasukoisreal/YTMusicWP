@@ -150,9 +150,7 @@ If you enjoy using YTMusicWP and want to support the development, consider buyin
 <a href="https://buymeacoffee.com/yasukoisreal"><img alt="Buy me a Coffee" height="50" src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"></a> &nbsp;
 <a href="https://paypal.me/yasukoisreal"><img alt="PayPal" height="50" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/donate/paypal-singular_vector.svg"></a>
 
-<br>
-
-### Vietnam (MB Bank)
+**Vietnam (MB Bank)**
 - **Account Number:** `700652007`
 - **Account Name:** NGUYEN TRUONG AN
 
