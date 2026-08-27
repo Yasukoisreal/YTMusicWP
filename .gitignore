@@ -28,3 +28,6 @@ device_code.txt
 # OS files
 Thumbs.db
 .DS_Store
+
+# Ignore banner template
+Pictures/ProfessionalBanner.html
