@@ -2207,7 +2207,7 @@
                 <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Text}" FontSize="22" Foreground="{Binding ColorBrush}" TextWrapping="Wrap" TextAlignment="Center" Margin="5,12" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" TextWrapping="Wrap" TextAlignment="Center" Margin="5,12" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center"/>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                     <ListView.ItemContainerStyle>

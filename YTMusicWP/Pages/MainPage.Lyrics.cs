@@ -397,7 +397,10 @@ namespace YTMusicWP
                 {
                     string text = string.IsNullOrWhiteSpace(tempLine) ? "♪" : tempLine;
                     foreach (var t in times)
-                        parsedLines.Add(new LyricLine { Time = t, Text = text, FontSize = _lyricFontSize });
+                    {
+                        double fSize = text.StartsWith("Lyrics provided by") ? _lyricFontSize * 0.65 : _lyricFontSize;
+                        parsedLines.Add(new LyricLine { Time = t, Text = text, FontSize = fSize });
+                    }
                 }
             }
 
