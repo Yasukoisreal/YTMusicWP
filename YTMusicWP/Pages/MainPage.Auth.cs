@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -39,7 +39,7 @@ namespace YTMusicWP
             }
         }
 
-        // Built-in OAuth credentials (YouTube TV public client — used by NewPipe, yt-dlp, etc.)
+        // Built-in OAuth credentials (YouTube TV public client � used by NewPipe, yt-dlp, etc.)
         private const string _builtInClientId = "861556708454-d6dlm3lh05idd8npek18k6be8ba3oc68.apps.googleusercontent.com";
         private const string _builtInClientSecret = "SboVhoG9s0rNafixCSGGKXAT";
         private string DetectOsRegion()
@@ -124,7 +124,7 @@ namespace YTMusicWP
                 int repeatMode = SafeGetInt(settings, "RepeatMode", 0);
                 UpdateRepeatUI(repeatMode);
 
-                // Playback settings — set values BEFORE attaching handlers to avoid triggering saves on load
+                // Playback settings � set values BEFORE attaching handlers to avoid triggering saves on load
                 // Quality setting removed since only itag 18 is available
                 int crossfade = SafeGetInt(settings, "CrossfadeSeconds", SafeGetInt(settings, "CrossfadeDuration", 0));
                 CrossfadeSlider.Value = crossfade;
@@ -141,7 +141,7 @@ namespace YTMusicWP
                 if (tileSpeed >= 0 && tileSpeed < LiveTileSpeedComboBox.Items.Count)
                     LiveTileSpeedComboBox.SelectedIndex = tileSpeed;
 
-                // Now attach handlers — changes will save & apply immediately
+                // Now attach handlers � changes will save & apply immediately
                 // Quality handler removed
                 CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
                 AutoplayToggle.Toggled += AutoplayToggle_Toggled;
@@ -612,85 +612,18 @@ namespace YTMusicWP
             }
         }
 
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // AUTHENTICATED INNERTUBE HELPER
-        // ══════════════════════════════════════════
-        private async Task<JObject> AuthInnerTubePostAsync(string endpoint, JObject extraParams, string accessToken)
-        {
-            string visitorData = await InnerTubeClient.GetVisitorDataAsync();
-            var clientObj = new JObject
-            {
-                ["clientName"] = "TVHTML5",
-                ["clientVersion"] = "7.20241016.00.00",
-                ["hl"] = InnerTubeClient.CurrentLanguage,
-                ["gl"] = InnerTubeClient.CurrentRegion
-            };
-            if (!string.IsNullOrEmpty(visitorData))
-                clientObj["visitorData"] = visitorData;
+        // ------------------------------------------
+        
 
-            var body = new JObject
-            {
-                ["context"] = new JObject { ["client"] = clientObj }
-            };
-            foreach (var prop in extraParams.Properties())
-                body[prop.Name] = prop.Value;
+        
 
-            string url = "https://www.youtube.com/youtubei/v1/" + endpoint + "?key=AIzaSyDCU8hByM-4DrUqRUYnGn-3llEO78bcxq8&prettyPrint=false";
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version");
-            request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-            var response = await _apiClient.SendAsync(request);
-            string resultJson = await response.Content.ReadAsStringAsync();
-            
-            if (!response.IsSuccessStatusCode)
-                return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
-            
-            return JObject.Parse(resultJson);
-        }
-
-        // WEB client for browse requests — returns standard web format with videoId, title etc.
-        private async Task<JObject> WebBrowseAsync(string browseId, string accessToken)
-        {
-            var body = new JObject
-            {
-                ["context"] = new JObject
-                {
-                    ["client"] = new JObject
-                    {
-                        ["clientName"] = "WEB",
-                        ["clientVersion"] = "2.20241016.00.00",
-                        ["hl"] = InnerTubeClient.CurrentLanguage,
-                        ["gl"] = InnerTubeClient.CurrentRegion
-                    }
-                },
-                ["browseId"] = browseId
-            };
-
-            // Try without API key first (Bearer should be enough)
-            string url = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-            request.Headers.Add("Origin", "https://www.youtube.com");
-            request.Headers.Add("Referer", "https://www.youtube.com/");
-            request.Headers.Add("Authorization", "Bearer " + accessToken);
-
-            var response = await _apiClient.SendAsync(request);
-            string resultJson = await response.Content.ReadAsStringAsync();
-            
-            if (!response.IsSuccessStatusCode)
-                return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
-            
-            return JObject.Parse(resultJson);
-        }
-
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // SYNC LIKED VIDEOS
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // SYNC LIKED VIDEOS (InnerTube browse VLLL)
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         private string _likedSongsContinuation = null;
         private bool _isLoadingMoreLiked = false;
 
@@ -703,7 +636,7 @@ namespace YTMusicWP
                 _likedSongsContinuation = null;
 
                 // Browse "VLLL" = user's Liked Videos playlist via TVHTML5 client
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
+                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
 
                 if (json["_error"] != null)
                 {
@@ -738,7 +671,7 @@ namespace YTMusicWP
                 string token = await GetAccessTokenAsync();
                 if (token == null) return;
 
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["continuation"] = _likedSongsContinuation }, token);
+                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["continuation"] = _likedSongsContinuation }, token);
                 if (json["_error"] != null) { _likedSongsContinuation = null; return; }
 
                 _likedSongsContinuation = json.SelectToken("$..nextContinuationData.continuation")?.ToString()
@@ -760,8 +693,8 @@ namespace YTMusicWP
         {
             bool hasNew = false;
             
-            // TVHTML5 returns: tvBrowseRenderer → tvSurfaceContentRenderer → twoColumnRenderer
-            //   → rightColumn → playlistVideoListRenderer → contents[] → tileRenderer
+            // TVHTML5 returns: tvBrowseRenderer ? tvSurfaceContentRenderer ? twoColumnRenderer
+            //   ? rightColumn ? playlistVideoListRenderer ? contents[] ? tileRenderer
             var renderers = json.SelectTokens("$..tileRenderer").ToList();
             
             // Also try other known renderer types as fallback
@@ -788,14 +721,14 @@ namespace YTMusicWP
 
                     if (string.IsNullOrEmpty(videoId) || favoriteTracks.Any(t => t.VideoId == videoId)) continue;
 
-                    // Title: metadata → tileMetadataRenderer → title → simpleText
+                    // Title: metadata ? tileMetadataRenderer ? title ? simpleText
                     string title = null;
                     try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.simpleText")?.ToString(); } catch { }
                     if (title == null) try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.runs[0].text")?.ToString(); } catch { }
                     if (title == null) try { title = renderer.SelectToken("title.simpleText")?.ToString(); } catch { }
                     if (title == null) try { title = renderer.SelectToken("title.runs[0].text")?.ToString(); } catch { }
 
-                    // Channel: metadata → tileMetadataRenderer → lines[0] → lineRenderer → items[0] → lineItemRenderer → text → runs[0] → text
+                    // Channel: metadata ? tileMetadataRenderer ? lines[0] ? lineRenderer ? items[0] ? lineItemRenderer ? text ? runs[0] ? text
                     string channel = "";
                     try { channel = renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.runs[0].text")?.ToString(); } catch { }
                     if (string.IsNullOrEmpty(channel)) try { channel = renderer.SelectToken("shortBylineText.runs[0].text")?.ToString(); } catch { }
@@ -805,7 +738,7 @@ namespace YTMusicWP
                     string chId = "";
                     try { chId = renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.runs[0].navigationEndpoint.browseEndpoint.browseId")?.ToString() ?? ""; } catch { }
 
-                    // Thumbnail: header → tileHeaderRenderer → thumbnail → thumbnails
+                    // Thumbnail: header ? tileHeaderRenderer ? thumbnail ? thumbnails
                     string thumbUrl = "";
                     try
                     {
@@ -847,9 +780,9 @@ namespace YTMusicWP
             try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs"; } catch { }
         }
 
-        // ══════════════════════════════════════════
-        // SYNC ALL — Called after login and on app resume
-        // ══════════════════════════════════════════
+        // ------------------------------------------
+        // SYNC ALL � Called after login and on app resume
+        // ------------------------------------------
         private async Task SyncAllAsync(string accessToken)
         {
             await SyncLikedVideosAsync(accessToken);
@@ -862,15 +795,15 @@ namespace YTMusicWP
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => RefreshLibraryList());
         }
 
-        // ══════════════════════════════════════════
-        // SYNC USER PLAYLISTS — Fetch from YouTube
-        // ══════════════════════════════════════════
+        // ------------------------------------------
+        // SYNC USER PLAYLISTS � Fetch from YouTube
+        // ------------------------------------------
         private async Task SyncPlaylistsAsync(string accessToken)
         {
             try
             {
                 var extra = new JObject { ["browseId"] = "FElibrary" };
-                var json = await AuthInnerTubePostAsync("browse", extra, accessToken);
+                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", extra, accessToken);
 
                 if (json["_error"] != null)
                 {
@@ -989,9 +922,9 @@ namespace YTMusicWP
             }
         }
 
-        // ══════════════════════════════════════════
-        // GET ACCESS TOKEN — Auto-refresh if expired
-        // ══════════════════════════════════════════
+        // ------------------------------------------
+        // GET ACCESS TOKEN � Auto-refresh if expired
+        // ------------------------------------------
         private async Task<string> GetAccessTokenAsync()
         {
             var settings = ApplicationData.Current.LocalSettings.Values;
@@ -1004,7 +937,7 @@ namespace YTMusicWP
                 double now = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
                 if (now >= expiry)
                 {
-                    // Token expired → refresh
+                    // Token expired ? refresh
                     string newToken = await RefreshGoogleTokenAsync();
                     return newToken;
                 }
@@ -1043,9 +976,9 @@ namespace YTMusicWP
             return null;
         }
 
-        // ══════════════════════════════════════════
-        // USER PLAYLISTS — Local only (no YouTube sync)
-        // ══════════════════════════════════════════
+        // ------------------------------------------
+        // USER PLAYLISTS � Local only (no YouTube sync)
+        // ------------------------------------------
         private ObservableCollection<YouTubePlaylistInfo> _youtubeUserPlaylists = new ObservableCollection<YouTubePlaylistInfo>();
 
 
@@ -1091,9 +1024,9 @@ namespace YTMusicWP
             }
             catch { }
         }
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // LOCAL PLAYLIST TRACK STORAGE
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         private string GetLocalPlaylistFileName(string playlistId)
         {
             return "pl_tracks_" + playlistId.Replace("LOCAL_", "") + ".json";
@@ -1156,9 +1089,9 @@ namespace YTMusicWP
             catch { }
         }
 
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // SYNC SUBSCRIPTIONS
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         private ObservableCollection<YouTubeSubscription> _youtubeSubscriptions = new ObservableCollection<YouTubeSubscription>();
 
         private async Task SyncSubscriptionsAsync(string accessToken)
@@ -1171,7 +1104,7 @@ namespace YTMusicWP
                 try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json"); await f.DeleteAsync(); } catch { }
 
                 // Step 1: Get channel IDs from FEchannels
-                var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
+                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
                 if (json["_error"] != null) return;
 
                 var channelIds = json.SelectTokens("$..browseEndpoint.browseId")
@@ -1196,7 +1129,7 @@ namespace YTMusicWP
                             var artistResult = await InnerTubeClient.BrowseArtistAsync(chId);
                             // Must be a YouTube Music artist page with actual music content
                             // Regular YouTube channels won't have albums/singles on YTM
-                            System.Diagnostics.Debug.WriteLine("[SubSync] " + chId + " → " + artistResult.Name 
+                            System.Diagnostics.Debug.WriteLine("[SubSync] " + chId + " ? " + artistResult.Name 
                                 + " | IsYTM=" + artistResult.IsYouTubeMusicArtist 
                                 + " | Tracks=" + artistResult.Tracks.Count 
                                 + " | Albums=" + artistResult.Albums.Count
@@ -1269,9 +1202,9 @@ namespace YTMusicWP
             catch { }
         }
 
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // LIKE / DISLIKE VIDEO
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         private async Task<bool> RateVideoAsync(string videoId, string rating)
         {
             string token = await GetAccessTokenAsync();
@@ -1280,53 +1213,51 @@ namespace YTMusicWP
             try
             {
                 string endpoint = rating == "like" ? "like/like" : (rating == "dislike" ? "like/dislike" : "like/removelike");
-                var json = await AuthInnerTubePostAsync(endpoint, new JObject { ["target"] = new JObject { ["videoId"] = videoId } }, token);
+                var json = await InnerTubeClient.AuthInnerTubePostAsync(endpoint, new JObject { ["target"] = new JObject { ["videoId"] = videoId } }, token);
                 return json["_error"] == null;
             }
             catch { return false; }
         }
 
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // WATCH LATER
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         private async Task<bool> AddToWatchLaterAsync(string videoId)
         {
-            return await AddToYouTubePlaylistAsync("WL", videoId);
+            return (await AddToYouTubePlaylistAsync("WL", videoId)) != null;
         }
 
-        private async Task<bool> AddToYouTubePlaylistAsync(string playlistId, string videoId)
+        private async Task<string> AddToYouTubePlaylistAsync(string playlistId, string videoId)
         {
-            // Local playlists can't add videos to YouTube
-            if (playlistId.StartsWith("LOCAL_")) return true;
+            if (playlistId.StartsWith("LOCAL_")) return "SUCCESS";
 
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return false;
+            if (string.IsNullOrEmpty(token)) return null;
 
             try
             {
-                var extra = new JObject
-                {
-                    ["playlistId"] = playlistId,
-                    ["actions"] = new JArray
-                    {
-                        new JObject
-                        {
-                            ["addedVideoId"] = videoId,
-                            ["action"] = "ACTION_ADD_VIDEO"
-                        }
-                    }
-                };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
-                return json["_error"] == null;
+                return await InnerTubeClient.AddToYouTubePlaylistAsync(playlistId, videoId, token);
             }
-            catch { return false; }
+            catch { return null; }
         }
 
-        private Task<string> CreateYouTubePlaylistAsync(string title)
+        private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
-            // Create local-only playlist (YouTube API blocked for TV client)
-            string plId = "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
-            return Task.FromResult(plId);
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
+            {
+                // Fallback to local if not logged in
+                return "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+            }
+
+            try
+            {
+                string plId = await InnerTubeClient.CreateYouTubePlaylistAsync(title, token);
+                if (string.IsNullOrEmpty(plId))
+                    return "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
+                return plId;
+            }
+            catch { return "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12); }
         }
 
         private async Task<bool> DeleteYouTubePlaylistAsync(string playlistId)
@@ -1338,19 +1269,13 @@ namespace YTMusicWP
 
             try
             {
-                var extra = new JObject
-                {
-                    ["playlistId"] = playlistId
-                };
-                var json = await AuthInnerTubePostAsync("playlist/delete", extra, token);
-                return json["_error"] == null;
+                return await InnerTubeClient.DeleteYouTubePlaylistAsync(playlistId, token);
             }
             catch { return false; }
         }
 
-        private async Task<bool> RemoveFromYouTubePlaylistAsync(string playlistId, string videoId)
+        private async Task<bool> RemoveFromYouTubePlaylistAsync(string playlistId, string videoId, string setVideoId = "")
         {
-            // Local playlists don't sync to YouTube
             if (playlistId.StartsWith("LOCAL_")) return true;
 
             string token = await GetAccessTokenAsync();
@@ -1358,20 +1283,7 @@ namespace YTMusicWP
 
             try
             {
-                var extra = new JObject
-                {
-                    ["playlistId"] = playlistId,
-                    ["actions"] = new JArray
-                    {
-                        new JObject
-                        {
-                            ["removedVideoId"] = videoId,
-                            ["action"] = "ACTION_REMOVE_VIDEO"
-                        }
-                    }
-                };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, token);
-                return json["_error"] == null;
+                return await InnerTubeClient.RemoveFromYouTubePlaylistAsync(playlistId, videoId, setVideoId, token);
             }
             catch { return false; }
         }
@@ -1412,9 +1324,9 @@ namespace YTMusicWP
             }
         }
 
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         // YOUTUBE PROFILE AVATAR
-        // ══════════════════════════════════════════
+        // ------------------------------------------
         private void LoadHomeAvatar()
         {
             try
@@ -1426,7 +1338,7 @@ namespace YTMusicWP
                 if (!string.IsNullOrEmpty(avatarUrl))
                 {
                     var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                    bmp.DecodePixelWidth = 64; // 32dp × 2 for sharp rendering
+                    bmp.DecodePixelWidth = 64; // 32dp � 2 for sharp rendering
                     bmp.UriSource = new Uri(avatarUrl, UriKind.Absolute);
 
                     // Home avatar
@@ -1570,9 +1482,9 @@ namespace YTMusicWP
 
     }
 
-    // ══════════════════════════════════════════
+    // ------------------------------------------
     // MODEL CLASSES
-    // ══════════════════════════════════════════
+    // ------------------------------------------
     public class YouTubePlaylistInfo
     {
         public string PlaylistId { get; set; }
@@ -1588,3 +1500,5 @@ namespace YTMusicWP
         public string ThumbnailUrl { get; set; }
     }
 }
+
+

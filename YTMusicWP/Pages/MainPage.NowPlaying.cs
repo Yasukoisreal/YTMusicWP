@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
@@ -13,24 +13,7 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
-        private async void MenuAddToPlaylistNowPlaying_Click(object sender, RoutedEventArgs e)
-        {
-            if (currentTrack != null)
-            {
-                // Require login
-                string token = await GetAccessTokenAsync();
-                if (string.IsNullOrEmpty(token))
-                {
-                    ShowToast("Sign in to add to playlist");
-                    return;
-                }
-
-                _trackPendingForPlaylist = currentTrack;
-                NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
-                DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
-                AddToPlaylistDialog.Visibility = Visibility.Visible;
-            }
-        }
+        
 
         private void MenuShareNowPlaying_Click(object sender, RoutedEventArgs e)
         {
@@ -45,6 +28,39 @@ namespace YTMusicWP
         private void MenuSleepTimerNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             SleepTimer_Click(null, null);
+        }
+
+        private async void MenuLikeNowPlaying_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
+            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
+            {
+                ShowToast("Login required to Like");
+                return;
+            }
+
+            bool success = await InnerTubeClient.LikeVideoAsync(currentTrack.VideoId, token);
+            ShowToast(success ? "Added to Liked Songs!" : "Failed to Like song");
+        }
+
+        private async void MenuAddToPlaylistNowPlaying_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
+            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+
+            string token = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(token))
+            {
+                ShowToast("Sign in to add to playlist");
+                return;
+            }
+
+            _trackPendingForPlaylist = currentTrack;
+            DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
+            AddToPlaylistDialog.Visibility = Visibility.Visible;
         }
 
         private async void MenuWatchLaterNowPlaying_Click(object sender, RoutedEventArgs e)
@@ -562,3 +578,6 @@ namespace YTMusicWP
 
     }
 }
+
+
+

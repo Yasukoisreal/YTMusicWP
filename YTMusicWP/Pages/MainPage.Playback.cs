@@ -71,7 +71,8 @@ namespace YTMusicWP
             // Nếu detect sau khi insert, historyTracks.Contains(track) sẽ luôn true,
             // gây mất nguồn context thực sự (search, playlist, favorites...).
             ObservableCollection<YouTubeTrack> activeList = homeTracks;
-            if (searchResults.Contains(track)) activeList = searchResults;
+            if (currentQueueTracks.Contains(track)) activeList = currentQueueTracks;
+            else if (searchResults.Contains(track)) activeList = searchResults;
             else if (favoriteTracks.Contains(track)) activeList = favoriteTracks;
             else if (downloadedTracks.Contains(track)) activeList = downloadedTracks;
             else if (homeHistoryCarouselTracks.Contains(track)) activeList = homeHistoryCarouselTracks;
@@ -123,8 +124,13 @@ namespace YTMusicWP
             string[] videoIds = new string[count];
             string[] thumbnails = new string[count];
 
-            currentQueueTracks.Clear();
-            for (int i = 0; i < activeList.Count; i++) currentQueueTracks.Add(activeList[i]); // Vẫn giữ full cho UI
+            if (activeList != currentQueueTracks)
+            {
+                QueueListView.ItemsSource = null;
+                currentQueueTracks.Clear();
+                for (int i = 0; i < activeList.Count; i++) currentQueueTracks.Add(activeList[i]);
+                QueueListView.ItemsSource = currentQueueTracks;
+            }
 
             for (int i = 0; i < count; i++)
             {

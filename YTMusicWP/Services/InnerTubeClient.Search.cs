@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -326,6 +326,9 @@ namespace YTMusicWP
             // BrowseId (for artist/playlist items)
             string browseId = mr["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
 
+            // SetVideoId (for playlist items)
+            string setVideoId = mr["playlistItemData"]?["playlistSetVideoId"]?.ToString() ?? mr["playlistItemData"]?["setVideoId"]?.ToString();
+
             // Thumbnail
             string thumbUrl = "";
             var thumbs = mr["thumbnail"]?["musicThumbnailRenderer"]
@@ -353,7 +356,8 @@ namespace YTMusicWP
                 Title = title,
                 ChannelName = CleanChannelName(artist),
                 ChannelId = channelId,
-                ThumbnailUrl = thumbUrl
+                ThumbnailUrl = thumbUrl,
+                SetVideoId = setVideoId
             };
         }
 
@@ -362,3 +366,4 @@ namespace YTMusicWP
         // ==========================================
     }
 }
+

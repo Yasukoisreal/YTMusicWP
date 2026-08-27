@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -60,7 +60,7 @@ namespace YTMusicWP
                     if (!string.IsNullOrEmpty(token))
                     {
                         string browseId = playlistId.StartsWith("VL") ? playlistId : "VL" + playlistId;
-                        var json = await AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = browseId }, token);
+                        var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = browseId }, token);
                         if (json["_error"] == null)
                         {
                             // Parse title
@@ -499,7 +499,7 @@ namespace YTMusicWP
                             ["channelIds"] = new JArray { _currentArtistChannelId },
                             ["params"] = "EgIIAhgA"
                         };
-                        var result = await AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
+                        var result = await InnerTubeClient.AuthInnerTubePostAsync("subscription/subscribe", extra, accessToken);
                         apiSuccess = result["_error"] == null;
                     }
                     catch { }
@@ -537,7 +537,7 @@ namespace YTMusicWP
                         {
                             ["channelIds"] = new JArray { _currentArtistChannelId }
                         };
-                        var result = await AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
+                        var result = await InnerTubeClient.AuthInnerTubePostAsync("subscription/unsubscribe", extra, accessToken);
                         apiSuccess = result["_error"] == null;
                     }
                     catch { }
@@ -632,3 +632,4 @@ namespace YTMusicWP
 
     }
 }
+

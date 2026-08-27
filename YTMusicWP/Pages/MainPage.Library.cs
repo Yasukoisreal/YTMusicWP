@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -508,7 +508,7 @@ namespace YTMusicWP
                 AddToPlaylistDialog.Visibility = Visibility.Collapsed;
                 ShowToast("Adding to " + ytPlaylist.Title + "...");
 
-                bool success = await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist.VideoId);
+                bool success = (await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist.VideoId)) != null;
                 if (success)
                 {
                     // Save track to local cache for local playlists
@@ -1151,3 +1151,4 @@ namespace YTMusicWP
 
     }
 }
+

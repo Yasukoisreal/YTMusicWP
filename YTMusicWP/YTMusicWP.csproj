@@ -113,6 +113,8 @@
     <Compile Include="Pages\MainPage.Navigation.cs" />
     <Compile Include="Pages\MainPage.Shorts.cs" />
     <Compile Include="Services\InnerTubeClient.cs" />
+    <Compile Include="Services\InnerTubeClient.Auth.cs" />
+    <Compile Include="Services\InnerTubeClient.Playlist.cs" />
     <Compile Include="Services\InnerTubeClient.Search.cs" />
     <Compile Include="Services\InnerTubeClient.Browse.cs" />
     <Compile Include="Services\InnerTubeClient.Player.cs" />

@@ -156,6 +156,7 @@ namespace YTMusicWP
         private static string CleanChannelName(string name)
         {
             if (string.IsNullOrEmpty(name)) return name;
+            if (name == "Nghệ sĩ") return "Artist";
             if (name.EndsWith(" - Topic")) return name.Substring(0, name.Length - 8);
             if (name.EndsWith(" - Chủ đề")) return name.Substring(0, name.Length - 9);
             return name;

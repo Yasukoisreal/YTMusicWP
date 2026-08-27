@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using Windows.UI.Xaml;
 
 namespace YTMusicWP
@@ -6,6 +6,7 @@ namespace YTMusicWP
     public class YouTubeTrack : INotifyPropertyChanged
     {
         public string VideoId { get; set; }
+        public string SetVideoId { get; set; }
         public string Title { get; set; }
         public string ChannelName { get; set; }
         public string ChannelId { get; set; }
@@ -42,3 +43,4 @@ namespace YTMusicWP
         }
     }
 }
+
