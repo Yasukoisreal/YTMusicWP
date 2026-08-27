@@ -206,6 +206,11 @@ namespace YTMusicWP
                     {
                         syncedLyrics = amLyrics[0];
                         plainLyrics = amLyrics[1];
+                        if (!string.IsNullOrWhiteSpace(syncedLyrics)) syncedLyrics += "
+[99:99.99] Lyrics provided by Apple Music";
+                        if (!string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics += "
+
+Lyrics provided by Apple Music";
                         System.Diagnostics.Debug.WriteLine("Fetched lyrics from Apple Music");
                     }
                 }
@@ -263,8 +268,11 @@ namespace YTMusicWP
                         if (arr1.Count > 0)
                         {
                             var match1 = pickBestMatch(arr1, trackDurationSec);
-                            syncedLyrics = match1[0];
-                            plainLyrics = match1[1];
+                            syncedLyrics = match1[0] + "
+[99:99.99] Lyrics provided by LRCLIB";
+                              plainLyrics = match1[1] + "
+
+Lyrics provided by LRCLIB";
                         }
                     }
                     catch { }
@@ -279,8 +287,11 @@ namespace YTMusicWP
                             if (arr2.Count > 0)
                             {
                                 var match2 = pickBestMatch(arr2, trackDurationSec);
-                                if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0];
-                                if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1];
+                                if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0] + "
+[99:99.99] Lyrics provided by LRCLIB";
+                                if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1] + "
+
+Lyrics provided by LRCLIB";
                             }
                         }
                         catch { }
@@ -577,3 +588,4 @@ namespace YTMusicWP
 
     }
 }
+
