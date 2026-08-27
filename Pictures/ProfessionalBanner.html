@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YTMusicWP Premium Banner</title>
     <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -17,8 +17,8 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #0f172a;
-            font-family: 'Inter', sans-serif;
+            background-color: #e5e5e5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
         }
         
@@ -26,68 +26,46 @@
             width: 1280px;
             height: 640px;
             position: relative;
-            background: #0B0F19; /* Dark elegant background */
+            background: linear-gradient(135deg, #F0FDF4 0%, #D1FAE5 100%);
             overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
 
-        /* Abstract glowing blobs */
-        .blob-1 {
+        /* Ambient Background Blobs for Depth */
+        .blob {
             position: absolute;
-            width: 700px;
-            height: 700px;
-            background: radial-gradient(circle, rgba(255, 0, 80, 0.4) 0%, rgba(255, 0, 80, 0) 70%);
-            top: -250px;
-            right: 50px;
             border-radius: 50%;
             filter: blur(80px);
-            z-index: 1;
+            opacity: 0.4;
+            z-index: 0;
+        }
+
+        .blob-1 {
+            width: 600px;
+            height: 600px;
+            background: #34d399; /* Light emerald */
+            top: -200px;
+            right: -100px;
         }
 
         .blob-2 {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0) 70%);
-            bottom: -200px;
-            left: -150px;
-            border-radius: 50%;
-            filter: blur(70px);
-            z-index: 1;
-        }
-
-        .blob-3 {
-            position: absolute;
             width: 500px;
             height: 500px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0) 70%);
-            bottom: 50px;
-            right: 400px;
-            border-radius: 50%;
-            filter: blur(60px);
-            z-index: 1;
+            background: #60a5fa; /* Light blue for contrast */
+            bottom: -150px;
+            left: -150px;
+            opacity: 0.3;
         }
 
-        /* Subtle grid background */
-        .grid-bg {
-            position: absolute;
-            inset: 0;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: 2;
-        }
-
+        /* Container cố định chiều rộng ở giữa để ép Text và Phone lại gần nhau */
         .content {
-            width: 1040px; 
+            width: 1020px; 
             height: 100%;
             position: relative;
             margin: 0 auto;
-            z-index: 10;
+            z-index: 1; /* Bring above blobs */
         }
 
-        /* Glassmorphism panel */
+        /* Text Group căn giữa theo chiều dọc */
         .left-panel {
             position: absolute;
             top: 50%;
@@ -95,37 +73,15 @@
             left: 0;
             display: flex;
             align-items: center;
-            gap: 40px; 
-            background: rgba(255, 255, 255, 0.03);
-            padding: 48px;
-            border-radius: 36px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            gap: 32px; 
         }
         
-        .logo-container {
-            position: relative;
-        }
-        
-        .logo-glow {
-            position: absolute;
-            inset: 0;
-            background: #ef4444;
-            border-radius: 36px;
-            filter: blur(20px);
-            opacity: 0.7;
-            z-index: -1;
-        }
-
         .logo {
             width: 140px; 
             height: 140px;
             border-radius: 32px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15), 0 10px 20px rgba(0,0,0,0.08); /* Tăng chiều sâu bóng logo */
             background-color: #000;
-            border: 2px solid rgba(255,255,255,0.15);
         }
 
         .text-group {
@@ -135,57 +91,40 @@
         }
 
         h1 {
-            font-size: 76px; 
-            font-weight: 800; 
-            color: #ffffff; 
+            font-size: 68px; 
+            font-weight: 700; 
+            color: #0f172a; 
             margin-bottom: 12px;
-            letter-spacing: -2.5px;
-            line-height: 1;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            letter-spacing: -1.5px;
+            text-shadow: 0 4px 16px rgba(0,0,0,0.05); /* Tăng chiều sâu chữ */
         }
         
         h1 span {
-            background: linear-gradient(90deg, #10b981, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #10b981;
         }
 
         .subtitle {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 400;
-            color: #cbd5e1;
+            color: #334155;
             line-height: 1.5;
             max-width: 400px;
         }
 
-        .badge {
-            display: inline-block;
-            margin-top: 28px;
-            padding: 8px 18px;
-            background: rgba(239, 68, 68, 0.15);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            border-radius: 20px;
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1);
-        }
-
+        /* Phone bám sát mép dưới (Grounded) */
         .right-panel {
             position: absolute;
-            bottom: -40px; 
-            right: -20px;
+            bottom: -30px; /* Cho điện thoại tràn một chút xuống dưới mép banner */
+            right: 0;
         }
 
         .phone {
             position: relative;
-            z-index: 20;
-            height: 600px; 
+            z-index: 2;
+            height: 580px; 
             display: flex;
             justify-content: center;
-            align-items: flex-end; 
+            align-items: flex-end; /* Ảnh bám đáy */
         }
         
         .phone img {
@@ -193,48 +132,25 @@
             width: auto;
             object-fit: contain;
             display: block;
-            filter: drop-shadow(-40px 40px 60px rgba(0,0,0,0.7)); 
+            filter: drop-shadow(-25px 25px 50px rgba(0,0,0,0.3)); /* Tăng bóng đổ nghiêng nhẹ sang trái để tạo chiều sâu */
         }
-        
-        /* Floating particles */
-        .particle {
-            position: absolute;
-            border-radius: 50%;
-            background: #fff;
-            opacity: 0.15;
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
-        }
-        .p1 { width: 8px; height: 8px; top: 120px; left: 150px; }
-        .p2 { width: 12px; height: 12px; top: 90px; right: 450px; }
-        .p3 { width: 6px; height: 6px; bottom: 220px; left: 80px; }
-        .p4 { width: 10px; height: 10px; bottom: 140px; right: 600px; }
         
     </style>
 </head>
 <body>
 
     <div class="banner-container">
-        <!-- Background Elements -->
-        <div class="blob-1"></div>
-        <div class="blob-2"></div>
-        <div class="blob-3"></div>
-        <div class="grid-bg"></div>
-        
-        <div class="particle p1"></div>
-        <div class="particle p2"></div>
-        <div class="particle p3"></div>
-        <div class="particle p4"></div>
+        <!-- Background Blobs -->
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
 
         <div class="content">
+            
             <div class="left-panel">
-                <div class="logo-container">
-                    <div class="logo-glow"></div>
-                    <img src="../YTMusicWP/Assets/Logo.scale-240.png" class="logo" alt="Logo">
-                </div>
+                <img src="../YTMusicWP/Assets/Logo.scale-240.png" class="logo" alt="Logo">
                 <div class="text-group">
                     <h1>YTMusic<span>WP</span></h1>
                     <p class="subtitle">Feel free when playing YouTube Music on Windows Phone 8.1</p>
-                    <div><span class="badge">Version 2.1.4 Beta</span></div>
                 </div>
             </div>
             
@@ -243,6 +159,7 @@
                     <img src="emulator-transparent.png" alt="Emulator Snapshot">
                 </div>
             </div>
+            
         </div>
     </div>
 
