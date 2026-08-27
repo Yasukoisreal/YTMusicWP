@@ -147,13 +147,12 @@ We do not host, upload, distribute, or store any audio, video, or copyrighted me
 ## Support & Donations 
 If you enjoy using YTMusicWP and want to support the development, consider buying me a coffee! Your support helps keep this project alive for the Windows Phone & Lumia community.
 
-**Buy Me A Coffee**
-- **Link:** [buymeacoffee.com/yasukoisreal](https://buymeacoffee.com/yasukoisreal)
+<a href="https://buymeacoffee.com/yasukoisreal"><img alt="Buy me a Coffee" height="50" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/donate/buymeacoffee-singular_vector.svg"></a> &nbsp;
+<a href="https://paypal.me/yasukoisreal"><img alt="PayPal" height="50" src="https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/donate/paypal-singular_vector.svg"></a>
 
-**International (PayPal)**
-- **PayPal.me:** [paypal.me/yasukoisreal](https://paypal.me/yasukoisreal)
+<br>
 
-**Vietnam (MB Bank)**
+### Vietnam (MB Bank)
 - **Account Number:** `700652007`
 - **Account Name:** NGUYEN TRUONG AN
 
