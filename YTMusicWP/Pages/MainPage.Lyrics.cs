@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -206,11 +206,8 @@ namespace YTMusicWP
                     {
                         syncedLyrics = amLyrics[0];
                         plainLyrics = amLyrics[1];
-                        if (!string.IsNullOrWhiteSpace(syncedLyrics)) syncedLyrics += "
-[99:99.99] Lyrics provided by Apple Music";
-                        if (!string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics += "
-
-Lyrics provided by Apple Music";
+                        if (!string.IsNullOrWhiteSpace(syncedLyrics)) syncedLyrics += "\n[99:99.99] Lyrics provided by Apple Music";
+                        if (!string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics += "\n\nLyrics provided by Apple Music";
                         System.Diagnostics.Debug.WriteLine("Fetched lyrics from Apple Music");
                     }
                 }
@@ -253,6 +250,8 @@ Lyrics provided by Apple Music";
                         var getJson = JObject.Parse(getResp);
                         syncedLyrics = getJson["syncedLyrics"]?.ToString();
                         plainLyrics = getJson["plainLyrics"]?.ToString();
+                        if (!string.IsNullOrWhiteSpace(syncedLyrics)) syncedLyrics += "\n[99:99.99] Lyrics provided by LRCLIB";
+                        if (!string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics += "\n\nLyrics provided by LRCLIB";
                     }
                     catch { }
                 }
@@ -268,11 +267,8 @@ Lyrics provided by Apple Music";
                         if (arr1.Count > 0)
                         {
                             var match1 = pickBestMatch(arr1, trackDurationSec);
-                            syncedLyrics = match1[0] + "
-[99:99.99] Lyrics provided by LRCLIB";
-                              plainLyrics = match1[1] + "
-
-Lyrics provided by LRCLIB";
+                            syncedLyrics = match1[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
+                              plainLyrics = match1[1] + "\n\nLyrics provided by LRCLIB";
                         }
                     }
                     catch { }
@@ -287,11 +283,8 @@ Lyrics provided by LRCLIB";
                             if (arr2.Count > 0)
                             {
                                 var match2 = pickBestMatch(arr2, trackDurationSec);
-                                if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0] + "
-[99:99.99] Lyrics provided by LRCLIB";
-                                if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1] + "
-
-Lyrics provided by LRCLIB";
+                                if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
+                                if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1] + "\n\nLyrics provided by LRCLIB";
                             }
                         }
                         catch { }
@@ -402,7 +395,7 @@ Lyrics provided by LRCLIB";
 
                 if (times.Count > 0)
                 {
-                    string text = string.IsNullOrWhiteSpace(tempLine) ? "â™ª" : tempLine;
+                    string text = string.IsNullOrWhiteSpace(tempLine) ? "♪" : tempLine;
                     foreach (var t in times)
                         parsedLines.Add(new LyricLine { Time = t, Text = text, FontSize = _lyricFontSize });
                 }
@@ -416,7 +409,7 @@ Lyrics provided by LRCLIB";
         private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var line = e.ClickedItem as LyricLine;
-            if (line != null && line.Text != "â™ª" && line.Text != "")
+            if (line != null && line.Text != "♪" && line.Text != "")
             {
                 try
                 {
@@ -588,4 +581,8 @@ Lyrics provided by LRCLIB";
 
     }
 }
+
+
+
+
 
