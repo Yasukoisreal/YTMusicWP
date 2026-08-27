@@ -17,6 +17,9 @@ namespace YTMusicWP
             if (historyTracks.Count > 0)
             {
                 HomeHistorySection.Visibility = Visibility.Visible;
+                HomeQuickGrid.ItemsSource = null;
+                HomeHistoryCarousel.ItemsSource = null;
+
                 historyQuickGridTracks.Clear();
                 int countGrid = Math.Min(6, historyTracks.Count);
                 for (int i = 0; i < countGrid; i++)
@@ -30,6 +33,9 @@ namespace YTMusicWP
                 {
                     homeHistoryCarouselTracks.Add(historyTracks[i]);
                 }
+
+                HomeQuickGrid.ItemsSource = historyQuickGridTracks;
+                HomeHistoryCarousel.ItemsSource = homeHistoryCarouselTracks;
 
                 // Recently Played Artists — extract unique artists from history
                 RefreshRecentArtists();
@@ -196,14 +202,18 @@ namespace YTMusicWP
                     // Map API sections to UI carousels (up to 8)
                     var carousels = new[] { homeTracks, popTracks, lofiTracks, workoutTracks, genre5Tracks, genre6Tracks, genre7Tracks, genre8Tracks };
                     var titles = new[] { HomeTrendingTitle, HomePopTitle, HomeChillTitle, HomeWorkoutTitle, HomeGenre5Title, HomeGenre6Title, HomeGenre7Title, HomeGenre8Title };
+                    var listViews = new ListView[] { HomeTrendingCarousel, HomePopCarousel, HomeLofiCarousel, HomeWorkoutCarousel, HomeGenre5Carousel, HomeGenre6Carousel, HomeGenre7Carousel, HomeGenre8Carousel };
 
                     for (int i = 0; i < Math.Min(homeSections.Count, 8); i++)
                     {
                         titles[i].Text = homeSections[i].Title;
+                        listViews[i].ItemsSource = null;
+                        carousels[i].Clear();
                         foreach (var t in homeSections[i].Tracks)
                         {
                             carousels[i].Add(t);
                         }
+                        listViews[i].ItemsSource = carousels[i];
                     }
 
 
@@ -308,14 +318,23 @@ namespace YTMusicWP
             _currentHomeQuery = queries[0];
 
             // Load sequentially to avoid rate limiting
+            HomeTrendingCarousel.ItemsSource = null;
+            homeTracks.Clear();
             var trending = await FetchMusicList(queries[0], "", "songs");
             if (trending != null) foreach (var t in trending) { if (IsMusicTrack(t)) homeTracks.Add(t); }
+            HomeTrendingCarousel.ItemsSource = homeTracks;
             
+            HomePopCarousel.ItemsSource = null;
+            popTracks.Clear();
             var pop = await FetchMusicList(queries[1], "", "songs");
             if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
+            HomePopCarousel.ItemsSource = popTracks;
 
+            HomeLofiCarousel.ItemsSource = null;
+            lofiTracks.Clear();
             var chill = await FetchMusicList(queries[2], "", "songs");
             if (chill != null) foreach (var t in chill) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
+            HomeLofiCarousel.ItemsSource = lofiTracks;
 
             HomeLoading.Visibility = Visibility.Collapsed;
             YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
@@ -334,11 +353,29 @@ namespace YTMusicWP
 
                 var __ = Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
+                    HomeWorkoutCarousel.ItemsSource = null;
+                    HomeGenre5Carousel.ItemsSource = null;
+                    HomeGenre6Carousel.ItemsSource = null;
+                    HomeGenre7Carousel.ItemsSource = null;
+                    HomeGenre8Carousel.ItemsSource = null;
+                    
+                    workoutTracks.Clear();
+                    genre5Tracks.Clear();
+                    genre6Tracks.Clear();
+                    genre7Tracks.Clear();
+                    genre8Tracks.Clear();
+
                     if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
                     if (genre5 != null) foreach (var t in genre5) { if (IsMusicTrack(t)) genre5Tracks.Add(t); }
                     if (genre6 != null) foreach (var t in genre6) { if (IsMusicTrack(t)) genre6Tracks.Add(t); }
                     if (genre7 != null) foreach (var t in genre7) { if (IsMusicTrack(t)) genre7Tracks.Add(t); }
                     if (genre8 != null) foreach (var t in genre8) { if (IsMusicTrack(t)) genre8Tracks.Add(t); }
+
+                    HomeWorkoutCarousel.ItemsSource = workoutTracks;
+                    HomeGenre5Carousel.ItemsSource = genre5Tracks;
+                    HomeGenre6Carousel.ItemsSource = genre6Tracks;
+                    HomeGenre7Carousel.ItemsSource = genre7Tracks;
+                    HomeGenre8Carousel.ItemsSource = genre8Tracks;
                 });
             });
         }
