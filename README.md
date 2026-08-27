@@ -112,6 +112,8 @@ Contributions, bug reports, and pull requests are warmly welcome!
 1. Found a bug? Open an [Issue](https://github.com/Yasukoisreal/YTMusicWP/issues).
 2. Want to add a feature? Fork the repository and submit a PR.
 
+**AI Policy:** AI-*assisted* work is welcome; AI-*driven* work is not. Unattended agent submissions (PRs fired by coding agents) are closed automatically. A human must review every line of code submitted. See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
+
 ### Building from Source
 - Windows 8.1 / 10 / 11
 - Visual Studio 2015 (with Windows Phone 8.1 SDK installed)
