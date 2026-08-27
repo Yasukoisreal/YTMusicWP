@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Windows.ApplicationModel.Background;
 using Windows.Foundation.Collections;
@@ -437,7 +437,7 @@ namespace AudioPlayerTask
 
             // Náº¿u Ä‘Ã£ cÃ³ URL resolved (tá»« retry)
                         // Fetch SponsorBlock segments
-            _skipSegments.Clear();
+            _skipSegments = new List<YTMusicWP.Models.SponsorBlockSegment>();
             if (!vidId.StartsWith("LOCAL:"))
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -445,7 +445,10 @@ namespace AudioPlayerTask
                 if (sponsorBlock)
                 {
                     var ignoreTask = System.Threading.Tasks.Task.Run(async () => {
-                        _skipSegments = await YTMusicWP.Services.SponsorBlockApi.GetSkipSegmentsAsync(vidId);
+                        var segs = await YTMusicWP.Services.SponsorBlockApi.GetSkipSegmentsAsync(vidId);
+                        if (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count && _videoIdList[_currentTrackIndex] == vidId) {
+                            _skipSegments = segs;
+                        }
                     });
                 }
             }

@@ -194,8 +194,12 @@ namespace YTMusicWP
 
             using (var resp = await _client.SendAsync(request))
             {
-                string json = await resp.Content.ReadAsStringAsync();
-                return JObject.Parse(json);
+                using (var stream = await resp.Content.ReadAsStreamAsync())
+                using (var reader = new System.IO.StreamReader(stream))
+                using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
+                {
+                    return JObject.Load(jsonReader);
+                }
             }
         }
 

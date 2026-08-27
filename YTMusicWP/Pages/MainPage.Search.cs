@@ -37,8 +37,7 @@ namespace YTMusicWP
             DefaultSearchUI.Visibility = Visibility.Collapsed;
 
             SearchSongList.Visibility = Visibility.Visible;
-            SearchSongList.ItemsSource = searchResults;
-
+            SearchSongList.ItemsSource = null;
             searchResults.Clear();
 
             // Detect active filter
@@ -79,6 +78,8 @@ namespace YTMusicWP
             {
                 ShowToast("No results found.");
             }
+            
+            SearchSongList.ItemsSource = searchResults;
             SearchLoading.Visibility = Visibility.Collapsed;
 
             System.Diagnostics.Debug.WriteLine("[Search] Results: " + searchResults.Count + ", NextToken: " + (_nextSearchToken ?? "null"));

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
@@ -10,47 +10,47 @@ namespace YTMusicWP.Services
 {
     internal static class SponsorBlockApi
     {
+        private static readonly HttpClient _client = new HttpClient() { Timeout = TimeSpan.FromSeconds(5) };
+
         public static async Task<List<SponsorBlockSegment>> GetSkipSegmentsAsync(string videoId)
         {
             var segments = new List<SponsorBlockSegment>();
             try
             {
-                string url = "https://sponsor.ajay.app/api/skipSegments/?videoID=" + Uri.EscapeDataString(videoId) +
+                // We only care about sponsor, interaction, selfpromo, and music_offtopic (silence/non-music in MVs)
+                string url = $"https://sponsor.ajay.app/api/skipSegments?videoID={videoId}" +
                              "&category=sponsor&category=interaction&category=selfpromo&category=music_offtopic";
 
-                using (var client = new HttpClient())
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("User-Agent", "YTMusicWP/1.0");
+                
+                var response = await _client.SendAsync(request);
+                if (response.IsSuccessStatusCode)
                 {
-                    client.DefaultRequestHeaders.Add("User-Agent", "YTMusicWP/1.0");
-                    client.Timeout = TimeSpan.FromSeconds(5);
-                    
-                    var response = await client.GetAsync(url);
-                    if (response.IsSuccessStatusCode)
+                    var jsonStr = await response.Content.ReadAsStringAsync();
+                    JsonArray jsonArray;
+                    if (JsonArray.TryParse(jsonStr, out jsonArray))
                     {
-                        var jsonStr = await response.Content.ReadAsStringAsync();
-                        JsonArray jsonArray;
-                        if (JsonArray.TryParse(jsonStr, out jsonArray))
+                        foreach (var itemVal in jsonArray)
                         {
-                            foreach (var itemVal in jsonArray)
+                            if (itemVal.ValueType != JsonValueType.Object) continue;
+                            var item = itemVal.GetObject();
+                            
+                            var segment = new SponsorBlockSegment();
+                            if (item.ContainsKey("actionType") && item["actionType"].ValueType == JsonValueType.String)
+                                segment.ActionType = item["actionType"].GetString();
+                            
+                            if (item.ContainsKey("category") && item["category"].ValueType == JsonValueType.String)
+                                segment.Category = item["category"].GetString();
+                            
+                            if (item.ContainsKey("segment") && item["segment"].ValueType == JsonValueType.Array)
                             {
-                                if (itemVal.ValueType != JsonValueType.Object) continue;
-                                var item = itemVal.GetObject();
-                                
-                                var segment = new SponsorBlockSegment();
-                                if (item.ContainsKey("actionType") && item["actionType"].ValueType == JsonValueType.String)
-                                    segment.ActionType = item["actionType"].GetString();
-                                
-                                if (item.ContainsKey("category") && item["category"].ValueType == JsonValueType.String)
-                                    segment.Category = item["category"].GetString();
-                                
-                                if (item.ContainsKey("segment") && item["segment"].ValueType == JsonValueType.Array)
+                                var segArr = item["segment"].GetArray();
+                                if (segArr.Count >= 2 && segArr[0].ValueType == JsonValueType.Number && segArr[1].ValueType == JsonValueType.Number)
                                 {
-                                    var segArr = item["segment"].GetArray();
-                                    if (segArr.Count >= 2 && segArr[0].ValueType == JsonValueType.Number && segArr[1].ValueType == JsonValueType.Number)
-                                    {
-                                        segment.Start = segArr[0].GetNumber();
-                                        segment.End = segArr[1].GetNumber();
-                                        segments.Add(segment);
-                                    }
+                                    segment.Start = segArr[0].GetNumber();
+                                    segment.End = segArr[1].GetNumber();
+                                    segments.Add(segment);
                                 }
                             }
                         }

@@ -47,6 +47,7 @@ namespace YTMusicWP
 
         private void RefreshLibraryList()
         {
+            LibraryUnifiedList.ItemsSource = null;
             _libraryItems.Clear();
 
             bool showAll = _libraryFilter == "all";
