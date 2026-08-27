@@ -18,7 +18,7 @@
     <AppxBundlePlatforms>arm</AppxBundlePlatforms>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
     <AppxBundle>Never</AppxBundle>
-    <PackageCertificateKeyFile>YTMusicWP_2.1.3.1_Cert.pfx</PackageCertificateKeyFile>
+    <PackageCertificateKeyFile>YTMusicWP_Certificate.pfx</PackageCertificateKeyFile>
     <PackageCertificateThumbprint>393F4DEFE851FB36577A16C2CE982A51C2AAB7AE</PackageCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -87,7 +87,7 @@
   <ItemGroup>
     <!-- A reference to the entire .Net Framework and Windows SDK are automatically included -->
     <None Include="app.config" />
-    <None Include="YTMusicWP_2.1.3.1_Cert.pfx" />
+    <None Include="YTMusicWP_Certificate.pfx" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
