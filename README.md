@@ -1,5 +1,5 @@
 <div align="center"> 
-  <img src="YTMusicWP/Assets/Logo.scale-240.png" width="120" height="120" alt="YTMusicWP Logo" />
+  <img src="Pictures/banner.png" alt="YTMusicWP Banner" width="100%" style="border-radius: 12px; margin-bottom: 24px;" />
   <h1>YTMusicWP</h1>  
   A modern, lightning-fast native YouTube Music client crafted for Windows Phone 8.1 and Windows 10 Mobile.<br>
   Breathe new life into legacy Lumia devices with direct stream playback, synced lyrics, and iconic Live Tiles.
@@ -57,9 +57,12 @@
 - **Windows 10 Mobile:** Lumia 550, 640/640 XL, 650, 950/950 XL, HP Elite x3, Alcatel Idol 4S (✅ Fully Compatible)
 
 ## Data    
-- This app safely connects directly to YouTube Music to get your songs and playlists without needing a web browser.
+- This app safely connects directly to YouTube Music to get your songs and playlists using hidden APIs without needing a web browser.
 - Login is handled securely using Google's official device login method (`google.com/device`). We never see or store your password.
-- Real-time lyrics are gathered from YouTube subtitles and external lyric databases.
+- Thanks to [SimpMusic](https://github.com/maxrave-dev/SimpMusic) and [Metrolist](https://github.com/metrolistgroup/metrolist). These repos are my inspiration to upgrade UI and add more features to this app.
+- My app is using [SponsorBlock](https://sponsor.ajay.app/) to skip sponsor in YouTube videos.
+- Main lyrics data from YouTube subtitles and [Lyrics API](https://lyrics-api.boidu.dev).
+- Alternative lyrics data from [LRCLIB](https://lrclib.net/).
  
 ## Privacy    
 YTMusicWP is a completely free, open-source application. We do not include any third-party trackers, analytics, or hidden data collection. Your data stays on your device. The app communicates directly and only with YouTube's servers to fetch your music, playlists, and provide playback. No middleman servers are used to stream your music.
@@ -139,6 +142,7 @@ We deeply respect the hard work of artists, musicians, and content creators. We 
 
 ### 4. No Hosting of Copyrighted Material
 We do not host, upload, distribute, or store any audio, video, or copyrighted media files on our own servers. All content accessed through this application is stored entirely on Google's and YouTube's servers.
+
 
 ## Support & Donations 
 If you enjoy using YTMusicWP and want to support the development, consider buying me a coffee! Your support helps keep this project alive for the Windows Phone & Lumia community.

@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YTMusicWP Premium Banner</title>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #e5e5e5;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .banner-container {
+            width: 1280px;
+            height: 640px;
+            position: relative;
+            background: linear-gradient(135deg, #F0FDF4 0%, #D1FAE5 100%);
+            overflow: hidden;
+        }
+
+        /* Container cố định chiều rộng ở giữa để ép Text và Phone lại gần nhau */
+        .content {
+            width: 1020px; 
+            height: 100%;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        /* Text Group căn giữa theo chiều dọc */
+        .left-panel {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 0;
+            display: flex;
+            align-items: center;
+            gap: 32px; 
+        }
+        
+        .logo {
+            width: 140px; 
+            height: 140px;
+            border-radius: 32px;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0,0,0,0.08);
+            background-color: #000;
+        }
+
+        .text-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 68px; 
+            font-weight: 700; 
+            color: #0f172a; 
+            margin-bottom: 10px;
+            letter-spacing: -1.5px;
+        }
+        
+        h1 span {
+            color: #10b981;
+        }
+
+        .subtitle {
+            font-size: 24px;
+            font-weight: 400;
+            color: #475569;
+            line-height: 1.5;
+            max-width: 400px;
+        }
+
+        /* Phone bám sát mép dưới (Grounded) */
+        .right-panel {
+            position: absolute;
+            bottom: -30px; /* Cho điện thoại tràn một chút xuống dưới mép banner */
+            right: 0;
+        }
+
+        .phone {
+            position: relative;
+            z-index: 2;
+            height: 580px; 
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* Ảnh bám đáy */
+        }
+        
+        .phone img {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+            display: block;
+            filter: drop-shadow(-20px 20px 40px rgba(0,0,0,0.25)); /* Bóng đổ nghiêng nhẹ sang trái để tạo chiều sâu */
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div class="banner-container">
+        <div class="content">
+            
+            <div class="left-panel">
+                <img src="../YTMusicWP/Assets/Logo.scale-240.png" class="logo" alt="Logo">
+                <div class="text-group">
+                    <h1>YTMusic<span>WP</span></h1>
+                    <p class="subtitle">Feel free when playing YouTube Music on Windows Phone 8.1</p>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="phone">
+                    <img src="emulator-transparent.png" alt="Emulator Snapshot">
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+</body>
+</html>
