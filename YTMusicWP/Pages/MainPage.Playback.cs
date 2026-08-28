@@ -819,7 +819,7 @@ namespace YTMusicWP
             catch { }
         }
 
-        private async System.Threading.Tasks.Task LoadSpotifyCanvasAsync(YouTubeTrack track)
+        internal async System.Threading.Tasks.Task LoadSpotifyCanvasAsync(YouTubeTrack track)
         {
             if (track == null || string.IsNullOrEmpty(track.Title)) return;
             try

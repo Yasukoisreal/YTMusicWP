@@ -31,7 +31,10 @@ Behavioral guidelines to optimize Gemini models for software engineering and pre
 **Touch only what you must. Clean up only your own impact.**
 
 When editing existing code:
-- **ALWAYS use built-in APIs:** NEVER use terminal commands (like PowerShell `Get-Content`/`Set-Content`, `sed`, or `echo`) to view or modify source code files. Terminal tools often corrupt file encoding (destroying UTF-8 characters like UI icons) and cause `Inconsistent Line Endings` in Visual Studio. ALWAYS use native agent tools (`replace_file_content`, `write_to_file`, `view_file`) for file operations.
+- **ALWAYS use native Antigravity tools:** NEVER use terminal commands (like PowerShell `cat`, `Get-Content`, `Set-Content`, `Select-String`, `grep`, `sed`, or `echo`) to read, search, view or modify source code files. Terminal tools are slow, clutter the chat UI, and corrupt file encoding (destroying UTF-8 characters like UI icons) causing `Inconsistent Line Endings` in Visual Studio.
+  - To **READ** or **VIEW** a file: ALWAYS use the `view_file` tool.
+  - To **SEARCH** for code: ALWAYS use the `grep_search` or `find_by_name` tools.
+  - To **MODIFY** a file: ALWAYS use the `replace_file_content` or `write_to_file` tools.
 - **Targeted edits:** Use precise diffs/replacements. Do not reformat or overwrite entire files when changing a few lines.
 - **Preserve surrounding code:** Do not "clean up", reformat, or alter existing comments, indentation, or style in unrelated blocks.
 - **Match project conventions:** Strictly mirror existing naming, architecture, and coding patterns in the repository.

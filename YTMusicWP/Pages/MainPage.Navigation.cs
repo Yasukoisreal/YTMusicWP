@@ -185,6 +185,12 @@ namespace YTMusicWP
                 string spdc = SpotifyCookieTextBox.Text;
                 Windows.Storage.ApplicationData.Current.LocalSettings.Values["SpotifySpDc"] = spdc;
                 Services.SpotifyCanvasService.SetSpDcCookie(spdc);
+                
+                // Immediately reload the canvas for the currently playing track
+                if (currentTrack != null)
+                {
+                    var ignored = LoadSpotifyCanvasAsync(currentTrack);
+                }
             }
         }
 

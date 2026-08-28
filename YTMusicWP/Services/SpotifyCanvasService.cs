@@ -14,7 +14,12 @@ namespace YTMusicWP.Services
         private static string _spDcCookie = "";
         public static void SetSpDcCookie(string cookie)
         {
-            _spDcCookie = cookie;
+            if (cookie != null)
+            {
+                _spDcCookie = cookie.Replace("sp_dc=", "").Replace(";", "").Trim();
+                // Reset token to force a refresh using the new cookie
+                _accessToken = null;
+            }
         }
 
         private static string _accessToken;
