@@ -113,6 +113,7 @@
     <Compile Include="Pages\MainPage.Navigation.cs" />
     <Compile Include="Pages\MainPage.Shorts.cs" />
     <Compile Include="Services\InnerTubeClient.cs" />
+    <Compile Include="Services\SpotifyCanvasService.cs" />
     <Compile Include="Services\InnerTubeClient.Auth.cs" />
     <Compile Include="Services\InnerTubeClient.Playlist.cs" />
     <Compile Include="Services\InnerTubeClient.Search.cs" />
@@ -202,6 +203,8 @@
     <TargetPlatformIdentifier>WindowsPhoneApp</TargetPlatformIdentifier>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <Import Project="..\packages\LumiaImagingSDK.2.0.208\build\wpa81\LumiaImagingSDK.targets" Condition="Exists('..\packages\LumiaImagingSDK.2.0.208\build\wpa81\LumiaImagingSDK.targets')" />
+  <Import Project="..\packages\Fody.2.0.0\build\portable-net+sl+win+wpa+wp\Fody.targets" Condition="Exists('..\packages\Fody.2.0.0\build\portable-net+sl+win+wpa+wp\Fody.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

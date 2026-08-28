@@ -178,6 +178,16 @@ namespace YTMusicWP
             SettingsPanel.Visibility = Visibility.Collapsed;
         }
 
+        private void SpotifyCookieTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (SpotifyCookieTextBox != null)
+            {
+                string spdc = SpotifyCookieTextBox.Text;
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["SpotifySpDc"] = spdc;
+                Services.SpotifyCanvasService.SetSpDcCookie(spdc);
+            }
+        }
+
         private bool _createSheetOpen = false;
 
         private void NavCreate_Click(object sender, RoutedEventArgs e)

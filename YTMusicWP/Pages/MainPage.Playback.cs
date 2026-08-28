@@ -65,6 +65,7 @@ namespace YTMusicWP
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
             UpdateNowPlayingGradient(track.Title, track.ChannelName);
+            var ignoredCanvas = LoadSpotifyCanvasAsync(track);
             YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, null);
 
             // BUG FIX: Xác định activeList TRƯỚC khi insert vào history.
@@ -541,6 +542,7 @@ namespace YTMusicWP
 
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist);
+                        var ignoredCanvas = LoadSpotifyCanvasAsync(currentTrack);
                     }
                 }
             }
@@ -601,6 +603,7 @@ namespace YTMusicWP
 
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist);
+                        var ignoredCanvas = LoadSpotifyCanvasAsync(currentTrack);
                         YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(title, artist, thumb, currentQueueTracks);
 
                         // Restart marquee if NowPlaying is visible
@@ -816,5 +819,31 @@ namespace YTMusicWP
             catch { }
         }
 
+        private async System.Threading.Tasks.Task LoadSpotifyCanvasAsync(YouTubeTrack track)
+        {
+            if (track == null || string.IsNullOrEmpty(track.Title)) return;
+            try
+            {
+                var canvasUrl = await Services.SpotifyCanvasService.GetCanvasUrlAsync(track.Title, track.ChannelName);
+                if (!string.IsNullOrEmpty(canvasUrl))
+                {
+                    CanvasPlayer.Source = new Uri(canvasUrl);
+                    CanvasPlayer.Opacity = 1;
+                    CanvasPlayer.Play();
+                }
+                else
+                {
+                    CanvasPlayer.Stop();
+                    CanvasPlayer.Opacity = 0;
+                    CanvasPlayer.Source = null;
+                }
+            }
+            catch
+            {
+                CanvasPlayer.Stop();
+                CanvasPlayer.Opacity = 0;
+                CanvasPlayer.Source = null;
+            }
+        }
     }
 }
