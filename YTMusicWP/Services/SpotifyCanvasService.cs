@@ -41,7 +41,7 @@ namespace YTMusicWP.Services
 
         public static async Task<string> GetCanvasUrlAsync(string songName, string artistName)
         {
-            if (string.IsNullOrEmpty(_spDcCookie)) return null;
+            if (string.IsNullOrEmpty(_spDcCookie)) return "ERROR: No sp_dc cookie";
 
             try
             {
@@ -53,11 +53,17 @@ namespace YTMusicWP.Services
                         client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
                         client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
                         
-                        var tokenResponse = await client.GetAsync("https://open.spotify.com/get_access_token?reason=transport&productType=web_player");
-                        if (!tokenResponse.IsSuccessStatusCode) return null;
+                        var tokenResponse = await client.GetAsync("https://open.spotify.com/");
+                        if (!tokenResponse.IsSuccessStatusCode) return "ERROR: Token page failed (" + tokenResponse.StatusCode + ")";
                         
-                        var tokenJson = await tokenResponse.Content.ReadAsStringAsync();
+                        var html = await tokenResponse.Content.ReadAsStringAsync();
+                        Match match = Regex.Match(html, @"<script id=""session""[^>]*>(.*?)</script>");
+                        if (!match.Success) return "ERROR: Could not find session script in HTML (cookie might be invalid or expired)";
+                        
+                        var tokenJson = match.Groups[1].Value;
                         JsonObject json = JsonObject.Parse(tokenJson);
+                        if (!json.ContainsKey("accessToken")) return "ERROR: No accessToken in session JSON";
+                        
                         _accessToken = json.GetNamedString("accessToken");
                         
                         // Token usually valid for 1 hour
@@ -65,7 +71,7 @@ namespace YTMusicWP.Services
                     }
                 }
 
-                if (string.IsNullOrEmpty(_accessToken)) return null;
+                if (string.IsNullOrEmpty(_accessToken)) return "ERROR: Empty access token parsed";
 
                 string trackId = null;
 
@@ -79,7 +85,7 @@ namespace YTMusicWP.Services
                     string searchUrl = $"https://api-partner.spotify.com/pathfinder/v1/query?operationName=searchTracks&variables=%7B%22searchTerm%22%3A%22{query}%22%2C%22offset%22%3A0%2C%22limit%22%3A1%2C%22numberOfTopResults%22%3A1%2C%22includeAudiobooks%22%3Afalse%2C%22includePreReleases%22%3Afalse%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22bc1ca2fcd0ba1013a0fc88e6cc4f190af501851e3dafd3e1ef85840297694428%22%7D%7D";
                     
                     var searchResponse = await client.GetAsync(searchUrl);
-                    if (!searchResponse.IsSuccessStatusCode) return null;
+                    if (!searchResponse.IsSuccessStatusCode) return "ERROR: Search request failed (" + searchResponse.StatusCode + ")";
 
                     var searchJson = await searchResponse.Content.ReadAsStringAsync();
                     
@@ -91,7 +97,7 @@ namespace YTMusicWP.Services
                     }
                 }
 
-                if (string.IsNullOrEmpty(trackId)) return null;
+                if (string.IsNullOrEmpty(trackId)) return "ERROR: Track not found on Spotify";
 
                 // 3. Request Canvas
                 using (HttpClient client = new HttpClient())
@@ -118,18 +124,20 @@ namespace YTMusicWP.Services
                     content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/protobuf");
 
                     var canvasRes = await client.PostAsync("https://spclient.wg.spotify.com/canvaz-cache/v0/canvases", content);
-                    if (!canvasRes.IsSuccessStatusCode) return null;
+                    if (!canvasRes.IsSuccessStatusCode) return "ERROR: Canvas request failed (" + canvasRes.StatusCode + ")";
 
                     byte[] resBytes = await canvasRes.Content.ReadAsByteArrayAsync();
                     
                     // Extract URL
-                    return ExtractMp4Url(resBytes);
+                    string url = ExtractMp4Url(resBytes);
+                    if (string.IsNullOrEmpty(url)) return "ERROR: Canvas API succeeded but no .mp4 found in response bytes";
+                    return url;
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Canvas Error: " + ex.Message);
-                return null;
+                return "ERROR: Exception: " + ex.Message;
             }
         }
     }

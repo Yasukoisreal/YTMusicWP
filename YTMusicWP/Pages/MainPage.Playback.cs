@@ -825,6 +825,15 @@ namespace YTMusicWP
             try
             {
                 var canvasUrl = await Services.SpotifyCanvasService.GetCanvasUrlAsync(track.Title, track.ChannelName);
+                if (canvasUrl != null && canvasUrl.StartsWith("ERROR:"))
+                {
+                    ShowToast("Canvas: " + canvasUrl);
+                    CanvasPlayer.Stop();
+                    CanvasPlayer.Opacity = 0;
+                    CanvasPlayer.Source = null;
+                    return;
+                }
+                
                 if (!string.IsNullOrEmpty(canvasUrl))
                 {
                     CanvasPlayer.Source = new Uri(canvasUrl);
