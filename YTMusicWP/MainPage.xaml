@@ -1314,22 +1314,7 @@
 
 
 
-                            <!-- Crossfade -->
-                            <Grid Margin="0,0,0,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Crossfade" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                    <TextBlock Text="Smooth transition between songs" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock x:Name="CrossfadeValueText" Text="0s" Foreground="#1DB954" FontSize="14" FontFamily="{StaticResource MontserratBold}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                    <Slider x:Name="CrossfadeSlider" Minimum="0" Maximum="12" StepFrequency="1" Value="0" Width="100"/>
-                                </StackPanel>
-                            </Grid>
-                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
 
                             <!-- Autoplay -->
                             <Grid Margin="0,0,0,4">

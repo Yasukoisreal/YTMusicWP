@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -126,9 +126,7 @@ namespace YTMusicWP
 
                 // Playback settings � set values BEFORE attaching handlers to avoid triggering saves on load
                 // Quality setting removed since only itag 18 is available
-                int crossfade = SafeGetInt(settings, "CrossfadeSeconds", SafeGetInt(settings, "CrossfadeDuration", 0));
-                CrossfadeSlider.Value = crossfade;
-                CrossfadeValueText.Text = crossfade + "s";
+
                 AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
                 GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
                 NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
@@ -143,7 +141,7 @@ namespace YTMusicWP
 
                 // Now attach handlers � changes will save & apply immediately
                 // Quality handler removed
-                CrossfadeSlider.ValueChanged += CrossfadeSlider_ValueChanged;
+
                 AutoplayToggle.Toggled += AutoplayToggle_Toggled;
                 GaplessToggle.Toggled += GaplessToggle_Toggled;
                 NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
@@ -188,15 +186,7 @@ namespace YTMusicWP
             }
         }
 
-        private void CrossfadeSlider_ValueChanged(object sender, Windows.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
-        {
-            int sec = (int)e.NewValue;
-            if (CrossfadeValueText != null)
-                CrossfadeValueText.Text = sec + "s";
-            ApplicationData.Current.LocalSettings.Values["CrossfadeSeconds"] = sec;
-            ApplicationData.Current.LocalSettings.Values["Crossfade"] = (sec > 0);
-            ApplicationData.Current.LocalSettings.Values["CrossfadeDuration"] = sec;
-        }
+
 
 
 
