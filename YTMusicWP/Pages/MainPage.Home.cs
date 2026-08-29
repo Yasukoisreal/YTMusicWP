@@ -191,20 +191,19 @@ namespace YTMusicWP
             HomeLoading.Visibility = Visibility.Visible;
 
             // ═══════════════════════════════════════════════════
-            // PRIMARY: YouTube Music Home (FE_music_home)
-            // Real recommendations, new releases, trending — all from YT Music algorithm
+            // PRIMARY: YouTube Music Home (FE_music_home) + Charts in parallel
             // ═══════════════════════════════════════════════════
             try
             {
-                // Parallel fetch
                 var homeTask = InnerTubeClient.BrowseHomeAsync();
                 var chartsTask = InnerTubeClient.BrowseChartsAsync();
-                
+
                 await Task.WhenAll(homeTask, chartsTask);
 
                 var homeSections = homeTask.Result;
                 var chartsData = chartsTask.Result;
 
+                // Charts
                 if (chartsData != null && chartsData.Count > 0)
                 {
                     HomeChartsTitle.Visibility = Visibility.Visible;
@@ -212,31 +211,15 @@ namespace YTMusicWP
                     HomeChartsCarousel.ItemsSource = chartsData;
                 }
 
+                // Dynamic home sections — bind ALL sections YouTube returns
                 if (homeSections != null && homeSections.Count > 0)
                 {
-                    // Map API sections to UI carousels (up to 8)
-                    var carousels = new[] { homeTracks, popTracks, lofiTracks, workoutTracks, genre5Tracks, genre6Tracks, genre7Tracks, genre8Tracks };
-                    var titles = new[] { HomeTrendingTitle, HomePopTitle, HomeChillTitle, HomeWorkoutTitle, HomeGenre5Title, HomeGenre6Title, HomeGenre7Title, HomeGenre8Title };
-                    var listViews = new ListView[] { HomeTrendingCarousel, HomePopCarousel, HomeLofiCarousel, HomeWorkoutCarousel, HomeGenre5Carousel, HomeGenre6Carousel, HomeGenre7Carousel, HomeGenre8Carousel };
+                    HomeDynamicSections.ItemsSource = homeSections;
 
-                    for (int i = 0; i < Math.Min(homeSections.Count, 8); i++)
-                    {
-                        titles[i].Text = homeSections[i].Title;
-                        listViews[i].ItemsSource = null;
-                        carousels[i].Clear();
-                        foreach (var t in homeSections[i].Tracks)
-                        {
-                            carousels[i].Add(t);
-                        }
-                        listViews[i].ItemsSource = carousels[i];
-                    }
+                    _currentHomeQuery = homeSections[0].Title;
+                    var topTracks = homeSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
+                    YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
 
-                    if (homeSections.Count > 0)
-                    {
-                        _currentHomeQuery = homeSections[0].Title;
-                        var topTracks = homeSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
-                        YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
-                    }
                     HomeLoading.Visibility = Visibility.Collapsed;
                     return;
                 }
@@ -259,139 +242,59 @@ namespace YTMusicWP
                         "nhạc Việt hot " + year,
                         "nhạc trẻ hay nhất " + year,
                         "bolero trữ tình chọn lọc",
-                        "rap Việt " + year,
-                        "V-pop acoustic",
-                        "nhạc phim Việt hay nhất",
-                        "EDM Việt mix",
-                        "nhạc indie Việt"
+                        "rap Việt " + year
                     };
-                    fallbackTitles = new[] {
-                        "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt",
-                        "Acoustic Việt", "Nhạc phim Việt", "EDM Việt Mix", "Indie Việt"
-                    };
+                    fallbackTitles = new[] { "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt" };
                     break;
                 case "KR":
                     queries = new[] {
                         "K-pop trending " + year,
                         "K-pop girl group hits",
                         "K-drama OST " + year,
-                        "K-pop boy group hits",
-                        "K-R&B chill",
-                        "K-pop dance hits",
-                        "Korean indie",
-                        "K-hip hop " + year
+                        "K-pop boy group hits"
                     };
-                    fallbackTitles = new[] {
-                        "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits",
-                        "K-R&B Chill", "K-Pop Dance", "Korean Indie", "K-Hip Hop"
-                    };
+                    fallbackTitles = new[] { "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits" };
                     break;
                 case "JP":
                     queries = new[] {
                         "J-pop trending " + year,
                         "Anime OST " + year,
                         "J-pop chill vibes",
-                        "J-rock hits",
-                        "Vocaloid popular",
-                        "city pop Japanese",
-                        "anime opening " + year,
-                        "Japanese lofi hip hop"
+                        "J-rock hits"
                     };
-                    fallbackTitles = new[] {
-                        "Made for you", "Anime OST", "Chill vibes", "J-Rock",
-                        "Vocaloid", "City Pop", "Anime Opening", "Japanese Lofi"
-                    };
+                    fallbackTitles = new[] { "Made for you", "Anime OST", "Chill vibes", "J-Rock" };
                     break;
                 default:
                     queries = new[] {
                         "top hits " + year,
                         "pop hits " + year,
                         "lofi chill beats relax",
-                        "workout gym motivation music",
-                        "hip hop rap hits " + year,
-                        "R&B soul hits",
-                        "rock classics greatest hits",
-                        "indie alternative " + year
+                        "workout gym motivation music"
                     };
-                    fallbackTitles = new[] {
-                        "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation",
-                        "Hip-Hop & Rap", "R&B & Soul", "Rock Classics", "Indie & Alt"
-                    };
+                    fallbackTitles = new[] { "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation" };
                     break;
             }
 
-            HomeTrendingTitle.Text = fallbackTitles[0];
-            HomePopTitle.Text = fallbackTitles[1];
-            HomeChillTitle.Text = fallbackTitles[2];
-            HomeWorkoutTitle.Text = fallbackTitles[3];
-            HomeGenre5Title.Text = fallbackTitles[4];
-            HomeGenre6Title.Text = fallbackTitles[5];
-            HomeGenre7Title.Text = fallbackTitles[6];
-            HomeGenre8Title.Text = fallbackTitles[7];
-
             _currentHomeQuery = queries[0];
 
-            // Load sequentially to avoid rate limiting
-            HomeTrendingCarousel.ItemsSource = null;
-            homeTracks.Clear();
-            var trending = await FetchMusicList(queries[0], "", "songs");
-            if (trending != null) foreach (var t in trending) { if (IsMusicTrack(t)) homeTracks.Add(t); }
-            HomeTrendingCarousel.ItemsSource = homeTracks;
-            
-            HomePopCarousel.ItemsSource = null;
-            popTracks.Clear();
-            var pop = await FetchMusicList(queries[1], "", "songs");
-            if (pop != null) foreach (var t in pop) { if (IsMusicTrack(t)) popTracks.Add(t); }
-            HomePopCarousel.ItemsSource = popTracks;
-
-            HomeLofiCarousel.ItemsSource = null;
-            lofiTracks.Clear();
-            var chill = await FetchMusicList(queries[2], "", "songs");
-            if (chill != null) foreach (var t in chill) { if (IsMusicTrack(t)) lofiTracks.Add(t); }
-            HomeLofiCarousel.ItemsSource = lofiTracks;
-
-            HomeLoading.Visibility = Visibility.Collapsed;
-            YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
-
-            // Background load the rest sequentially with delay to be safe
-            var _ = Task.Run(async () =>
+            var fallbackSections = new System.Collections.Generic.List<InnerTubeClient.HomeSection>();
+            for (int i = 0; i < queries.Length; i++)
             {
-                await Task.Delay(1500);
-                var workout = await FetchMusicList(queries[3], "", "songs");
-                var genre5 = await FetchMusicList(queries[4], "", "songs");
-                
-                await Task.Delay(1500);
-                var genre6 = await FetchMusicList(queries[5], "", "songs");
-                var genre7 = await FetchMusicList(queries[6], "", "songs");
-                var genre8 = await FetchMusicList(queries[7], "", "songs");
-
-                var __ = Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                var results = await FetchMusicList(queries[i], "", "songs");
+                if (results != null)
                 {
-                    HomeWorkoutCarousel.ItemsSource = null;
-                    HomeGenre5Carousel.ItemsSource = null;
-                    HomeGenre6Carousel.ItemsSource = null;
-                    HomeGenre7Carousel.ItemsSource = null;
-                    HomeGenre8Carousel.ItemsSource = null;
-                    
-                    workoutTracks.Clear();
-                    genre5Tracks.Clear();
-                    genre6Tracks.Clear();
-                    genre7Tracks.Clear();
-                    genre8Tracks.Clear();
-
-                    if (workout != null) foreach (var t in workout) { if (IsMusicTrack(t)) workoutTracks.Add(t); }
-                    if (genre5 != null) foreach (var t in genre5) { if (IsMusicTrack(t)) genre5Tracks.Add(t); }
-                    if (genre6 != null) foreach (var t in genre6) { if (IsMusicTrack(t)) genre6Tracks.Add(t); }
-                    if (genre7 != null) foreach (var t in genre7) { if (IsMusicTrack(t)) genre7Tracks.Add(t); }
-                    if (genre8 != null) foreach (var t in genre8) { if (IsMusicTrack(t)) genre8Tracks.Add(t); }
-
-                    HomeWorkoutCarousel.ItemsSource = workoutTracks;
-                    HomeGenre5Carousel.ItemsSource = genre5Tracks;
-                    HomeGenre6Carousel.ItemsSource = genre6Tracks;
-                    HomeGenre7Carousel.ItemsSource = genre7Tracks;
-                    HomeGenre8Carousel.ItemsSource = genre8Tracks;
-                });
-            });
+                    var sec = new InnerTubeClient.HomeSection { Title = fallbackTitles[i] };
+                    foreach (var t in results) { if (IsMusicTrack(t)) sec.Tracks.Add(t); }
+                    if (sec.Tracks.Count > 0) fallbackSections.Add(sec);
+                }
+            }
+            HomeDynamicSections.ItemsSource = fallbackSections;
+            if (fallbackSections.Count > 0)
+            {
+                var topTracks2 = fallbackSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
+                YTMusicWP.Services.TileService.UpdateRecommendations(topTracks2, favoriteTracks, historyTracks);
+            }
+            HomeLoading.Visibility = Visibility.Collapsed;
         }
 
         private static bool IsMusicTrack(YouTubeTrack t)
@@ -402,50 +305,6 @@ namespace YTMusicWP
             string title = (t.Title ?? "").ToLowerInvariant();
             if (title.Contains("(storyteller)") || title.Contains("full audiobook") || title.Contains("full audio book")) return false;
             return true;
-        }
-
-        private void MoodChill_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SwitchTab(1);
-            SearchBox.TextChanged -= SearchBox_TextChanged;
-            SearchBox.Text = "lofi chill beats relax";
-            SearchBox.TextChanged += SearchBox_TextChanged;
-            _typingTimer.Stop();
-            SuggestionPopup.Visibility = Visibility.Collapsed;
-            SearchButton_Click(null, null);
-        }
-
-        private void MoodFocus_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SwitchTab(1);
-            SearchBox.TextChanged -= SearchBox_TextChanged;
-            SearchBox.Text = "focus study concentration music";
-            SearchBox.TextChanged += SearchBox_TextChanged;
-            _typingTimer.Stop();
-            SuggestionPopup.Visibility = Visibility.Collapsed;
-            SearchButton_Click(null, null);
-        }
-
-        private void MoodEnergy_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SwitchTab(1);
-            SearchBox.TextChanged -= SearchBox_TextChanged;
-            SearchBox.Text = "energy workout pump up hits";
-            SearchBox.TextChanged += SearchBox_TextChanged;
-            _typingTimer.Stop();
-            SuggestionPopup.Visibility = Visibility.Collapsed;
-            SearchButton_Click(null, null);
-        }
-
-        private void MoodSad_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SwitchTab(1);
-            SearchBox.TextChanged -= SearchBox_TextChanged;
-            SearchBox.Text = "sad emotional songs";
-            SearchBox.TextChanged += SearchBox_TextChanged;
-            _typingTimer.Stop();
-            SuggestionPopup.Visibility = Visibility.Collapsed;
-            SearchButton_Click(null, null);
         }
 
         // ==========================================

@@ -749,6 +749,12 @@ namespace YTMusicWP
         private static List<HomeSection> _cachedHomeSections = null;
         private static DateTime _homeCacheTime = DateTime.MinValue;
 
+        public static void ClearHomeCache()
+        {
+            _cachedHomeSections = null;
+            _homeCacheTime = DateTime.MinValue;
+        }
+
         public static async Task<List<HomeSection>> BrowseHomeAsync()
         {
             // Cache 2 hours
@@ -778,7 +784,6 @@ namespace YTMusicWP
 
                 foreach (var sec in secs)
                 {
-                    if (sections.Count >= 8) break; // Max 8 sections for home
 
                     // musicCarouselShelfRenderer = horizontal carousel (most common)
                     var carousel = sec["musicCarouselShelfRenderer"];

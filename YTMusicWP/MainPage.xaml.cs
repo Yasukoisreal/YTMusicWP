@@ -92,13 +92,6 @@ namespace YTMusicWP
 
         private ObservableCollection<YouTubeTrack> historyQuickGridTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> homeHistoryCarouselTracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<YouTubeTrack> popTracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<YouTubeTrack> lofiTracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<YouTubeTrack> workoutTracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<YouTubeTrack> genre5Tracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<YouTubeTrack> genre6Tracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<YouTubeTrack> genre7Tracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<YouTubeTrack> genre8Tracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> podcastTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> audiobookTracks = new ObservableCollection<YouTubeTrack>();
 
@@ -156,16 +149,8 @@ namespace YTMusicWP
 
             SearchSongList.ItemsSource = searchResults;
 
-            HomeTrendingCarousel.ItemsSource = homeTracks;
             HomeHistoryCarousel.ItemsSource = homeHistoryCarouselTracks;
             HomeQuickGrid.ItemsSource = historyQuickGridTracks;
-            HomePopCarousel.ItemsSource = popTracks;
-            HomeLofiCarousel.ItemsSource = lofiTracks;
-            HomeWorkoutCarousel.ItemsSource = workoutTracks;
-            HomeGenre5Carousel.ItemsSource = genre5Tracks;
-            HomeGenre6Carousel.ItemsSource = genre6Tracks;
-            HomeGenre7Carousel.ItemsSource = genre7Tracks;
-            HomeGenre8Carousel.ItemsSource = genre8Tracks;
 
             FavoriteSongList.ItemsSource = favoriteTracks;
             DownloadedSongList.ItemsSource = downloadedTracks;

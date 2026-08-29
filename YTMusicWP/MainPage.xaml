@@ -541,78 +541,21 @@
                             </ListView>
                         </StackPanel>
 
-                        <TextBlock x:Name="HomeTrendingTitle" Text="Made for you" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomeTrendingCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <!-- Mood shortcuts -->
-                        <TextBlock Text="Your top mixes" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,12"/>
-                        <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,0,0,25">
-                            <StackPanel Orientation="Horizontal">
-                                <Border Background="#1A1DB954" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodChill_Tapped">
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="☕" FontSize="28" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Chill Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        <!-- ═══════ DYNAMIC HOME SECTIONS ═══════ -->
+                        <ItemsControl x:Name="HomeDynamicSections">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,5">
+                                        <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                                        <ListView ItemsSource="{Binding Tracks}" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,20">
+                                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                                        </ListView>
                                     </StackPanel>
-                                </Border>
-                                <Border Background="#1A509BF5" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodFocus_Tapped">
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="🎯" FontSize="28" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Focus Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Background="#1AE13300" CornerRadius="12" Width="150" Height="100" Margin="0,0,10,0" Tapped="MoodEnergy_Tapped">
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="⚡" FontSize="28" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Energy Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Background="#1AAF2896" CornerRadius="12" Width="150" Height="100" Tapped="MoodSad_Tapped">
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                        <TextBlock Text="💜" FontSize="28" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="Sad Mix" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </ScrollViewer>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                        <TextBlock x:Name="HomePopTitle" Text="Pop Hits" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomePopCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <TextBlock x:Name="HomeChillTitle" Text="Chill vibes" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomeLofiCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <TextBlock x:Name="HomeWorkoutTitle" Text="Workout Motivation" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomeWorkoutCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <TextBlock x:Name="HomeGenre5Title" Text="Genre 5" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomeGenre5Carousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <TextBlock x:Name="HomeGenre6Title" Text="Genre 6" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomeGenre6Carousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <TextBlock x:Name="HomeGenre7Title" Text="Genre 7" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomeGenre7Carousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <TextBlock x:Name="HomeGenre8Title" Text="Genre 8" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                        <ListView x:Name="HomeGenre8Carousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,10">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-
-                        <!-- ═══════ CHARTS SECTION (MOVED TO HOME) ═══════ -->
+                        <!-- ═══════ CHARTS SECTION ═══════ -->
                         <Grid Margin="0,10,0,12" x:Name="HomeChartsTitle" Visibility="Collapsed">
                             <TextBlock Text="Top Charts" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,0"/>
                         </Grid>
@@ -650,6 +593,9 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
+
+                        <!-- ═══════ FOOTER CREDIT ═══════ -->
+                        <TextBlock Text="@2026 YTMusicWP v2.1.4 Yasukoisreal" FontSize="11" Foreground="#555555" HorizontalAlignment="Center" Margin="0,30,0,10"/>
                     </StackPanel>
                 </ScrollViewer>
 

@@ -175,13 +175,8 @@ namespace YTMusicWP
             if (IsInternetAvailable())
             {
                 homeTracks.Clear();
-                popTracks.Clear();
-                lofiTracks.Clear();
-                workoutTracks.Clear();
-                genre5Tracks.Clear();
-                genre6Tracks.Clear();
-                genre7Tracks.Clear();
-                genre8Tracks.Clear();
+                HomeDynamicSections.ItemsSource = null;
+                InnerTubeClient.ClearHomeCache();
                 await LoadHomeRecommendations();
             }
         }
