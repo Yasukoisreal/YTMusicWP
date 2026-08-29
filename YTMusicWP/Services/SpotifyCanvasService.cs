@@ -177,28 +177,42 @@ namespace YTMusicWP.Services
         }
 
         /// <summary>
-        /// GET open.spotify.com/api/server-time → returns Unix timestamp in seconds
+        /// Try Spotify server-time API, fall back to device time (NTP-synced, good enough for 30s TOTP window)
         /// </summary>
         private static async Task<long> GetServerTimeAsync()
         {
-            using (var client = CreateHttpClient())
+            try
             {
-                client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
-                client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
-                client.DefaultRequestHeaders.Add("App-platform", "WebPlayer");
-                client.DefaultRequestHeaders.Add("Spotify-App-Version", "1.2.61.20.g3b4cd5b2");
-                client.DefaultRequestHeaders.Add("Accept", "application/json");
-                client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://open.spotify.com");
-                client.DefaultRequestHeaders.TryAddWithoutValidation("Referer", "https://open.spotify.com/");
+                using (var client = CreateHttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
+                    client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
+                    client.DefaultRequestHeaders.Add("App-platform", "WebPlayer");
+                    client.DefaultRequestHeaders.Add("Spotify-App-Version", "1.2.61.20.g3b4cd5b2");
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://open.spotify.com");
+                    client.DefaultRequestHeaders.TryAddWithoutValidation("Referer", "https://open.spotify.com/");
 
-                var response = await client.GetAsync("https://open.spotify.com/api/server-time");
-                if (!response.IsSuccessStatusCode)
-                    throw new Exception("server-time " + response.StatusCode);
-
-                string json = await response.Content.ReadAsStringAsync();
-                JsonObject obj = JsonObject.Parse(json);
-                return (long)obj.GetNamedNumber("serverTime");
+                    var response = await client.GetAsync("https://open.spotify.com/api/server-time");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string json = await response.Content.ReadAsStringAsync();
+                        JsonObject obj = JsonObject.Parse(json);
+                        long serverTime = (long)obj.GetNamedNumber("serverTime");
+                        Debug.WriteLine("TOTP: using Spotify server time: " + serverTime);
+                        return serverTime;
+                    }
+                }
             }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("server-time API failed: " + ex.Message);
+            }
+
+            // Fallback: device local time (NTP-synced on WP8.1)
+            long localTime = GetUnixTimeMs() / 1000;
+            Debug.WriteLine("TOTP: using device local time: " + localTime);
+            return localTime;
         }
 
         /// <summary>
