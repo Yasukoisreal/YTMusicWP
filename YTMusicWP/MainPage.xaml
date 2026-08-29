@@ -1548,19 +1548,7 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ═══════ SPOTIFY CANVAS ═══════ -->
-                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
-                        <StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                                <Border Background="#1DB954" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
-                                    <TextBlock Text="🎬" FontFamily="Segoe UI Emoji" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="Spotify Canvas" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <TextBlock Text="Enter your sp_dc cookie to fetch background videos" Foreground="#777" FontSize="12" Margin="0,0,0,10"/>
-                            <TextBox x:Name="SpotifyCookieTextBox" PlaceholderText="sp_dc cookie" Margin="0,0,0,0" TextChanged="SpotifyCookieTextBox_TextChanged" Background="#252525" Foreground="White" BorderThickness="0" Style="{StaticResource DarkTextBoxStyle}" />
-                        </StackPanel>
-                    </Border>
+
 
                     <!-- ═══════ ABOUT ═══════ -->
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,18">
@@ -2035,8 +2023,6 @@
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="NowPlayingTransform" Y="1000"/>
             </Grid.RenderTransform>
-            <!-- Canvas Video Player -->
-            <MediaElement x:Name="CanvasPlayer" Stretch="UniformToFill" IsLooping="True" AutoPlay="True" Volume="0" Opacity="0" />
             <!-- Semi-transparent overlay to ensure text readability over canvas -->
             <Rectangle Fill="#99000000" />
             <!-- Gradient background (genre-based color) -->

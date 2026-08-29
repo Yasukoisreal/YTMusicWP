@@ -178,21 +178,7 @@ namespace YTMusicWP
             SettingsPanel.Visibility = Visibility.Collapsed;
         }
 
-        private void SpotifyCookieTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (SpotifyCookieTextBox != null)
-            {
-                string spdc = SpotifyCookieTextBox.Text;
-                Windows.Storage.ApplicationData.Current.LocalSettings.Values["SpotifySpDc"] = spdc;
-                Services.SpotifyCanvasService.SetSpDcCookie(spdc);
-                
-                // Immediately reload the canvas for the currently playing track
-                if (currentTrack != null)
-                {
-                    var ignored = LoadSpotifyCanvasAsync(currentTrack);
-                }
-            }
-        }
+
 
         private bool _createSheetOpen = false;
 

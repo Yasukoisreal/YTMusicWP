@@ -293,13 +293,7 @@ namespace YTMusicWP
         {
             base.OnNavigatedTo(e);
 
-            // Load Spotify sp_dc cookie
-            if (ApplicationData.Current.LocalSettings.Values.ContainsKey("SpotifySpDc"))
-            {
-                string spdc = ApplicationData.Current.LocalSettings.Values["SpotifySpDc"].ToString();
-                SpotifyCookieTextBox.Text = spdc;
-                Services.SpotifyCanvasService.SetSpDcCookie(spdc);
-            }
+
 
             // Set InnerTube region from settings (affects all API calls)
             string region = "US";
