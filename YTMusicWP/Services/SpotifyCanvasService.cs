@@ -26,7 +26,7 @@ namespace YTMusicWP.Services
         private static readonly int[] TOTP_CIPHER_V22 = { 99, 101, 119, 123, 69, 120, 91, 123, 97, 74, 53, 48, 76, 102, 55, 69, 110, 54 };
         private const int TOTP_VERSION_V22 = 22;
 
-        private const string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36";
+        private const string USER_AGENT = "YTMusicWP/1.0";
         private const string BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
         public static void SetSpDcCookie(string cookie)
