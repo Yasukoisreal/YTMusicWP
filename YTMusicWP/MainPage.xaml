@@ -542,8 +542,15 @@
                         </StackPanel>
 
                         <!-- ═══════ DYNAMIC HOME SECTIONS ═══════ -->
-                        <ItemsControl x:Name="HomeDynamicSections">
-                            <ItemsControl.ItemTemplate>
+                        <ListView x:Name="HomeDynamicSections" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="0,0,0,5">
                                         <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
@@ -552,8 +559,8 @@
                                         </ListView>
                                     </StackPanel>
                                 </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            </ListView.ItemTemplate>
+                        </ListView>
 
                         <!-- ═══════ CHARTS SECTION ═══════ -->
                         <Grid Margin="0,10,0,12" x:Name="HomeChartsTitle" Visibility="Collapsed">

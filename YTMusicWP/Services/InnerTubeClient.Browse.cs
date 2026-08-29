@@ -757,11 +757,6 @@ namespace YTMusicWP
 
         public static async Task<List<HomeSection>> BrowseHomeAsync()
         {
-            // Cache 2 hours
-            if (_cachedHomeSections != null && _cachedHomeSections.Count > 0
-                && (DateTime.Now - _homeCacheTime).TotalHours < 2)
-                return _cachedHomeSections;
-
             var sections = new List<HomeSection>();
             try
             {
@@ -769,7 +764,7 @@ namespace YTMusicWP
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd),
-                    ["browseId"] = "FE_music_home"
+                    ["browseId"] = "FEmusic_home"
                 };
 
                 var data = await PostInnerTubeAsync(

@@ -197,11 +197,20 @@ namespace YTMusicWP
             {
                 var homeTask = InnerTubeClient.BrowseHomeAsync();
                 var chartsTask = InnerTubeClient.BrowseChartsAsync();
+                var homeSections = default(System.Collections.Generic.List<InnerTubeClient.HomeSection>);
+                var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
 
-                await Task.WhenAll(homeTask, chartsTask);
+                try
+                {
+                    homeSections = await homeTask;
+                }
+                catch { }
 
-                var homeSections = homeTask.Result;
-                var chartsData = chartsTask.Result;
+                try
+                {
+                    chartsData = await chartsTask;
+                }
+                catch { }
 
                 // Charts
                 if (chartsData != null && chartsData.Count > 0)
