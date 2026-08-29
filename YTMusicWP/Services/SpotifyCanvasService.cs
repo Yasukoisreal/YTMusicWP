@@ -263,8 +263,6 @@ namespace YTMusicWP.Services
             {
                 client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
                 client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
-                client.DefaultRequestHeaders.Add("App-platform", "WebPlayer");
-                client.DefaultRequestHeaders.Add("Spotify-App-Version", "1.2.61.20.g3b4cd5b2");
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
                 client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://open.spotify.com");
                 client.DefaultRequestHeaders.TryAddWithoutValidation("Referer", "https://open.spotify.com/");
