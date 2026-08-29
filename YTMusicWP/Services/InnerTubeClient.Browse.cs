@@ -755,33 +755,70 @@ namespace YTMusicWP
             _homeCacheTime = DateTime.MinValue;
         }
 
-        public static async Task<List<HomeSection>> BrowseHomeAsync()
+        public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null)
         {
             var sections = new List<HomeSection>();
             try
             {
                 string vd = await GetVisitorDataAsync();
-                var body = new JObject
+                
+                string continuation = null;
+                int maxPages = 4; // Fetch up to 4 pages (first + 3 continuations)
+
+                for (int page = 0; page < maxPages; page++)
                 {
-                    ["context"] = BuildMusicContext(vd),
-                    ["browseId"] = "FEmusic_home"
-                };
+                    JObject data = null;
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        var extraParams = new JObject();
+                        if (continuation == null)
+                            extraParams["browseId"] = "FEmusic_home";
+                        else
+                            extraParams["continuation"] = continuation;
+                            
+                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20241016.01.00");
+                    }
+                    else
+                    {
+                        var body = new JObject
+                        {
+                            ["context"] = BuildMusicContext(vd)
+                        };
+                        if (continuation == null)
+                            body["browseId"] = "FEmusic_home";
+                        
+                        string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                        if (continuation != null) url += "&continuation=" + Uri.EscapeDataString(continuation);
 
-                var data = await PostInnerTubeAsync(
-                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                        data = await PostInnerTubeAsync(url, body, true);
+                    }
 
-                // Parse: singleColumnBrowseResultsRenderer → tabs[0] → sectionListRenderer → contents[]
-                var tabs = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
-                if (tabs == null || !tabs.HasValues) return sections;
+                    if (data == null) break;
 
-                var secs = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
-                if (secs == null) return sections;
+                    JToken secs = null;
+                    JToken continuations = null;
 
-                foreach (var sec in secs)
-                {
+                    if (continuation == null)
+                    {
+                        var tabs = data["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
+                        if (tabs == null || !tabs.HasValues) break;
+                        var sectionList = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"];
+                        secs = sectionList?["contents"];
+                        continuations = sectionList?["continuations"];
+                    }
+                    else
+                    {
+                        var sectionList = data["continuationContents"]?["sectionListContinuation"];
+                        secs = sectionList?["contents"];
+                        continuations = sectionList?["continuations"];
+                    }
 
-                    // musicCarouselShelfRenderer = horizontal carousel (most common)
-                    var carousel = sec["musicCarouselShelfRenderer"];
+                    if (secs == null) break;
+
+                    foreach (var sec in secs)
+                    {
+                        // musicCarouselShelfRenderer = horizontal carousel (most common)
+                        var carousel = sec["musicCarouselShelfRenderer"];
                     if (carousel != null)
                     {
                         string sectionTitle = "";
@@ -902,10 +939,22 @@ namespace YTMusicWP
                         if (homeSection2.Tracks.Count > 0)
                             sections.Add(homeSection2);
                     }
-                }
+                } // end foreach (sec)
+
+                    if (continuations != null && continuations.HasValues)
+                    {
+                        continuation = continuations[0]?["nextContinuationData"]?["continuation"]?.ToString();
+                        if (string.IsNullOrEmpty(continuation)) break;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } // end for (page)
 
                 if (sections.Count > 0)
                 {
+                    // Cache the final results temporarily
                     _cachedHomeSections = sections;
                     _homeCacheTime = DateTime.Now;
                 }
