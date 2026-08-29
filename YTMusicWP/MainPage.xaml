@@ -607,7 +607,7 @@
                         </ListView>
                     </StackPanel>
                 </ScrollViewer>
-                
+
                 <!-- Podcasts content -->
                 <Grid x:Name="HomePodcastPanel" Visibility="Collapsed">
                     <ProgressBar x:Name="PodcastLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="5"/>
@@ -619,17 +619,6 @@
                     <ProgressBar x:Name="AudiobookLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="5"/>
                     <ListView x:Name="AudiobookList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="10,0,0,10"/>
                 </Grid>
-                
-                <!-- Fade out overlay at the top of the scrollviewer -->
-                <Rectangle Height="25" VerticalAlignment="Top" IsHitTestVisible="False" Margin="0,-1,0,0" Canvas.ZIndex="20">
-                    <Rectangle.Fill>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="#FF121212" Offset="0.0"/>
-                            <GradientStop Color="#E6121212" Offset="0.3"/>
-                            <GradientStop Color="#00121212" Offset="1.0"/>
-                        </LinearGradientBrush>
-                    </Rectangle.Fill>
-                </Rectangle>
             </Grid>
         </Grid>
 
