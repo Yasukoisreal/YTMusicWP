@@ -83,6 +83,22 @@ namespace YTMusicWP
             else if (historyTracks.Contains(track)) activeList = historyTracks;
             else if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Contains(track)) activeList = _currentViewingPlaylist.Tracks;
             else if (ArtistSongsList.ItemsSource != null) { var artistList = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>; if (artistList != null && artistList.Contains(track)) activeList = artistList; }
+            else if (HomeDynamicSections.ItemsSource != null)
+            {
+                var sections = HomeDynamicSections.ItemsSource as System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>;
+                if (sections != null)
+                {
+                    var foundSection = System.Linq.Enumerable.FirstOrDefault(sections, s => s.Tracks.Contains(track));
+                    if (foundSection != null)
+                        activeList = new ObservableCollection<YouTubeTrack>(foundSection.Tracks);
+                }
+            }
+
+            // SAFETY FALLBACK: Prevents IndexOutOfRangeException if track is not in activeList
+            if (activeList == null || !activeList.Contains(track))
+            {
+                activeList = new ObservableCollection<YouTubeTrack> { track };
+            }
 
             // Cập nhật lịch sử SAU khi đã chọn activeList
             var existingHistory = historyTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
