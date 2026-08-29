@@ -44,6 +44,16 @@ namespace YTMusicWP.Services
             return (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
         }
 
+        /// <summary>
+        /// WP8.1 HttpClient default handler has UseCookies=true, which silently
+        /// strips manually-set Cookie headers. We must disable that.
+        /// </summary>
+        private static HttpClient CreateHttpClient()
+        {
+            var handler = new HttpClientHandler { UseCookies = false };
+            return new HttpClient(handler);
+        }
+
         #region TOTP Generation
 
         private static string Base32Encode(byte[] data)
@@ -171,7 +181,7 @@ namespace YTMusicWP.Services
         /// </summary>
         private static async Task<long> GetServerTimeAsync()
         {
-            using (var client = new HttpClient())
+            using (var client = CreateHttpClient())
             {
                 client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
                 client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
@@ -216,7 +226,7 @@ namespace YTMusicWP.Services
 
         private static async Task<string> RequestTokenAsync(string otp, string reason, int totpVersion)
         {
-            using (var client = new HttpClient())
+            using (var client = CreateHttpClient())
             {
                 client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
                 client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
@@ -251,7 +261,7 @@ namespace YTMusicWP.Services
         /// </summary>
         private static async Task<string> RefreshClientTokenAsync()
         {
-            using (var client = new HttpClient())
+            using (var client = CreateHttpClient())
             {
                 client.DefaultRequestHeaders.Add("User-Agent",
                     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0");
@@ -323,7 +333,7 @@ namespace YTMusicWP.Services
 
                 // 3. Search for the track on Spotify
                 string trackId = null;
-                using (var client = new HttpClient())
+                using (var client = CreateHttpClient())
                 {
                     client.DefaultRequestHeaders.Add("Authorization", "Bearer " + _personalToken);
                     client.DefaultRequestHeaders.Add("Client-Token", _clientToken);
@@ -349,7 +359,7 @@ namespace YTMusicWP.Services
                     return "ERROR: Track not found on Spotify";
 
                 // 4. Request Canvas with both tokens
-                using (var client = new HttpClient())
+                using (var client = CreateHttpClient())
                 {
                     client.DefaultRequestHeaders.Add("Authorization", "Bearer " + _personalToken);
                     client.DefaultRequestHeaders.Add("Client-Token", _clientToken);
