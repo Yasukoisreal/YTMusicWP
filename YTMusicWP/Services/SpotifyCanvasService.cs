@@ -1,144 +1,399 @@
 using System;
 using System.Diagnostics;
-using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Windows.Data.Json;
+using Windows.Security.Cryptography;
+using Windows.Security.Cryptography.Core;
 
 namespace YTMusicWP.Services
 {
     public static class SpotifyCanvasService
     {
+        // --- State ---
         private static string _spDcCookie = "";
+        private static string _personalToken;
+        private static long _personalTokenExpiresMs;
+        private static string _clientToken;
+        private static long _clientTokenExpiresMs;
+        private static int[] _totpCipher;
+        private static int _totpVersion;
+
+        // Hardcoded fallback TOTP secret V22 (same as SimpMusic)
+        private static readonly int[] TOTP_CIPHER_V22 = { 99, 101, 119, 123, 69, 120, 91, 123, 97, 74, 53, 48, 76, 102, 55, 69, 110, 54 };
+        private const int TOTP_VERSION_V22 = 22;
+
+        private const string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.157 Safari/537.36";
+        private const string BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
         public static void SetSpDcCookie(string cookie)
         {
             if (cookie != null)
             {
                 _spDcCookie = cookie.Replace("sp_dc=", "").Replace(";", "").Trim();
-                // Reset token to force a refresh using the new cookie
-                _accessToken = null;
+                _personalToken = null;
+                _clientToken = null;
             }
         }
 
-        private static string _accessToken;
-        private static DateTime _tokenExpiresAt;
+        private static long GetUnixTimeMs()
+        {
+            return (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+        }
 
-        // Extract url ending with .mp4 from byte array
+        #region TOTP Generation
+
+        private static string Base32Encode(byte[] data)
+        {
+            if (data.Length == 0) return "";
+            var result = new StringBuilder();
+            int bits = 0, value = 0;
+            foreach (byte b in data)
+            {
+                value = (value << 8) | (b & 0xFF);
+                bits += 8;
+                while (bits >= 5)
+                {
+                    result.Append(BASE32_ALPHABET[(value >> (bits - 5)) & 0x1F]);
+                    bits -= 5;
+                }
+            }
+            if (bits > 0)
+                result.Append(BASE32_ALPHABET[(value << (5 - bits)) & 0x1F]);
+            while (result.Length % 8 != 0)
+                result.Append('=');
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Port of SimpMusic's SpotifyTotp.generateSecret():
+        /// XOR transform cipher bytes → join as decimal string → Base32 encode
+        /// </summary>
+        private static string GenerateTotpSecret(int[] cipherBytes)
+        {
+            var transformed = new int[cipherBytes.Length];
+            for (int i = 0; i < cipherBytes.Length; i++)
+                transformed[i] = cipherBytes[i] ^ ((i % 33) + 9);
+
+            string joined = string.Concat(transformed.Select(x => x.ToString()));
+            byte[] joinedBytes = Encoding.UTF8.GetBytes(joined);
+            return Base32Encode(joinedBytes).TrimEnd('=');
+        }
+
+        /// <summary>
+        /// Standard TOTP (RFC 6238): HMAC-SHA1, 30s step, 6 digits.
+        /// Uses WinRT MacAlgorithmProvider available on WP8.1.
+        /// </summary>
+        private static string ComputeTotp(string secret, long serverTimeSeconds)
+        {
+            long counter = serverTimeSeconds / 30;
+
+            // Counter as 8-byte big-endian
+            byte[] counterBytes = new byte[8];
+            long tmp = counter;
+            for (int i = 7; i >= 0; i--)
+            {
+                counterBytes[i] = (byte)(tmp & 0xFF);
+                tmp >>= 8;
+            }
+
+            // HMAC-SHA1 via WinRT API
+            byte[] keyBytes = Encoding.UTF8.GetBytes(secret);
+            var provider = MacAlgorithmProvider.OpenAlgorithm(MacAlgorithmNames.HmacSha1);
+            var keyBuffer = CryptographicBuffer.CreateFromByteArray(keyBytes);
+            var cryptoKey = provider.CreateKey(keyBuffer);
+            var dataBuffer = CryptographicBuffer.CreateFromByteArray(counterBytes);
+            var signedBuffer = CryptographicEngine.Sign(cryptoKey, dataBuffer);
+
+            byte[] hash;
+            CryptographicBuffer.CopyToByteArray(signedBuffer, out hash);
+
+            // Dynamic truncation (RFC 4226)
+            int offset = hash[hash.Length - 1] & 0x0F;
+            int code = ((hash[offset] & 0x7F) << 24)
+                     | ((hash[offset + 1] & 0xFF) << 16)
+                     | ((hash[offset + 2] & 0xFF) << 8)
+                     | (hash[offset + 3] & 0xFF);
+            return (code % 1000000).ToString("D6");
+        }
+
+        #endregion
+
+        #region API Methods
+
+        /// <summary>
+        /// Fetch latest TOTP secret from GitHub. Falls back to hardcoded V22.
+        /// </summary>
+        private static async Task FetchTotpSecretAsync()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
+                    var response = await client.GetAsync(
+                        "https://raw.githubusercontent.com/xyloflake/spot-secrets-go/refs/heads/main/secrets/secretDict.json");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string json = await response.Content.ReadAsStringAsync();
+                        JsonObject obj = JsonObject.Parse(json);
+                        string lastKey = null;
+                        foreach (var key in obj.Keys) lastKey = key;
+                        if (lastKey != null)
+                        {
+                            _totpVersion = int.Parse(lastKey);
+                            JsonArray arr = obj.GetNamedArray(lastKey);
+                            _totpCipher = new int[arr.Count];
+                            for (uint i = 0; i < arr.Count; i++)
+                                _totpCipher[i] = (int)arr.GetNumberAt(i);
+                            Debug.WriteLine("TOTP: fetched V" + _totpVersion + " from GitHub");
+                            return;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("TOTP fetch failed: " + ex.Message);
+            }
+
+            // Fallback to hardcoded V22
+            _totpCipher = TOTP_CIPHER_V22;
+            _totpVersion = TOTP_VERSION_V22;
+            Debug.WriteLine("TOTP: using hardcoded V22 fallback");
+        }
+
+        /// <summary>
+        /// GET open.spotify.com/api/server-time → returns Unix timestamp in seconds
+        /// </summary>
+        private static async Task<long> GetServerTimeAsync()
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
+                client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://open.spotify.com");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Referer", "https://open.spotify.com/");
+
+                var response = await client.GetAsync("https://open.spotify.com/api/server-time");
+                if (!response.IsSuccessStatusCode)
+                    throw new Exception("server-time " + response.StatusCode);
+
+                string json = await response.Content.ReadAsStringAsync();
+                JsonObject obj = JsonObject.Parse(json);
+                return (long)obj.GetNamedNumber("serverTime");
+            }
+        }
+
+        /// <summary>
+        /// Get personal access token using TOTP auth (same as SimpMusic's SpotifyAuth.refreshToken)
+        /// </summary>
+        private static async Task<string> RefreshPersonalTokenAsync()
+        {
+            if (_totpCipher == null)
+                await FetchTotpSecretAsync();
+
+            long serverTime = await GetServerTimeAsync();
+            string secret = GenerateTotpSecret(_totpCipher ?? TOTP_CIPHER_V22);
+            string otp = ComputeTotp(secret, serverTime);
+            int version = _totpVersion != 0 ? _totpVersion : TOTP_VERSION_V22;
+
+            // Try "transport" first
+            string token = await RequestTokenAsync(otp, "transport", version);
+            if (token == null || token.Length != 374)
+            {
+                // Fallback to "init" (same as SimpMusic)
+                token = await RequestTokenAsync(otp, "init", version);
+            }
+            return token;
+        }
+
+        private static async Task<string> RequestTokenAsync(string otp, string reason, int totpVersion)
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
+                client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
+                client.DefaultRequestHeaders.Add("Accept", "application/json");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://open.spotify.com");
+                client.DefaultRequestHeaders.TryAddWithoutValidation("Referer", "https://open.spotify.com/");
+
+                string url = string.Format(
+                    "https://open.spotify.com/api/token?reason={0}&productType=mobile-web-player&totp={1}&totpServer={1}&totpVer={2}",
+                    reason, otp, totpVersion);
+
+                var response = await client.GetAsync(url);
+                if (!response.IsSuccessStatusCode) return null;
+
+                string json = await response.Content.ReadAsStringAsync();
+                JsonObject obj = JsonObject.Parse(json);
+
+                string accessToken = obj.ContainsKey("accessToken") ? obj.GetNamedString("accessToken") : "";
+                if (string.IsNullOrEmpty(accessToken)) return null;
+
+                _personalToken = accessToken;
+                _personalTokenExpiresMs = obj.ContainsKey("accessTokenExpirationTimestampMs")
+                    ? (long)obj.GetNamedNumber("accessTokenExpirationTimestampMs")
+                    : GetUnixTimeMs() + 3000000; // ~50 min fallback
+
+                return accessToken;
+            }
+        }
+
+        /// <summary>
+        /// Get client token from clienttoken.spotify.com (no sp_dc needed)
+        /// </summary>
+        private static async Task<string> RefreshClientTokenAsync()
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("User-Agent",
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0");
+                client.DefaultRequestHeaders.Accept.Add(
+                    new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+                string deviceId = Guid.NewGuid().ToString();
+                string body = "{\"client_data\":{\"client_version\":\"1.2.62.476.g2ad6e7f3\","
+                    + "\"client_id\":\"d8a5ed958d274c2e8ee717e6a4b0971d\","
+                    + "\"js_sdk_data\":{\"device_brand\":\"Apple\",\"device_model\":\"unknown\","
+                    + "\"os\":\"macos\",\"os_version\":\"10.15.7\","
+                    + "\"device_id\":\"" + deviceId + "\","
+                    + "\"device_type\":\"computer\"}}}";
+
+                var content = new StringContent(body, Encoding.UTF8, "application/json");
+                var response = await client.PostAsync("https://clienttoken.spotify.com/v1/clienttoken", content);
+                if (!response.IsSuccessStatusCode) return null;
+
+                string json = await response.Content.ReadAsStringAsync();
+                JsonObject obj = JsonObject.Parse(json);
+                JsonObject grantedToken = obj.GetNamedObject("granted_token");
+
+                _clientToken = grantedToken.GetNamedString("token");
+                int expiresAfter = (int)grantedToken.GetNamedNumber("expires_after_seconds");
+                _clientTokenExpiresMs = GetUnixTimeMs() + (expiresAfter * 1000L);
+
+                return _clientToken;
+            }
+        }
+
+        #endregion
+
+        #region Canvas Flow
+
         private static string ExtractMp4Url(byte[] data)
         {
             string content = Encoding.UTF8.GetString(data, 0, data.Length);
             Match match = Regex.Match(content, @"https?://[^\s""'\\]+\.mp4(?:\?[^\s""'\\]*)?");
-            if (match.Success)
-            {
-                return match.Value;
-            }
-            // Fallback: Sometimes it might not have .mp4 if it's a different format?
-            // Spotify canvas is almost always .mp4
-            return null;
+            return match.Success ? match.Value : null;
         }
 
+        /// <summary>
+        /// Main entry point: fetch Spotify Canvas video URL for a given track.
+        /// Returns the .mp4 URL on success, "ERROR: ..." on failure, or null if no cookie.
+        /// </summary>
         public static async Task<string> GetCanvasUrlAsync(string songName, string artistName)
         {
             if (string.IsNullOrEmpty(_spDcCookie)) return "ERROR: No sp_dc cookie";
 
             try
             {
-                // 1. Get Access Token if needed
-                if (_accessToken == null || DateTime.Now >= _tokenExpiresAt)
+                long now = GetUnixTimeMs();
+
+                // 1. Refresh Personal Token if needed
+                if (string.IsNullOrEmpty(_personalToken) || now >= _personalTokenExpiresMs)
                 {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-                        
-                        var tokenResponse = await client.GetAsync("https://open.spotify.com/");
-                        if (!tokenResponse.IsSuccessStatusCode) return "ERROR: Token page failed (" + tokenResponse.StatusCode + ")";
-                        
-                        var html = await tokenResponse.Content.ReadAsStringAsync();
-                        Match match = Regex.Match(html, @"<script id=""session""[^>]*>(.*?)</script>");
-                        if (!match.Success) return "ERROR: Could not find session script in HTML (cookie might be invalid or expired)";
-                        
-                        var tokenJson = match.Groups[1].Value;
-                        JsonObject json = JsonObject.Parse(tokenJson);
-                        if (!json.ContainsKey("accessToken")) return "ERROR: No accessToken in session JSON";
-                        
-                        _accessToken = json.GetNamedString("accessToken");
-                        
-                        // Token usually valid for 1 hour
-                        _tokenExpiresAt = DateTime.Now.AddMinutes(50);
-                    }
+                    string result = await RefreshPersonalTokenAsync();
+                    if (string.IsNullOrEmpty(result))
+                        return "ERROR: Failed to get personal token (TOTP auth failed, check sp_dc cookie)";
                 }
 
-                if (string.IsNullOrEmpty(_accessToken)) return "ERROR: Empty access token parsed";
-
-                string trackId = null;
-
-                // 2. Search for the track
-                using (HttpClient client = new HttpClient())
+                // 2. Refresh Client Token if needed
+                if (string.IsNullOrEmpty(_clientToken) || now >= _clientTokenExpiresMs)
                 {
-                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + _accessToken);
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                    string result = await RefreshClientTokenAsync();
+                    if (string.IsNullOrEmpty(result))
+                        return "ERROR: Failed to get client token";
+                }
+
+                // 3. Search for the track on Spotify
+                string trackId = null;
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + _personalToken);
+                    client.DefaultRequestHeaders.Add("Client-Token", _clientToken);
+                    client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
 
                     string query = Uri.EscapeDataString(songName + " " + artistName);
-                    string searchUrl = $"https://api-partner.spotify.com/pathfinder/v1/query?operationName=searchTracks&variables=%7B%22searchTerm%22%3A%22{query}%22%2C%22offset%22%3A0%2C%22limit%22%3A1%2C%22numberOfTopResults%22%3A1%2C%22includeAudiobooks%22%3Afalse%2C%22includePreReleases%22%3Afalse%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22bc1ca2fcd0ba1013a0fc88e6cc4f190af501851e3dafd3e1ef85840297694428%22%7D%7D";
-                    
-                    var searchResponse = await client.GetAsync(searchUrl);
-                    if (!searchResponse.IsSuccessStatusCode) return "ERROR: Search request failed (" + searchResponse.StatusCode + ")";
+                    string searchUrl = "https://api-partner.spotify.com/pathfinder/v1/query?operationName=searchTracks"
+                        + "&variables=%7B%22searchTerm%22%3A%22" + query
+                        + "%22%2C%22offset%22%3A0%2C%22limit%22%3A3%2C%22numberOfTopResults%22%3A3%2C%22includeAudiobooks%22%3Afalse%2C%22includePreReleases%22%3Afalse%7D"
+                        + "&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%22bc1ca2fcd0ba1013a0fc88e6cc4f190af501851e3dafd3e1ef85840297694428%22%7D%7D";
 
-                    var searchJson = await searchResponse.Content.ReadAsStringAsync();
-                    
-                    // Simple string search to find the first uri: "spotify:track:xxxx"
+                    var searchResponse = await client.GetAsync(searchUrl);
+                    if (!searchResponse.IsSuccessStatusCode)
+                        return "ERROR: Search failed (" + searchResponse.StatusCode + ")";
+
+                    string searchJson = await searchResponse.Content.ReadAsStringAsync();
                     Match match = Regex.Match(searchJson, @"""uri""\s*:\s*""spotify:track:([a-zA-Z0-9]+)""");
                     if (match.Success)
-                    {
                         trackId = match.Groups[1].Value;
-                    }
                 }
 
-                if (string.IsNullOrEmpty(trackId)) return "ERROR: Track not found on Spotify";
+                if (string.IsNullOrEmpty(trackId))
+                    return "ERROR: Track not found on Spotify";
 
-                // 3. Request Canvas
-                using (HttpClient client = new HttpClient())
+                // 4. Request Canvas with both tokens
+                using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + _accessToken);
+                    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + _personalToken);
+                    client.DefaultRequestHeaders.Add("Client-Token", _clientToken);
                     client.DefaultRequestHeaders.Add("User-Agent", "Spotify/9.0.34.593 iOS/18.4 (iPhone15,3)");
-                    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/protobuf"));
+                    client.DefaultRequestHeaders.Accept.Add(
+                        new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/protobuf"));
 
-                    // Build Protobuf manually
+                    // Build Protobuf: CanvasRequest { repeated Track { string track_uri = 1 } = 1 }
                     string trackUri = "spotify:track:" + trackId;
                     byte[] trackUriBytes = Encoding.UTF8.GetBytes(trackUri);
-                    
+
+                    // Inner message: Track { track_uri = trackUri }
                     byte[] trackMsg = new byte[trackUriBytes.Length + 2];
-                    trackMsg[0] = 0x0A; // Tag 1, length-delimited
+                    trackMsg[0] = 0x0A; // field 1, wire type 2 (length-delimited)
                     trackMsg[1] = (byte)trackUriBytes.Length;
                     Buffer.BlockCopy(trackUriBytes, 0, trackMsg, 2, trackUriBytes.Length);
 
+                    // Outer message: CanvasRequest { tracks = [trackMsg] }
                     byte[] canvasReq = new byte[trackMsg.Length + 2];
-                    canvasReq[0] = 0x0A; // Tag 1, length-delimited
+                    canvasReq[0] = 0x0A; // field 1, wire type 2
                     canvasReq[1] = (byte)trackMsg.Length;
                     Buffer.BlockCopy(trackMsg, 0, canvasReq, 2, trackMsg.Length);
 
-                    ByteArrayContent content = new ByteArrayContent(canvasReq);
-                    content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/protobuf");
+                    var reqContent = new ByteArrayContent(canvasReq);
+                    reqContent.Headers.ContentType =
+                        new System.Net.Http.Headers.MediaTypeHeaderValue("application/protobuf");
 
-                    var canvasRes = await client.PostAsync("https://spclient.wg.spotify.com/canvaz-cache/v0/canvases", content);
-                    if (!canvasRes.IsSuccessStatusCode) return "ERROR: Canvas request failed (" + canvasRes.StatusCode + ")";
+                    var canvasRes = await client.PostAsync(
+                        "https://spclient.wg.spotify.com/canvaz-cache/v0/canvases", reqContent);
+                    if (!canvasRes.IsSuccessStatusCode)
+                        return "ERROR: Canvas request failed (" + canvasRes.StatusCode + ")";
 
                     byte[] resBytes = await canvasRes.Content.ReadAsByteArrayAsync();
-                    
-                    // Extract URL
                     string url = ExtractMp4Url(resBytes);
-                    if (string.IsNullOrEmpty(url)) return "ERROR: Canvas API succeeded but no .mp4 found in response bytes";
+                    if (string.IsNullOrEmpty(url))
+                        return "ERROR: No canvas video for this track";
                     return url;
                 }
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Canvas Error: " + ex.Message);
-                return "ERROR: Exception: " + ex.Message;
+                return "ERROR: " + ex.Message;
             }
         }
+
+        #endregion
     }
 }
