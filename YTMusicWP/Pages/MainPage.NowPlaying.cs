@@ -204,6 +204,8 @@ namespace YTMusicWP
             DotLyrics.Opacity = idx == 1 ? 1.0 : 0.3;
             DotQueue.Opacity  = idx == 2 ? 1.0 : 0.3;
             MiniLyricCanvas.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+            
+            ForceUpdateLyricUI();
         }
 
         private void SlideDownStoryboard_Completed(object sender, object e)

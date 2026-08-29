@@ -728,9 +728,79 @@ namespace YTMusicWP
             MiniLyricTranslate.X = 0;
         }
 
-        private async void UpdateMiniLyric(string newLyric)
+        public void ForceUpdateLyricUI()
         {
-            if (MiniLyricText.Text == newLyric) return;
+            if (currentLyricIndex < 0 || currentLyricIndex >= currentLyrics.Count) return;
+            
+            bool isFullscreen = FullscreenLyricsView.Visibility == Visibility.Visible;
+            bool isLyricsUIVisible = isFullscreen || (NowPlayingPivot.SelectedIndex == 1 && LyricsListView.Visibility == Visibility.Visible);
+            bool isMainScreenVisible = (!isFullscreen && NowPlayingPivot.SelectedIndex == 0);
+            
+            if (isLyricsUIVisible)
+            {
+                var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
+                currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
+                
+                if (isFullscreen)
+                {
+                    var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                    if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
+                }
+                else
+                {
+                    var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                    if (newContainer != null)
+                    {
+                        var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                        if (scaleTransform == null)
+                        {
+                            scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                            newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                            newContainer.RenderTransform = scaleTransform;
+                        }
+                        AnimateLyricIn(newContainer, scaleTransform);
+                    }
+                    else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+                }
+                
+                ScrollViewer scrollViewer = null;
+                if (isFullscreen)
+                {
+                    if (_cachedFullscreenLyricsScrollViewer == null) _cachedFullscreenLyricsScrollViewer = GetScrollViewer(FullscreenLyricsListView);
+                    scrollViewer = _cachedFullscreenLyricsScrollViewer;
+                }
+                else
+                {
+                    if (_cachedLyricsScrollViewer == null) _cachedLyricsScrollViewer = GetScrollViewer(LyricsListView);
+                    scrollViewer = _cachedLyricsScrollViewer;
+                }
+                
+                var activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                if (activeContainer == null)
+                {
+                    targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
+                    targetListView.UpdateLayout();
+                    activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                }
+                
+                if (scrollViewer != null && activeContainer != null)
+                {
+                    var transform = activeContainer.TransformToVisual(scrollViewer);
+                    var lyricPos = transform.TransformPoint(new Point(0, 0));
+                    double targetOff = scrollViewer.VerticalOffset + lyricPos.Y - (scrollViewer.ViewportHeight / 2.0) + (activeContainer.ActualHeight / 2.0);
+                    scrollViewer.ChangeView(null, targetOff, null, false);
+                }
+            }
+            
+            if (isMainScreenVisible)
+            {
+                UpdateMiniLyric(currentLyrics[currentLyricIndex].Text, force: true);
+            }
+        }
+
+        private async void UpdateMiniLyric(string newLyric, bool force = false)
+        {
+            if (MiniLyricText.Text == newLyric && !force) return;
 
             var fadeOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0, Duration = TimeSpan.FromMilliseconds(200) };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOut, MiniLyricStack);
