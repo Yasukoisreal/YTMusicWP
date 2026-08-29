@@ -50,7 +50,7 @@ namespace YTMusicWP.Services
         /// </summary>
         private static HttpClient CreateHttpClient()
         {
-            var handler = new HttpClientHandler { UseCookies = false };
+            var handler = new HttpClientHandler { UseCookies = false, AllowAutoRedirect = false };
             return new HttpClient(handler);
         }
 
@@ -160,12 +160,21 @@ namespace YTMusicWP.Services
                     {
                         string json = await response.Content.ReadAsStringAsync();
                         JsonObject obj = JsonObject.Parse(json);
-                        string lastKey = null;
-                        foreach (var key in obj.Keys) lastKey = key;
-                        if (lastKey != null)
+                        int maxVer = 0;
+                        string maxKey = null;
+                        foreach (var key in obj.Keys)
                         {
-                            _totpVersion = int.Parse(lastKey);
-                            JsonArray arr = obj.GetNamedArray(lastKey);
+                            int v;
+                            if (int.TryParse(key, out v) && v > maxVer)
+                            {
+                                maxVer = v;
+                                maxKey = key;
+                            }
+                        }
+                        if (maxKey != null)
+                        {
+                            _totpVersion = maxVer;
+                            JsonArray arr = obj.GetNamedArray(maxKey);
                             _totpCipher = new int[arr.Count];
                             for (uint i = 0; i < arr.Count; i++)
                                 _totpCipher[i] = (int)arr.GetNumberAt(i);
