@@ -776,7 +776,7 @@ namespace YTMusicWP
                         else
                             extraParams["continuation"] = continuation;
                             
-                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20241016.01.00");
+                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "ANDROID_MUSIC", "6.41.52");
                     }
                     else
                     {
@@ -815,8 +815,19 @@ namespace YTMusicWP
 
                     if (secs == null) break;
 
-                    foreach (var sec in secs)
+                    foreach (var rawSec in secs)
                     {
+                        var sec = rawSec;
+                        var itemSection = rawSec["itemSectionRenderer"];
+                        if (itemSection != null)
+                        {
+                            var innerContents = itemSection["contents"];
+                            if (innerContents != null && innerContents.Type == Newtonsoft.Json.Linq.JTokenType.Array && innerContents.HasValues)
+                            {
+                                sec = innerContents[0];
+                            }
+                        }
+
                         // musicCarouselShelfRenderer = horizontal carousel (most common)
                         var carousel = sec["musicCarouselShelfRenderer"];
                     if (carousel != null)
