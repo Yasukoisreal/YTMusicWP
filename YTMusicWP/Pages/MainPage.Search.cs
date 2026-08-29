@@ -344,7 +344,6 @@ namespace YTMusicWP
         // DISCOVER SECTION — Trending music from YouTube Music Explore
         // ==========================================
         private bool _discoverLoaded = false;
-        private bool _chartsLoaded = false;
 
         private async void LoadDiscoverSection()
         {
@@ -359,26 +358,6 @@ namespace YTMusicWP
                     {
                         DiscoverListView.ItemsSource = items;
                         _discoverLoaded = true;
-                    });
-                }
-            }
-            catch { }
-            LoadChartsSection();
-        }
-
-        private async void LoadChartsSection()
-        {
-            if (_chartsLoaded && ChartsListView.Items != null && ChartsListView.Items.Count > 0) return;
-            
-            try
-            {
-                var items = await InnerTubeClient.BrowseChartsAsync();
-                if (items != null && items.Count > 0)
-                {
-                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
-                        ChartsListView.ItemsSource = items;
-                        _chartsLoaded = true;
                     });
                 }
             }

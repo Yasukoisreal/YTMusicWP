@@ -196,7 +196,22 @@ namespace YTMusicWP
             // ═══════════════════════════════════════════════════
             try
             {
-                var homeSections = await InnerTubeClient.BrowseHomeAsync();
+                // Parallel fetch
+                var homeTask = InnerTubeClient.BrowseHomeAsync();
+                var chartsTask = InnerTubeClient.BrowseChartsAsync();
+                
+                await Task.WhenAll(homeTask, chartsTask);
+
+                var homeSections = homeTask.Result;
+                var chartsData = chartsTask.Result;
+
+                if (chartsData != null && chartsData.Count > 0)
+                {
+                    HomeChartsTitle.Visibility = Visibility.Visible;
+                    HomeChartsCarousel.Visibility = Visibility.Visible;
+                    HomeChartsCarousel.ItemsSource = chartsData;
+                }
+
                 if (homeSections != null && homeSections.Count > 0)
                 {
                     // Map API sections to UI carousels (up to 8)
@@ -215,7 +230,6 @@ namespace YTMusicWP
                         }
                         listViews[i].ItemsSource = carousels[i];
                     }
-
 
                     if (homeSections.Count > 0)
                     {

@@ -322,7 +322,8 @@ namespace YTMusicWP
             {
                 if (homeTracks.Count == 0) 
                 {
-                    await LoadHomeRecommendations();
+                    // Fire-and-forget Home network loading so it runs in parallel with UI/Disk
+                    var ignored = LoadHomeRecommendations();
                 }
 
                 // Upgrade old 16:9 thumbnails in favorites to genuine 1:1 YTM square album art
