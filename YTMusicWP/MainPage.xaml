@@ -439,18 +439,8 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <!-- Sticky Header Background -->
-            <Rectangle Grid.Row="0" Grid.RowSpan="2" Canvas.ZIndex="4" IsHitTestVisible="False">
-                <Rectangle.Fill>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                        <GradientStop Color="#FF121212" Offset="0.0"/>
-                        <GradientStop Color="#E6121212" Offset="0.65"/>
-                        <GradientStop Color="#00121212" Offset="1.0"/>
-                    </LinearGradientBrush>
-                </Rectangle.Fill>
-            </Rectangle>
             <!-- Header -->
-            <Grid Grid.Row="0" Margin="10,15,10,5" Canvas.ZIndex="5">
+            <Grid Grid.Row="0" Margin="10,15,10,5">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -474,7 +464,7 @@
                 </Button>
             </Grid>
             <!-- Filter chips -->
-            <ScrollViewer Grid.Row="1" Canvas.ZIndex="5" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,5,0,10">
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,5,0,10">
                 <StackPanel Orientation="Horizontal">
                     <Border x:Name="HomeChipAll" Background="#333333" CornerRadius="16" Padding="14,6" Margin="0,0,8,0" Tapped="HomeChipAll_Tapped">
                         <TextBlock Text="All" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
@@ -490,11 +480,11 @@
                     </Border>
                 </StackPanel>
             </ScrollViewer>
-            <Grid Grid.Row="0" Grid.RowSpan="3" Canvas.ZIndex="1">
-                <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10" Margin="0,110,0,0"/>
+            <Grid Grid.Row="2">
+                <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10"/>
                 <!-- Music content -->
                 <ScrollViewer x:Name="HomeMusicPanel" VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
-                    <StackPanel Margin="0,110,0,30">
+                    <StackPanel Margin="0,0,0,30">
                         <!-- Quick shortcuts grid -->
                         <GridView x:Name="HomeQuickGrid" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
                             <GridView.ItemsPanel>
