@@ -190,17 +190,27 @@ namespace YTMusicWP
         {
             HomeLoading.Visibility = Visibility.Visible;
 
+            // ═══════════════════════════════════════════════════
+            // PRIMARY: YouTube Music Home (FE_music_home) + Charts in parallel
+            // ═══════════════════════════════════════════════════
             try
             {
-                string token = await GetAccessTokenAsync();
-                var homeTask = InnerTubeClient.BrowseHomeAsync(token);
+                var homeTask = InnerTubeClient.BrowseHomeAsync(null);
                 var chartsTask = InnerTubeClient.BrowseChartsAsync();
-                
                 var homeSections = default(System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>);
                 var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
 
-                try { homeSections = await homeTask; } catch { }
-                try { chartsData = await chartsTask; } catch { }
+                try
+                {
+                    homeSections = await homeTask;
+                }
+                catch { }
+
+                try
+                {
+                    chartsData = await chartsTask;
+                }
+                catch { }
 
                 // Charts
                 if (chartsData != null && chartsData.Count > 0)
@@ -210,61 +220,89 @@ namespace YTMusicWP
                     HomeChartsCarousel.ItemsSource = chartsData;
                 }
 
-                if (homeSections == null) homeSections = new System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>();
-
-                // Guarantee a rich layout: if YouTube returns < 10 sections, we augment it with fallback queries
-                if (homeSections.Count < 10)
+                // Dynamic home sections — bind ALL sections YouTube returns
+                if (homeSections != null && homeSections.Count > 0)
                 {
-                    string year = DateTime.Now.Year.ToString();
-                    string region = InnerTubeClient.CurrentRegion;
-                    string[] queries;
-                    string[] fallbackTitles;
-                    switch (region)
-                    {
-                        case "VN":
-                            queries = new[] { "nhạc trẻ thịnh hành " + year, "vinahouse cực mạnh", "lofi chill tiếng việt", "bolero trữ tình", "nhạc hoa lời việt", "rap việt" };
-                            fallbackTitles = new[] { "Nhạc Trẻ Thịnh Hành", "Vinahouse Bay Phòng", "Lofi Việt Chill", "Bolero Trữ Tình", "Nhạc Hoa Lời Việt", "Rap Việt" };
-                            break;
-                        case "KR":
-                            queries = new[] { "K-pop trending " + year, "K-drama OST " + year, "K-pop boy group hits", "K-pop girl group hits", "K-indie chill" };
-                            fallbackTitles = new[] { "K-Pop Trending", "K-Drama OST", "Boy Group Hits", "Girl Group Hits", "K-Indie Chill" };
-                            break;
-                        case "JP":
-                            queries = new[] { "J-pop trending " + year, "Anime OST " + year, "J-pop chill vibes", "J-rock hits", "Vocaloid hits" };
-                            fallbackTitles = new[] { "J-Pop Trending", "Anime OST", "Chill Vibes", "J-Rock", "Vocaloid" };
-                            break;
-                        default:
-                            queries = new[] { "top hits " + year, "pop hits " + year, "lofi chill beats relax", "workout gym motivation music", "party dance hits", "sad emotional music" };
-                            fallbackTitles = new[] { "Top Hits", "Pop Hits", "Chill Vibes", "Workout Motivation", "Party Time", "Sad Vibes" };
-                            break;
-                    }
+                    HomeDynamicSections.ItemsSource = homeSections;
 
-                    for (int i = 0; i < queries.Length; i++)
-                    {
-                        try
-                        {
-                            var results = await FetchMusicList(queries[i], "", "songs");
-                            if (results != null)
-                            {
-                                var sec = new YTMusicWP.InnerTubeClient.HomeSection { Title = fallbackTitles[i] };
-                                foreach (var t in results) { if (IsMusicTrack(t)) sec.Tracks.Add(t); }
-                                if (sec.Tracks.Count > 0) homeSections.Add(sec);
-                            }
-                        }
-                        catch { }
-                    }
-                }
-
-                HomeDynamicSections.ItemsSource = homeSections;
-                if (homeSections.Count > 0)
-                {
                     _currentHomeQuery = homeSections[0].Title;
                     var topTracks = homeSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
                     YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
+
+                    HomeLoading.Visibility = Visibility.Collapsed;
+                    return;
                 }
             }
             catch { }
 
+            // ═══════════════════════════════════════════════════
+            // FALLBACK: Search-based recommendations (if BrowseHome fails)
+            // ═══════════════════════════════════════════════════
+            string region = InnerTubeClient.CurrentRegion;
+            string year = DateTime.Now.Year.ToString();
+
+            string[] queries;
+            string[] fallbackTitles;
+
+            switch (region)
+            {
+                case "VN":
+                    queries = new[] {
+                        "nhạc Việt hot " + year,
+                        "nhạc trẻ hay nhất " + year,
+                        "bolero trữ tình chọn lọc",
+                        "rap Việt " + year
+                    };
+                    fallbackTitles = new[] { "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt" };
+                    break;
+                case "KR":
+                    queries = new[] {
+                        "K-pop trending " + year,
+                        "K-pop girl group hits",
+                        "K-drama OST " + year,
+                        "K-pop boy group hits"
+                    };
+                    fallbackTitles = new[] { "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits" };
+                    break;
+                case "JP":
+                    queries = new[] {
+                        "J-pop trending " + year,
+                        "Anime OST " + year,
+                        "J-pop chill vibes",
+                        "J-rock hits"
+                    };
+                    fallbackTitles = new[] { "Made for you", "Anime OST", "Chill vibes", "J-Rock" };
+                    break;
+                default:
+                    queries = new[] {
+                        "top hits " + year,
+                        "pop hits " + year,
+                        "lofi chill beats relax",
+                        "workout gym motivation music"
+                    };
+                    fallbackTitles = new[] { "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation" };
+                    break;
+            }
+
+            _currentHomeQuery = queries[0];
+
+            var fallbackSections = new System.Collections.Generic.List<InnerTubeClient.HomeSection>();
+            for (int i = 0; i < queries.Length; i++)
+            {
+                var results = await FetchMusicList(queries[i], "", "songs");
+                if (results != null)
+                {
+                    var sec = new InnerTubeClient.HomeSection { Title = fallbackTitles[i] };
+                    foreach (var t in results) { if (IsMusicTrack(t)) sec.Tracks.Add(t); }
+                    if (sec.Tracks.Count > 0) fallbackSections.Add(sec);
+                }
+            }
+            HomeDynamicSections.ItemsSource = fallbackSections;
+            if (fallbackSections.Count > 0)
+            {
+                var topTracks2 = fallbackSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
+                YTMusicWP.Services.TileService.UpdateRecommendations(topTracks2, favoriteTracks, historyTracks);
+            }
             HomeLoading.Visibility = Visibility.Collapsed;
         }
 
