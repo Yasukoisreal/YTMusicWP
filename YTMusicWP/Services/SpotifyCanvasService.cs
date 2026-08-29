@@ -89,8 +89,18 @@ namespace YTMusicWP.Services
                 transformed[i] = cipherBytes[i] ^ ((i % 33) + 9);
 
             string joined = string.Concat(transformed.Select(x => x.ToString()));
+            
+            // Hex encode
             byte[] joinedBytes = Encoding.UTF8.GetBytes(joined);
-            return Base32Encode(joinedBytes).TrimEnd('=');
+            string hex = BitConverter.ToString(joinedBytes).Replace("-", "").ToLowerInvariant();
+
+            // Base64 encode
+            byte[] hexBytes = Encoding.UTF8.GetBytes(hex);
+            string base64 = Convert.ToBase64String(hexBytes);
+
+            // Base32 encode
+            byte[] base64Bytes = Encoding.UTF8.GetBytes(base64);
+            return Base32Encode(base64Bytes).TrimEnd('=');
         }
 
         /// <summary>
@@ -244,6 +254,8 @@ namespace YTMusicWP.Services
             {
                 client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
                 client.DefaultRequestHeaders.Add("Cookie", "sp_dc=" + _spDcCookie);
+                client.DefaultRequestHeaders.Add("App-platform", "WebPlayer");
+                client.DefaultRequestHeaders.Add("Spotify-App-Version", "1.2.61.20.g3b4cd5b2");
                 client.DefaultRequestHeaders.Add("Accept", "application/json");
                 client.DefaultRequestHeaders.TryAddWithoutValidation("Origin", "https://open.spotify.com");
                 client.DefaultRequestHeaders.TryAddWithoutValidation("Referer", "https://open.spotify.com/");
@@ -253,7 +265,12 @@ namespace YTMusicWP.Services
                     reason, otp, totpVersion);
 
                 var response = await client.GetAsync(url);
-                if (!response.IsSuccessStatusCode) return null;
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errJson = await response.Content.ReadAsStringAsync();
+                    Debug.WriteLine($"Token failed ({reason}): {response.StatusCode} {errJson}");
+                    return null;
+                }
 
                 string json = await response.Content.ReadAsStringAsync();
                 JsonObject obj = JsonObject.Parse(json);
