@@ -649,6 +649,15 @@ namespace YTMusicWP
                     ["browseId"] = browseId
                 };
 
+                if (browseId == "FEmusic_charts")
+                {
+                    var formData = new JObject();
+                    var selectedValues = new JArray();
+                    selectedValues.Add(CurrentRegion);
+                    formData["selectedValues"] = selectedValues;
+                    body["formData"] = formData;
+                }
+
                 var data = await PostInnerTubeAsync(
                     "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
 
