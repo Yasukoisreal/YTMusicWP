@@ -760,7 +760,7 @@ namespace YTMusicWP
                     From = 0,
                     To = -distance,
                     Duration = TimeSpan.FromSeconds(durationSec),
-                    AutoReverse = true,
+                    AutoReverse = false,
                     RepeatBehavior = Windows.UI.Xaml.Media.Animation.RepeatBehavior.Forever
                 };
                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(move, MiniLyricTranslate);
