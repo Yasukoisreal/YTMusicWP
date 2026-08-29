@@ -66,6 +66,7 @@ namespace YTMusicWP
 
             currentLyrics.Clear();
             currentLyricIndex = -1;
+            ClearMiniLyric();
             _cachedLyricsScrollViewer = null;
             _cachedFullscreenLyricsScrollViewer = null;
 

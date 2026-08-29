@@ -715,6 +715,19 @@ namespace YTMusicWP
 
         private Windows.UI.Xaml.Media.Animation.Storyboard _miniLyricMarqueeStoryboard;
 
+        private void ClearMiniLyric()
+        {
+            MiniLyricText.Text = "";
+            MiniLyricText2.Text = "";
+            MiniLyricText2.Visibility = Visibility.Collapsed;
+            if (_miniLyricMarqueeStoryboard != null)
+            {
+                _miniLyricMarqueeStoryboard.Stop();
+                _miniLyricMarqueeStoryboard = null;
+            }
+            MiniLyricTranslate.X = 0;
+        }
+
         private async void UpdateMiniLyric(string newLyric)
         {
             if (MiniLyricText.Text == newLyric) return;
