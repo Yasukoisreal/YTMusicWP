@@ -720,7 +720,7 @@ namespace YTMusicWP
             if (MiniLyricText.Text == newLyric) return;
 
             var fadeOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0, Duration = TimeSpan.FromMilliseconds(200) };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOut, MiniLyricText);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOut, MiniLyricStack);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeOut, "Opacity");
             var sbOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
             sbOut.Children.Add(fadeOut);
@@ -740,7 +740,7 @@ namespace YTMusicWP
             MiniLyricTranslate.X = 0;
 
             var fadeIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1, Duration = TimeSpan.FromMilliseconds(200) };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeIn, MiniLyricText);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeIn, MiniLyricStack);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeIn, "Opacity");
             var sbIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
             sbIn.Children.Add(fadeIn);
@@ -752,7 +752,10 @@ namespace YTMusicWP
 
             if (textWidth > canvasWidth && canvasWidth > 0)
             {
-                double distance = textWidth - canvasWidth + 20;
+                MiniLyricText2.Text = newLyric;
+                MiniLyricText2.Visibility = Visibility.Visible;
+
+                double distance = textWidth + 50; // text width + left margin
                 double durationSec = distance / 30.0;
                 
                 var move = new Windows.UI.Xaml.Media.Animation.DoubleAnimation 
@@ -770,6 +773,10 @@ namespace YTMusicWP
                 _miniLyricMarqueeStoryboard.Children.Add(move);
                 _miniLyricMarqueeStoryboard.BeginTime = TimeSpan.FromSeconds(1.5);
                 _miniLyricMarqueeStoryboard.Begin();
+            }
+            else
+            {
+                MiniLyricText2.Visibility = Visibility.Collapsed;
             }
         }
 
