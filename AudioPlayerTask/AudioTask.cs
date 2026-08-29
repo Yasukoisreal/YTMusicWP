@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Windows.ApplicationModel.Background;
 using Windows.Foundation.Collections;
@@ -17,7 +17,7 @@ namespace AudioPlayerTask
         private SystemMediaTransportControls _systemControls;
         private MediaPlayer _mediaPlayer;
 
-        // [OPT] Shared HttpClient â€” avoids socket leaks from creating new instances per resolve call
+        // [OPT] Shared HttpClient Ã¢â‚¬â€ avoids socket leaks from creating new instances per resolve call
         private Windows.Web.Http.HttpClient _httpClient = new Windows.Web.Http.HttpClient();
 
         private List<string> _trackList = new List<string>();
@@ -36,7 +36,7 @@ namespace AudioPlayerTask
         private string _resolvedUrl = null;
         private bool _innerTubeAttempted = false;
 
-        // Tá»‘i Ä‘a 4 láº§n retry: Stream URL (2 láº§n) â†’ Render /api/play (2 láº§n)
+        // TÃ¡Â»â€˜i Ã„â€˜a 4 lÃ¡ÂºÂ§n retry: Stream URL (2 lÃ¡ÂºÂ§n) Ã¢â€ â€™ Render /api/play (2 lÃ¡ÂºÂ§n)
         private const int MAX_RETRIES = 4;
 
         public void Run(IBackgroundTaskInstance taskInstance)
@@ -95,14 +95,14 @@ namespace AudioPlayerTask
                     if (!string.IsNullOrEmpty(fastUrl) && _currentTrackIndex < _trackList.Count)
                     {
                         _trackList[_currentTrackIndex] = fastUrl;
-                        // Foreground Ä‘Ã£ resolve â†’ skip InnerTube trong AudioTask
+                        // Foreground Ã„â€˜ÃƒÂ£ resolve Ã¢â€ â€™ skip InnerTube trong AudioTask
                         _innerTubeAttempted = true;
                     }
                 }
 
-                bool hasFastUrl = _innerTubeAttempted; // set true bá»Ÿi FastUrl á»Ÿ trÃªn
+                bool hasFastUrl = _innerTubeAttempted; // set true bÃ¡Â»Å¸i FastUrl Ã¡Â»Å¸ trÃƒÂªn
                 ResetRetryState();
-                if (hasFastUrl) _innerTubeAttempted = true; // giá»¯ láº¡i â†’ skip double-resolve
+                if (hasFastUrl) _innerTubeAttempted = true; // giÃ¡Â»Â¯ lÃ¡ÂºÂ¡i Ã¢â€ â€™ skip double-resolve
                 StartPlaybackAsync();
             }
             else if (e.Data.ContainsKey("UpdateQueueOnly"))
@@ -131,12 +131,12 @@ namespace AudioPlayerTask
         }
 
         // ==========================================
-        // RESOLVE AUDIO URL â€” InnerTube direct (ANDROID_VR)
+        // RESOLVE AUDIO URL Ã¢â‚¬â€ InnerTube direct (ANDROID_VR)
         // ==========================================
         private string _innerTubeDebug = "";
 
         /// <summary>
-        /// Láº¥y visitorData â€” cache + LocalSettings + sw.js_data endpoint (~2KB, an toÃ n RAM cho background task)
+        /// LÃ¡ÂºÂ¥y visitorData Ã¢â‚¬â€ cache + LocalSettings + sw.js_data endpoint (~2KB, an toÃƒÂ n RAM cho background task)
         /// </summary>
         private static string _cachedVisitorData = null;
 
@@ -204,7 +204,7 @@ namespace AudioPlayerTask
         {
             if (string.IsNullOrEmpty(text)) return null;
 
-            // 1. TÃ¬m visitorData":"CgXXX"
+            // 1. TÃƒÂ¬m visitorData":"CgXXX"
             string[] markers = { "visitorData\":\"", "\"visitorData\":\"" };
             foreach (string marker in markers)
             {
@@ -221,7 +221,7 @@ namespace AudioPlayerTask
                 }
             }
 
-            // 2. TÃ¬m "CgXXX" trong array format cá»§a sw.js_data
+            // 2. TÃƒÂ¬m "CgXXX" trong array format cÃ¡Â»Â§a sw.js_data
             int searchPos = 0;
             while (searchPos < text.Length)
             {
@@ -260,7 +260,7 @@ namespace AudioPlayerTask
         {
             _innerTubeDebug = "";
             
-            // InnerTube ANDROID (giá»‘ng LazyTube/MetroTube Patched)
+            // InnerTube ANDROID (giÃ¡Â»â€˜ng LazyTube/MetroTube Patched)
             string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "11",
                 "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
             if (!string.IsNullOrEmpty(url)) return url;
@@ -347,7 +347,7 @@ namespace AudioPlayerTask
                     if (data.ContainsKey("streamingData"))
                     {
                         var streamingData = data.GetNamedObject("streamingData");
-                        // 1. Æ¯u tiÃªn itag 18 tá»« formats (khÃ´ng bá»‹ bÃ³p bÄƒng thÃ´ng)
+                        // 1. Ã†Â¯u tiÃƒÂªn itag 18 tÃ¡Â»Â« formats (khÃƒÂ´ng bÃ¡Â»â€¹ bÃƒÂ³p bÃ„Æ’ng thÃƒÂ´ng)
                         if (streamingData.ContainsKey("formats"))
                         {
                             var formats = streamingData.GetNamedArray("formats");
@@ -369,7 +369,7 @@ namespace AudioPlayerTask
                             }
                         }
 
-                        // 2. Fallback xuá»‘ng adaptiveFormats (Ã¢m thanh chuyÃªn dá»¥ng, dá»… bá»‹ bÃ³p/403)
+                        // 2. Fallback xuÃ¡Â»â€˜ng adaptiveFormats (ÃƒÂ¢m thanh chuyÃƒÂªn dÃ¡Â»Â¥ng, dÃ¡Â»â€¦ bÃ¡Â»â€¹ bÃƒÂ³p/403)
                         if (streamingData.ContainsKey("adaptiveFormats"))
                         {
                             var formats = streamingData.GetNamedArray("adaptiveFormats");
@@ -412,7 +412,7 @@ namespace AudioPlayerTask
 
 
         // ==========================================
-        // MAIN PLAYBACK â€” InnerTube direct only
+        // MAIN PLAYBACK Ã¢â‚¬â€ InnerTube direct only
         // ==========================================
         private async void StartPlaybackAsync()
         {
@@ -420,14 +420,14 @@ namespace AudioPlayerTask
 
             string vidId = _videoIdList[_currentTrackIndex];
 
-            // Offline track â†’ phÃ¡t trá»±c tiáº¿p
+            // Offline track Ã¢â€ â€™ phÃƒÂ¡t trÃ¡Â»Â±c tiÃ¡ÂºÂ¿p
             if (vidId.StartsWith("LOCAL:"))
             {
                 PlayUrl(_trackList[_currentTrackIndex], vidId);
                 return;
             }
 
-            // Skip náº¿u bÃ i cÅ© váº«n Ä‘ang phÃ¡t (khÃ´ng retry)
+            // Skip nÃ¡ÂºÂ¿u bÃƒÂ i cÃ…Â© vÃ¡ÂºÂ«n Ã„â€˜ang phÃƒÂ¡t (khÃƒÂ´ng retry)
             if (vidId == _currentLoadedVidId && _mediaPlayer.CurrentState != MediaPlayerState.Closed && _retryCount == 0)
             {
                 try { _mediaPlayer.Position = TimeSpan.Zero; _mediaPlayer.Play(); _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing; UpdateSystemMediaControls(); }
@@ -435,7 +435,7 @@ namespace AudioPlayerTask
                 return;
             }
 
-            // Náº¿u Ä‘Ã£ cÃ³ URL resolved (tá»« retry)
+            // NÃ¡ÂºÂ¿u Ã„â€˜ÃƒÂ£ cÃƒÂ³ URL resolved (tÃ¡Â»Â« retry)
                         // Fetch SponsorBlock segments
             _skipSegments = new List<YTMusicWP.Models.SponsorBlockSegment>();
             if (!vidId.StartsWith("LOCAL:"))
@@ -474,7 +474,7 @@ namespace AudioPlayerTask
                 }
             }
 
-            // FALLBACK: URL tá»« MainPage â€” náº¿u rá»—ng thÃ¬ resolve InnerTube láº§n ná»¯a
+            // FALLBACK: URL tÃ¡Â»Â« MainPage Ã¢â‚¬â€ nÃ¡ÂºÂ¿u rÃ¡Â»â€”ng thÃƒÂ¬ resolve InnerTube lÃ¡ÂºÂ§n nÃ¡Â»Â¯a
             string fallbackUrl = _trackList[_currentTrackIndex];
             if (string.IsNullOrEmpty(fallbackUrl))
             {
@@ -487,9 +487,9 @@ namespace AudioPlayerTask
         }
 
         /// <summary>
-        /// ThÃªm params chá»‘ng throttle vÃ o googlevideo URL:
-        /// - ratebypass=yes: bá» giá»›i háº¡n tá»‘c Ä‘á»™
-        /// - range=0-: Ã©p server gá»­i toÃ n bá»™ audio trong 1 response (full buffer)
+        /// ThÃƒÂªm params chÃ¡Â»â€˜ng throttle vÃƒÂ o googlevideo URL:
+        /// - ratebypass=yes: bÃ¡Â»Â giÃ¡Â»â€ºi hÃ¡ÂºÂ¡n tÃ¡Â»â€˜c Ã„â€˜Ã¡Â»â„¢
+        /// - range=0-: ÃƒÂ©p server gÃ¡Â»Â­i toÃƒÂ n bÃ¡Â»â„¢ audio trong 1 response (full buffer)
         /// </summary>
         private string PrepareStreamUrl(string url)
         {
@@ -506,6 +506,7 @@ namespace AudioPlayerTask
             try
             {
                 StopCrossfadeMonitor();
+                _isCrossfading = false;
 
                 // Normalize Volume: set consistent volume level
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -529,13 +530,13 @@ namespace AudioPlayerTask
         }
 
         // ==========================================
-        // RETRY FLOW â€” InnerTube only
-        // Retry 1-2: Láº¥y URL InnerTube má»›i (URL cÅ© háº¿t háº¡n)
-        // Retry 3-4: DÃ¹ng URL tá»« MainPage
+        // RETRY FLOW Ã¢â‚¬â€ InnerTube only
+        // Retry 1-2: LÃ¡ÂºÂ¥y URL InnerTube mÃ¡Â»â€ºi (URL cÃ…Â© hÃ¡ÂºÂ¿t hÃ¡ÂºÂ¡n)
+        // Retry 3-4: DÃƒÂ¹ng URL tÃ¡Â»Â« MainPage
         // ==========================================
         private async void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
-            // [FIX-SOF] Guard against re-entrancy â€” prevents StackOverflowException
+            // [FIX-SOF] Guard against re-entrancy Ã¢â‚¬â€ prevents StackOverflowException
             if (_isRetrying) return;
             _isRetrying = true;
 
@@ -561,7 +562,7 @@ namespace AudioPlayerTask
                 return;
             }
 
-            // Retry 1-2: Láº¥y URL InnerTube Má»šI
+            // Retry 1-2: LÃ¡ÂºÂ¥y URL InnerTube MÃ¡Â»Å¡I
             if (_retryCount <= 2)
             {
                 await Task.Delay(800);
@@ -578,7 +579,7 @@ namespace AudioPlayerTask
                 }
             }
 
-            // Retry 3-4: DÃ¹ng URL tá»« MainPage
+            // Retry 3-4: DÃƒÂ¹ng URL tÃ¡Â»Â« MainPage
             await Task.Delay(800);
             _isRetrying = false; // Allow next failure to re-enter
             _innerTubeAttempted = true;
@@ -616,7 +617,7 @@ namespace AudioPlayerTask
             try
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                // FIX Bug 12: DÃ¹ng ContainsKey trÆ°á»›c â€” ApplicationDataContainer throws KeyNotFoundException náº¿u key chÆ°a tá»“n táº¡i
+                // FIX Bug 12: DÃƒÂ¹ng ContainsKey trÃ†Â°Ã¡Â»â€ºc Ã¢â‚¬â€ ApplicationDataContainer throws KeyNotFoundException nÃ¡ÂºÂ¿u key chÃ†Â°a tÃ¡Â»â€œn tÃ¡ÂºÂ¡i
                 string storedTitle = ls.ContainsKey("CurrentTitle") ? ls["CurrentTitle"]?.ToString() : null;
                 string storedArtist = ls.ContainsKey("CurrentArtist") ? ls["CurrentArtist"]?.ToString() : null;
                 string storedVid = ls.ContainsKey("CurrentVideoId") ? ls["CurrentVideoId"]?.ToString() : null;
@@ -631,7 +632,7 @@ namespace AudioPlayerTask
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }
         }
 
-        // â”€â”€ Crossfade & Gapless â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Crossfade & Gapless Ã¢â€â‚¬Ã¢â€â‚¬
         private Windows.System.Threading.ThreadPoolTimer _crossfadeTimer;
         private bool _isCrossfading = false;
         private string _preResolvedNextUrl = null;
@@ -708,6 +709,7 @@ namespace AudioPlayerTask
 
         private async void StartCrossfadeTransition(int durationSec)
         {
+            string startingUrl = _currentLoadedVidId;
             try
             {
                 double origVol = _mediaPlayer.Volume;
@@ -716,6 +718,13 @@ namespace AudioPlayerTask
 
                 for (int i = 0; i < steps; i++)
                 {
+                    // If user manually changed track (clicked Next), abort fade out immediately!
+                    if (_currentLoadedVidId != startingUrl)
+                    {
+                        _isCrossfading = false;
+                        return;
+                    }
+
                     await Task.Delay(100);
                     try
                     {
@@ -726,9 +735,12 @@ namespace AudioPlayerTask
                     catch { break; }
                 }
 
-                // Crossfade complete â†’ move to next
-                _isCrossfading = false;
-                MoveNext();
+                // Fade out complete -> move to next only if we haven't changed track manually
+                if (_currentLoadedVidId == startingUrl)
+                {
+                    _isCrossfading = false;
+                    MoveNext();
+                }
             }
             catch { _isCrossfading = false; }
         }
@@ -855,7 +867,7 @@ namespace AudioPlayerTask
                 {
                     // [FIX-SOF] Only reset retryCount if NOT in a retry cycle
                     // Without this guard, player briefly entering Playing before failing
-                    // would reset _retryCount â†’ infinite retry â†’ StackOverflow
+                    // would reset _retryCount Ã¢â€ â€™ infinite retry Ã¢â€ â€™ StackOverflow
                     if (!_isRetrying) _retryCount = 0;
                     _isRetrying = false;
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
