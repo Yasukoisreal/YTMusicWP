@@ -419,6 +419,20 @@ namespace YTMusicWP
             }
         }
 
+        private static double[] _playbackSpeeds = { 0.5, 0.75, 1.0, 1.25, 1.5, 2.0 };
+        private static int _playbackSpeedIndex = 2; // Default 1.0
+
+        private void MenuPlaybackSpeedNowPlaying_Click(object sender, RoutedEventArgs e)
+        {
+            _playbackSpeedIndex = (_playbackSpeedIndex + 1) % _playbackSpeeds.Length;
+            double speed = _playbackSpeeds[_playbackSpeedIndex];
+            MenuPlaybackSpeedStatus.Text = speed.ToString("0.0#") + "x";
+
+            var msg = new Windows.Foundation.Collections.ValueSet();
+            msg.Add("SetPlaybackRate", speed);
+            try { BackgroundMediaPlayer.SendMessageToBackground(msg); } catch { }
+        }
+
         // ══════════════════════════════════════════
         // ADD TO QUEUE — Insert after current track
         // ══════════════════════════════════════════

@@ -2270,6 +2270,14 @@
                             <TextBlock Grid.Column="1" Text="Go to Radio" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                         </Grid>
                     </Button>
+                    <Button Click="MenuPlaybackSpeedNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                        <Grid Margin="20,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M14 12c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2zM4 2h16v2H4V2zm16 19H4v-2h16v2zM12 5.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5 8.5-3.8 8.5-8.5S16.7 5.5 12 5.5z" Fill="White"/></Viewbox>
+                            <TextBlock Grid.Column="1" Text="Playback speed" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock x:Name="MenuPlaybackSpeedStatus" Grid.Column="2" Text="1.0x" FontSize="14" Foreground="#1DB954" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
                     <Button Click="MenuSleepTimerNowPlaying_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
                         <Grid Margin="20,0">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>

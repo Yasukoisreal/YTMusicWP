@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Windows.ApplicationModel.Background;
 using Windows.Foundation.Collections;
@@ -35,8 +35,9 @@ namespace AudioPlayerTask
         // Server stream state
         private string _resolvedUrl = null;
         private bool _innerTubeAttempted = false;
+        private double _playbackRate = 1.0;
 
-        // TÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœi Ãƒâ€žÃ¢â‚¬Ëœa 4 lÃƒÂ¡Ã‚ÂºÃ‚Â§n retry: Stream URL (2 lÃƒÂ¡Ã‚ÂºÃ‚Â§n) ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Render /api/play (2 lÃƒÂ¡Ã‚ÂºÃ‚Â§n)
+        // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
 
         public void Run(IBackgroundTaskInstance taskInstance)
@@ -95,14 +96,14 @@ namespace AudioPlayerTask
                     if (!string.IsNullOrEmpty(fastUrl) && _currentTrackIndex < _trackList.Count)
                     {
                         _trackList[_currentTrackIndex] = fastUrl;
-                        // Foreground Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ resolve ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ skip InnerTube trong AudioTask
+                        // Foreground đã resolve → skip InnerTube trong AudioTask
                         _innerTubeAttempted = true;
                     }
                 }
 
-                bool hasFastUrl = _innerTubeAttempted; // set true bÃƒÂ¡Ã‚Â»Ã…Â¸i FastUrl ÃƒÂ¡Ã‚Â»Ã…Â¸ trÃƒÆ’Ã‚Âªn
+                bool hasFastUrl = _innerTubeAttempted; // set true bởi FastUrl ở trên
                 ResetRetryState();
-                if (hasFastUrl) _innerTubeAttempted = true; // giÃƒÂ¡Ã‚Â»Ã‚Â¯ lÃƒÂ¡Ã‚ÂºÃ‚Â¡i ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ skip double-resolve
+                if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
                 StartPlaybackAsync();
             }
             else if (e.Data.ContainsKey("UpdateQueueOnly"))
@@ -120,6 +121,15 @@ namespace AudioPlayerTask
             }
             else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext();
             else if (e.Data.ContainsKey("PrevTrackMessage")) MovePrevious();
+            else if (e.Data.ContainsKey("SetPlaybackRate"))
+            {
+                try
+                {
+                    _playbackRate = (double)e.Data["SetPlaybackRate"];
+                    _mediaPlayer.PlaybackRate = _playbackRate;
+                }
+                catch { }
+            }
         }
 
         private void ResetRetryState()
@@ -131,7 +141,7 @@ namespace AudioPlayerTask
         }
 
         // ==========================================
-        // RESOLVE AUDIO URL ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â InnerTube direct (ANDROID_VR)
+        // RESOLVE AUDIO URL – InnerTube direct (ANDROID_VR)
         // ==========================================
         private string _innerTubeDebug = "";
 
@@ -515,6 +525,7 @@ namespace AudioPlayerTask
 
                 UpdateSystemMediaControls();
                 _mediaPlayer.SetUriSource(new Uri(trackUrl));
+                try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                 _currentLoadedVidId = vidId;
                 _mediaPlayer.Play();
                 _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
