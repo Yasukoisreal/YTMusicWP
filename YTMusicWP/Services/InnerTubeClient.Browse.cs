@@ -786,14 +786,26 @@ namespace YTMusicWP
                         };
                         if (continuation == null)
                             body["browseId"] = "FEmusic_home";
+                        else
+                            body["continuation"] = continuation;
                         
                         string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
-                        if (continuation != null) url += "&continuation=" + Uri.EscapeDataString(continuation);
-
                         data = await PostInnerTubeAsync(url, body, true);
                     }
 
                     if (data == null) break;
+
+                    if (string.IsNullOrEmpty(vd))
+                    {
+                        var returnedVd = data["responseContext"]?["visitorData"]?.ToString();
+                        if (!string.IsNullOrEmpty(returnedVd))
+                        {
+                            vd = returnedVd;
+                            _cachedVisitorData = vd;
+                            _vdCacheTime = DateTime.Now;
+                            try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["CachedVisitorData"] = vd; } catch { }
+                        }
+                    }
 
                     JToken secs = null;
                     JToken continuations = null;
