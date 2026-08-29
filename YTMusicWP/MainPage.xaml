@@ -2117,6 +2117,14 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <!-- Mini Lyric -->
+                            <Canvas x:Name="MiniLyricCanvas" Height="22" Margin="0,0,0,6" SizeChanged="MiniLyricCanvas_SizeChanged">
+                                <TextBlock x:Name="MiniLyricText" Text="" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#E0E0E0" TextWrapping="NoWrap" Canvas.Top="0" Opacity="0">
+                                    <TextBlock.RenderTransform>
+                                        <TranslateTransform x:Name="MiniLyricTranslate" X="0"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Canvas>
                             <Canvas x:Name="TitleMarqueeCanvas" Height="30" SizeChanged="TitleMarqueeCanvas_SizeChanged">
                                 <TextBlock x:Name="BigTitle" Text="Title" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="15" TextWrapping="NoWrap" Canvas.Top="0">
                                     <TextBlock.RenderTransform>

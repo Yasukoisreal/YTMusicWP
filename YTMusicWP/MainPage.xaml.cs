@@ -71,6 +71,10 @@ namespace YTMusicWP
         {
             TitleMarqueeCanvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
         }
+        private void MiniLyricCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            MiniLyricCanvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
+        }
         private void SetPlayPauseIcon(bool isPlaying)
         {
             Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;
