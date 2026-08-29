@@ -796,6 +796,14 @@ namespace YTMusicWP
             {
                 UpdateMiniLyric(currentLyrics[currentLyricIndex].Text, force: true);
             }
+            else
+            {
+                if (_miniLyricMarqueeStoryboard != null)
+                {
+                    _miniLyricMarqueeStoryboard.Stop();
+                    _miniLyricMarqueeStoryboard = null;
+                }
+            }
         }
 
         private async void UpdateMiniLyric(string newLyric, bool force = false)

@@ -203,7 +203,7 @@ namespace YTMusicWP
             DotPlayer.Opacity = idx == 0 ? 1.0 : 0.3;
             DotLyrics.Opacity = idx == 1 ? 1.0 : 0.3;
             DotQueue.Opacity  = idx == 2 ? 1.0 : 0.3;
-            MiniLyricCanvas.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+            MiniLyricCanvas.Opacity = idx == 0 ? 1.0 : 0.0;
             
             ForceUpdateLyricUI();
         }
