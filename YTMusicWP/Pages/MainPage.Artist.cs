@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,7 +17,7 @@ namespace YTMusicWP
         private string _currentArtistAvatarUrl;
         private bool _isFollowingArtist;
 
-        private async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
+        public async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
         {
             try
             {

@@ -610,6 +610,35 @@ namespace YTMusicWP
                 && (DateTime.Now - _discoverCacheTime).TotalHours < 24)
                 return _cachedDiscover;
 
+            var items = await FetchCarouselItemsAsync("FEmusic_explore");
+            if (items != null && items.Count > 0)
+            {
+                _cachedDiscover = items;
+                _discoverCacheTime = DateTime.Now;
+            }
+            return items;
+        }
+
+        private static List<DiscoverItem> _cachedCharts = null;
+        private static DateTime _chartsCacheTime = DateTime.MinValue;
+
+        public static async Task<List<DiscoverItem>> BrowseChartsAsync()
+        {
+            if (_cachedCharts != null && _cachedCharts.Count > 0 
+                && (DateTime.Now - _chartsCacheTime).TotalHours < 24)
+                return _cachedCharts;
+
+            var items = await FetchCarouselItemsAsync("FEmusic_charts");
+            if (items != null && items.Count > 0)
+            {
+                _cachedCharts = items;
+                _chartsCacheTime = DateTime.Now;
+            }
+            return items;
+        }
+
+        private static async Task<List<DiscoverItem>> FetchCarouselItemsAsync(string browseId)
+        {
             var items = new List<DiscoverItem>();
             try
             {
@@ -617,7 +646,7 @@ namespace YTMusicWP
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd),
-                    ["browseId"] = "FEmusic_explore"
+                    ["browseId"] = browseId
                 };
 
                 var data = await PostInnerTubeAsync(
@@ -693,11 +722,6 @@ namespace YTMusicWP
                     }
                 }
 
-                if (items.Count > 0)
-                {
-                    _cachedDiscover = items;
-                    _discoverCacheTime = DateTime.Now;
-                }
             }
             catch { }
             return items;
