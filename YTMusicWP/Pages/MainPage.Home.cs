@@ -195,10 +195,9 @@ namespace YTMusicWP
             // ═══════════════════════════════════════════════════
             try
             {
-                string token = await GetAccessTokenAsync();
-                var homeTask = InnerTubeClient.BrowseHomeAsync(token);
+                var homeTask = InnerTubeClient.BrowseHomeAsync(null);
                 var chartsTask = InnerTubeClient.BrowseChartsAsync();
-                var homeSections = default(System.Collections.Generic.List<InnerTubeClient.HomeSection>);
+                var homeSections = default(System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>);
                 var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
 
                 try
