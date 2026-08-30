@@ -638,6 +638,19 @@ namespace AudioPlayerTask
                 if (storedArtist != artist) ls["CurrentArtist"] = artist;
                 if (storedVid != vidId) ls["CurrentVideoId"] = vidId;
                 if (storedThumb != thumb) ls["CurrentThumbnail"] = thumb;
+
+                // Add to PendingHistory for SQLite insertion by foreground
+                try
+                {
+                    string historyTrackStr = $"{vidId}|{title.Replace("|", "").Replace("^", "")}|{artist.Replace("|", "").Replace("^", "")}|{thumb}";
+                    string pending = ls.ContainsKey("PendingHistory") ? ls["PendingHistory"]?.ToString() : "";
+                    if (pending.Length > 2000) pending = ""; // Protect settings quota
+                    if (string.IsNullOrEmpty(pending))
+                        ls["PendingHistory"] = historyTrackStr;
+                    else
+                        ls["PendingHistory"] = pending + "^^^" + historyTrackStr;
+                }
+                catch { }
             }
             catch { }
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }

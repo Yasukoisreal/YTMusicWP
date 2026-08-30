@@ -955,110 +955,54 @@ namespace YTMusicWP
         }
 
         // ------------------------------------------
-        // SYNC USER PLAYLISTS � Fetch from YouTube
+        // SYNC USER PLAYLISTS  Fetch from YouTube
         // ------------------------------------------
         private async Task SyncPlaylistsAsync(string accessToken)
         {
             try
             {
-                var extra = new JObject { ["browseId"] = "FElibrary" };
-                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", extra, accessToken);
+                if (!InnerTubeClient.HasCookieAuth) return;
+
+                var extra = new JObject { ["browseId"] = "FEmusic_liked_playlists" };
+                var json = await InnerTubeClient.CookieInnerTubePostAsync("browse", extra, "WEB_REMIX", "1.20260304.03.00");
 
                 if (json["_error"] != null)
                 {
-                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] FElibrary error: " + json["_error"]);
+                    System.Diagnostics.Debug.WriteLine("[PlaylistSync] FEmusic_liked_playlists error: " + json["_error"]);
                     return;
                 }
 
-                // DEBUG: Dump response structure
-                string jsonStr = json.ToString();
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Response length: " + jsonStr.Length);
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Response keys: " + string.Join(", ", json.Properties().Select(p => p.Name)));
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] Preview: " + jsonStr.Substring(0, Math.Min(2000, jsonStr.Length)));
-
-                // Try to find playlist renderers in the response
-                // TV client likely uses tileRenderer (same as Liked Songs)
-                var renderers = json.SelectTokens("$..tileRenderer").ToList();
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] tileRenderer count: " + renderers.Count);
-
-                // Also check for other renderer types
-                var lockups = json.SelectTokens("$..lockupViewModel").ToList();
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] lockupViewModel count: " + lockups.Count);
-
-                var gridRenderers = json.SelectTokens("$..gridPlaylistRenderer").ToList();
-                System.Diagnostics.Debug.WriteLine("[PlaylistSync] gridPlaylistRenderer count: " + gridRenderers.Count);
-
-                // Try to extract playlists from tileRenderer
                 bool hasNew = false;
-                int debugCount = 0;
-
-                foreach (var renderer in renderers)
+                var items = json.SelectTokens("$..musicTwoRowItemRenderer").ToList();
+                
+                foreach (var renderer in items)
                 {
                     try
                     {
-                        // DEBUG: log first 3 renderers
-                        if (debugCount < 3)
-                        {
-                            var rObj = renderer as JObject;
-                            string keys = rObj != null ? string.Join(", ", rObj.Properties().Select(p => p.Name)) : "N/A";
-                            System.Diagnostics.Debug.WriteLine("[PlaylistSync] renderer[" + debugCount + "] keys: " + keys);
-                            if (debugCount == 0)
-                            {
-                                string rStr = renderer.ToString();
-                                System.Diagnostics.Debug.WriteLine("[PlaylistSync] renderer[0] JSON: " + rStr.Substring(0, Math.Min(1500, rStr.Length)));
-                            }
-                            debugCount++;
-                        }
+                        string playlistId = renderer.SelectToken("navigationEndpoint.browseEndpoint.browseId")?.ToString();
+                        if (string.IsNullOrEmpty(playlistId)) continue;
+                        
+                        if (playlistId.StartsWith("VL")) playlistId = playlistId.Substring(2);
+                        if (!playlistId.StartsWith("PL") && !playlistId.StartsWith("UC") && !playlistId.StartsWith("RD") && !playlistId.StartsWith("LM")) continue;
 
-                        // Use contentId to identify the item type
-                        string contentId = null;
-                        try { contentId = renderer["contentId"]?.ToString(); } catch { }
-                        if (string.IsNullOrEmpty(contentId)) continue;
-
-                        // FElibrary returns EVERYTHING (history, videos, channels, playlists)
-                        // Real YouTube playlists always have IDs starting with "PL"
-                        if (!contentId.StartsWith("PL")) continue;
-
-                        string playlistId = contentId;
-                        // Skip if already synced
                         if (_youtubeUserPlaylists.Any(p => p.PlaylistId == playlistId)) continue;
 
-                        // Title
-                        string title = null;
-                        try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.simpleText")?.ToString(); } catch { }
-                        if (title == null) try { title = renderer.SelectToken("metadata.tileMetadataRenderer.title.runs[0].text")?.ToString(); } catch { }
-                        if (title == null) try { title = renderer.SelectToken("title.simpleText")?.ToString(); } catch { }
-                        if (title == null) try { title = renderer.SelectToken("title.runs[0].text")?.ToString(); } catch { }
-
+                        string title = renderer.SelectToken("title.runs[0].text")?.ToString() 
+                                    ?? renderer.SelectToken("title.simpleText")?.ToString();
                         if (string.IsNullOrEmpty(title)) continue;
 
-                        // Thumbnail
                         string thumbUrl = "";
-                        try
+                        var thumbArr = renderer.SelectToken("thumbnailRenderer.musicThumbnailRenderer.thumbnail.thumbnails");
+                        if (thumbArr != null && thumbArr.Count() > 0)
                         {
-                            var thumbArr = renderer.SelectToken("header.tileHeaderRenderer.thumbnail.thumbnails");
-                            if (thumbArr != null)
-                                foreach (var t in thumbArr)
-                                {
-                                    string u = t["url"]?.ToString();
-                                    if (!string.IsNullOrEmpty(u)) thumbUrl = u;
-                                }
+                            thumbUrl = thumbArr.Last()["url"]?.ToString() ?? "";
                         }
-                        catch { }
 
-                        // Track count from subtitle/metadata lines
                         int trackCount = 0;
-                        try
-                        {
-                            string subtitle = renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.runs[0].text")?.ToString()
-                                ?? renderer.SelectToken("metadata.tileMetadataRenderer.lines[0].lineRenderer.items[0].lineItemRenderer.text.simpleText")?.ToString() ?? "";
-                            // Try to parse "42 videos" or similar
-                            var match = System.Text.RegularExpressions.Regex.Match(subtitle, @"(\d+)");
-                            if (match.Success) trackCount = int.Parse(match.Groups[1].Value);
-                        }
-                        catch { }
-
-                        System.Diagnostics.Debug.WriteLine("[PlaylistSync] Found: " + title + " (" + playlistId + ") " + trackCount + " tracks");
+                        string subtitle = renderer.SelectToken("subtitle.runs[0].text")?.ToString() 
+                                       ?? renderer.SelectToken("subtitle.simpleText")?.ToString() ?? "";
+                        var match = System.Text.RegularExpressions.Regex.Match(subtitle, @"(\d+)");
+                        if (match.Success) trackCount = int.Parse(match.Groups[1].Value);
 
                         _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
                         {
@@ -1082,7 +1026,7 @@ namespace YTMusicWP
         }
 
         // ------------------------------------------
-        // GET ACCESS TOKEN � Auto-refresh if expired
+        // GET ACCESS TOKEN  Auto-refresh if expired
         // ------------------------------------------
         private async Task<string> GetAccessTokenAsync()
         {
@@ -1460,7 +1404,7 @@ namespace YTMusicWP
             try
             {
                 string accessToken = await GetAccessTokenAsync();
-                if (!string.IsNullOrEmpty(accessToken))
+                if (!string.IsNullOrEmpty(accessToken) || InnerTubeClient.HasCookieAuth)
                 {
                     LoginStatusText.Text = "Syncing...";
                     LoginStatusText.Foreground = _authOrangeBrush;

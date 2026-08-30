@@ -231,20 +231,35 @@ namespace YTMusicWP
             if (favoriteTracks.Count > 0) return;
             try
             {
-                StorageFolder folder = ApplicationData.Current.LocalFolder;
-                StorageFile file = await folder.GetFileAsync("favorites.json");
-                string json = await FileIO.ReadTextAsync(file);
-                JArray array = JArray.Parse(json);
+                var tracks = await YTMusicWP.Services.DatabaseHelper.GetFavoritesAsync();
                 favoriteTracks.Clear();
-                foreach (var item in array)
+                if (tracks.Count > 0)
                 {
-                    favoriteTracks.Add(new YouTubeTrack
+                    foreach (var t in tracks) favoriteTracks.Add(t);
+                }
+                else
+                {
+                    // Migrate from JSON if SQLite is empty
+                    StorageFolder folder = ApplicationData.Current.LocalFolder;
+                    try
                     {
-                        VideoId = item["VideoId"]?.ToString(),
-                        Title = item["Title"]?.ToString(),
-                        ChannelName = item["ChannelName"]?.ToString(),
-                        ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
-                    });
+                        StorageFile file = await folder.GetFileAsync("favorites.json");
+                        string json = await FileIO.ReadTextAsync(file);
+                        JArray array = JArray.Parse(json);
+                        foreach (var item in array)
+                        {
+                            var t = new YouTubeTrack
+                            {
+                                VideoId = item["VideoId"]?.ToString(),
+                                Title = item["Title"]?.ToString(),
+                                ChannelName = item["ChannelName"]?.ToString(),
+                                ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
+                            };
+                            favoriteTracks.Add(t);
+                            await YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(t);
+                        }
+                    }
+                    catch { }
                 }
             }
             catch { }
@@ -255,22 +270,36 @@ namespace YTMusicWP
             if (historyTracks.Count > 0) return;
             try
             {
-                StorageFolder folder = ApplicationData.Current.LocalFolder;
-                StorageFile file = await folder.GetFileAsync("history.json");
-                string json = await FileIO.ReadTextAsync(file);
-                JArray array = JArray.Parse(json);
+                var tracks = await YTMusicWP.Services.DatabaseHelper.GetHistoryAsync(50); // increased from 20 for better history
                 historyTracks.Clear();
-                foreach (var item in array)
+                if (tracks.Count > 0)
                 {
-                    if (historyTracks.Count >= 20) break; // Match PlayTrack cap — protect 512MB RAM
-                    historyTracks.Add(new YouTubeTrack
+                    foreach (var t in tracks) historyTracks.Add(t);
+                }
+                else
+                {
+                    // Migrate from JSON
+                    StorageFolder folder = ApplicationData.Current.LocalFolder;
+                    try
                     {
-                        VideoId = item["VideoId"]?.ToString(),
-                        Title = item["Title"]?.ToString(),
-                        ChannelName = item["ChannelName"]?.ToString(),
-                        ChannelId = item["ChannelId"]?.ToString(),
-                        ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
-                    });
+                        StorageFile file = await folder.GetFileAsync("history.json");
+                        string json = await FileIO.ReadTextAsync(file);
+                        JArray array = JArray.Parse(json);
+                        foreach (var item in array)
+                        {
+                            var t = new YouTubeTrack
+                            {
+                                VideoId = item["VideoId"]?.ToString(),
+                                Title = item["Title"]?.ToString(),
+                                ChannelName = item["ChannelName"]?.ToString(),
+                                ChannelId = item["ChannelId"]?.ToString(),
+                                ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
+                            };
+                            historyTracks.Add(t);
+                            await YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(t);
+                        }
+                    }
+                    catch { }
                 }
                 RefreshHomeHistorySections();
             }

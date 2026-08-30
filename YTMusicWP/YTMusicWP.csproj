@@ -122,6 +122,8 @@
     <Compile Include="Services\QrCodeGenerator.cs" />
     <Compile Include="Services\TileService.cs" />
     <Compile Include="Models\YouTubeTrack.cs" />
+    <Compile Include="Models\DatabaseEntities.cs" />
+    <Compile Include="Services\DatabaseHelper.cs" />
     <Compile Include="Models\LibraryItem.cs" />
     <Compile Include="Models\LyricLine.cs" />
     <Compile Include="Models\UserPlaylist.cs" />
@@ -188,6 +190,21 @@
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.InteropServices.RuntimeInformation.4.3.0\lib\wpa81\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="SQLite-net">
+      <HintPath>..\packages\sqlite-net-pcl.1.5.231\lib\portable-net45+netcore45+wpa81+wp8+MonoAndroid10+MonoTouch10+Xamarin.iOS10\SQLite-net.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLitePCLRaw.core">
+      <HintPath>..\packages\SQLitePCLRaw.core.1.1.11\lib\wpa81\SQLitePCLRaw.core.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLitePCLRaw.batteries_v2">
+      <HintPath>..\packages\SQLitePCLRaw.bundle_green.1.1.11\lib\wpa81\SQLitePCLRaw.batteries_v2.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLitePCLRaw.batteries_green">
+      <HintPath>..\packages\SQLitePCLRaw.bundle_green.1.1.11\lib\wpa81\SQLitePCLRaw.batteries_green.dll</HintPath>
+    </Reference>
+    <Reference Include="SQLitePCLRaw.provider.e_sqlite3">
+      <HintPath>..\packages\SQLitePCLRaw.provider.e_sqlite3.wpa81.1.1.11\lib\wpa81\SQLitePCLRaw.provider.e_sqlite3.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

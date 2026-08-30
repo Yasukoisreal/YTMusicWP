@@ -219,6 +219,7 @@ namespace YTMusicWP
         public string Title { get; set; } = "";
         public string ThumbnailUrl { get; set; } = "";
         public List<YouTubeTrack> Tracks { get; set; } = new List<YouTubeTrack>();
+        public string ContinuationToken { get; set; } = null;
     }
 
     public class ArtistResult

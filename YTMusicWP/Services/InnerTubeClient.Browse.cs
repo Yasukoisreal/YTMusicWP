@@ -9,377 +9,105 @@ namespace YTMusicWP
 {
     public static partial class InnerTubeClient
     {
-        public static async Task<PlaylistResult> BrowsePlaylistAsync(string playlistId)
+        public static async Task<PlaylistResult> BrowsePlaylistAsync(string playlistId, string continuationToken = null)
         {
             var result = new PlaylistResult();
             try
             {
                 string vd = await GetVisitorDataAsync();
 
-                // MPREb_ = album browseId → use WEB_REMIX client with raw browseId
-                bool isAlbum = playlistId.StartsWith("MPREb_") || playlistId.StartsWith("OLAK5");
-                string browseId = isAlbum ? playlistId : (playlistId.StartsWith("VL") ? playlistId : "VL" + playlistId);
-                
+                // Build request body for WEB_REMIX (YouTube Music)
                 var body = new JObject
                 {
-                    ["context"] = isAlbum ? BuildMusicContext(vd) : BuildWebContext(vd),
-                    ["browseId"] = browseId
+                    ["context"] = BuildMusicContext(vd)
                 };
 
-                string apiUrl = isAlbum 
-                    ? "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false"
-                    : "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
-
-                var data = await PostInnerTubeAsync(apiUrl, body, isAlbum);
-
-
-
-                // Title
-                result.Title = data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString() ?? "";
-
-                // Title from microformat (album responses often use this instead of header)
-                // Format: "Come My Way - Album by Sơn Tùng M-TP" → extract artist + clean title
-                string _microformatArtist = "";
-                if (string.IsNullOrEmpty(result.Title))
+                if (!string.IsNullOrEmpty(continuationToken))
                 {
-                    string mfTitle = data?["microformat"]?["microformatDataRenderer"]?["title"]?.ToString() ?? "";
-                    if (!string.IsNullOrEmpty(mfTitle))
+                    body["continuation"] = continuationToken;
+                }
+                else
+                {
+                    // Prefix with VL for regular playlists, unless it's already an album/mix prefix
+                    bool isAlbum = playlistId.StartsWith("MPREb_") || playlistId.StartsWith("OLAK5");
+                    string browseId = playlistId;
+                    if (!isAlbum && !playlistId.StartsWith("VL"))
                     {
-                        // Try to parse " - Album by ", " - Single by ", " - EP by "
-                        string[] patterns = { " - Album by ", " - Single by ", " - EP by ", " - Playlist by " };
-                        foreach (var pattern in patterns)
+                        browseId = "VL" + playlistId;
+                    }
+                    body["browseId"] = browseId;
+                    
+                    // wAEB params often needed for full playlist track list in YouTube Music
+                    if (!isAlbum)
+                    {
+                        body["params"] = "wAEB";
+                    }
+                }
+
+                string apiUrl = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                
+                JObject data = null;
+                if (HasCookieAuth)
+                {
+                    // Use authenticated WEB_REMIX if cookie is available (needed for private playlists)
+                    var extraBody = new JObject();
+                    foreach (var prop in body.Properties())
+                    {
+                        if (prop.Name != "context") extraBody[prop.Name] = prop.Value;
+                    }
+                    data = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
+                }
+                else
+                {
+                    var dataStr = await PostInnerTubeAsync(apiUrl, body, true);
+                    data = dataStr;
+                }
+
+                // If not continuation, parse Title and Thumbnail
+                if (string.IsNullOrEmpty(continuationToken))
+                {
+                    result.Title = data?["header"]?.SelectToken("$..title.runs[0].text")?.ToString() 
+                        ?? data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString() 
+                        ?? "";
+
+                    result.ThumbnailUrl = data?["header"]?.SelectToken("$..thumbnails[0].url")?.ToString() 
+                        ?? data?["microformat"]?.SelectToken("$..thumbnails[0].url")?.ToString() 
+                        ?? "";
+                }
+
+                // Parse tracks
+                var allItems = data?.SelectTokens("$..musicResponsiveListItemRenderer");
+                if (allItems != null)
+                {
+                    foreach (var mrlir in allItems)
+                    {
+                        try
                         {
-                            int pIdx = mfTitle.IndexOf(pattern);
-                            if (pIdx > 0)
-                            {
-                                result.Title = mfTitle.Substring(0, pIdx).Trim();
-                                _microformatArtist = mfTitle.Substring(pIdx + pattern.Length).Trim();
-                                break;
-                            }
+                            var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
+                            var track = ParseMusicListItem(wrapper);
+                            if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                result.Tracks.Add(track);
                         }
-                        if (string.IsNullOrEmpty(result.Title))
-                            result.Title = mfTitle;
+                        catch { continue; }
                     }
                 }
-                // Title from tab title
-                if (string.IsNullOrEmpty(result.Title))
-                {
-                    result.Title = data?["contents"]?["twoColumnBrowseResultsRenderer"]?["tabs"]?[0]
-                        ?["tabRenderer"]?["title"]?.ToString() ?? "";
-                }
 
-                // Thumbnail from microformat
-                try
+                // Look for Continuation Token
+                string newToken = null;
+                var tokens = data?.SelectTokens("$..continuationCommand.token");
+                if (tokens != null)
                 {
-                    if (string.IsNullOrEmpty(result.ThumbnailUrl))
+                    newToken = tokens.LastOrDefault()?.ToString();
+                }
+                if (string.IsNullOrEmpty(newToken))
+                {
+                    tokens = data?.SelectTokens("$..nextContinuationData.continuation");
+                    if (tokens != null)
                     {
-                        var mfThumbs = data?["microformat"]?["microformatDataRenderer"]?["thumbnail"]?["thumbnails"];
-                        if (mfThumbs != null && mfThumbs.HasValues)
-                            result.ThumbnailUrl = mfThumbs.Last?["url"]?.ToString() ?? "";
+                        newToken = tokens.LastOrDefault()?.ToString();
                     }
                 }
-                catch { }
-
-                // Thumbnail from sidebar
-                try
-                {
-                    if (string.IsNullOrEmpty(result.ThumbnailUrl))
-                    {
-                        var sidebar = data?["sidebar"];
-                        if (sidebar != null)
-                        {
-                            string sidebarStr = sidebar.ToString();
-                            string tMarker = "\"url\":\"https://i.ytimg.com";
-                            int tIdx = sidebarStr.IndexOf(tMarker);
-                            if (tIdx >= 0)
-                            {
-                                int tStart = tIdx + 7;
-                                int tEnd = sidebarStr.IndexOf("\"", tStart);
-                                if (tEnd > tStart)
-                                    result.ThumbnailUrl = sidebarStr.Substring(tStart, tEnd - tStart);
-                            }
-                        }
-                    }
-                }
-                catch { }
-
-                // Brute-force thumbnail: any thumbnail in response
-                try
-                {
-                    if (string.IsNullOrEmpty(result.ThumbnailUrl))
-                    {
-                        var anyThumb = data?.SelectToken("$..thumbnail.thumbnails[0].url");
-                        if (anyThumb != null)
-                            result.ThumbnailUrl = anyThumb.ToString();
-                    }
-                }
-                catch { }
-
-                // Tracks — lockupViewModel format (new YouTube)
-                var tabs = data?["contents"]?["twoColumnBrowseResultsRenderer"]?["tabs"];
-                if (tabs != null && tabs.HasValues)
-                {
-                    var sections = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
-                    if (sections != null)
-                    {
-                        foreach (var sec in sections)
-                        {
-                            // itemSectionRenderer → lockupViewModel
-                            var isr = sec["itemSectionRenderer"];
-                            if (isr != null)
-                            {
-                                var items = isr["contents"];
-                                if (items != null)
-                                {
-                                    foreach (var item in items)
-                                    {
-                                        try
-                                        {
-                                            var track = ParseLockupViewModel(item);
-                                            if (track != null)
-                                                result.Tracks.Add(track);
-                                        }
-                                        catch { continue; }
-                                    }
-                                }
-                            }
-
-                            // musicShelfRenderer → musicResponsiveListItemRenderer (albums in twoColumn)
-                            var shelf = sec["musicShelfRenderer"];
-                            if (shelf != null)
-                            {
-                                var shelfItems = shelf["contents"];
-                                if (shelfItems != null)
-                                {
-                                    foreach (var sItem in shelfItems)
-                                    {
-                                        try
-                                        {
-                                            var track = ParseMusicListItem(sItem);
-                                            if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                                result.Tracks.Add(track);
-                                        }
-                                        catch { continue; }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Fallback for albums: singleColumnBrowseResultsRenderer → musicShelfRenderer
-                if (result.Tracks.Count == 0)
-                {
-                    var tabs2 = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
-                    if (tabs2 != null && tabs2.HasValues)
-                    {
-                        var sections2 = tabs2[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
-                        if (sections2 != null)
-                        {
-                            foreach (var sec in sections2)
-                            {
-                                var shelf = sec["musicShelfRenderer"];
-                                if (shelf == null) continue;
-                                var shelfItems = shelf["contents"];
-                                if (shelfItems == null) continue;
-                                foreach (var sItem in shelfItems)
-                                {
-                                    try
-                                    {
-                                        var track = ParseMusicListItem(sItem);
-                                        if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                            result.Tracks.Add(track);
-                                    }
-                                    catch { continue; }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Brute-force fallback: search all musicResponsiveListItemRenderer
-                if (result.Tracks.Count == 0)
-                {
-                    var allItems = data?.SelectTokens("$..musicResponsiveListItemRenderer");
-                    if (allItems != null)
-                    {
-                        foreach (var mrlir in allItems)
-                        {
-                            try
-                            {
-                                var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
-                                var track = ParseMusicListItem(wrapper);
-                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                    result.Tracks.Add(track);
-                            }
-                            catch { continue; }
-                        }
-                    }
-                }
-
-                // Fallback: playlistPanelVideoRenderer (used by some album formats)
-                if (result.Tracks.Count == 0)
-                {
-                    var panelItems = data?.SelectTokens("$..playlistPanelVideoRenderer");
-                    if (panelItems != null)
-                    {
-                        foreach (var pv in panelItems)
-                        {
-                            try
-                            {
-                                string vid = pv["videoId"]?.ToString();
-                                if (string.IsNullOrEmpty(vid)) continue;
-                                string title2 = pv["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                                string art2 = "";
-                                var shortBy = pv["shortBylineText"]?["runs"];
-                                if (shortBy != null && shortBy.HasValues)
-                                    art2 = shortBy[0]?["text"]?.ToString() ?? "";
-                                else
-                                {
-                                    var longBy = pv["longBylineText"]?["runs"];
-                                    if (longBy != null && longBy.HasValues)
-                                        art2 = longBy[0]?["text"]?.ToString() ?? "";
-                                }
-                                result.Tracks.Add(new YouTubeTrack
-                                {
-                                    VideoId = vid,
-                                    Title = title2,
-                                    ChannelName = CleanChannelName(art2),
-                                    ThumbnailUrl = "https://i.ytimg.com/vi/" + vid + "/hqdefault.jpg"
-                                });
-                            }
-                            catch { continue; }
-                        }
-                    }
-                }
-
-                // Ultimate fallback: find all playlistItemData videoIds
-                if (result.Tracks.Count == 0)
-                {
-                    var allVideoIds = data?.SelectTokens("$..playlistItemData.videoId")
-                        .Select(t => t.ToString()).Distinct().ToList();
-                    if (allVideoIds != null && allVideoIds.Count > 0)
-                    {
-                        // Try to pair with titles from flexColumns
-                        var allTitles = data?.SelectTokens("$..flexColumns[0]..runs[0].text")
-                            .Select(t => t.ToString()).ToList() ?? new List<string>();
-
-                        for (int i = 0; i < allVideoIds.Count; i++)
-                        {
-                            string vid = allVideoIds[i];
-                            string title2 = (i < allTitles.Count) ? allTitles[i] : "Track " + (i + 1);
-                            result.Tracks.Add(new YouTubeTrack
-                            {
-                                VideoId = vid,
-                                Title = title2,
-                                ChannelName = "",
-                                ThumbnailUrl = "https://i.ytimg.com/vi/" + vid + "/hqdefault.jpg"
-                            });
-                        }
-                    }
-                }
-
-                // Album title fallback
-                if (string.IsNullOrEmpty(result.Title))
-                {
-                    result.Title = data?["header"]?["musicImmersiveHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                }
-                if (string.IsNullOrEmpty(result.Title))
-                {
-                    result.Title = data?["header"]?["musicDetailHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                }
-                if (string.IsNullOrEmpty(result.Title))
-                {
-                    result.Title = data?["header"]?["musicVisualHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                }
-                if (string.IsNullOrEmpty(result.Title))
-                {
-                    result.Title = data?["header"]?["musicHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                }
-                // Album thumbnail fallback
-                if (string.IsNullOrEmpty(result.ThumbnailUrl))
-                {
-                    var hdrThumbs = data?["header"]?["musicImmersiveHeaderRenderer"]?["thumbnail"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
-                    if (hdrThumbs != null && hdrThumbs.HasValues)
-                        result.ThumbnailUrl = hdrThumbs.Last?["url"]?.ToString() ?? "";
-                }
-                if (string.IsNullOrEmpty(result.ThumbnailUrl))
-                {
-                    var hdrThumbs2 = data?["header"]?["musicDetailHeaderRenderer"]?["thumbnail"]?["croppedSquareThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
-                    if (hdrThumbs2 != null && hdrThumbs2.HasValues)
-                        result.ThumbnailUrl = hdrThumbs2.Last?["url"]?.ToString() ?? "";
-                }
-                if (string.IsNullOrEmpty(result.ThumbnailUrl))
-                {
-                    // Try any thumbnail in header
-                    var anyThumb = data?.SelectToken("$..header..thumbnails[0].url");
-                    if (anyThumb != null)
-                        result.ThumbnailUrl = anyThumb.ToString();
-                }
-
-                // Extract album artist from header subtitle
-                string albumArtist = "";
-                try
-                {
-                    var subtitleRuns = data?["header"]?["musicImmersiveHeaderRenderer"]?["subtitle"]?["runs"]
-                        ?? data?["header"]?["musicDetailHeaderRenderer"]?["subtitle"]?["runs"]
-                        ?? data?["header"]?["musicVisualHeaderRenderer"]?["subtitle"]?["runs"];
-                    if (subtitleRuns != null)
-                    {
-                        foreach (var sr in subtitleRuns)
-                        {
-                            string t = sr["text"]?.ToString();
-                            if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == "Album" || t == "Single" || t == "EP") continue;
-                            if (t.Length <= 6 && t.All(c => char.IsDigit(c))) continue; // year like "2024"
-                            var browseEp = sr["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
-                            if (!string.IsNullOrEmpty(browseEp) && browseEp.StartsWith("UC"))
-                            {
-                                albumArtist = t;
-                                break;
-                            }
-                        }
-                        // Fallback: first non-label text
-                        if (string.IsNullOrEmpty(albumArtist))
-                        {
-                            foreach (var sr in subtitleRuns)
-                            {
-                                string t = sr["text"]?.ToString();
-                                if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == "Album" || t == "Single" || t == "EP") continue;
-                                if (t.Length <= 6 && t.All(c => char.IsDigit(c))) continue;
-                                albumArtist = t;
-                                break;
-                            }
-                        }
-                    }
-                }
-                catch { }
-
-                // Fallback: extract artist from microformat description
-                if (string.IsNullOrEmpty(albumArtist))
-                {
-                    try
-                    {
-                        string mfDesc = data?["microformat"]?["microformatDataRenderer"]?["description"]?.ToString() ?? "";
-                        // microformat description often contains: "Provided to YouTube by ..." or "Album · Year"
-                        // Try to get from pageOwnerDetails
-                        string pageOwner = data?["microformat"]?["microformatDataRenderer"]?["pageOwnerDetails"]?["name"]?.ToString() ?? "";
-                        if (!string.IsNullOrEmpty(pageOwner))
-                            albumArtist = pageOwner;
-                    }
-                    catch { }
-                }
-
-                // Fill in missing thumbnail/artist for tracks
-                foreach (var track in result.Tracks)
-                {
-                    if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
-                        track.ThumbnailUrl = result.ThumbnailUrl;
-                    // Use albumArtist, fallback to microformat artist
-                    string effectiveArtist = !string.IsNullOrEmpty(albumArtist) ? albumArtist : _microformatArtist;
-                    if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(effectiveArtist))
-                        track.ChannelName = CleanChannelName(effectiveArtist);
-                }
-
+                result.ContinuationToken = newToken;
 
             }
             catch { }

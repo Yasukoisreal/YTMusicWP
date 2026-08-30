@@ -104,8 +104,8 @@ namespace YTMusicWP
             var existingHistory = historyTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
             if (existingHistory != null) historyTracks.Remove(existingHistory);
             historyTracks.Insert(0, track);
-            if (historyTracks.Count > 20) historyTracks.RemoveAt(historyTracks.Count - 1);
-            var ignoredHistory = SaveHistoryAsyncTask();
+            if (historyTracks.Count > 50) historyTracks.RemoveAt(historyTracks.Count - 1);
+            var ignoredHistory = YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(track);
             RefreshHomeHistorySections();
 
             // Resolve URL cho bài hiện tại từ foreground (HttpClient mạnh hơn AudioTask)
@@ -227,9 +227,20 @@ namespace YTMusicWP
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == currentTrack.VideoId);
             bool isAdding = (existing == null);
 
-            if (existing != null) { favoriteTracks.Remove(existing); BigHeartBtn.Content = "♡"; BigHeartBtn.Foreground = _whiteBrush; }
-            else { favoriteTracks.Insert(0, currentTrack); BigHeartBtn.Content = "♥"; BigHeartBtn.Foreground = _greenBrush; }
-            SaveFavoritesAsync();
+            if (existing != null) 
+            { 
+                favoriteTracks.Remove(existing); 
+                BigHeartBtn.Content = "♡"; 
+                BigHeartBtn.Foreground = _whiteBrush; 
+                var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(currentTrack.VideoId);
+            }
+            else 
+            { 
+                favoriteTracks.Insert(0, currentTrack); 
+                BigHeartBtn.Content = "♥"; 
+                BigHeartBtn.Foreground = _greenBrush; 
+                var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(currentTrack);
+            }
 
             // Sync to YouTube (skip LOCAL tracks that can't be rated)
             if (!currentTrack.VideoId.StartsWith("LOCAL:"))
@@ -618,6 +629,12 @@ namespace YTMusicWP
                         bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
                         BigHeartBtn.Content = isFav ? "♥" : "♡";
                         BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+
+                        var existingHistory = historyTracks.FirstOrDefault(t => t.VideoId == vid);
+                        if (existingHistory != null) historyTracks.Remove(existingHistory);
+                        historyTracks.Insert(0, currentTrack);
+                        if (historyTracks.Count > 50) historyTracks.RemoveAt(historyTracks.Count - 1);
+                        var _ = YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(currentTrack);
 
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist);

@@ -809,6 +809,7 @@ namespace YTMusicWP
                 ShortsHeartBtn.Text = "♡";
                 ShortsHeartBtn.Foreground = _whiteBrush;
                 ShowToast("Removed from Favorites");
+                var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
             }
             else
             {
@@ -816,8 +817,8 @@ namespace YTMusicWP
                 ShortsHeartBtn.Text = "♥";
                 ShortsHeartBtn.Foreground = _greenBrush;
                 ShowToast("Added to Favorites");
+                var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }
-            SaveFavoritesAsync();
 
             // Sync to YouTube
             string rating = isAdding ? "like" : "none";

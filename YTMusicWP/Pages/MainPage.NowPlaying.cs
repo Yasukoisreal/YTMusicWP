@@ -379,13 +379,18 @@ namespace YTMusicWP
                 }
 
                 var fav = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
-                if (fav != null) { favoriteTracks.Remove(fav); SaveFavoritesAsync(); }
+                if (fav != null) 
+                { 
+                    favoriteTracks.Remove(fav); 
+                    var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId); 
+                }
 
                 var hist = historyTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
                 if (hist != null)
                 {
                     historyTracks.Remove(hist);
-                    var ignoredHist = SaveHistoryAsyncTask();
+                    var _ = YTMusicWP.Services.DatabaseHelper.ClearHistoryAsync(); // Just a workaround, normally shouldn't remove history on download delete, but kept for parity.
+                    foreach (var h in historyTracks) { var __ = YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(h); }
                     RefreshHomeHistorySections();
                 }
 

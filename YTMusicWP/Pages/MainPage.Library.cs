@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -930,7 +930,7 @@ namespace YTMusicWP
             try
             {
                 string accessToken = await GetAccessTokenAsync();
-                if (!string.IsNullOrEmpty(accessToken))
+                if (!string.IsNullOrEmpty(accessToken) || YTMusicWP.InnerTubeClient.HasCookieAuth)
                 {
                     ShowToast("Syncing...");
                     await SyncAllAsync(accessToken);

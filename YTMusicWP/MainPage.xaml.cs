@@ -98,6 +98,8 @@ namespace YTMusicWP
         private ObservableCollection<UserPlaylist> userPlaylists = new ObservableCollection<UserPlaylist>();
         private UserPlaylist _currentViewingPlaylist = null;
         private string _currentViewingYtPlaylistId = null;
+        private string _playlistContinuationToken = null;
+        private bool _isLoadingMorePlaylist = false;
         private YouTubeTrack _trackPendingForPlaylist = null;
 
 
@@ -234,6 +236,43 @@ namespace YTMusicWP
                 SyncBackgroundPlayer();
             }
             catch { }
+
+            var _ = FlushPendingHistoryAsync();
+        }
+
+        private async Task FlushPendingHistoryAsync()
+        {
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (ls.ContainsKey("PendingHistory"))
+                {
+                    string pending = ls["PendingHistory"]?.ToString();
+                    ls.Remove("PendingHistory");
+
+                    if (!string.IsNullOrEmpty(pending))
+                    {
+                        var parts = pending.Split(new[] { "^^^" }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var part in parts)
+                        {
+                            var props = part.Split('|');
+                            if (props.Length >= 4)
+                            {
+                                var track = new YouTubeTrack { VideoId = props[0], Title = props[1], ChannelName = props[2], ThumbnailUrl = props[3] };
+                                await YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(track);
+                                
+                                // Update UI if needed
+                                var existingHistory = historyTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
+                                if (existingHistory != null) historyTracks.Remove(existingHistory);
+                                historyTracks.Insert(0, track);
+                                if (historyTracks.Count > 50) historyTracks.RemoveAt(historyTracks.Count - 1);
+                            }
+                        }
+                        RefreshHomeHistorySections();
+                    }
+                }
+            }
+            catch { }
         }
 
         private ScrollViewer GetScrollViewer(DependencyObject depObj)
@@ -282,7 +321,7 @@ namespace YTMusicWP
         {
             base.OnNavigatedTo(e);
 
-
+            await YTMusicWP.Services.DatabaseHelper.InitializeAsync();
 
             // Set InnerTube region from settings (affects all API calls)
             string region = "US";
@@ -294,6 +333,8 @@ namespace YTMusicWP
             InnerTubeClient.LoadCookieAuthFromSettings();
 
             DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
+
+            await FlushPendingHistoryAsync();
 
             // [OPT-8] Parallel file I/O — independent operations run concurrently
             await Task.WhenAll(LoadFavoritesAsync(), LoadHistoryAsync(), LoadPlaylistsAsync(),

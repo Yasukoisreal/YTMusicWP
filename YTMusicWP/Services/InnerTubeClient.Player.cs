@@ -57,6 +57,12 @@ namespace YTMusicWP
                     req.Headers.Add("X-YouTube-Client-Name", "3");
                     req.Headers.Add("X-YouTube-Client-Version", "20.49.37");
 
+                    if (HasCookieAuth)
+                    {
+                        req.Headers.Add("Cookie", _cookieString);
+                        req.Headers.Add("Authorization", GenerateSAPISIDHash(_sapisid, "https://www.youtube.com"));
+                    }
+
                     string json;
                     using (var resp = await _client.SendAsync(req))
                     {

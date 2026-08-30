@@ -157,8 +157,16 @@ namespace YTMusicWP
             request.Headers.Add("Origin", $"https://{domain}");
             request.Headers.Add("Referer", $"https://{domain}/");
             
-            // OAuth2 token
-            request.Headers.Add("Authorization", "Bearer " + accessToken);
+            // OAuth2 token or Cookie fallback
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                request.Headers.Add("Authorization", "Bearer " + accessToken);
+            }
+            else if (HasCookieAuth)
+            {
+                request.Headers.Add("Cookie", _cookieString);
+                request.Headers.Add("Authorization", GenerateSAPISIDHash(_sapisid, "https://music.youtube.com"));
+            }
 
             using (var response = await _client.SendAsync(request))
             {
