@@ -297,6 +297,25 @@ namespace YTMusicWP
             settings.Remove("GoogleClientSecret");
             settings.Remove("GoogleTokenExpiry");
 
+            // Clear Cookie Auth
+            settings.Remove("GoogleCookieString");
+            settings.Remove("GoogleSAPISID");
+            InnerTubeClient.ClearCookieAuth();
+
+            // Clear WebView cookies physically
+            try
+            {
+                var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+                var cookieManager = filter.CookieManager;
+                var cookies = cookieManager.GetCookies(new Uri("https://google.com"));
+                foreach (var cookie in cookies) cookieManager.DeleteCookie(cookie);
+                cookies = cookieManager.GetCookies(new Uri("https://youtube.com"));
+                foreach (var cookie in cookies) cookieManager.DeleteCookie(cookie);
+                cookies = cookieManager.GetCookies(new Uri("https://accounts.google.com"));
+                foreach (var cookie in cookies) cookieManager.DeleteCookie(cookie);
+            }
+            catch { }
+
             _youtubeUserPlaylists.Clear();
             _youtubeSubscriptions.Clear();
             favoriteTracks.Clear();
@@ -375,8 +394,14 @@ namespace YTMusicWP
             }
         }
 
-        private void CloseLoginWeb_Click(object sender, RoutedEventArgs e)
+        private async void CloseLoginWeb_Click(object sender, RoutedEventArgs e)
         {
+            if (_cookieLoginActive)
+            {
+                // Try to extract cookies one last time before closing
+                await ExtractAndSaveCookiesAsync("");
+            }
+            
             LoginWebContainer.Visibility = Visibility.Collapsed;
             _deviceCodePolling = false;
             DeviceCodeQrImage.Source = null;
@@ -581,14 +606,13 @@ namespace YTMusicWP
 
             string currentUrl = sender.Source?.ToString() ?? "";
 
-            // Check if we've landed on YouTube Music (login complete)
-            if (currentUrl.Contains("music.youtube.com") && !currentUrl.Contains("accounts.google.com"))
-            {
-                await ExtractAndSaveCookiesAsync();
-            }
+            // Check if we've landed on YouTube Music (login complete) or if Google threw an "unsupported browser" error
+            // Actually, let's just aggressively check for the SAPISID cookie on EVERY navigation complete.
+            // If the user logs in but gets stuck on the "browser not supported" page, the cookie is usually already set!
+            await ExtractAndSaveCookiesAsync(currentUrl);
         }
 
-        private async Task ExtractAndSaveCookiesAsync()
+        private async Task ExtractAndSaveCookiesAsync(string currentUrl)
         {
             try
             {
@@ -610,9 +634,14 @@ namespace YTMusicWP
                     }
                 }
 
+                // If we don't have the cookie yet, we just wait for the user to finish logging in.
                 if (string.IsNullOrEmpty(sapisid) || cookieParts.Count < 3)
                 {
-                    DeviceCodeStatus.Text = "Login incomplete. Please try again.";
+                    // If they reached YouTube Music but still no cookie, maybe show an error
+                    if (currentUrl.Contains("music.youtube.com") && !currentUrl.Contains("accounts.google.com"))
+                    {
+                        DeviceCodeStatus.Text = "Login incomplete. Please try again.";
+                    }
                     return;
                 }
 
