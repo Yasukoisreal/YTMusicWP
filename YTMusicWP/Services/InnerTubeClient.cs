@@ -156,7 +156,7 @@ namespace YTMusicWP
             var client = new JObject
             {
                 ["clientName"] = "WEB_REMIX",
-                ["clientVersion"] = "1.20241016.01.00",
+                ["clientVersion"] = "1.20260304.03.00",
                 ["hl"] = CurrentLanguage,
                 ["gl"] = CurrentRegion
             };

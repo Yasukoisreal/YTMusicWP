@@ -290,6 +290,9 @@ namespace YTMusicWP
                 region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
             InnerTubeClient.SetRegion(region);
 
+            // Load saved cookie auth (SAPISIDHASH) if available
+            InnerTubeClient.LoadCookieAuthFromSettings();
+
             DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
 
             // [OPT-8] Parallel file I/O — independent operations run concurrently

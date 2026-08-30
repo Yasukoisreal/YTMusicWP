@@ -1141,7 +1141,7 @@
                             <!-- NOT LOGGED IN state -->
                             <StackPanel x:Name="AccountSignedOutPanel">
                                 <TextBlock Text="Sign in to sync liked songs, playlists, and subscriptions." Foreground="#777" FontSize="12" Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                <Button Click="LoginGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Height="46">
+                                <Button Click="LoginCookie_Click" Style="{StaticResource CategoryButtonStyle}" Height="46" Margin="0,0,0,8">
                                     <Border CornerRadius="12">
                                         <Border.Background>
                                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
@@ -1152,6 +1152,14 @@
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <TextBlock Text="&#xE13D;" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                             <TextBlock Text="Sign in with Google" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Button>
+                                <Button Click="LoginGoogle_Click" Style="{StaticResource CategoryButtonStyle}" Height="40">
+                                    <Border CornerRadius="12" Background="#333">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="&#xE15B;" FontFamily="Segoe UI Symbol" FontSize="14" Foreground="#999" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Sign in with TV Code" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#999" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                 </Button>

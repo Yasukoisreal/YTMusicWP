@@ -536,10 +536,155 @@ namespace YTMusicWP
             }
         }
 
-        // Old WebView handlers (kept for XAML compatibility, no longer used)
-        private void LoginWebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args) { }
-        private void LoginWebView_NavigationFailed(object sender, WebViewNavigationFailedEventArgs e) { }
-        private void LoginWebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args) { }
+        // ==========================================
+        // COOKIE-BASED LOGIN (WebView → Google → extract cookies)
+        // ==========================================
+        private bool _cookieLoginActive = false;
+
+        private void LoginCookie_Click(object sender, RoutedEventArgs e)
+        {
+            _cookieLoginActive = true;
+            LoginWebContainer.Visibility = Visibility.Visible;
+
+            // Hide the Device Code UI, show WebView instead
+            LoginWebView.Visibility = Visibility.Visible;
+            LoginWebLoading.Visibility = Visibility.Visible;
+
+            // Hide device code elements
+            DeviceCodeStatus.Text = "Signing in via browser...";
+            DeviceCodeProgress.Visibility = Visibility.Collapsed;
+
+            // Navigate to Google login → redirect to YouTube Music
+            LoginWebView.Navigate(new Uri("https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com%2F&hl=en"));
+        }
+
+        private void LoginWebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
+        {
+            if (_cookieLoginActive)
+                LoginWebLoading.Visibility = Visibility.Visible;
+        }
+
+        private void LoginWebView_NavigationFailed(object sender, WebViewNavigationFailedEventArgs e)
+        {
+            if (_cookieLoginActive)
+            {
+                LoginWebLoading.Visibility = Visibility.Collapsed;
+                DeviceCodeStatus.Text = "Navigation failed. Check your connection.";
+            }
+        }
+
+        private async void LoginWebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
+        {
+            LoginWebLoading.Visibility = Visibility.Collapsed;
+
+            if (!_cookieLoginActive) return;
+
+            string currentUrl = sender.Source?.ToString() ?? "";
+
+            // Check if we've landed on YouTube Music (login complete)
+            if (currentUrl.Contains("music.youtube.com") && !currentUrl.Contains("accounts.google.com"))
+            {
+                await ExtractAndSaveCookiesAsync();
+            }
+        }
+
+        private async Task ExtractAndSaveCookiesAsync()
+        {
+            try
+            {
+                var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+                var cookieManager = filter.CookieManager;
+                var cookies = cookieManager.GetCookies(new Uri("https://music.youtube.com"));
+
+                string sapisid = null;
+                var cookieParts = new System.Collections.Generic.List<string>();
+
+                foreach (var cookie in cookies)
+                {
+                    cookieParts.Add(cookie.Name + "=" + cookie.Value);
+
+                    if (cookie.Name == "SAPISID" || cookie.Name == "__Secure-3PAPISID")
+                    {
+                        if (sapisid == null) // Prefer SAPISID over __Secure-3PAPISID
+                            sapisid = cookie.Value;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(sapisid) || cookieParts.Count < 3)
+                {
+                    DeviceCodeStatus.Text = "Login incomplete. Please try again.";
+                    return;
+                }
+
+                string cookieString = string.Join("; ", cookieParts);
+
+                // Save to settings
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                settings["GoogleCookieString"] = cookieString;
+                settings["GoogleSAPISID"] = sapisid;
+
+                // Activate cookie auth in InnerTubeClient
+                InnerTubeClient.SetCookieAuth(cookieString, sapisid);
+
+                // Hide WebView
+                _cookieLoginActive = false;
+                LoginWebView.Visibility = Visibility.Collapsed;
+                LoginWebLoading.Visibility = Visibility.Collapsed;
+                LoginWebContainer.Visibility = Visibility.Collapsed;
+
+                UpdateAccountPanel(true, "Logged in (Cookie)");
+                LoginStatusText.Foreground = _greenBrush;
+                SyncNowBtn.Visibility = Visibility.Visible;
+                ShowToast("Login successful!");
+
+                // Fetch user info from cookie session
+                await FetchCookieUserInfoAsync();
+
+                // Reload home with personalized content
+                if (IsInternetAvailable())
+                {
+                    homeTracks.Clear();
+                    HomeDynamicSections.ItemsSource = null;
+                    InnerTubeClient.ClearHomeCache();
+                    await LoadHomeRecommendations();
+                }
+            }
+            catch
+            {
+                DeviceCodeStatus.Text = "Failed to extract cookies. Try again.";
+            }
+        }
+
+        private async Task FetchCookieUserInfoAsync()
+        {
+            try
+            {
+                // Use cookie auth to get account menu (contains user name + avatar)
+                var extraParams = new JObject();
+                var data = await InnerTubeClient.CookieInnerTubePostAsync("account/account_menu", extraParams);
+                if (data != null && data["_error"] == null)
+                {
+                    var header = data["actions"]?[0]?["openPopupAction"]?["popup"]?["multiPageMenuRenderer"]?["header"]?["activeAccountHeaderRenderer"];
+                    if (header != null)
+                    {
+                        string name = header["accountName"]?["runs"]?[0]?["text"]?.ToString();
+                        string avatarUrl = header["accountPhoto"]?["thumbnails"]?[0]?["url"]?.ToString();
+
+                        var settings = ApplicationData.Current.LocalSettings.Values;
+                        if (!string.IsNullOrEmpty(name))
+                        {
+                            settings["GoogleUserName"] = name;
+                            AccountUserName.Text = name;
+                        }
+                        if (!string.IsNullOrEmpty(avatarUrl))
+                        {
+                            settings["GoogleAvatarUrl"] = avatarUrl;
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
 
         private async Task ProcessGoogleAuthCode(string authCode)
         {

@@ -768,15 +768,16 @@ namespace YTMusicWP
                 for (int page = 0; page < maxPages; page++)
                 {
                     JObject data = null;
-                    if (!string.IsNullOrEmpty(accessToken))
+                    if (HasCookieAuth)
                     {
+                        // Priority 1: Cookie-based auth (SAPISIDHASH) — works perfectly with WEB_REMIX
                         var extraParams = new JObject();
                         if (continuation == null)
                             extraParams["browseId"] = "FEmusic_home";
                         else
                             extraParams["continuation"] = continuation;
                             
-                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20241016.01.00");
+                        data = await CookieInnerTubePostAsync("browse", extraParams);
                     }
                     else
                     {
