@@ -755,7 +755,7 @@ namespace YTMusicWP
             _homeCacheTime = DateTime.MinValue;
         }
 
-        public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null)
+        public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null, Action<List<HomeSection>> onPageLoaded = null)
         {
             var sections = new List<HomeSection>();
             try
@@ -763,7 +763,7 @@ namespace YTMusicWP
                 string vd = await GetVisitorDataAsync();
                 
                 string continuation = null;
-                int maxPages = 4; // Fetch up to 4 pages (first + 3 continuations)
+                int maxPages = HasCookieAuth ? 8 : 4; // Fetch more pages if logged in
 
                 for (int page = 0; page < maxPages; page++)
                 {
@@ -953,6 +953,8 @@ namespace YTMusicWP
                             sections.Add(homeSection2);
                     }
                 } // end foreach (sec)
+
+                    onPageLoaded?.Invoke(new List<HomeSection>(sections));
 
                     if (continuations != null && continuations.HasValues)
                     {

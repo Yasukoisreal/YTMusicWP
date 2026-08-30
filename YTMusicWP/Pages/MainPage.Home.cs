@@ -195,22 +195,40 @@ namespace YTMusicWP
             // ═══════════════════════════════════════════════════
             try
             {
-                var homeTask = InnerTubeClient.BrowseHomeAsync(null);
+                var dynamicSections = new ObservableCollection<YTMusicWP.InnerTubeClient.HomeSection>();
+                bool firstPage = true;
+
+                Action<System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>> onPageLoaded = (sections) =>
+                {
+                    var _ = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    {
+                        if (sections != null)
+                        {
+                            if (firstPage)
+                            {
+                                HomeDynamicSections.ItemsSource = dynamicSections;
+                                firstPage = false;
+                            }
+                            
+                            // Add only new sections
+                            for (int i = dynamicSections.Count; i < sections.Count; i++)
+                            {
+                                dynamicSections.Add(sections[i]);
+                            }
+                            
+                            HomeLoading.Visibility = Visibility.Collapsed;
+                        }
+                    });
+                };
+
+                var homeTask = InnerTubeClient.BrowseHomeAsync(null, onPageLoaded);
                 var chartsTask = InnerTubeClient.BrowseChartsAsync();
-                var homeSections = default(System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>);
                 var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
 
-                try
-                {
-                    homeSections = await homeTask;
-                }
-                catch { }
-
-                try
-                {
-                    chartsData = await chartsTask;
-                }
-                catch { }
+                // Wait for the full fetch to complete
+                var homeSections = default(System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>);
+                try { homeSections = await homeTask; } catch { }
+                try { chartsData = await chartsTask; } catch { }
 
                 // Charts
                 if (chartsData != null && chartsData.Count > 0)
@@ -220,11 +238,9 @@ namespace YTMusicWP
                     HomeChartsCarousel.ItemsSource = chartsData;
                 }
 
-                // Dynamic home sections — bind ALL sections YouTube returns
+                // Dynamic home sections final pass
                 if (homeSections != null && homeSections.Count > 0)
                 {
-                    HomeDynamicSections.ItemsSource = homeSections;
-
                     _currentHomeQuery = homeSections[0].Title;
                     var topTracks = homeSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
                     YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
