@@ -111,9 +111,10 @@ namespace YTMusicWP
                     RegionComboBox.SelectedIndex = 0;
                 }
 
-                if (settings.ContainsKey("GoogleAccessToken"))
+                if (settings.ContainsKey("GoogleAccessToken") || YTMusicWP.InnerTubeClient.HasCookieAuth)
                 {
-                    UpdateAccountPanel(true, "Synced");
+                    string status = settings.ContainsKey("GoogleCookieString") ? "Logged in (Cookie)" : "Synced";
+                    UpdateAccountPanel(true, status);
                     LoginStatusText.Foreground = _greenBrush;
                     // Load cached avatar
                     LoadHomeAvatar();
@@ -1206,57 +1207,38 @@ namespace YTMusicWP
                 // Delete old cache to prevent stale unfiltered data
                 try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json"); await f.DeleteAsync(); } catch { }
 
-                // Step 1: Get channel IDs from FEchannels
-                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEchannels" }, accessToken);
+                // Fetch YouTube Music library artists directly
+                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEmusic_library_corpus_artists" }, accessToken, "WEB_REMIX", "1.20231214.01.00");
                 if (json["_error"] != null) return;
 
-                var channelIds = json.SelectTokens("$..browseEndpoint.browseId")
-                    .Select(t => t.ToString())
-                    .Where(id => id.StartsWith("UC"))
-                    .Union(json.SelectTokens("$..channelId").Select(t => t.ToString()).Where(id => id.StartsWith("UC")))
-                    .Distinct()
-                    .Take(30)
-                    .ToList();
-
-                // Step 2: Resolve channel names in parallel (5 at a time), filter music artists only
-                const int batchSize = 5;
-                var results = new List<YouTubeSubscription>();
-
-                for (int i = 0; i < channelIds.Count; i += batchSize)
+                var renderers = json.SelectTokens("$..musicTwoRowItemRenderer").ToList();
+                if (renderers.Count == 0)
                 {
-                    var batch = channelIds.Skip(i).Take(batchSize).ToList();
-                    var tasks = batch.Select(async chId =>
-                    {
-                        try
-                        {
-                            var artistResult = await InnerTubeClient.BrowseArtistAsync(chId);
-                            // Must be a YouTube Music artist page with actual music content
-                            // Regular YouTube channels won't have albums/singles on YTM
-                            System.Diagnostics.Debug.WriteLine("[SubSync] " + chId + " ? " + artistResult.Name 
-                                + " | IsYTM=" + artistResult.IsYouTubeMusicArtist 
-                                + " | Tracks=" + artistResult.Tracks.Count 
-                                + " | Albums=" + artistResult.Albums.Count
-                                + " | Sub=" + artistResult.SubscriberCount);
-                            if (!artistResult.IsYouTubeMusicArtist) return null;
-                            if (artistResult.Albums.Count == 0 && artistResult.Tracks.Count == 0) return null;
-
-                            string name = (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
-                                ? artistResult.Name : chId;
-
-                            // Use avatar directly from BrowseArtistAsync (eliminates 30 redundant search requests)
-                            string avatarUrl = GetArtistAvatar(artistResult.AvatarUrl ?? artistResult.CoverUrl ?? "");
-
-                            return new YouTubeSubscription { ChannelId = chId, Title = name, ThumbnailUrl = avatarUrl };
-                        }
-                        catch { return null; }
-                    }).ToArray();
-                    var batchResults = await Task.WhenAll(tasks);
-                    results.AddRange(batchResults.Where(r => r != null));
-                    await Task.Delay(1000); // 1s rest between each batch of 5 subscriptions to avoid bot detection
+                    renderers = json.SelectTokens("$..musicListItemRenderer").ToList();
                 }
 
-                foreach (var sub in results)
+                foreach (var renderer in renderers)
+                {
+                    string title = renderer.SelectToken("title.runs[0].text")?.ToString() ?? "";
+                    if (string.IsNullOrEmpty(title)) continue;
+
+                    string browseId = renderer.SelectToken("navigationEndpoint.browseEndpoint.browseId")?.ToString();
+                    if (string.IsNullOrEmpty(browseId)) continue;
+
+                    string avatarUrl = renderer.SelectToken("thumbnailRenderer.musicThumbnailRenderer.thumbnail.thumbnails[0].url")?.ToString() 
+                        ?? renderer.SelectToken("thumbnail.musicThumbnailRenderer.thumbnail.thumbnails[0].url")?.ToString() 
+                        ?? "";
+                        
+                    if (avatarUrl.StartsWith("//")) avatarUrl = "https:" + avatarUrl;
+
+                    var sub = new YouTubeSubscription
+                    {
+                        ChannelId = browseId,
+                        Title = title,
+                        ThumbnailUrl = avatarUrl
+                    };
                     _youtubeSubscriptions.Add(sub);
+                }
             }
             catch { }
 

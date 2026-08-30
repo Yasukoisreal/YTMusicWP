@@ -53,7 +53,7 @@ namespace YTMusicWP
             bool showAll = _libraryFilter == "all";
 
             // Liked Songs
-            if (showAll || _libraryFilter == "playlists")
+            if ((showAll || _libraryFilter == "playlists") && !YTMusicWP.InnerTubeClient.HasCookieAuth)
             {
                 _libraryItems.Add(new LibraryItem
                 {
@@ -108,7 +108,7 @@ namespace YTMusicWP
             // YT Playlists
             if (showAll || _libraryFilter == "playlists")
             {
-                foreach (var ytpl in _youtubeUserPlaylists)
+                foreach (var ytpl in _youtubeUserPlaylists.OrderByDescending(p => p.PlaylistId == "LM" ? 1 : 0))
                 {
                     _libraryItems.Add(new LibraryItem
                     {
