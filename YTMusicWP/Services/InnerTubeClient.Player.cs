@@ -16,6 +16,61 @@ namespace YTMusicWP
         private static string _cachedCaptionsVideoId;
         private static JToken _cachedCaptionsData;
 
+        private class PlayerClientConfig
+        {
+            public string ClientName { get; set; }
+            public string ClientVersion { get; set; }
+            public string UserAgent { get; set; }
+            public string ExtraClientParams { get; set; }
+            public string ApiKey { get; set; }
+            public bool RequireCookie { get; set; }
+            public string RequestClientNameHeader { get; set; }
+        }
+
+        private static readonly PlayerClientConfig[] _playerClients = new PlayerClientConfig[]
+        {
+            // 1. IOS - Extremely reliable, no signature cipher, high quality
+            new PlayerClientConfig {
+                ClientName = "IOS",
+                ClientVersion = "19.45.4",
+                UserAgent = "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)",
+                ExtraClientParams = ",\"deviceMake\":\"Apple\",\"deviceModel\":\"iPhone16,2\",\"osName\":\"iPhone\",\"osVersion\":\"17.5.1.21F90\",\"utcOffsetMinutes\":0,\"timeZone\":\"UTC\"",
+                ApiKey = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc",
+                RequireCookie = false,
+                RequestClientNameHeader = "5"
+            },
+            // 2. WEB_REMIX (YouTube Music) - Best for premium/cookie users
+            new PlayerClientConfig {
+                ClientName = "WEB_REMIX",
+                ClientVersion = "1.20260304.03.00",
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                ExtraClientParams = "",
+                ApiKey = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30",
+                RequireCookie = true,
+                RequestClientNameHeader = "67"
+            },
+            // 3. ANDROID (Original stable fallback)
+            new PlayerClientConfig {
+                ClientName = "ANDROID",
+                ClientVersion = "20.49.37",
+                UserAgent = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip",
+                ExtraClientParams = ",\"deviceMake\":\"Nokia\",\"deviceModel\":\"LumiaWP\",\"osName\":\"Android\",\"osVersion\":\"11\",\"platform\":\"MOBILE\",\"androidSdkVersion\":30,\"clientFormFactor\":0",
+                ApiKey = "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI",
+                RequireCookie = false,
+                RequestClientNameHeader = "3"
+            },
+            // 4. TVHTML5
+            new PlayerClientConfig {
+                ClientName = "TVHTML5",
+                ClientVersion = "7.20250312.16.00",
+                UserAgent = "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
+                ExtraClientParams = "",
+                ApiKey = "AIzaSyDCU8hByM-4DrUqRUYnGn-3llEO78bcxq8",
+                RequireCookie = false,
+                RequestClientNameHeader = "7"
+            }
+        };
+
         public static async Task<string> ResolveStreamUrlAsync(string videoId)
         {
             LastResolveDebug = "";
@@ -26,36 +81,38 @@ namespace YTMusicWP
             string vd = await GetVisitorDataAsync();
             LastResolveDebug = "vd:" + (vd != null ? "OK" : "NULL");
 
-            // ANDROID_VR — returns direct URLs (no signatureCipher) + BRAVIA visitorData
-            try
+            string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+
+            foreach (var client in _playerClients)
             {
-                    string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+                if (client.RequireCookie && !HasCookieAuth)
+                    continue; // Bỏ qua nếu client yêu cầu cookie mà chưa đăng nhập
+
+                try
+                {
+                    LastResolveDebug += " [" + client.ClientName + "]";
                     string requestBody = "{" +
                         "\"contentCheckOk\":true," +
                         "\"context\":{\"client\":{" +
-                            "\"clientName\":\"ANDROID\"," +
-                            "\"clientVersion\":\"20.49.37\"," +
-                            "\"deviceMake\":\"Nokia\"," +
-                            "\"deviceModel\":\"LumiaWP\"," +
-                            "\"userAgent\":\"com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip\"," +
-                            "\"osName\":\"Android\"," +
-                            "\"osVersion\":\"11\"," +
-                            "\"platform\":\"MOBILE\"," +
-                            "\"androidSdkVersion\":30," +
-                            "\"clientFormFactor\":0," +
+                            "\"clientName\":\"" + client.ClientName + "\"," +
+                            "\"clientVersion\":\"" + client.ClientVersion + "\"," +
+                            "\"userAgent\":\"" + client.UserAgent + "\"," +
                             "\"hl\":\"en\",\"gl\":\"US\"" +
                             vdField +
+                            client.ExtraClientParams +
                         "}}," +
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
                     var req = new HttpRequestMessage(HttpMethod.Post,
-                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
+                        "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent",
-                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
-                    req.Headers.Add("X-YouTube-Client-Name", "3");
-                    req.Headers.Add("X-YouTube-Client-Version", "20.49.37");
+                    req.Headers.TryAddWithoutValidation("User-Agent", client.UserAgent);
+                    
+                    if (!string.IsNullOrEmpty(client.RequestClientNameHeader))
+                        req.Headers.Add("X-YouTube-Client-Name", client.RequestClientNameHeader);
+                    
+                    req.Headers.Add("X-YouTube-Client-Version", client.ClientVersion);
 
                     if (HasCookieAuth)
                     {
@@ -69,11 +126,10 @@ namespace YTMusicWP
                         if (!resp.IsSuccessStatusCode)
                         {
                             LastResolveDebug += " H" + (int)resp.StatusCode;
-                            return null;
+                            continue;
                         }
                         json = await resp.Content.ReadAsStringAsync();
                     }
-                    LastResolveDebug += " len:" + json.Length;
                     var data = JObject.Parse(json);
 
                     string status = data["playabilityStatus"]?["status"]?.ToString() ?? "?";
@@ -84,16 +140,18 @@ namespace YTMusicWP
                     {
                         if (!string.IsNullOrEmpty(reason))
                             LastResolveDebug += " r:" + reason.Substring(0, Math.Min(20, reason.Length));
-                        return null;
+                        continue;
                     }
 
-                    // [OPT] Cache captions from this response — avoids duplicate API call in GetCaptionTracksAsync
-                    _cachedCaptionsVideoId = videoId;
-                    _cachedCaptionsData = data["captions"];
+                    // Cache captions from the first successful response
+                    if (string.IsNullOrEmpty(_cachedCaptionsVideoId) || _cachedCaptionsVideoId != videoId)
+                    {
+                        _cachedCaptionsVideoId = videoId;
+                        _cachedCaptionsData = data["captions"];
+                    }
 
                     int[] preferredItags = new[] { 18, 140, 141, 139 };
 
-                    // 1. Ưu tiên itag 18 (video 360p) vì nó không bị bóp băng thông
                     var fmts2 = data["streamingData"]?["formats"];
                     if (fmts2 != null)
                     {
@@ -112,7 +170,6 @@ namespace YTMusicWP
                         }
                     }
 
-                    // 2. Fallback xuống adaptiveFormats (có thể bị bóp/403)
                     var formats = data["streamingData"]?["adaptiveFormats"];
                     if (formats != null)
                     {
@@ -134,12 +191,12 @@ namespace YTMusicWP
                         }
                     }
 
-                    // Status OK nhưng không có URL
                     LastResolveDebug += " NOURL";
-            }
-            catch (Exception ex)
-            {
+                }
+                catch (Exception ex)
+                {
                     LastResolveDebug += " EX:" + ex.Message.Substring(0, Math.Min(25, ex.Message.Length));
+                }
             }
 
             return null;
