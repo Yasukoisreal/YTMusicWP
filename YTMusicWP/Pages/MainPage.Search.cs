@@ -351,20 +351,12 @@ namespace YTMusicWP
             
             try
             {
-                var exploreTask = InnerTubeClient.BrowseExploreAsync();
-                var moodsTask = InnerTubeClient.BrowseMoodsAndGenresAsync();
-                await Task.WhenAll(exploreTask, moodsTask);
-
-                var items = exploreTask.Result;
-                var moods = moodsTask.Result;
+                var items = await InnerTubeClient.BrowseExploreAsync();
 
                 await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
                     if (items != null && items.Count > 0)
                         DiscoverListView.ItemsSource = items;
-                    
-                    if (moods != null && moods.Count > 0)
-                        MoodsGenresListView.ItemsSource = moods;
 
                     _discoverLoaded = true;
                 });
@@ -377,6 +369,7 @@ namespace YTMusicWP
             var item = e.ClickedItem as YTMusicWP.MoodItem;
             if (item == null) return;
 
+            SwitchTab(1); // Switch to Search tab
             SearchBox.Text = item.Title;
             _currentSearchQuery = item.Title;
             SearchLoading.Visibility = Visibility.Visible;

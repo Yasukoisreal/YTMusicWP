@@ -223,12 +223,27 @@ namespace YTMusicWP
 
                 var homeTask = InnerTubeClient.BrowseHomeAsync(null, onPageLoaded);
                 var chartsTask = InnerTubeClient.BrowseChartsAsync();
+                var moodsTask = InnerTubeClient.BrowseMoodsAndGenresAsync();
+                
                 var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
+                var moodsData = default(System.Collections.Generic.List<YTMusicWP.MoodCategory>);
 
                 // Wait for the full fetch to complete
                 var homeSections = default(System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>);
                 try { homeSections = await homeTask; } catch { }
                 try { chartsData = await chartsTask; } catch { }
+                try { moodsData = await moodsTask; } catch { }
+
+                // Moods
+                if (moodsData != null && moodsData.Count > 0)
+                {
+                    MoodsGenresListView.Visibility = Visibility.Visible;
+                    MoodsGenresListView.ItemsSource = moodsData;
+                }
+                else
+                {
+                    MoodsGenresListView.Visibility = Visibility.Collapsed;
+                }
 
                 // Charts
                 if (chartsData != null && chartsData.Count > 0)
