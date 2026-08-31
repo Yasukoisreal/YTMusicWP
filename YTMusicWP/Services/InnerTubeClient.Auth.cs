@@ -164,8 +164,26 @@ namespace YTMusicWP
             }
             else if (HasCookieAuth)
             {
+                // TVHTML5 does not accept Cookie SAPISIDHASH auth, so we must force WEB_REMIX
+                if (clientName != "WEB_REMIX")
+                {
+                    clientObj["clientName"] = "WEB_REMIX";
+                    clientObj["clientVersion"] = "1.20231214.00.00";
+                    clientObj["osName"] = "Windows";
+                    clientObj["osVersion"] = "10.0";
+                    clientObj["platform"] = "DESKTOP";
+                    
+                    // Rebuild Content with updated client context
+                    request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                    
+                    // Update URL API key for WEB_REMIX
+                    apiKey = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
+                    request.RequestUri = new Uri($"https://{domain}/youtubei/v1/{endpoint}?key={apiKey}&prettyPrint=false");
+                }
+
                 request.Headers.Add("Cookie", _cookieString);
                 request.Headers.Add("Authorization", GenerateSAPISIDHash(_sapisid, "https://music.youtube.com"));
+                request.Headers.Add("X-Goog-Authuser", "0");
             }
 
             using (var response = await _client.SendAsync(request))
