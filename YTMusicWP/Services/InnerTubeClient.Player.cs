@@ -199,6 +199,39 @@ namespace YTMusicWP
                 }
             }
 
+            // Fallback to Piped API if all InnerTube clients fail to find a direct URL
+            try
+            {
+                LastResolveDebug += " PIPED";
+                string pipedUrl = "https://pipedapi.kavin.rocks/streams/" + videoId;
+                var req = new HttpRequestMessage(HttpMethod.Get, pipedUrl);
+                using (var resp = await _client.SendAsync(req))
+                {
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        string json = await resp.Content.ReadAsStringAsync();
+                        var data = JObject.Parse(json);
+                        var audioStreams = data["audioStreams"];
+                        if (audioStreams != null)
+                        {
+                            foreach (var stream in audioStreams)
+                            {
+                                string url = stream["url"]?.ToString();
+                                if (!string.IsNullOrEmpty(url))
+                                {
+                                    LastResolveDebug += " P:OK";
+                                    return url; // Piped URLs usually don't need ratebypass
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LastResolveDebug += " P_EX:" + ex.Message.Substring(0, Math.Min(25, ex.Message.Length));
+            }
+
             return null;
         }
 

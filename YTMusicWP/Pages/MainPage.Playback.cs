@@ -85,7 +85,7 @@ namespace YTMusicWP
             else if (ArtistSongsList.ItemsSource != null) { var artistList = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>; if (artistList != null && artistList.Contains(track)) activeList = artistList; }
             else if (HomeDynamicSections.ItemsSource != null)
             {
-                var sections = HomeDynamicSections.ItemsSource as System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>;
+                var sections = HomeDynamicSections.ItemsSource as System.Collections.Generic.IEnumerable<YTMusicWP.InnerTubeClient.HomeSection>;
                 if (sections != null)
                 {
                     var foundSection = System.Linq.Enumerable.FirstOrDefault(sections, s => s.Tracks.Contains(track));
