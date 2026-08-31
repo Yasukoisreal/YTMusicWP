@@ -578,7 +578,7 @@ namespace YTMusicWP
                         string lowerTitle = sectionTitle.ToLowerInvariant();
                         if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("quick") || lowerTitle.Contains("start radio") || lowerTitle.Contains("bắt đầu một đài phát"))
                             homeSection.Layout = HomeSectionLayout.QuickPicks;
-                        else if (lowerTitle.Contains("video") || lowerTitle.Contains("music video") || lowerTitle.Contains("nhạc cho bạn") || lowerTitle.Contains("trình diễn"))
+                        else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn"))
                             homeSection.Layout = HomeSectionLayout.Video;
 
                         var cItems = carousel["contents"];
