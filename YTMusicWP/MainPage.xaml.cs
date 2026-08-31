@@ -169,6 +169,7 @@ namespace YTMusicWP
             _sleepTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
             _sleepTimer.Tick += SleepTimer_Tick;
 
+            InnerTubeClient.LoadCookieAuthFromSettings();
             LoadSettings();
             SetupTimer();
             UpdateGreetingText();
@@ -329,8 +330,7 @@ namespace YTMusicWP
                 region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
             InnerTubeClient.SetRegion(region);
 
-            // Load saved cookie auth (SAPISIDHASH) if available
-            InnerTubeClient.LoadCookieAuthFromSettings();
+            // Cookie auth is now loaded in the constructor
 
             DataTransferManager.GetForCurrentView().DataRequested += MainPage_DataRequested;
 
