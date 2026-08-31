@@ -991,16 +991,44 @@ namespace YTMusicWP
 
         private async void PlaylistSongsScroll_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
-            if (!_isViewingLikedSongs || !HasMoreLikedSongs) return;
-            if (e.IsIntermediate) return; // Wait until scroll settles
-
             var sv = sender as ScrollViewer;
-            if (sv == null) return;
+            if (sv == null || sv.ScrollableHeight == 0) return;
 
-            // Trigger when within 200px of the bottom
-            if (sv.VerticalOffset >= sv.ScrollableHeight - 200)
+            // Trigger when within 1500px of the bottom
+            if (sv.VerticalOffset >= sv.ScrollableHeight - 1500)
             {
-                await LoadMoreLikedSongsAsync();
+                // 1. Liked Songs Pagination
+                if (_isViewingLikedSongs && HasMoreLikedSongs)
+                {
+                    await LoadMoreLikedSongsAsync();
+                    return;
+                }
+
+                // 2. Regular YouTube Playlist Pagination
+                if (!_isViewingLikedSongs && !string.IsNullOrEmpty(_playlistContinuationToken) && !_isLoadingMorePlaylist)
+                {
+                    if (_currentViewingYtPlaylistId == null || _currentViewingYtPlaylistId.StartsWith("LOCAL_")) return;
+
+                    _isLoadingMorePlaylist = true;
+                    
+                    var plResult = await InnerTubeClient.BrowsePlaylistAsync(_currentViewingYtPlaylistId, _playlistContinuationToken);
+
+                    if (plResult != null)
+                    {
+                        var tracks = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
+                        if (tracks != null)
+                        {
+                            foreach (var track in plResult.Tracks)
+                            {
+                                tracks.Add(track);
+                            }
+                            PlaylistDetailsTrackCount.Text = tracks.Count + (string.IsNullOrEmpty(plResult.ContinuationToken) ? "" : "+") + " tracks";
+                        }
+                        _playlistContinuationToken = plResult.ContinuationToken;
+                    }
+                    
+                    _isLoadingMorePlaylist = false;
+                }
             }
         }
 
