@@ -57,7 +57,6 @@ namespace YTMusicWP
 
         /// <summary>
         /// Get best thumbnail for 1:1 square display (playlist covers).
-        /// <summary>
         /// Convert any thumbnail URL to 1:1 square crop for UI display and tiles.
         /// Google CDN / YouTube Music thumbnails (*.googleusercontent.com, *.ggpht.com) -> =w480-h480-l90-rj
         /// YouTube video thumbnails (i.ytimg.com) -> mqdefault / maxresdefault
@@ -66,20 +65,58 @@ namespace YTMusicWP
         {
             if (string.IsNullOrEmpty(url)) return "ms-appx:///Assets/Logo.scale-240.png";
 
-            // Google CDN / YouTube Music thumbnails — request 1:1 square crop
+            if (url.Contains("ytimg.com") || url.Contains("img.youtube.com"))
+            {
+                int viIdx = url.IndexOf("/vi/");
+                if (viIdx > 0)
+                {
+                    int endIdx = url.IndexOf("/", viIdx + 4);
+                    if (endIdx > 0)
+                    {
+                        string vidId = url.Substring(viIdx + 4, endIdx - (viIdx + 4));
+                        return "https://i.ytimg.com/vi/" + vidId + "/mqdefault.jpg";
+                    }
+                }
+                if (url.Contains("hqdefault.jpg")) return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "mqdefault.jpg");
+                return url;
+            }
+
             if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
             {
                 int eqIdx = url.LastIndexOf("=");
                 if (eqIdx > 0)
-                    return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
-                return url + "=w480-h480-l90-rj";
-            }
+                {
+                    string pars = url.Substring(eqIdx + 1);
+                    double ratio = 1.0;
+                    try
+                    {
+                        int wStart = pars.IndexOf("w") + 1;
+                        int wEnd = pars.IndexOf("-", wStart);
+                        int hStart = pars.IndexOf("h") + 1;
+                        int hEnd = pars.IndexOf("-", hStart);
+                        if (wStart > 0 && wEnd > wStart && hStart > 0 && hEnd > hStart)
+                        {
+                            int w = int.Parse(pars.Substring(wStart, wEnd - wStart));
+                            int h = int.Parse(pars.Substring(hStart, hEnd - hStart));
+                            if (h > 0) ratio = (double)w / h;
+                        }
+                    }
+                    catch { }
 
-            // YouTube video thumbnails — use mqdefault (16:9, no 4:3 letterbox bars)
-            if (url.Contains("hqdefault.jpg"))
-                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
-            if (url.Contains("sddefault.jpg"))
-                return url.Replace("sddefault.jpg", "mqdefault.jpg");
+                    if (ratio > 1.3)
+                    {
+                        // Preserve 16:9 ratio
+                        return url.Substring(0, eqIdx) + "=w226-h127-l90-rj";
+                    }
+                    else
+                    {
+                        // Square crop
+                        return url.Substring(0, eqIdx) + "=w226-h226-l90-rj";
+                    }
+                }
+                return url + "=w226-h226-l90-rj";
+            }
 
             return url;
         }
@@ -91,22 +128,58 @@ namespace YTMusicWP
         {
             if (string.IsNullOrEmpty(url)) return "ms-appx:///Assets/Logo.scale-240.png";
 
+            if (url.Contains("ytimg.com") || url.Contains("img.youtube.com"))
+            {
+                int viIdx = url.IndexOf("/vi/");
+                if (viIdx > 0)
+                {
+                    int endIdx = url.IndexOf("/", viIdx + 4);
+                    if (endIdx > 0)
+                    {
+                        string vidId = url.Substring(viIdx + 4, endIdx - (viIdx + 4));
+                        return "https://i.ytimg.com/vi/" + vidId + "/mqdefault.jpg";
+                    }
+                }
+                if (url.Contains("hqdefault.jpg")) return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "mqdefault.jpg");
+                return url;
+            }
+
             if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
             {
                 int eqIdx = url.LastIndexOf("=");
                 if (eqIdx > 0)
-                    return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
+                {
+                    string pars = url.Substring(eqIdx + 1);
+                    double ratio = 1.0;
+                    try
+                    {
+                        int wStart = pars.IndexOf("w") + 1;
+                        int wEnd = pars.IndexOf("-", wStart);
+                        int hStart = pars.IndexOf("h") + 1;
+                        int hEnd = pars.IndexOf("-", hStart);
+                        if (wStart > 0 && wEnd > wStart && hStart > 0 && hEnd > hStart)
+                        {
+                            int w = int.Parse(pars.Substring(wStart, wEnd - wStart));
+                            int h = int.Parse(pars.Substring(hStart, hEnd - hStart));
+                            if (h > 0) ratio = (double)w / h;
+                        }
+                    }
+                    catch { }
+
+                    if (ratio > 1.3)
+                    {
+                        // Preserve 16:9 ratio
+                        return url.Substring(0, eqIdx) + "=w540-h304-l90-rj";
+                    }
+                    else
+                    {
+                        // Square crop
+                        return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
+                    }
+                }
                 return url + "=w480-h480-l90-rj";
             }
-
-            // YouTube video thumbnails — use mqdefault.jpg (320x180, 16:9 clean)
-            // sddefault.jpg is 640x480 (4:3 with black letterbox bars)
-            if (url.Contains("hqdefault.jpg"))
-                return url.Replace("hqdefault.jpg", "mqdefault.jpg");
-            if (url.Contains("sddefault.jpg"))
-                return url.Replace("sddefault.jpg", "mqdefault.jpg");
-            if (url.Contains("maxresdefault.jpg"))
-                return url.Replace("maxresdefault.jpg", "mqdefault.jpg");
 
             return url;
         }

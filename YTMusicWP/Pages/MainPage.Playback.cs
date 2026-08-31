@@ -218,7 +218,7 @@ namespace YTMusicWP
 
             // Require login to like songs
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Sign in to like songs");
                 return;
@@ -548,15 +548,35 @@ namespace YTMusicWP
                     {
                         try
                         {
+                            string finalThumbUrl = GetNowPlayingThumbnail(thumb);
+                            bool isWide = finalThumbUrl.Contains("w540-h304") || finalThumbUrl.Contains("mqdefault");
+
+                            if (isWide)
+                            {
+                                BigCoverRectangle.Width = 360;
+                                BigCoverRectangle.Height = 202;
+                                BigCoverShadow.Width = 350;
+                                BigCoverShadow.Height = 192;
+                                MiniCoverRectangle.Width = 82;
+                            }
+                            else
+                            {
+                                BigCoverRectangle.Width = 300;
+                                BigCoverRectangle.Height = 300;
+                                BigCoverShadow.Width = 290;
+                                BigCoverShadow.Height = 290;
+                                MiniCoverRectangle.Width = 46;
+                            }
+
                             var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            bigBmp.DecodePixelWidth = 480;
-                            bigBmp.UriSource = new Uri(GetNowPlayingThumbnail(thumb), UriKind.Absolute);
+                            bigBmp.DecodePixelWidth = isWide ? 540 : 480;
+                            bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
 
                             var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            miniBmp.DecodePixelWidth = 100;
+                            miniBmp.DecodePixelWidth = isWide ? 150 : 100;
                             miniBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
                             MiniCoverImage.ImageSource = miniBmp;
                         }
@@ -607,15 +627,35 @@ namespace YTMusicWP
                     {
                         try
                         {
+                            string finalThumbUrl = GetNowPlayingThumbnail(thumb);
+                            bool isWide = finalThumbUrl.Contains("w540-h304") || finalThumbUrl.Contains("mqdefault");
+
+                            if (isWide)
+                            {
+                                BigCoverRectangle.Width = 360;
+                                BigCoverRectangle.Height = 202;
+                                BigCoverShadow.Width = 350;
+                                BigCoverShadow.Height = 192;
+                                MiniCoverRectangle.Width = 82;
+                            }
+                            else
+                            {
+                                BigCoverRectangle.Width = 300;
+                                BigCoverRectangle.Height = 300;
+                                BigCoverShadow.Width = 290;
+                                BigCoverShadow.Height = 290;
+                                MiniCoverRectangle.Width = 46;
+                            }
+
                             var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            bigBmp.DecodePixelWidth = 480;
-                            bigBmp.UriSource = new Uri(GetNowPlayingThumbnail(thumb), UriKind.Absolute);
+                            bigBmp.DecodePixelWidth = isWide ? 540 : 480;
+                            bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
 
                             var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            miniBmp.DecodePixelWidth = 100;
+                            miniBmp.DecodePixelWidth = isWide ? 150 : 100;
                             miniBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
                             MiniCoverImage.ImageSource = miniBmp;
                         }

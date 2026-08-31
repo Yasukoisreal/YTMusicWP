@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using Windows.UI.Xaml;
 
 namespace YTMusicWP
@@ -10,6 +10,20 @@ namespace YTMusicWP
         public string Title { get; set; }
         public string ChannelName { get; set; }
         public string ChannelId { get; set; }
+        
+        private double _coverWidth = 140;
+        public double CoverWidth
+        {
+            get { return _coverWidth; }
+            set
+            {
+                if (_coverWidth != value)
+                {
+                    _coverWidth = value;
+                    OnPropertyChanged("CoverWidth");
+                }
+            }
+        }
 
         private string _thumbnailUrl;
         public string ThumbnailUrl

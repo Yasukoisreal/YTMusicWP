@@ -217,6 +217,7 @@ namespace YTMusicWP
     public class PlaylistResult
     {
         public string Title { get; set; } = "";
+        public string Subtitle { get; set; } = "";
         public string ThumbnailUrl { get; set; } = "";
         public List<YouTubeTrack> Tracks { get; set; } = new List<YouTubeTrack>();
         public string ContinuationToken { get; set; } = null;
@@ -240,7 +241,10 @@ namespace YTMusicWP
         public string Subtitle { get; set; } = "";
         public string ThumbnailUrl { get; set; } = "";
         public string BrowseId { get; set; } = "";
+        public string VideoId { get; set; } = "";
+        public string PlaylistId { get; set; } = "";
         public string SectionTitle { get; set; } = "";
+        public double CoverWidth { get; set; } = 140;
     }
 
     public class DiscoverItem

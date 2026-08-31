@@ -113,8 +113,7 @@ namespace YTMusicWP
                 ArtistProfileView.Visibility = Visibility.Collapsed;
                 ArtistProfileCover.Source = null;
                 ArtistSongsList.ItemsSource = null;
-                ArtistAlbumsList.ItemsSource = null;
-                ArtistAlbumsSection.Visibility = Visibility.Collapsed;
+                ArtistSectionsControl.ItemsSource = null;
                 ArtistAboutSection.Visibility = Visibility.Collapsed;
                 ArtistAboutImage.ImageSource = null;
             }

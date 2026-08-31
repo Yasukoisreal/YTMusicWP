@@ -795,7 +795,7 @@ namespace YTMusicWP
 
             // Require login for YouTube tracks
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Sign in to like songs");
                 return;

@@ -41,12 +41,22 @@ namespace YTMusicWP
                 {
                     var localTracks = await LoadLocalPlaylistTracksAsync(playlistId);
                     foreach (var t in localTracks) tracks.Add(t);
+                    PlaylistDetailsSubtitle.Text = localTracks.Count + " tracks";
                 }
                 else
                 {
                     var plResult = await InnerTubeClient.BrowsePlaylistAsync(playlistId);
                     if (!string.IsNullOrEmpty(plResult.Title))
                         PlaylistDetailsTitle.Text = plResult.Title;
+
+                    if (!string.IsNullOrEmpty(plResult.Subtitle))
+                    {
+                        PlaylistDetailsSubtitle.Text = plResult.Subtitle;
+                        // Sometimes Subtitle string can be dirty with redundant bullets, cleanup
+                        PlaylistDetailsSubtitle.Text = PlaylistDetailsSubtitle.Text.Trim(' ', '•');
+                    }
+                    else
+                        PlaylistDetailsSubtitle.Text = plResult.Tracks.Count + " tracks";
 
                     foreach (var t in plResult.Tracks)
                         tracks.Add(t);
@@ -120,8 +130,7 @@ namespace YTMusicWP
             ArtistProfileCover.Source = null;
             UpdateFollowButton();
             ArtistMonthlyListeners.Text = "";
-            ArtistAlbumsSection.Visibility = Visibility.Collapsed;
-            ArtistAlbumsList.ItemsSource = null;
+            ArtistSectionsControl.ItemsSource = null;
             ArtistAboutSection.Visibility = Visibility.Collapsed;
             ArtistAboutDescription.Text = "";
             ArtistAboutListeners.Text = "";
@@ -232,13 +241,13 @@ namespace YTMusicWP
             ArtistLoadingBar.Visibility = Visibility.Collapsed;
             ArtistSongsList.Visibility = Visibility.Visible;
 
-            // Albums carousel
+            // Sections carousel
             if (albums != null && albums.Count > 0)
             {
-                var firstSection = albums[0].SectionTitle;
-                ArtistAlbumsTitle.Text = !string.IsNullOrEmpty(firstSection) ? firstSection : "Releases";
-                ArtistAlbumsList.ItemsSource = albums;
-                ArtistAlbumsSection.Visibility = Visibility.Visible;
+                var groups = albums.GroupBy(a => a.SectionTitle)
+                                   .Select(g => new ArtistSectionGroup { Title = g.Key, Items = g.ToList() })
+                                   .ToList();
+                ArtistSectionsControl.ItemsSource = groups;
             }
 
             // About section
@@ -437,8 +446,7 @@ namespace YTMusicWP
             // [OPT-M9] Giải phóng ảnh khi đóng — tiết kiệm RAM
             ArtistProfileCover.Source = null;
             ArtistSongsList.ItemsSource = null;
-            ArtistAlbumsList.ItemsSource = null;
-            ArtistAlbumsSection.Visibility = Visibility.Collapsed;
+            ArtistSectionsControl.ItemsSource = null;
             ArtistAboutSection.Visibility = Visibility.Collapsed;
             ArtistAboutImage.ImageSource = null;
         }
@@ -465,27 +473,65 @@ namespace YTMusicWP
             var album = e.ClickedItem as ArtistAlbum;
             if (album == null) return;
 
-            // If browseId looks like a playlist, open it
+            // If it has a videoId, play it!
+            if (!string.IsNullOrEmpty(album.VideoId))
+            {
+                var track = new YouTubeTrack
+                {
+                    VideoId = album.VideoId,
+                    Title = album.Title,
+                    ChannelName = ArtistProfileTitle.Text,
+                    ThumbnailUrl = album.ThumbnailUrl
+                };
+
+                // If there's a playlist context attached, we could pass it, but for single video just play it
+                PlayTrack(track);
+                return;
+            }
+
+            // If browseId looks like a playlist or artist, open it
             if (!string.IsNullOrEmpty(album.BrowseId))
             {
-                string playlistId = album.BrowseId;
-                if (playlistId.StartsWith("MPREb_"))
+                string id = album.BrowseId;
+                if (id.StartsWith("UC") || id.StartsWith("FEmusic_library_privately_owned_artist"))
+                {
+                    // It's an artist! Open Artist profile
+                    OpenArtistProfile(id, album.Title, true);
+                }
+                else if (id.StartsWith("MPREb_"))
                 {
                     // Album browseId — browse as playlist
-                    OpenYouTubePlaylist(playlistId, album.Title, album.ThumbnailUrl);
+                    OpenYouTubePlaylist(id, album.Title, album.ThumbnailUrl);
                 }
-                else if (playlistId.StartsWith("VL") || playlistId.StartsWith("PL"))
+                else if (id.StartsWith("VL") || id.StartsWith("PL"))
                 {
-                    OpenYouTubePlaylist(playlistId.Replace("VL", ""), album.Title, album.ThumbnailUrl);
+                    OpenYouTubePlaylist(id.Replace("VL", ""), album.Title, album.ThumbnailUrl);
                 }
                 else
                 {
                     // Try to browse as playlist anyway  
-                    OpenYouTubePlaylist(playlistId, album.Title, album.ThumbnailUrl);
+                    OpenYouTubePlaylist(id, album.Title, album.ThumbnailUrl);
                 }
             }
         }
+        private void ArtistAbout_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            if (ArtistAboutDescription.MaxLines == 3)
+            {
+                ArtistAboutDescription.MaxLines = 0;
+            }
+            else
+            {
+                ArtistAboutDescription.MaxLines = 3;
+            }
+        }
 
+    }
+
+    public class ArtistSectionGroup
+    {
+        public string Title { get; set; }
+        public List<ArtistAlbum> Items { get; set; }
     }
 }
 

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -252,6 +252,47 @@ namespace YTMusicWP
             return new SearchResult { Tracks = results, ContinuationToken = nextToken };
         }
 
+        internal static string ExtractArtistFromRuns(JToken runs)
+        {
+            if (runs == null || !runs.HasValues) return "";
+
+            List<string> artists = new List<string>();
+            foreach (var r in runs)
+            {
+                string t = r["text"]?.ToString();
+                if (string.IsNullOrEmpty(t)) continue;
+                
+                string browseTarget = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                if (!string.IsNullOrEmpty(browseTarget) && browseTarget.StartsWith("UC"))
+                {
+                    artists.Add(t);
+                }
+            }
+            
+            if (artists.Count > 0)
+            {
+                return string.Join(", ", artists);
+            }
+
+            // Fallback: first non-label, non-separator text
+            foreach (var r in runs)
+            {
+                string t = r["text"]?.ToString();
+                if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == " & ") continue;
+                
+                string lower = t.ToLowerInvariant();
+                if (lower == "song" || lower == "video" || lower == "artist" || lower == "playlist" || lower == "album" || lower == "ep" || lower == "single") continue;
+                if (lower.Contains(" views") || lower.Contains(" view") || lower.Contains(" lượt phát") || lower.Contains(" lượt xem") || lower.Contains(" views") || lower.Contains(" subscriber") || lower.Contains(" người đăng ký") || lower.Contains(" plays") || lower.Contains(" play") || lower.Contains(" song") || lower.Contains(" bài hát") || lower.Contains(" track")) continue;
+                if (t.Length <= 6 && t.Contains(":")) continue; // duration like "3:57"
+                int parsedYear;
+                if (t.Length == 4 && int.TryParse(t, out parsedYear)) continue; // ignore year like "2026"
+                
+                return t;
+            }
+            
+            return "";
+        }
+
         /// <summary>
         /// Parse musicResponsiveListItemRenderer → YouTubeTrack
         /// Dùng cho search results và artist songs
@@ -275,35 +316,19 @@ namespace YTMusicWP
             if (cols.Count() > 1)
             {
                 var runs = cols[1]?["musicResponsiveListItemFlexColumnRenderer"]?["text"]?["runs"];
-                if (runs != null && runs.HasValues)
+                artist = ExtractArtistFromRuns(runs);
+                // Try to get channelId if we extracted the artist from a link
+                if (runs != null && runs.HasValues && !string.IsNullOrEmpty(artist))
                 {
-                    // Strategy: find first run with browseEndpoint (=artist link), else first non-label text
                     foreach (var r in runs)
                     {
-                        string t = r["text"]?.ToString();
-                        if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == " & ") continue;
-                        
-                        // Check if this run has a browseEndpoint pointing to a channel
-                        string browseTarget = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
-                        if (!string.IsNullOrEmpty(browseTarget) && browseTarget.StartsWith("UC"))
+                        if (r["text"]?.ToString() == artist)
                         {
-                            artist = t;
-                            channelId = browseTarget;
-                            break;
-                        }
-                    }
-                    
-                    // Fallback: first non-label, non-separator text
-                    if (string.IsNullOrEmpty(artist))
-                    {
-                        foreach (var r in runs)
-                        {
-                            string t = r["text"]?.ToString();
-                            if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == " & ") continue;
-                            if (t == "Song" || t == "Video" || t == "Artist" || t == "Playlist" || t == "Album" || t == "EP" || t == "Single") continue;
-                            if (t.Contains(" views") || t.Contains(" view")) continue;
-                            if (t.Length <= 6 && t.Contains(":")) continue; // duration like "3:57"
-                            artist = t;
+                            string browseTarget = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                            if (!string.IsNullOrEmpty(browseTarget) && browseTarget.StartsWith("UC"))
+                            {
+                                channelId = browseTarget;
+                            }
                             break;
                         }
                     }
@@ -331,11 +356,22 @@ namespace YTMusicWP
 
             // Thumbnail
             string thumbUrl = "";
+            double coverWidth = 140; // Default 1:1
             var thumbs = mr["thumbnail"]?["musicThumbnailRenderer"]
                 ?["thumbnail"]?["thumbnails"];
             if (thumbs != null && thumbs.HasValues)
             {
-                thumbUrl = thumbs.Last?["url"]?.ToString() ?? "";
+                var lastThumb = thumbs.Last;
+                thumbUrl = lastThumb?["url"]?.ToString() ?? "";
+                
+                int w = 0, h = 0;
+                int.TryParse(lastThumb?["width"]?.ToString(), out w);
+                int.TryParse(lastThumb?["height"]?.ToString(), out h);
+                if (w > 0 && h > 0)
+                {
+                    double ratio = (double)w / h;
+                    if (ratio > 1.3) coverWidth = 260;
+                }
             }
 
             // Determine type
@@ -357,7 +393,8 @@ namespace YTMusicWP
                 ChannelName = CleanChannelName(artist),
                 ChannelId = channelId,
                 ThumbnailUrl = thumbUrl,
-                SetVideoId = setVideoId
+                SetVideoId = setVideoId,
+                CoverWidth = coverWidth
             };
         }
 

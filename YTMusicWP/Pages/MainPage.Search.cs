@@ -364,20 +364,32 @@ namespace YTMusicWP
             catch { }
         }
 
-        private void MoodItem_Click(object sender, ItemClickEventArgs e)
+        private async void MoodItem_Click(object sender, ItemClickEventArgs e)
         {
             var item = e.ClickedItem as YTMusicWP.MoodItem;
             if (item == null) return;
 
-            SwitchTab(1); // Switch to Search tab
-            SearchBox.Text = item.Title;
-            _currentSearchQuery = item.Title;
-            SearchLoading.Visibility = Visibility.Visible;
-            DefaultSearchUI.Visibility = Visibility.Collapsed;
-            SearchSongList.Visibility = Visibility.Collapsed;
-            _nextSearchToken = "";
-            _isLoadingMoreSearch = false;
-            ExecuteSearch(_currentSearchQuery);
+            MoodCategoryView.Visibility = Visibility.Visible;
+            MoodCategoryTitle.Text = item.Title;
+            MoodCategoryLoading.Visibility = Visibility.Visible;
+            MoodCategorySectionList.ItemsSource = null;
+
+            try
+            {
+                var sections = await InnerTubeClient.BrowseMoodCategoryAsync(item.BrowseId, item.Params);
+                if (sections != null && sections.Count > 0)
+                {
+                    MoodCategorySectionList.ItemsSource = sections;
+                }
+            }
+            catch { }
+            
+            MoodCategoryLoading.Visibility = Visibility.Collapsed;
+        }
+
+        private void CloseMoodCategory_Click(object sender, RoutedEventArgs e)
+        {
+            MoodCategoryView.Visibility = Visibility.Collapsed;
         }
 
         private void DiscoverItem_Click(object sender, ItemClickEventArgs e)

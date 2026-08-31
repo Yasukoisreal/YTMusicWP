@@ -345,6 +345,16 @@ namespace YTMusicWP
             settings.Remove("GoogleUserName");
 
             RefreshLibraryList();
+            
+            // Clear home screen UI and force a reload for guest content
+            homeTracks.Clear();
+            HomeDynamicSections.ItemsSource = null;
+            if (IsInternetAvailable())
+            {
+                InnerTubeClient.ClearHomeCache();
+                var _ = LoadHomeRecommendations();
+            }
+
             ShowToast("Logged out successfully");
         }
 
@@ -669,6 +679,10 @@ namespace YTMusicWP
 
                 // Fetch user info from cookie session
                 await FetchCookieUserInfoAsync();
+                LoadHomeAvatar();
+
+                // Run full sync (Library, Liked Songs, etc.)
+                await SyncAllAsync();
 
                 // Reload home with personalized content
                 if (IsInternetAvailable())
@@ -829,7 +843,7 @@ namespace YTMusicWP
             try
             {
                 string token = await GetAccessTokenAsync();
-                if (token == null) return;
+                if (token == null && !InnerTubeClient.HasCookieAuth) return;
 
                 var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["continuation"] = _likedSongsContinuation }, token);
                 if (json["_error"] != null) { _likedSongsContinuation = null; return; }
@@ -943,7 +957,7 @@ namespace YTMusicWP
         // ------------------------------------------
         // SYNC ALL � Called after login and on app resume
         // ------------------------------------------
-        private async Task SyncAllAsync(string accessToken)
+        private async Task SyncAllAsync(string accessToken = null)
         {
             await SyncLikedVideosAsync(accessToken);
             await LoadYouTubePlaylistsCacheAsync();
@@ -1300,7 +1314,7 @@ namespace YTMusicWP
         private async Task<bool> RateVideoAsync(string videoId, string rating)
         {
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return false;
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth) return false;
 
             try
             {
@@ -1324,7 +1338,7 @@ namespace YTMusicWP
             if (playlistId.StartsWith("LOCAL_")) return "SUCCESS";
 
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return null;
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth) return null;
 
             try
             {
@@ -1336,7 +1350,7 @@ namespace YTMusicWP
         private async Task<string> CreateYouTubePlaylistAsync(string title)
         {
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 // Fallback to local if not logged in
                 return "LOCAL_" + Guid.NewGuid().ToString("N").Substring(0, 12);
@@ -1357,7 +1371,7 @@ namespace YTMusicWP
             if (playlistId.StartsWith("LOCAL_")) return true;
 
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return false;
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth) return false;
 
             try
             {
@@ -1371,7 +1385,7 @@ namespace YTMusicWP
             if (playlistId.StartsWith("LOCAL_")) return true;
 
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token)) return false;
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth) return false;
 
             try
             {

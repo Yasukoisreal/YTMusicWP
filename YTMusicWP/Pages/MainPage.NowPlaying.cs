@@ -36,7 +36,7 @@ namespace YTMusicWP
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
 
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Login required to Like");
                 return;
@@ -52,7 +52,7 @@ namespace YTMusicWP
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
 
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Sign in to add to playlist");
                 return;
@@ -69,7 +69,7 @@ namespace YTMusicWP
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
 
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Login required for Watch Later");
                 return;
@@ -283,7 +283,7 @@ namespace YTMusicWP
             {
                 // Require login
                 string token = await GetAccessTokenAsync();
-                if (string.IsNullOrEmpty(token))
+                if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
                 {
                     ShowToast("Sign in to add to playlist");
                     return;

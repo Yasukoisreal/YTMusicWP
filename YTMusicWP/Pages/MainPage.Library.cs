@@ -396,7 +396,7 @@ namespace YTMusicWP
             var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
             if (track != null && _currentViewingYtPlaylistId != null)
             {
-                bool success = await RemoveFromYouTubePlaylistAsync(_currentViewingYtPlaylistId, track.VideoId);
+                bool success = await RemoveFromYouTubePlaylistAsync(_currentViewingYtPlaylistId, track.VideoId, track.SetVideoId);
                 if (success)
                 {
                     // Remove from local cache for local playlists
@@ -485,7 +485,7 @@ namespace YTMusicWP
 
             // Require login
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Sign in to add to playlist");
                 return;
@@ -691,7 +691,7 @@ namespace YTMusicWP
 
             // Require login to like songs
             string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Sign in to like songs");
                 return;

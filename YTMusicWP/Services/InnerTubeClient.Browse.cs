@@ -63,16 +63,125 @@ namespace YTMusicWP
                     data = dataStr;
                 }
 
-                // If not continuation, parse Title and Thumbnail
+                // If not continuation, parse Title, Thumbnail, Subtitle, Artist
+                string albumArtistFallback = "";
                 if (string.IsNullOrEmpty(continuationToken))
                 {
                     result.Title = data?["header"]?.SelectToken("$..title.runs[0].text")?.ToString() 
-                        ?? data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString() 
+                        ?? data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString()
+                        ?? data?.SelectToken("$..musicResponsiveHeaderRenderer.title.runs[0].text")?.ToString()
                         ?? "";
 
                     result.ThumbnailUrl = data?["header"]?.SelectToken("$..thumbnails[0].url")?.ToString() 
                         ?? data?["microformat"]?.SelectToken("$..thumbnails[0].url")?.ToString() 
                         ?? "";
+
+                    // === Extract subtitle + artist from multiple header formats ===
+                    JToken subtitleRuns = null;
+
+                    // 1) musicDetailHeaderRenderer (album old format)
+                    var mdhr = data?["header"]?["musicDetailHeaderRenderer"];
+                    if (mdhr != null)
+                    {
+                        subtitleRuns = mdhr["subtitle"]?["runs"];
+                    }
+
+                    // 2) musicEditablePlaylistDetailHeaderRenderer (editable playlists)
+                    if (subtitleRuns == null)
+                    {
+                        var editable = data?["header"]?["musicEditablePlaylistDetailHeaderRenderer"];
+                        if (editable != null)
+                        {
+                            subtitleRuns = editable["header"]?["musicDetailHeaderRenderer"]?["subtitle"]?["runs"];
+                            if (subtitleRuns == null)
+                                subtitleRuns = editable["header"]?["musicResponsiveHeaderRenderer"]?["subtitle"]?["runs"];
+                        }
+                    }
+
+                    // 3) musicImmersiveHeaderRenderer (artist page, some playlists)
+                    if (subtitleRuns == null)
+                    {
+                        subtitleRuns = data?["header"]?["musicImmersiveHeaderRenderer"]?["subtitle"]?["runs"];
+                    }
+
+                    // 4) musicVisualHeaderRenderer
+                    if (subtitleRuns == null)
+                    {
+                        subtitleRuns = data?["header"]?["musicVisualHeaderRenderer"]?["subtitle"]?["runs"];
+                    }
+
+                    // 5) Generic deep-search fallback on header, contents, and entire data
+                    if (subtitleRuns == null)
+                    {
+                        subtitleRuns = data?["header"]?.SelectToken("$..subtitle.runs");
+                    }
+                    if (subtitleRuns == null)
+                    {
+                        subtitleRuns = data?["contents"]?.SelectToken("$..musicDetailHeaderRenderer.subtitle.runs");
+                    }
+                    if (subtitleRuns == null)
+                    {
+                        subtitleRuns = data?["contents"]?.SelectToken("$..musicResponsiveHeaderRenderer.subtitle.runs");
+                    }
+
+                    JToken secondSubtitleRuns = mdhr?["secondSubtitle"]?["runs"] 
+                        ?? data?["header"]?.SelectToken("$..secondSubtitle.runs") 
+                        ?? data?["contents"]?.SelectToken("$..secondSubtitle.runs");
+
+                    // First try explicit artist from new API format
+                    var strapline = data?.SelectToken("$..straplineTextOne.runs");
+                    if (strapline != null && strapline.HasValues)
+                    {
+                        albumArtistFallback = InnerTubeClient.ExtractArtistFromRuns(strapline);
+                        if (string.IsNullOrEmpty(albumArtistFallback))
+                        {
+                            albumArtistFallback = strapline[0]?["text"]?.ToString() ?? "";
+                        }
+                    }
+
+                    if (subtitleRuns != null && subtitleRuns.HasValues)
+                    {
+                        string subtitle = "";
+                        foreach(var r in subtitleRuns) subtitle += r["text"]?.ToString();
+                        result.Subtitle = subtitle;
+                        
+                        // If we didn't get artist from strapline, try extracting from subtitle
+                        if (string.IsNullOrEmpty(albumArtistFallback))
+                        {
+                            albumArtistFallback = InnerTubeClient.ExtractArtistFromRuns(subtitleRuns);
+                        }
+                    }
+
+                    // If still no artist, try secondSubtitle
+                    if (string.IsNullOrEmpty(albumArtistFallback) && secondSubtitleRuns != null && secondSubtitleRuns.HasValues)
+                    {
+                        albumArtistFallback = InnerTubeClient.ExtractArtistFromRuns(secondSubtitleRuns);
+                    }
+
+                    // Append artist to subtitle if it was missing from the main subtitle but we found it
+                    if (!string.IsNullOrEmpty(albumArtistFallback) && !string.IsNullOrEmpty(result.Subtitle) && !result.Subtitle.Contains(albumArtistFallback))
+                    {
+                        result.Subtitle = result.Subtitle + " • " + albumArtistFallback;
+                    }
+                    
+                    // Also append secondSubtitle if it exists (for track count / duration)
+                    if (secondSubtitleRuns != null && secondSubtitleRuns.HasValues)
+                    {
+                        string secondSub = "";
+                        foreach (var r in secondSubtitleRuns) secondSub += r["text"]?.ToString();
+                        if (!string.IsNullOrEmpty(secondSub))
+                        {
+                            result.Subtitle = result.Subtitle + " • " + secondSub;
+                        }
+                    }
+
+                    // 7) Fallback: metadata.playlistMetadataRenderer.description for subtitle
+                    if (string.IsNullOrEmpty(result.Subtitle))
+                    {
+                        result.Subtitle = data?["metadata"]?["playlistMetadataRenderer"]?["description"]?.ToString() ?? "";
+                    }
+
+                    System.Diagnostics.Debug.WriteLine("[BrowsePlaylist] Title=" + result.Title + " Subtitle=" + result.Subtitle + " ArtistFallback=" + albumArtistFallback);
                 }
 
                 // Parse tracks
@@ -86,7 +195,17 @@ namespace YTMusicWP
                             var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
                             var track = ParseMusicListItem(wrapper);
                             if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                            {
+                                if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                {
+                                    track.ChannelName = albumArtistFallback;
+                                }
+                                if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                                {
+                                    track.ThumbnailUrl = result.ThumbnailUrl;
+                                }
                                 result.Tracks.Add(track);
+                            }
                         }
                         catch { continue; }
                     }
@@ -221,8 +340,7 @@ namespace YTMusicWP
                         }
 
                         // Description
-                        var descRuns = mih["description"]?["musicDescriptionShelfRenderer"]
-                            ?["description"]?["runs"];
+                        var descRuns = mih["description"]?["runs"];
                         if (descRuns != null)
                         {
                             string desc = "";
@@ -296,13 +414,26 @@ namespace YTMusicWP
                                             }
 
                                             string itemThumb = "";
+                                            double coverWidth = 140;
                                             var thumbs = twoRow["thumbnailRenderer"]?["musicThumbnailRenderer"]
                                                 ?["thumbnail"]?["thumbnails"];
                                             if (thumbs != null && thumbs.HasValues)
+                                            {
                                                 itemThumb = thumbs.Last?["url"]?.ToString() ?? "";
+                                                int tW = 0, tH = 0;
+                                                int.TryParse(thumbs.Last?["width"]?.ToString() ?? "0", out tW);
+                                                int.TryParse(thumbs.Last?["height"]?.ToString() ?? "0", out tH);
+                                                if (tH > 0 && (double)tW / tH > 1.3) coverWidth = 249;
+                                            }
 
                                             string browseId2 = twoRow["navigationEndpoint"]
                                                 ?["browseEndpoint"]?["browseId"]?.ToString() ?? "";
+
+                                            string videoId = twoRow["navigationEndpoint"]
+                                                ?["watchEndpoint"]?["videoId"]?.ToString() ?? "";
+                                                
+                                            string playlistId = twoRow["navigationEndpoint"]
+                                                ?["watchEndpoint"]?["playlistId"]?.ToString() ?? "";
 
                                             result.Albums.Add(new ArtistAlbum
                                             {
@@ -310,7 +441,10 @@ namespace YTMusicWP
                                                 Subtitle = itemSub,
                                                 ThumbnailUrl = itemThumb,
                                                 BrowseId = browseId2,
-                                                SectionTitle = sectionTitle
+                                                VideoId = videoId,
+                                                PlaylistId = playlistId,
+                                                SectionTitle = sectionTitle,
+                                                CoverWidth = coverWidth
                                             });
                                         }
                                         catch { continue; }
@@ -384,8 +518,19 @@ namespace YTMusicWP
                     ["browseId"] = "FEmusic_moods_and_genres"
                 };
 
-                var data = await PostInnerTubeAsync(
-                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                JObject data = null;
+                if (HasCookieAuth)
+                {
+                    var extraBody = new JObject();
+                    extraBody["browseId"] = "FEmusic_moods_and_genres";
+                    data = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
+                }
+                else
+                {
+                    var dataStr = await PostInnerTubeAsync(
+                        "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                    data = dataStr;
+                }
 
                 var tabs = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
                 var sections = tabs?[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
@@ -453,6 +598,126 @@ namespace YTMusicWP
                 _moodsCacheTime = DateTime.Now;
             }
             return items;
+        }
+
+        public static async Task<List<HomeSection>> BrowseMoodCategoryAsync(string browseId, string paramsStr)
+        {
+            var sectionsList = new List<HomeSection>();
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                var body = new JObject
+                {
+                    ["context"] = BuildMusicContext(vd),
+                    ["browseId"] = browseId
+                };
+                if (!string.IsNullOrEmpty(paramsStr))
+                {
+                    body["params"] = paramsStr;
+                }
+
+                JObject data = null;
+                if (HasCookieAuth)
+                {
+                    var extraBody = new JObject();
+                    extraBody["browseId"] = browseId;
+                    if (!string.IsNullOrEmpty(paramsStr)) extraBody["params"] = paramsStr;
+                    data = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
+                }
+                else
+                {
+                    var dataStr = await PostInnerTubeAsync(
+                        "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                    data = dataStr;
+                }
+
+                var tabs = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
+                var sections = tabs?[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
+
+                if (sections != null)
+                {
+                    foreach (var sec in sections)
+                    {
+                        var carousel = sec["musicCarouselShelfRenderer"];
+                        if (carousel != null)
+                        {
+                            string sectionTitle = carousel["header"]?["musicCarouselShelfBasicHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                            if (string.IsNullOrEmpty(sectionTitle)) continue;
+
+                            var homeSection = new HomeSection { Title = sectionTitle };
+                            string lowerTitle = sectionTitle.ToLowerInvariant();
+                            if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("quick") || lowerTitle.Contains("start radio") || lowerTitle.Contains("đài phát"))
+                                homeSection.Layout = HomeSectionLayout.QuickPicks;
+                            else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn"))
+                                homeSection.Layout = HomeSectionLayout.Video;
+
+                            var cItems = carousel["contents"];
+                            if (cItems != null)
+                            {
+                                foreach (var cItem in cItems)
+                                {
+                                    if (homeSection.Tracks.Count >= 20) break;
+                                    try
+                                    {
+                                        var twoRow = cItem["musicTwoRowItemRenderer"];
+                                        if (twoRow != null)
+                                        {
+                                            string title = twoRow["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                            if (string.IsNullOrEmpty(title)) continue;
+
+                                            string subtitle = "";
+                                            var subRuns = twoRow["subtitle"]?["runs"];
+                                            if (subRuns != null)
+                                            {
+                                                subtitle = ExtractArtistFromRuns(subRuns);
+                                            }
+
+                                            string thumbUrl = "";
+                                            var thumbs = twoRow["thumbnailRenderer"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
+                                            if (thumbs != null && thumbs.HasValues)
+                                                thumbUrl = thumbs.Last?["url"]?.ToString() ?? "";
+
+                                            string itemBrowseId = twoRow["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                                            string vId = twoRow["navigationEndpoint"]?["watchEndpoint"]?["videoId"]?.ToString();
+
+                                            string finalId = vId;
+                                            if (string.IsNullOrEmpty(finalId) && !string.IsNullOrEmpty(itemBrowseId))
+                                            {
+                                                if (itemBrowseId.StartsWith("MPREb_") || itemBrowseId.StartsWith("OLAK5"))
+                                                    finalId = "PLAYLIST:" + itemBrowseId;
+                                                else if (itemBrowseId.StartsWith("UC"))
+                                                    finalId = "CHANNEL:" + itemBrowseId;
+                                                else if (itemBrowseId.StartsWith("VL"))
+                                                    finalId = "PLAYLIST:" + itemBrowseId.Substring(2);
+                                                else
+                                                    finalId = "PLAYLIST:" + itemBrowseId;
+                                            }
+
+                                            if (!string.IsNullOrEmpty(finalId))
+                                            {
+                                                homeSection.Tracks.Add(new YouTubeTrack
+                                                {
+                                                    Title = title,
+                                                    ChannelName = subtitle,
+                                                    ThumbnailUrl = thumbUrl,
+                                                    VideoId = finalId
+                                                });
+                                            }
+                                        }
+                                    }
+                                    catch { continue; }
+                                }
+                            }
+                            if (homeSection.Tracks.Count > 0)
+                            {
+                                sectionsList.Add(homeSection);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+            return sectionsList;
         }
 
         private static async Task<List<DiscoverItem>> FetchCarouselItemsAsync(string browseId)
@@ -574,6 +839,10 @@ namespace YTMusicWP
 
         public static void ClearHomeCache()
         {
+            _cachedDiscover = null;
+            _cachedCharts = null;
+            _cachedMoods = null;
+            _cachedVisitorData = null;
         }
 
         public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null, Action<List<HomeSection>> onPageLoaded = null)
@@ -690,19 +959,31 @@ namespace YTMusicWP
                                         var subRuns = twoRow["subtitle"]?["runs"];
                                         if (subRuns != null)
                                         {
-                                            foreach (var sr in subRuns)
-                                            {
-                                                string st = sr["text"]?.ToString();
-                                                if (st != null && st != " • " && st != " · ")
-                                                    subtitle = st; // Take last meaningful part (usually artist)
-                                            }
+                                            subtitle = ExtractArtistFromRuns(subRuns);
                                         }
 
                                         string thumbUrl = "";
+                                        double coverWidth = 140; // Default 1:1
                                         var thumbs = twoRow["thumbnailRenderer"]?["musicThumbnailRenderer"]
                                             ?["thumbnail"]?["thumbnails"];
                                         if (thumbs != null && thumbs.HasValues)
-                                            thumbUrl = thumbs.Last?["url"]?.ToString() ?? "";
+                                        {
+                                            var lastThumb = thumbs.Last;
+                                            thumbUrl = lastThumb?["url"]?.ToString() ?? "";
+                                            
+                                            // Check aspect ratio to automatically display 16:9 thumbnails properly
+                                            int w = 0, h = 0;
+                                            int.TryParse(lastThumb?["width"]?.ToString(), out w);
+                                            int.TryParse(lastThumb?["height"]?.ToString(), out h);
+                                            if (w > 0 && h > 0)
+                                            {
+                                                double ratio = (double)w / h;
+                                                if (ratio > 1.3) // 16:9 is 1.77, anything > 1.3 is widescreen
+                                                {
+                                                    coverWidth = 260; // Wide width matching VideoItemTemplate
+                                                }
+                                            }
+                                        }
 
                                         // Get videoId or browseId
                                         string videoId = twoRow["navigationEndpoint"]
@@ -734,7 +1015,8 @@ namespace YTMusicWP
                                             VideoId = finalId,
                                             Title = title,
                                             ChannelName = CleanChannelName(subtitle),
-                                            ThumbnailUrl = thumbUrl
+                                            ThumbnailUrl = thumbUrl,
+                                            CoverWidth = coverWidth
                                         });
                                         continue;
                                     }

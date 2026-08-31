@@ -189,7 +189,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="HorizontalSongItemTemplate">
-            <Grid Width="140" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
+            <Grid Width="{Binding CoverWidth}" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
@@ -199,11 +199,11 @@
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <StackPanel>
-                    <Rectangle Width="140" Height="140" RadiusX="10" RadiusY="10" Margin="0,0,0,8">
+                    <Rectangle Width="{Binding CoverWidth}" Height="140" RadiusX="10" RadiusY="10" Margin="0,0,0,8">
                         <Rectangle.Fill>
                             <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                                 <ImageBrush.ImageSource>
-                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="180"/>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="260"/>
                                 </ImageBrush.ImageSource>
                             </ImageBrush>
                         </Rectangle.Fill>
@@ -299,13 +299,13 @@
         </DataTemplate>
 
         <DataTemplate x:Key="ArtistAlbumItemTemplate">
-            <Grid Width="140" Margin="0,0,15,0" Background="Transparent">
+            <Grid Width="{Binding CoverWidth}" Margin="0,0,15,0" Background="Transparent">
                 <StackPanel>
-                    <Rectangle Width="140" Height="140" RadiusX="10" RadiusY="10" Margin="0,0,0,8">
+                    <Rectangle Width="{Binding CoverWidth}" Height="140" RadiusX="10" RadiusY="10" Margin="0,0,0,8">
                         <Rectangle.Fill>
                             <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                                 <ImageBrush.ImageSource>
-                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="180"/>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="250"/>
                                 </ImageBrush.ImageSource>
                             </ImageBrush>
                         </Rectangle.Fill>
@@ -1667,6 +1667,33 @@
         </Grid>
 
         <!-- ═══════════════════════════════════ PLAYLIST DETAILS ═══════════════════════════════════ -->
+        <Grid x:Name="MoodCategoryView" Grid.Row="0" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,15,10,10">
+                <Button Click="CloseMoodCategory_Click" Style="{StaticResource IconButtonStyle}" Width="50" Height="50">
+                    <Viewbox Width="20" Height="20"><Path Data="M20,11V13H8L13.5,18.5 12.08,19.92 4.16,12 12.08,4.08 13.5,5.5 8,11H20Z" Fill="White"/></Viewbox>
+                </Button>
+                <TextBlock x:Name="MoodCategoryTitle" Text="Category" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="10,0,0,0" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            
+            <Grid Grid.Row="1">
+                <ProgressBar x:Name="MoodCategoryLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
+                <ListView x:Name="MoodCategorySectionList" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Auto" ItemTemplateSelector="{StaticResource HomeSectionSelector}">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+        </Grid>
+
         <Grid x:Name="PlaylistDetailsView" Grid.Row="0" Visibility="Collapsed" Canvas.ZIndex="50" Background="#121212">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="PlaylistTransform" Y="1000"/>
@@ -1686,6 +1713,7 @@
                     </Rectangle.Fill>
                 </Rectangle>
                 <TextBlock x:Name="PlaylistDetailsTitle" Text="Playlist Name" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextAlignment="Center" TextWrapping="Wrap"/>
+                <TextBlock x:Name="PlaylistDetailsSubtitle" Text="Subtitle" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextAlignment="Center" Margin="0,5,0,0"/>
                 <TextBlock x:Name="PlaylistDetailsTrackCount" Text="0 tracks" FontSize="14" Foreground="#B3B3B3" TextAlignment="Center" Margin="0,5,0,0"/>
                 <Grid Margin="0,20,0,0">
                     <Grid.ColumnDefinitions>
@@ -1912,18 +1940,24 @@
                     <!-- Songs list -->
                     <ListView x:Name="ArtistSongsList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" Margin="6,0,6,0"/>
 
-                    <!-- ======= BẢN PHÁT HÀNH NỔI TIẾNG (Albums) ======= -->
-                    <StackPanel x:Name="ArtistAlbumsSection" Visibility="Collapsed" Margin="0,6,0,0">
-                        <TextBlock x:Name="ArtistAlbumsTitle" Text="Releases" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,0,16,8"/>
-                        <ListView x:Name="ArtistAlbumsList" IsItemClickEnabled="True" ItemClick="ArtistAlbum_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource ArtistAlbumItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="16,0,0,0">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                        </ListView>
-                    </StackPanel>
+                    <!-- ======= SECTIONS (Albums, Singles, Videos, etc.) ======= -->
+                    <ItemsControl x:Name="ArtistSectionsControl" Margin="0,6,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,0,0,16">
+                                    <TextBlock Text="{Binding Title}" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,0,16,8"/>
+                                    <ListView ItemsSource="{Binding Items}" IsItemClickEnabled="True" ItemClick="ArtistAlbum_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource ArtistAlbumItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="16,0,0,0">
+                                        <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                                    </ListView>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
                     <!-- ======= GIỚI THIỆU (About) ======= -->
                     <StackPanel x:Name="ArtistAboutSection" Visibility="Collapsed" Margin="16,16,16,8">
                         <TextBlock Text="About" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
-                        <Border CornerRadius="12" Height="200" Background="#1A1A1A">
+                        <Border CornerRadius="12" MinHeight="200" Background="#1A1A1A" Tapped="ArtistAbout_Tapped">
                             <Grid>
                                 <Border CornerRadius="12">
                                     <Border.Background>
@@ -1938,7 +1972,7 @@
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
-                                <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,16">
+                                <StackPanel VerticalAlignment="Bottom" Margin="16,16,16,16">
                                     <TextBlock x:Name="ArtistAboutListeners" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
                                     <TextBlock Text="followers" FontSize="12" Foreground="#B3B3B3" Margin="0,2,0,0"/>
                                     <TextBlock x:Name="ArtistAboutDescription" FontSize="12" Foreground="#CCCCCC" Margin="0,8,0,0" MaxLines="3" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
@@ -1977,7 +2011,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Rectangle Grid.Column="0" Width="46" Height="46" RadiusX="8" RadiusY="8" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <Rectangle x:Name="MiniCoverRectangle" Grid.Column="0" Width="46" Height="46" RadiusX="8" RadiusY="8" Margin="0,0,12,0" VerticalAlignment="Center">
                             <Rectangle.Fill>
                                 <ImageBrush x:Name="MiniCoverImage" Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center"/>
                             </Rectangle.Fill>
@@ -2174,9 +2208,9 @@
                     <PivotItem>
                         <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-10,0,0">
                             <!-- Shadow effect -->
-                            <Rectangle Width="290" Height="290" RadiusX="16" RadiusY="16" Fill="#40000000" Margin="10,10,0,0"/>
+                            <Rectangle x:Name="BigCoverShadow" Width="290" Height="290" RadiusX="16" RadiusY="16" Fill="#40000000" Margin="10,10,0,0"/>
                             <!-- Album art -->
-                            <Rectangle Width="300" Height="300" RadiusX="16" RadiusY="16" RenderTransformOrigin="0.5,0.5">
+                            <Rectangle x:Name="BigCoverRectangle" Width="300" Height="300" RadiusX="16" RadiusY="16" RenderTransformOrigin="0.5,0.5">
                                 <Rectangle.RenderTransform>
                                     <CompositeTransform x:Name="BigCoverTransform" ScaleX="1" ScaleY="1"/>
                                 </Rectangle.RenderTransform>

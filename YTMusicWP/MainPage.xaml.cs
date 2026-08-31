@@ -40,7 +40,7 @@ namespace YTMusicWP
                 if (section.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.QuickPicks)
                     return QuickPicksTemplate;
                 else if (section.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.Video)
-                    return VideoTemplate;
+                    return NormalTemplate; // Use dynamic width instead of fixed VideoTemplate
             }
             return NormalTemplate;
         }
