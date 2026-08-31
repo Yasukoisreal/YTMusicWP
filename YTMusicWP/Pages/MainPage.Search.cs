@@ -351,17 +351,40 @@ namespace YTMusicWP
             
             try
             {
-                var items = await InnerTubeClient.BrowseExploreAsync();
-                if (items != null && items.Count > 0)
+                var exploreTask = InnerTubeClient.BrowseExploreAsync();
+                var moodsTask = InnerTubeClient.BrowseMoodsAndGenresAsync();
+                await Task.WhenAll(exploreTask, moodsTask);
+
+                var items = exploreTask.Result;
+                var moods = moodsTask.Result;
+
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
-                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
+                    if (items != null && items.Count > 0)
                         DiscoverListView.ItemsSource = items;
-                        _discoverLoaded = true;
-                    });
-                }
+                    
+                    if (moods != null && moods.Count > 0)
+                        MoodsGenresListView.ItemsSource = moods;
+
+                    _discoverLoaded = true;
+                });
             }
             catch { }
+        }
+
+        private void MoodItem_Click(object sender, ItemClickEventArgs e)
+        {
+            var item = e.ClickedItem as YTMusicWP.MoodItem;
+            if (item == null) return;
+
+            SearchBox.Text = item.Title;
+            _currentSearchQuery = item.Title;
+            SearchLoading.Visibility = Visibility.Visible;
+            DefaultSearchUI.Visibility = Visibility.Collapsed;
+            SearchSongList.Visibility = Visibility.Collapsed;
+            _nextSearchToken = "";
+            _isLoadingMoreSearch = false;
+            ExecuteSearch(_currentSearchQuery);
         }
 
         private void DiscoverItem_Click(object sender, ItemClickEventArgs e)

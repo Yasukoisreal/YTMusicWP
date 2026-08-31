@@ -252,4 +252,18 @@ namespace YTMusicWP
         public string PlaylistId { get; set; } = "";
         public string SearchQuery { get; set; } = "";
     }
+
+    public class MoodItem
+    {
+        public string Title { get; set; } = "";
+        public string Color { get; set; } = "#333333";
+        public string BrowseId { get; set; } = "";
+        public string Params { get; set; } = "";
+    }
+
+    public class MoodCategory
+    {
+        public string Title { get; set; } = "";
+        public List<MoodItem> Items { get; set; } = new List<MoodItem>();
+    }
 }

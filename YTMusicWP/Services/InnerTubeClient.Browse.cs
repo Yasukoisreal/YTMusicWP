@@ -365,6 +365,96 @@ namespace YTMusicWP
             return items;
         }
 
+        private static List<MoodCategory> _cachedMoods = null;
+        private static DateTime _moodsCacheTime = DateTime.MinValue;
+
+        public static async Task<List<MoodCategory>> BrowseMoodsAndGenresAsync()
+        {
+            if (_cachedMoods != null && _cachedMoods.Count > 0 
+                && (DateTime.Now - _moodsCacheTime).TotalHours < 24)
+                return _cachedMoods;
+
+            var items = new List<MoodCategory>();
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                var body = new JObject
+                {
+                    ["context"] = BuildMusicContext(vd),
+                    ["browseId"] = "FEmusic_moods_and_genres"
+                };
+
+                var data = await PostInnerTubeAsync(
+                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+
+                var tabs = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
+                var sections = tabs?[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
+
+                if (sections != null)
+                {
+                    foreach (var sec in sections)
+                    {
+                        var grid = sec["gridRenderer"];
+                        if (grid != null)
+                        {
+                            string catTitle = grid["header"]?["gridHeaderRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                            if (string.IsNullOrEmpty(catTitle)) continue;
+
+                            var category = new MoodCategory { Title = catTitle };
+                            var gridItems = grid["items"];
+                            if (gridItems != null)
+                            {
+                                foreach (var item in gridItems)
+                                {
+                                    var btn = item["musicNavigationButtonRenderer"];
+                                    if (btn != null)
+                                    {
+                                        string btnText = btn["buttonText"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                        string color = btn["solid"]?["leftStripeColor"]?.ToString() ?? "";
+                                        if (color.Length > 0 && !color.StartsWith("#"))
+                                        {
+                                            // YT Music returns decimal colors often (like 4278190080)
+                                            long colorVal;
+                                            if (long.TryParse(color, out colorVal))
+                                            {
+                                                color = "#" + colorVal.ToString("X8").Substring(2); // ARGB to RGB
+                                            }
+                                        }
+
+                                        string browseId = btn["clickCommand"]?["browseEndpoint"]?["browseId"]?.ToString() ?? "";
+                                        string paramsStr = btn["clickCommand"]?["browseEndpoint"]?["params"]?.ToString() ?? "";
+
+                                        if (!string.IsNullOrEmpty(btnText) && !string.IsNullOrEmpty(browseId))
+                                        {
+                                            category.Items.Add(new MoodItem
+                                            {
+                                                Title = btnText,
+                                                Color = color,
+                                                BrowseId = browseId,
+                                                Params = paramsStr
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            if (category.Items.Count > 0)
+                            {
+                                items.Add(category);
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            if (items.Count > 0)
+            {
+                _cachedMoods = items;
+                _moodsCacheTime = DateTime.Now;
+            }
+            return items;
+        }
+
         private static async Task<List<DiscoverItem>> FetchCarouselItemsAsync(string browseId)
         {
             var items = new List<DiscoverItem>();
