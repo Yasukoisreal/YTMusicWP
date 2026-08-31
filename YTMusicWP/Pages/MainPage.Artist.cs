@@ -34,7 +34,6 @@ namespace YTMusicWP
                 
                 var tracks = new System.Collections.ObjectModel.ObservableCollection<YouTubeTrack>();
                 _playlistContinuationToken = null;
-                _isLoadingMorePlaylist = false;
 
                 bool isLocalPlaylist = playlistId.StartsWith("LOCAL_");
                 if (isLocalPlaylist)

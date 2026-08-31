@@ -99,7 +99,6 @@ namespace YTMusicWP
         private UserPlaylist _currentViewingPlaylist = null;
         private string _currentViewingYtPlaylistId = null;
         private string _playlistContinuationToken = null;
-        private bool _isLoadingMorePlaylist = false;
         private YouTubeTrack _trackPendingForPlaylist = null;
 
 

@@ -474,13 +474,8 @@ namespace YTMusicWP
             public HomeSection() { Tracks = new List<YouTubeTrack>(); }
         }
 
-        private static List<HomeSection> _cachedHomeSections = null;
-        private static DateTime _homeCacheTime = DateTime.MinValue;
-
         public static void ClearHomeCache()
         {
-            _cachedHomeSections = null;
-            _homeCacheTime = DateTime.MinValue;
         }
 
         public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null, Action<List<HomeSection>> onPageLoaded = null)
@@ -694,13 +689,6 @@ namespace YTMusicWP
                         break;
                     }
                 } // end for (page)
-
-                if (sections.Count > 0)
-                {
-                    // Cache the final results temporarily
-                    _cachedHomeSections = sections;
-                    _homeCacheTime = DateTime.Now;
-                }
             }
             catch { }
             return sections;
