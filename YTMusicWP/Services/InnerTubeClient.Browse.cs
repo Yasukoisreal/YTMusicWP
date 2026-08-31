@@ -467,11 +467,19 @@ namespace YTMusicWP
         // ==========================================
         // BROWSE HOME — YouTube Music Home Page sections
         // ==========================================
+        public enum HomeSectionLayout
+        {
+            Normal,
+            QuickPicks,
+            Video
+        }
+
         public class HomeSection
         {
             public string Title { get; set; }
+            public HomeSectionLayout Layout { get; set; }
             public List<YouTubeTrack> Tracks { get; set; }
-            public HomeSection() { Tracks = new List<YouTubeTrack>(); }
+            public HomeSection() { Tracks = new List<YouTubeTrack>(); Layout = HomeSectionLayout.Normal; }
         }
 
         public static void ClearHomeCache()
@@ -567,6 +575,12 @@ namespace YTMusicWP
                         if (string.IsNullOrEmpty(sectionTitle)) continue;
 
                         var homeSection = new HomeSection { Title = sectionTitle };
+                        string lowerTitle = sectionTitle.ToLowerInvariant();
+                        if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("quick") || lowerTitle.Contains("start radio") || lowerTitle.Contains("bắt đầu một đài phát"))
+                            homeSection.Layout = HomeSectionLayout.QuickPicks;
+                        else if (lowerTitle.Contains("video") || lowerTitle.Contains("music video") || lowerTitle.Contains("nhạc cho bạn") || lowerTitle.Contains("trình diễn"))
+                            homeSection.Layout = HomeSectionLayout.Video;
+
                         var cItems = carousel["contents"];
                         if (cItems != null)
                         {

@@ -214,6 +214,64 @@
             </Grid>
         </DataTemplate>
 
+        <DataTemplate x:Key="QuickPicksItemTemplate">
+            <Grid Width="320" Margin="0,0,15,10" Background="Transparent" Holding="SongItem_Holding">
+                <FlyoutBase.AttachedFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♡ Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                    </MenuFlyout>
+                </FlyoutBase.AttachedFlyout>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Rectangle Grid.Column="0" Width="48" Height="48" Margin="0,0,12,0" RadiusX="4" RadiusY="4">
+                    <Rectangle.Fill>
+                        <ImageBrush Stretch="UniformToFill">
+                            <ImageBrush.ImageSource>
+                                <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="100"/>
+                            </ImageBrush.ImageSource>
+                        </ImageBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding ChannelName}" FontSize="13" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+                <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="50" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="VideoItemTemplate">
+            <Grid Width="260" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
+                <FlyoutBase.AttachedFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="♡ Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                    </MenuFlyout>
+                </FlyoutBase.AttachedFlyout>
+                <StackPanel>
+                    <Rectangle Width="260" Height="146" RadiusX="8" RadiusY="8" Margin="0,0,0,8">
+                        <Rectangle.Fill>
+                            <ImageBrush Stretch="UniformToFill">
+                                <ImageBrush.ImageSource>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="260"/>
+                                </ImageBrush.ImageSource>
+                            </ImageBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <TextBlock Text="{Binding Title}" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding ChannelName}" FontSize="12" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
         <DataTemplate x:Key="GridSongItemTemplate">
             <Border Background="#1E1E1E" CornerRadius="8" Margin="0,0,10,10" Height="56" HorizontalAlignment="Stretch" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
@@ -423,6 +481,38 @@
                 <Button Grid.Column="4" Content="✕" Click="QueueRemove_Click" Foreground="#666666" FontSize="16" Background="Transparent" BorderThickness="0" MinWidth="36" MinHeight="36" Padding="0"/>
             </Grid>
         </DataTemplate>
+        <DataTemplate x:Key="HomeSectionNormalTemplate">
+            <StackPanel Margin="0,0,0,5">
+                <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                <ListView ItemsSource="{Binding Tracks}" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,20">
+                    <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                </ListView>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="HomeSectionQuickPicksTemplate">
+            <StackPanel Margin="0,0,0,5">
+                <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                <GridView ItemsSource="{Binding Tracks}" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QuickPicksItemTemplate}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,20">
+                    <GridView.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid Orientation="Vertical" MaximumRowsOrColumns="4"/></ItemsPanelTemplate></GridView.ItemsPanel>
+                </GridView>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate x:Key="HomeSectionVideoTemplate">
+            <StackPanel Margin="0,0,0,5">
+                <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                <ListView ItemsSource="{Binding Tracks}" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource VideoItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,20">
+                    <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                </ListView>
+            </StackPanel>
+        </DataTemplate>
+
+        <local:HomeSectionTemplateSelector x:Key="HomeSectionSelector"
+            NormalTemplate="{StaticResource HomeSectionNormalTemplate}"
+            QuickPicksTemplate="{StaticResource HomeSectionQuickPicksTemplate}"
+            VideoTemplate="{StaticResource HomeSectionVideoTemplate}" />
+
     </Page.Resources>
 
     <Grid>
@@ -542,7 +632,7 @@
                         </StackPanel>
 
                         <!-- ═══════ DYNAMIC HOME SECTIONS ═══════ -->
-                        <ListView x:Name="HomeDynamicSections" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
+                        <ListView x:Name="HomeDynamicSections" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" ItemTemplateSelector="{StaticResource HomeSectionSelector}">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Padding" Value="0"/>
@@ -550,16 +640,6 @@
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Margin="0,0,0,5">
-                                        <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                                        <ListView ItemsSource="{Binding Tracks}" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,20">
-                                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                                        </ListView>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
                         </ListView>
 
                         <!-- ═══════ CHARTS SECTION ═══════ -->

@@ -26,6 +26,26 @@ using Anim = Windows.UI.Xaml.Media.Animation;
 
 namespace YTMusicWP
 {
+    public class HomeSectionTemplateSelector : DataTemplateSelector
+    {
+        public DataTemplate NormalTemplate { get; set; }
+        public DataTemplate QuickPicksTemplate { get; set; }
+        public DataTemplate VideoTemplate { get; set; }
+
+        protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
+        {
+            var section = item as YTMusicWP.InnerTubeClient.HomeSection;
+            if (section != null)
+            {
+                if (section.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.QuickPicks)
+                    return QuickPicksTemplate;
+                else if (section.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.Video)
+                    return VideoTemplate;
+            }
+            return NormalTemplate;
+        }
+    }
+
     public sealed partial class MainPage : Page
     {
         private Anim.Storyboard _marqueeStoryboard;
