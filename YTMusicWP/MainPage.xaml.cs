@@ -411,7 +411,7 @@ namespace YTMusicWP
             try
             {
                 string token = await GetAccessTokenAsync();
-                if (!string.IsNullOrEmpty(token))
+                if (!string.IsNullOrEmpty(token) || YTMusicWP.InnerTubeClient.HasCookieAuth)
                 {
                     await SyncAllAsync(token);
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>

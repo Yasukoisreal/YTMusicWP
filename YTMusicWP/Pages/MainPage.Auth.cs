@@ -1216,13 +1216,20 @@ namespace YTMusicWP
                 {
                     renderers = json.SelectTokens("$..musicListItemRenderer").ToList();
                 }
+                if (renderers.Count == 0)
+                {
+                    renderers = json.SelectTokens("$..musicResponsiveListItemRenderer").ToList();
+                }
 
                 foreach (var renderer in renderers)
                 {
-                    string title = renderer.SelectToken("title.runs[0].text")?.ToString() ?? "";
+                    string title = renderer.SelectToken("title.runs[0].text")?.ToString() 
+                        ?? renderer.SelectToken("flexColumns[0].musicResponsiveListItemFlexColumnRenderer.text.runs[0].text")?.ToString() 
+                        ?? "";
                     if (string.IsNullOrEmpty(title)) continue;
 
-                    string browseId = renderer.SelectToken("navigationEndpoint.browseEndpoint.browseId")?.ToString();
+                    string browseId = renderer.SelectToken("navigationEndpoint.browseEndpoint.browseId")?.ToString() 
+                        ?? renderer.SelectToken("flexColumns[0].musicResponsiveListItemFlexColumnRenderer.text.runs[0].navigationEndpoint.browseEndpoint.browseId")?.ToString();
                     if (string.IsNullOrEmpty(browseId)) continue;
 
                     string avatarUrl = renderer.SelectToken("thumbnailRenderer.musicThumbnailRenderer.thumbnail.thumbnails[0].url")?.ToString() 
