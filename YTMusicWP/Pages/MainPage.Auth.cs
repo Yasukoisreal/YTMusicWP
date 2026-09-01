@@ -809,8 +809,8 @@ namespace YTMusicWP
                 favoriteTracks.Clear();
                 _likedSongsContinuation = null;
 
-                // Browse "LM" (Liked Music) if Cookie Auth, otherwise "VLLL" (Liked Videos)
-                string playlistId = InnerTubeClient.HasCookieAuth ? "LM" : "VLLL";
+                // Browse "VLLM" (Liked Music) if Cookie Auth, otherwise "VLLL" (Liked Videos)
+                string playlistId = InnerTubeClient.HasCookieAuth ? "VLLM" : "VLLL";
                 var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = playlistId }, accessToken);
 
                 if (json["_error"] != null)
