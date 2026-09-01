@@ -343,7 +343,7 @@ namespace YTMusicWP
 
             // Require login to follow/subscribe
             string accessToken = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(accessToken))
+            if (string.IsNullOrEmpty(accessToken) && !InnerTubeClient.HasCookieAuth)
             {
                 ShowToast("Sign in to follow artists");
                 return;

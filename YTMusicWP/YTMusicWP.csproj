@@ -19,7 +19,7 @@
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
     <AppxBundle>Never</AppxBundle>
     <PackageCertificateKeyFile>YTMusicWP_Certificate.pfx</PackageCertificateKeyFile>
-    <PackageCertificateThumbprint>393F4DEFE851FB36577A16C2CE982A51C2AAB7AE</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>9FEF997F87ED036822C9B954380A15757AE182D4</PackageCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
