@@ -11,11 +11,26 @@ namespace YTMusicWP
 
         public static async Task<string> CreateYouTubePlaylistAsync(string title, string accessToken)
         {
+            if (HasCookieAuth && string.IsNullOrEmpty(accessToken))
+            {
+                var extra = new JObject
+                {
+                    ["title"] = title,
+                    ["privacyStatus"] = "PRIVATE"
+                };
+                var json = await AuthInnerTubePostAsync("playlist/create", extra, accessToken, "WEB_REMIX", "1.20231214.00.00");
+                if (json["_error"] == null)
+                {
+                    string newId = json["playlistId"]?.ToString();
+                    if (!string.IsNullOrEmpty(newId)) return newId;
+                }
+            }
+
             // TVHTML5 OAuth tokens are blocked from creating playlists by YouTube API (Precondition failed).
             // WEB_REMIX/ANDROID clients are blocked from using TVHTML5 OAuth tokens (Invalid argument).
             // Data API v3 is disabled for the TVHTML5 OAuth project.
             // Therefore, creating a YouTube playlist is physically impossible with Device Code flow.
-            // We must fallback to local playlists.
+            // We must fallback to local playlists if using OAuth.
             await Task.Delay(100);
             return "LOCAL_" + System.Guid.NewGuid().ToString("N");
         }
