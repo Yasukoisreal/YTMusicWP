@@ -809,8 +809,9 @@ namespace YTMusicWP
                 favoriteTracks.Clear();
                 _likedSongsContinuation = null;
 
-                // Browse "VLLL" = user's Liked Videos playlist via TVHTML5 client
-                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "VLLL" }, accessToken);
+                // Browse "LM" (Liked Music) if Cookie Auth, otherwise "VLLL" (Liked Videos)
+                string playlistId = InnerTubeClient.HasCookieAuth ? "LM" : "VLLL";
+                var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = playlistId }, accessToken);
 
                 if (json["_error"] != null)
                 {
@@ -877,6 +878,7 @@ namespace YTMusicWP
                 renderers = json.SelectTokens("$..playlistVideoRenderer")
                     .Union(json.SelectTokens("$..gridVideoRenderer"))
                     .Union(json.SelectTokens("$..playlistPanelVideoRenderer"))
+                    .Union(json.SelectTokens("$..musicResponsiveListItemRenderer"))
                     .ToList();
             }
 
@@ -886,6 +888,19 @@ namespace YTMusicWP
             {
                 try
                 {
+                    if (renderer["flexColumns"] != null)
+                    {
+                        var track = InnerTubeClient.ParseMusicListItem(new JObject { ["musicResponsiveListItemRenderer"] = renderer });
+                        if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                        {
+                            if (!favoriteTracks.Any(t => t.VideoId == track.VideoId))
+                            {
+                                favoriteTracks.Add(track);
+                                hasNew = true;
+                            }
+                        }
+                        continue;
+                    }
 
                     // Extract videoId
                     string videoId = null;

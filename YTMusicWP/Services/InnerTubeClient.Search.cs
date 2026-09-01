@@ -297,7 +297,7 @@ namespace YTMusicWP
         /// Parse musicResponsiveListItemRenderer → YouTubeTrack
         /// Dùng cho search results và artist songs
         /// </summary>
-        private static YouTubeTrack ParseMusicListItem(JToken item)
+        public static YouTubeTrack ParseMusicListItem(JToken item)
         {
             var mr = item["musicResponsiveListItemRenderer"];
             if (mr == null) return null;
