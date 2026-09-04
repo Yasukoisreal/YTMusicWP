@@ -311,25 +311,30 @@ namespace AudioPlayerTask
             _innerTubeDebug = "";
             
             // 1. VISIONOS (bypass poToken)
-            string url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", false);
+            string url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
+                ",\"deviceMake\":\"Apple\",\"deviceModel\":\"RealityDevice14,1\",\"osName\":\"visionOS\",\"osVersion\":\"1.0.2.21O209\",\"timeZone\":\"UTC\",\"utcOffsetMinutes\":0",
+                "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
             // 2. IOS (with remote poToken)
-            url = await TryInnerTubeClient(videoId, "IOS", "19.29.1", "5", "Apple", "iPhone14,5", "iOS", "16.4.1",
-                "com.google.ios.youtube/19.29.1 (iPhone14,5; U; CPU iOS 16_4_1 like Mac OS X;)", true);
+            url = await TryInnerTubeClient(videoId, "IOS", "19.45.4", "5",
+                "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)",
+                ",\"deviceMake\":\"Apple\",\"deviceModel\":\"iPhone16,2\",\"osName\":\"iPhone\",\"osVersion\":\"17.5.1.21F90\",\"utcOffsetMinutes\":0,\"timeZone\":\"UTC\"",
+                "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc", true);
             if (!string.IsNullOrEmpty(url)) return url;
 
             // 3. InnerTube ANDROID
-            url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
-                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
+            url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3",
+                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip",
+                "", "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
             return null;
         }
 
         private async Task<string> TryInnerTubeClient(string videoId, string clientName, string clientVersion, 
-            string clientId, string deviceMake, string deviceModel, string osName, string osVersion, string userAgent, bool usePoToken)
+            string clientId, string userAgent, string extraClientParams, string apiKey, bool usePoToken)
         {
             try
             {
@@ -355,18 +360,11 @@ namespace AudioPlayerTask
                     "\"context\":{\"client\":{" +
                         "\"clientName\":\"" + clientName + "\"," +
                         "\"clientVersion\":\"" + clientVersion + "\"," +
-                        "\"deviceMake\":\"" + deviceMake + "\"," +
-                        "\"deviceModel\":\"" + deviceModel + "\"," +
                         "\"userAgent\":\"" + userAgent + "\"," +
-                        "\"osName\":\"" + osName + "\"," +
-                        "\"osVersion\":\"" + osVersion + "\"," +
-                        "\"platform\":\"MOBILE\"," +
-                        "\"androidSdkVersion\":30," +
-                        "\"hl\":\"en\"," +
-                        "\"gl\":\"US\"," +
-                        "\"clientFormFactor\":0" +
+                        "\"hl\":\"en\",\"gl\":\"US\"" +
                         vdField +
-                    "}}" + poTokenField + "," +
+                        extraClientParams +
+                    "}" + poTokenField + "}," +
                     "\"videoId\":\"" + videoId + "\"" +
                 "}";
 
@@ -378,7 +376,7 @@ namespace AudioPlayerTask
 
                 // [FIX] Use per-request headers instead of DefaultRequestHeaders to avoid race condition
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
-                    new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData"));
+                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + apiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData"));
                 request.Content = content;
                 request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
                 request.Headers.Add("X-YouTube-Client-Name", clientId);

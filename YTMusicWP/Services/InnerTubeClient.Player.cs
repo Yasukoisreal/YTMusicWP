@@ -169,7 +169,7 @@ namespace YTMusicWP
                             "\"hl\":\"en\",\"gl\":\"US\"" +
                             vdField +
                             client.ExtraClientParams +
-                        "}}" + poTokenField + "," +
+                        "}" + poTokenField + "}," +
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
