@@ -10,25 +10,81 @@ namespace YTMusicWP
 {
     public static partial class InnerTubeClient
     {
+        private static async Task<string> FetchRemotePoTokenAsync(string videoId, string clientName)
+        {
+            try
+            {
+                // Cloudflare Worker acts as TLS proxy to Render
+                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
+                string body = "{\"content_binding\":\"" + videoId + "\",\"client\":\"" + clientName + "\"}";
+                
+                var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
+                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
+                
+                using (var httpClient = new Windows.Web.Http.HttpClient(filter))
+                {
+                    var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                    using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
+                    {
+                        if (!resp.IsSuccessStatusCode) return null;
+                        string json = await resp.Content.ReadAsStringAsync();
+                        // Parse JSON manually to avoid Newtonsoft.Json dependency issues in BackgroundTask
+                        string poToken = null;
+                        if (json.Contains("\"poToken\"") || json.Contains("\"po_token\""))
+                        {
+                            string key = json.Contains("\"poToken\"") ? "\"poToken\"" : "\"po_token\"";
+                            int idx = json.IndexOf(key);
+                            if (idx > 0)
+                            {
+                                int startQuote = json.IndexOf('"', idx + key.Length + 1);
+                                if (startQuote > 0)
+                                {
+                                    int endQuote = json.IndexOf('"', startQuote + 1);
+                                    if (endQuote > 0)
+                                    {
+                                        poToken = json.Substring(startQuote + 1, endQuote - startQuote - 1);
+                                    }
+                                }
+                            }
+                        }
+                        return poToken;
+                    }
+                }
+            }
+            catch { return null; }
+        }
+
         public static string LastResolveDebug = "";
 
         // [OPT] Cache captions from player response — avoids duplicate InnerTube call in GetCaptionTracksAsync
         private static string _cachedCaptionsVideoId;
         private static JToken _cachedCaptionsData;
 
-        private class PlayerClientConfig
+        public class PlayerClientConfig
         {
             public string ClientName { get; set; }
             public string ClientVersion { get; set; }
             public string UserAgent { get; set; }
-            public string ExtraClientParams { get; set; }
-            public string ApiKey { get; set; }
-            public bool RequireCookie { get; set; }
-            public string RequestClientNameHeader { get; set; }
+            public string ExtraClientParams { get; set; } = "";
+            public string ApiKey { get; set; } = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc";
+            public bool RequireCookie { get; set; } = false;
+            public string RequestClientNameHeader { get; set; } = null;
+            public bool SupportsPoToken { get; set; } = false;
         }
 
         private static readonly PlayerClientConfig[] _playerClients = new PlayerClientConfig[]
         {
+            // 0. VISIONOS - Bypass poToken! Client vẫn được YouTube phục vụ stream đầy đủ mà không cần poToken
+            new PlayerClientConfig {
+                ClientName = "VISIONOS",
+                ClientVersion = "1.02",
+                UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
+                ExtraClientParams = ",\"deviceMake\":\"Apple\",\"deviceModel\":\"RealityDevice14,1\",\"osName\":\"visionOS\",\"osVersion\":\"1.0.2.21O209\",\"timeZone\":\"UTC\",\"utcOffsetMinutes\":0",
+                ApiKey = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc",
+                RequireCookie = false,
+                RequestClientNameHeader = "101"
+            },
             // 1. IOS - Extremely reliable, no signature cipher, high quality
             new PlayerClientConfig {
                 ClientName = "IOS",
@@ -37,7 +93,8 @@ namespace YTMusicWP
                 ExtraClientParams = ",\"deviceMake\":\"Apple\",\"deviceModel\":\"iPhone16,2\",\"osName\":\"iPhone\",\"osVersion\":\"17.5.1.21F90\",\"utcOffsetMinutes\":0,\"timeZone\":\"UTC\"",
                 ApiKey = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc",
                 RequireCookie = false,
-                RequestClientNameHeader = "5"
+                RequestClientNameHeader = "5",
+                SupportsPoToken = true
             },
             // 2. WEB_REMIX (YouTube Music) - Best for premium/cookie users
             new PlayerClientConfig {
@@ -47,7 +104,8 @@ namespace YTMusicWP
                 ExtraClientParams = "",
                 ApiKey = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30",
                 RequireCookie = true,
-                RequestClientNameHeader = "67"
+                RequestClientNameHeader = "67",
+                SupportsPoToken = true
             },
             // 3. ANDROID (Original stable fallback)
             new PlayerClientConfig {
@@ -91,6 +149,17 @@ namespace YTMusicWP
                 try
                 {
                     LastResolveDebug += " [" + client.ClientName + "]";
+
+                    string poTokenField = "";
+                    if (client.SupportsPoToken)
+                    {
+                        string poToken = await FetchRemotePoTokenAsync(videoId, client.ClientName);
+                        if (!string.IsNullOrEmpty(poToken))
+                        {
+                            poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + poToken + "\"}";
+                        }
+                    }
+
                     string requestBody = "{" +
                         "\"contentCheckOk\":true," +
                         "\"context\":{\"client\":{" +
@@ -100,7 +169,7 @@ namespace YTMusicWP
                             "\"hl\":\"en\",\"gl\":\"US\"" +
                             vdField +
                             client.ExtraClientParams +
-                        "}}," +
+                        "}}" + poTokenField + "," +
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 

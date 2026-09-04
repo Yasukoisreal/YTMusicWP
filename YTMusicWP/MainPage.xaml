@@ -1314,6 +1314,7 @@
                     </Border>
 
                     <!-- ═══════ REGION ═══════ -->
+
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,12">

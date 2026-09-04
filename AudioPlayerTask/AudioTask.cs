@@ -266,20 +266,70 @@ namespace AudioPlayerTask
             return null;
         }
 
+        private async Task<string> FetchRemotePoTokenAsync(string videoId, string clientName)
+        {
+            try
+            {
+                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
+                string body = "{\"content_binding\":\"" + videoId + "\",\"client\":\"" + clientName + "\"}";
+                
+                var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
+                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
+                
+                using (var httpClient = new Windows.Web.Http.HttpClient(filter))
+                {
+                    var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                    using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
+                    {
+                        if (!resp.IsSuccessStatusCode) return null;
+                        string json = await resp.Content.ReadAsStringAsync();
+                        string poToken = null;
+                        if (json.Contains("\"poToken\"") || json.Contains("\"po_token\""))
+                        {
+                            string key = json.Contains("\"poToken\"") ? "\"poToken\"" : "\"po_token\"";
+                            int idx = json.IndexOf(key);
+                            if (idx > 0)
+                            {
+                                int startQuote = json.IndexOf('"', idx + key.Length + 1);
+                                if (startQuote > 0)
+                                {
+                                    int endQuote = json.IndexOf('"', startQuote + 1);
+                                    if (endQuote > 0) poToken = json.Substring(startQuote + 1, endQuote - startQuote - 1);
+                                }
+                            }
+                        }
+                        return poToken;
+                    }
+                }
+            }
+            catch { return null; }
+        }
+
         private async Task<string> ResolveViaInnerTubeDirectAsync(string videoId)
         {
             _innerTubeDebug = "";
             
-            // InnerTube ANDROID (giÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng LazyTube/MetroTube Patched)
-            string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "11",
-                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+            // 1. VISIONOS (bypass poToken)
+            string url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", false);
+            if (!string.IsNullOrEmpty(url)) return url;
+
+            // 2. IOS (with remote poToken)
+            url = await TryInnerTubeClient(videoId, "IOS", "19.29.1", "5", "Apple", "iPhone14,5", "iOS", "16.4.1",
+                "com.google.ios.youtube/19.29.1 (iPhone14,5; U; CPU iOS 16_4_1 like Mac OS X;)", true);
+            if (!string.IsNullOrEmpty(url)) return url;
+
+            // 3. InnerTube ANDROID
+            url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
+                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
             return null;
         }
 
         private async Task<string> TryInnerTubeClient(string videoId, string clientName, string clientVersion, 
-            string clientId, string deviceMake, string deviceModel, string osVersion, string userAgent)
+            string clientId, string deviceMake, string deviceModel, string osName, string osVersion, string userAgent, bool usePoToken)
         {
             try
             {
@@ -290,6 +340,16 @@ namespace AudioPlayerTask
                 if (!string.IsNullOrEmpty(visitorData))
                     vdField = ",\"visitorData\":\"" + visitorData + "\"";
 
+                string poTokenField = "";
+                if (usePoToken)
+                {
+                    string poToken = await FetchRemotePoTokenAsync(videoId, clientName);
+                    if (!string.IsNullOrEmpty(poToken))
+                    {
+                        poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + poToken + "\"}";
+                    }
+                }
+
                 string requestBody = "{" +
                     "\"contentCheckOk\":true," +
                     "\"context\":{\"client\":{" +
@@ -298,7 +358,7 @@ namespace AudioPlayerTask
                         "\"deviceMake\":\"" + deviceMake + "\"," +
                         "\"deviceModel\":\"" + deviceModel + "\"," +
                         "\"userAgent\":\"" + userAgent + "\"," +
-                        "\"osName\":\"Android\"," +
+                        "\"osName\":\"" + osName + "\"," +
                         "\"osVersion\":\"" + osVersion + "\"," +
                         "\"platform\":\"MOBILE\"," +
                         "\"androidSdkVersion\":30," +
@@ -306,7 +366,7 @@ namespace AudioPlayerTask
                         "\"gl\":\"US\"," +
                         "\"clientFormFactor\":0" +
                         vdField +
-                    "}}," +
+                    "}}" + poTokenField + "," +
                     "\"videoId\":\"" + videoId + "\"" +
                 "}";
 
@@ -493,7 +553,7 @@ namespace AudioPlayerTask
             if (!string.IsNullOrEmpty(fallbackUrl))
                 PlayUrl(PrepareStreamUrl(fallbackUrl), vidId);
             else
-                ReportErrorToUI("No stream available");
+                ReportErrorToUI("No stream available: " + _innerTubeDebug);
         }
 
         /// <summary>
