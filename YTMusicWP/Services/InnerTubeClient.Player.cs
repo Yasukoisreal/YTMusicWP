@@ -176,7 +176,8 @@ namespace YTMusicWP
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent", client.UserAgent);
+                    // DO NOT add User-Agent header as WP8.1 strict header parsing throws FormatException for complex iOS/Mac User-Agents.
+                    // The User-Agent is already included in the JSON payload context.client.userAgent
                     
                     if (!string.IsNullOrEmpty(client.RequestClientNameHeader))
                         req.Headers.Add("X-YouTube-Client-Name", client.RequestClientNameHeader);

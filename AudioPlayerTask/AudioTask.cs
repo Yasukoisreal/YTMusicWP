@@ -378,7 +378,8 @@ namespace AudioPlayerTask
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
                     new Uri("https://www.youtube.com/youtubei/v1/player?key=" + apiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData"));
                 request.Content = content;
-                request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
+                // DO NOT add User-Agent header as WP8.1 throws FormatException for complex iOS/Mac User-Agents.
+                // It is already included in context.client.userAgent
                 request.Headers.Add("X-YouTube-Client-Name", clientId);
                 request.Headers.Add("X-YouTube-Client-Version", clientVersion);
 
@@ -387,7 +388,7 @@ namespace AudioPlayerTask
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        _innerTubeDebug = clientName + ":HTTP" + (int)response.StatusCode;
+                        _innerTubeDebug += " | " + clientName + ":HTTP" + (int)response.StatusCode;
                         return null;
                     }
                     json = await response.Content.ReadAsStringAsync();
@@ -406,7 +407,7 @@ namespace AudioPlayerTask
 
                     if (status != "OK")
                     {
-                        _innerTubeDebug = clientName + ":" + status;
+                        _innerTubeDebug += " | " + clientName + ":" + status;
                         return null;
                     }
 
