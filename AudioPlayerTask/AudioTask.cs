@@ -306,35 +306,58 @@ namespace AudioPlayerTask
             catch { return null; }
         }
 
+        private string GenerateSAPISIDHash(string sapisid)
+        {
+            long timestamp = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+            string input = timestamp + " " + sapisid + " https://music.youtube.com";
+            var provider = Windows.Security.Cryptography.Core.HashAlgorithmProvider.OpenAlgorithm(
+                Windows.Security.Cryptography.Core.HashAlgorithmNames.Sha1);
+            var buffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(
+                input, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
+            var hashBuffer = provider.HashData(buffer);
+            string hash = Windows.Security.Cryptography.CryptographicBuffer.EncodeToHexString(hashBuffer);
+            return "SAPISIDHASH " + timestamp + "_" + hash;
+        }
+
         private async Task<string> ResolveViaInnerTubeDirectAsync(string videoId)
         {
             _innerTubeDebug = "";
             
+            // 0. Cookie Auth (WEB_REMIX) - 100% bypasses BotGuard if logged in
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+            if (settings.ContainsKey("GoogleCookieString") && settings.ContainsKey("GoogleSAPISID"))
+            {
+                string cookie = settings["GoogleCookieString"]?.ToString();
+                string sapisid = settings["GoogleSAPISID"]?.ToString();
+                if (!string.IsNullOrEmpty(cookie) && !string.IsNullOrEmpty(sapisid))
+                {
+                    string auth = GenerateSAPISIDHash(sapisid);
+                    string urlCookie = await TryInnerTubeClient(videoId, "WEB_REMIX", "1.20231214.00.00", "86", "Windows", "PC", "Windows", "10",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", false, cookie, auth);
+                    if (!string.IsNullOrEmpty(urlCookie)) return urlCookie;
+                }
+            }
+
             // 1. VISIONOS (bypass poToken)
-            string url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101",
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
-                ",\"deviceMake\":\"Apple\",\"deviceModel\":\"RealityDevice14,1\",\"osName\":\"visionOS\",\"osVersion\":\"1.0.2.21O209\",\"timeZone\":\"UTC\",\"utcOffsetMinutes\":0",
-                "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc", false);
+            string url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
             // 2. IOS (with remote poToken)
-            url = await TryInnerTubeClient(videoId, "IOS", "19.45.4", "5",
-                "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)",
-                ",\"deviceMake\":\"Apple\",\"deviceModel\":\"iPhone16,2\",\"osName\":\"iPhone\",\"osVersion\":\"17.5.1.21F90\",\"utcOffsetMinutes\":0,\"timeZone\":\"UTC\"",
-                "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc", true);
+            url = await TryInnerTubeClient(videoId, "IOS", "19.29.1", "5", "Apple", "iPhone14,5", "iOS", "16.4.1",
+                "com.google.ios.youtube/19.29.1 (iPhone14,5; U; CPU iOS 16_4_1 like Mac OS X;)", true);
             if (!string.IsNullOrEmpty(url)) return url;
 
             // 3. InnerTube ANDROID
-            url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3",
-                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip",
-                "", "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI", false);
+            url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
+                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
             return null;
         }
 
         private async Task<string> TryInnerTubeClient(string videoId, string clientName, string clientVersion, 
-            string clientId, string userAgent, string extraClientParams, string apiKey, bool usePoToken)
+            string clientId, string deviceMake, string deviceModel, string osName, string osVersion, string userAgent, bool usePoToken, string cookie = null, string auth = null)
         {
             try
             {
@@ -360,11 +383,18 @@ namespace AudioPlayerTask
                     "\"context\":{\"client\":{" +
                         "\"clientName\":\"" + clientName + "\"," +
                         "\"clientVersion\":\"" + clientVersion + "\"," +
+                        "\"deviceMake\":\"" + deviceMake + "\"," +
+                        "\"deviceModel\":\"" + deviceModel + "\"," +
                         "\"userAgent\":\"" + userAgent + "\"," +
-                        "\"hl\":\"en\",\"gl\":\"US\"" +
+                        "\"osName\":\"" + osName + "\"," +
+                        "\"osVersion\":\"" + osVersion + "\"," +
+                        "\"platform\":\"MOBILE\"," +
+                        "\"androidSdkVersion\":30," +
+                        "\"hl\":\"en\"," +
+                        "\"gl\":\"US\"," +
+                        "\"clientFormFactor\":0" +
                         vdField +
-                        extraClientParams +
-                    "}" + poTokenField + "}," +
+                    "}}" + poTokenField + "," +
                     "\"videoId\":\"" + videoId + "\"" +
                 "}";
 
@@ -376,19 +406,25 @@ namespace AudioPlayerTask
 
                 // [FIX] Use per-request headers instead of DefaultRequestHeaders to avoid race condition
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
-                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + apiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData"));
+                    new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData"));
                 request.Content = content;
-                // DO NOT add User-Agent header as WP8.1 throws FormatException for complex iOS/Mac User-Agents.
-                // It is already included in context.client.userAgent
+                request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
                 request.Headers.Add("X-YouTube-Client-Name", clientId);
                 request.Headers.Add("X-YouTube-Client-Version", clientVersion);
+                
+                if (!string.IsNullOrEmpty(cookie) && !string.IsNullOrEmpty(auth))
+                {
+                    request.Headers.Add("Cookie", cookie);
+                    request.Headers.Add("Authorization", auth);
+                    request.Headers.Add("Origin", "https://music.youtube.com");
+                }
 
                 string json;
                 using (var response = await _httpClient.SendRequestAsync(request))
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        _innerTubeDebug += " | " + clientName + ":HTTP" + (int)response.StatusCode;
+                        _innerTubeDebug = clientName + ":HTTP" + (int)response.StatusCode;
                         return null;
                     }
                     json = await response.Content.ReadAsStringAsync();
@@ -407,7 +443,7 @@ namespace AudioPlayerTask
 
                     if (status != "OK")
                     {
-                        _innerTubeDebug += " | " + clientName + ":" + status;
+                        _innerTubeDebug = clientName + ":" + status;
                         return null;
                     }
 
@@ -713,43 +749,6 @@ namespace AudioPlayerTask
             }
             catch { }
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }
-
-            // Update Live Tile
-            try
-            {
-                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                bool enableTile = !ls.ContainsKey("EnableLiveTile") || (bool)ls["EnableLiveTile"];
-                int tileMode = ls.ContainsKey("LiveTileMode") ? Convert.ToInt32(ls["LiveTileMode"]) : 0;
-                
-                if (enableTile && tileMode != 2 && !string.IsNullOrEmpty(thumb))
-                {
-                    // Basic square fallback (usually Google Music thumbs are already square, but we use mqdefault for YT)
-                    string squareThumb = thumb.Contains("hqdefault.jpg") ? thumb.Replace("hqdefault.jpg", "mqdefault.jpg") : thumb;
-                    string safeThumb = System.Net.WebUtility.HtmlEncode(squareThumb);
-                    string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
-                    string safeArtist = System.Net.WebUtility.HtmlEncode(artist ?? "");
-                    
-                    string xml = string.Format(
-                        "<tile><visual version=\"2\">" +
-                        "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                        "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
-                        "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                        "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                        "</visual></tile>", safeThumb, safeTitle, safeArtist);
-
-                    var doc = new Windows.Data.Xml.Dom.XmlDocument();
-                    doc.LoadXml(xml);
-                    var notif = new Windows.UI.Notifications.TileNotification(doc)
-                    {
-                        Tag = "nowplaying",
-                        ExpirationTime = DateTimeOffset.UtcNow.AddHours(12)
-                    };
-                    var updater = Windows.UI.Notifications.TileUpdateManager.CreateTileUpdaterForApplication();
-                    if (tileMode == 0) updater.EnableNotificationQueue(true); // Dynamic Mode supports queues
-                    updater.Update(notif);
-                }
-            }
-            catch { }
         }
 
         // ─── Playback Monitor (Gapless & SponsorBlock) ───
