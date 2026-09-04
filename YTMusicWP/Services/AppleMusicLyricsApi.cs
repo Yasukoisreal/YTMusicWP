@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
@@ -10,6 +10,8 @@ namespace YTMusicWP.Services
 {
     public static class AppleMusicLyricsApi
     {
+        private static readonly HttpClient _client = new HttpClient() { Timeout = TimeSpan.FromSeconds(5) };
+        
         public static async Task<string[]> GetLyricsAsync(string title, string artist, int duration = -1)
         {
             try
@@ -21,12 +23,8 @@ namespace YTMusicWP.Services
                     url += "&d=" + duration;
                 }
 
-                using (var client = new HttpClient())
-                {
-                    client.Timeout = TimeSpan.FromSeconds(5);
-                    client.DefaultRequestHeaders.Add("User-Agent", "YTMusicWP/1.0");
-
-                    var response = await client.GetAsync(url);
+                _client.DefaultRequestHeaders.UserAgent.TryParseAdd("YTMusicWP/1.0");
+                var response = await _client.GetAsync(url);
                     if (response.IsSuccessStatusCode)
                     {
                         string jsonStr = await response.Content.ReadAsStringAsync();
@@ -40,7 +38,6 @@ namespace YTMusicWP.Services
                             }
                         }
                     }
-                }
             }
             catch (Exception ex)
             {

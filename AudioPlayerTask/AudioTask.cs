@@ -714,6 +714,43 @@ namespace AudioPlayerTask
             }
             catch { }
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }
+
+            // Update Live Tile
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                bool enableTile = !ls.ContainsKey("EnableLiveTile") || (bool)ls["EnableLiveTile"];
+                int tileMode = ls.ContainsKey("LiveTileMode") ? Convert.ToInt32(ls["LiveTileMode"]) : 0;
+                
+                if (enableTile && tileMode != 2 && !string.IsNullOrEmpty(thumb))
+                {
+                    // Basic square fallback (usually Google Music thumbs are already square, but we use mqdefault for YT)
+                    string squareThumb = thumb.Contains("hqdefault.jpg") ? thumb.Replace("hqdefault.jpg", "mqdefault.jpg") : thumb;
+                    string safeThumb = System.Net.WebUtility.HtmlEncode(squareThumb);
+                    string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
+                    string safeArtist = System.Net.WebUtility.HtmlEncode(artist ?? "");
+                    
+                    string xml = string.Format(
+                        "<tile><visual version=\"2\">" +
+                        "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
+                        "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
+                        "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                        "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                        "</visual></tile>", safeThumb, safeTitle, safeArtist);
+
+                    var doc = new Windows.Data.Xml.Dom.XmlDocument();
+                    doc.LoadXml(xml);
+                    var notif = new Windows.UI.Notifications.TileNotification(doc)
+                    {
+                        Tag = "nowplaying",
+                        ExpirationTime = DateTimeOffset.UtcNow.AddHours(12)
+                    };
+                    var updater = Windows.UI.Notifications.TileUpdateManager.CreateTileUpdaterForApplication();
+                    if (tileMode == 0) updater.EnableNotificationQueue(true); // Dynamic Mode supports queues
+                    updater.Update(notif);
+                }
+            }
+            catch { }
         }
 
         // ─── Playback Monitor (Gapless & SponsorBlock) ───
