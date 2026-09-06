@@ -266,7 +266,30 @@ namespace AudioPlayerTask
             return null;
         }
 
-        private async Task<string> FetchRemotePoTokenAsync(string videoId, string clientName)
+        private class RemotePoTokenResult
+        {
+            public string PoToken;
+            public string VisitorData;
+        }
+
+        private static string ExtractJsonField(string json, string key)
+        {
+            if (string.IsNullOrEmpty(json) || !json.Contains("\"" + key + "\"")) return null;
+            int idx = json.IndexOf("\"" + key + "\"");
+            if (idx < 0) return null;
+            int colon = json.IndexOf(':', idx + key.Length + 2);
+            if (colon < 0) return null;
+            int startQuote = json.IndexOf('"', colon);
+            if (startQuote < 0) return null;
+            int endQuote = json.IndexOf('"', startQuote + 1);
+            if (endQuote > startQuote)
+            {
+                return json.Substring(startQuote + 1, endQuote - startQuote - 1);
+            }
+            return null;
+        }
+
+        private async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
             try
             {
@@ -284,22 +307,27 @@ namespace AudioPlayerTask
                     {
                         if (!resp.IsSuccessStatusCode) return null;
                         string json = await resp.Content.ReadAsStringAsync();
-                        string poToken = null;
-                        if (json.Contains("\"poToken\"") || json.Contains("\"po_token\""))
+
+                        var result = new RemotePoTokenResult();
+                        Windows.Data.Json.JsonObject obj;
+                        if (Windows.Data.Json.JsonObject.TryParse(json, out obj))
                         {
-                            string key = json.Contains("\"poToken\"") ? "\"poToken\"" : "\"po_token\"";
-                            int idx = json.IndexOf(key);
-                            if (idx > 0)
-                            {
-                                int startQuote = json.IndexOf('"', idx + key.Length + 1);
-                                if (startQuote > 0)
-                                {
-                                    int endQuote = json.IndexOf('"', startQuote + 1);
-                                    if (endQuote > 0) poToken = json.Substring(startQuote + 1, endQuote - startQuote - 1);
-                                }
-                            }
+                            if (obj.ContainsKey("po_token")) result.PoToken = obj.GetNamedString("po_token");
+                            else if (obj.ContainsKey("poToken")) result.PoToken = obj.GetNamedString("poToken");
+
+                            if (obj.ContainsKey("visitor_data")) result.VisitorData = obj.GetNamedString("visitor_data");
+                            else if (obj.ContainsKey("visitorData")) result.VisitorData = obj.GetNamedString("visitorData");
+                            else if (obj.ContainsKey("visit_identifier")) result.VisitorData = obj.GetNamedString("visit_identifier");
                         }
-                        return poToken;
+                        else
+                        {
+                            result.PoToken = ExtractJsonField(json, "po_token") ?? ExtractJsonField(json, "poToken");
+                            result.VisitorData = ExtractJsonField(json, "visitor_data") ?? ExtractJsonField(json, "visitorData") ?? ExtractJsonField(json, "visit_identifier");
+                        }
+
+                        if (!string.IsNullOrEmpty(result.PoToken))
+                            return result;
+                        return null;
                     }
                 }
             }
@@ -372,21 +400,25 @@ namespace AudioPlayerTask
             try
             {
                 string visitorData = await GetVisitorDataAsync(videoId);
-                string vdShort = visitorData != null ? visitorData.Substring(0, Math.Min(8, visitorData.Length)) : "NULL";
-
-                string vdField = "";
-                if (!string.IsNullOrEmpty(visitorData))
-                    vdField = ",\"visitorData\":\"" + visitorData + "\"";
 
                 string poTokenField = "";
                 if (usePoToken)
                 {
-                    string poToken = await FetchRemotePoTokenAsync(videoId, clientName);
-                    if (!string.IsNullOrEmpty(poToken))
+                    var tokenInfo = await FetchRemotePoTokenAsync(videoId, clientName);
+                    if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                     {
-                        poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + poToken + "\"}";
+                        poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
+                        // CRITICAL: Synchronize visitorData with the matching token from Render
+                        if (!string.IsNullOrEmpty(tokenInfo.VisitorData))
+                        {
+                            visitorData = tokenInfo.VisitorData;
+                        }
                     }
                 }
+
+                string vdField = "";
+                if (!string.IsNullOrEmpty(visitorData))
+                    vdField = ",\"visitorData\":\"" + visitorData + "\"";
 
                 string requestBody = "{" +
                     "\"contentCheckOk\":true," +
