@@ -2179,7 +2179,8 @@
                 <Rectangle.Fill>
                     <LinearGradientBrush x:Name="NowPlayingGradient" StartPoint="0,0" EndPoint="0,1">
                         <GradientStop x:Name="NowPlayingGradientTop" Color="#1A1A2E" Offset="0"/>
-                        <GradientStop Color="#121212" Offset="0.6"/>
+                        <GradientStop x:Name="NowPlayingGradientMid" Color="#121212" Offset="0.55"/>
+                        <GradientStop Color="#0D0D0D" Offset="1.0"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
@@ -2371,7 +2372,7 @@
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                         <GradientStop x:Name="FullscreenLyricsGradientTop" Color="#1A1A2E" Offset="0"/>
-                        <GradientStop Color="#0A0A0A" Offset="0.5"/>
+                        <GradientStop x:Name="FullscreenLyricsGradientMid" Color="#0A0A0A" Offset="0.5"/>
                         <GradientStop Color="#121212" Offset="1"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>

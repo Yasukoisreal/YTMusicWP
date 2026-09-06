@@ -460,6 +460,10 @@ namespace YTMusicWP
             try
             {
                 FullscreenLyricsGradientTop.Color = NowPlayingGradientTop.Color;
+                if (FullscreenLyricsGradientMid != null && NowPlayingGradientMid != null)
+                {
+                    FullscreenLyricsGradientMid.Color = NowPlayingGradientMid.Color;
+                }
             }
             catch { }
 

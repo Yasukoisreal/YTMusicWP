@@ -146,6 +146,11 @@ namespace YTMusicWP
             }
             // Start marquee after panel is visible and laid out
             var ignored3 = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
+
+            if (currentTrack != null)
+            {
+                UpdateNowPlayingGradient(currentTrack.Title, currentTrack.ChannelName, currentTrack.ThumbnailUrl);
+            }
         }
         private async void RestoreSearchBoxFocus()
         {
