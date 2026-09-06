@@ -47,15 +47,39 @@ namespace YTMusicWP
             }
         }
 
-        // [OPT-AV] Debounce: don't refresh artists more than once per 5 minutes
-        private DateTime _lastArtistRefreshTime = DateTime.MinValue;
+        private static System.Collections.Generic.List<string> SplitArtistNames(string rawArtists)
+        {
+            var list = new System.Collections.Generic.List<string>();
+            if (string.IsNullOrWhiteSpace(rawArtists)) return list;
+
+            string cleaned = CleanChannelName(rawArtists);
+
+            // Delimiters for multiple artists
+            string[] delimiters = new string[] { ", ", " & ", " feat. ", " ft. ", " featuring ", " Feat. ", " Ft. ", " Featuring ", " / " };
+            string[] parts = cleaned.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var part in parts)
+            {
+                string trimmed = part.Trim().Trim(',', '&', '/', ';', ' ');
+                if (!string.IsNullOrEmpty(trimmed) && !trimmed.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
+                {
+                    list.Add(trimmed);
+                }
+            }
+
+            if (list.Count == 0 && !string.IsNullOrWhiteSpace(cleaned))
+            {
+                list.Add(cleaned.Trim());
+            }
+
+            return list;
+        }
+
+        // [OPT-AV] Debounce avatar fetch requests
+        private DateTime _lastArtistFetchTime = DateTime.MinValue;
 
         private async void RefreshRecentArtists()
         {
-            // Debounce: skip if called within last 5 minutes
-            if ((DateTime.Now - _lastArtistRefreshTime).TotalMinutes < 5) return;
-            _lastArtistRefreshTime = DateTime.Now;
-
             try
             {
                 var seenArtists = new System.Collections.Generic.HashSet<string>();
@@ -67,25 +91,36 @@ namespace YTMusicWP
                 foreach (var track in historyTracks)
                 {
                     if (string.IsNullOrEmpty(track.ChannelName) || track.ChannelName == "Unknown") continue;
-                    string key = track.ChannelName.ToLowerInvariant();
-                    if (seenArtists.Contains(key)) continue;
-                    seenArtists.Add(key);
 
-                    // Check avatar cache first
-                    string cacheKey = "AvatarCache_" + key;
-                    string cachedAvatar = localSettings.ContainsKey(cacheKey) ? localSettings[cacheKey] as string : null;
-                    string cachedChannelKey = "AvatarChId_" + key;
-                    string cachedChannelId = localSettings.ContainsKey(cachedChannelKey) ? localSettings[cachedChannelKey] as string : null;
-
-                    artistItems.Add(new YouTubeTrack
+                    var names = SplitArtistNames(track.ChannelName);
+                    for (int n = 0; n < names.Count; n++)
                     {
-                        VideoId = !string.IsNullOrEmpty(cachedChannelId) ? "CHANNEL:" + cachedChannelId
-                                : !string.IsNullOrEmpty(track.ChannelId) ? "CHANNEL:" + track.ChannelId : "",
-                        Title = track.ChannelName,
-                        ChannelName = track.ChannelName,
-                        ChannelId = cachedChannelId ?? track.ChannelId,
-                        ThumbnailUrl = !string.IsNullOrEmpty(cachedAvatar) ? cachedAvatar : GetSquareThumbnail(track.ThumbnailUrl)
-                    });
+                        string artistName = names[n];
+                        string key = artistName.ToLowerInvariant();
+                        if (seenArtists.Contains(key)) continue;
+                        seenArtists.Add(key);
+
+                        // Check avatar cache first
+                        string cacheKey = "AvatarCache_" + key;
+                        string cachedAvatar = localSettings.ContainsKey(cacheKey) ? localSettings[cacheKey] as string : null;
+                        string cachedChannelKey = "AvatarChId_" + key;
+                        string cachedChannelId = localSettings.ContainsKey(cachedChannelKey) ? localSettings[cachedChannelKey] as string : null;
+
+                        // Only assign track.ChannelId if this was the sole artist or if cachedChannelId exists
+                        string chId = !string.IsNullOrEmpty(cachedChannelId) ? cachedChannelId
+                                    : (names.Count == 1 ? track.ChannelId : "");
+
+                        artistItems.Add(new YouTubeTrack
+                        {
+                            VideoId = !string.IsNullOrEmpty(chId) ? "CHANNEL:" + chId : "",
+                            Title = artistName,
+                            ChannelName = artistName,
+                            ChannelId = chId ?? "",
+                            ThumbnailUrl = !string.IsNullOrEmpty(cachedAvatar) ? cachedAvatar : GetSquareThumbnail(track.ThumbnailUrl)
+                        });
+
+                        if (artistItems.Count >= 10) break;
+                    }
 
                     if (artistItems.Count >= 10) break;
                 }
@@ -103,6 +138,10 @@ namespace YTMusicWP
                         if (!localSettings.ContainsKey(cacheKey))
                             uncachedArtists.Add(i);
                     }
+
+                    if (uncachedArtists.Count == 0) return;
+                    if ((DateTime.Now - _lastArtistFetchTime).TotalSeconds < 15) return;
+                    _lastArtistFetchTime = DateTime.Now;
 
                     // Fetch only uncached avatars (batched 3 at a time)
                     for (int i = 0; i < uncachedArtists.Count; i += 3)
@@ -137,10 +176,11 @@ namespace YTMusicWP
                                             {
                                                 artistItems[idx].ThumbnailUrl = avatarUrl;
                                                 artistItems[idx].ChannelId = ytmChannelId;
+                                                artistItems[idx].VideoId = "CHANNEL:" + ytmChannelId;
                                             });
                                         }
                                     }
-                                    else if (!string.IsNullOrEmpty(artist.ChannelId))
+                                    else
                                     {
                                         var searchResults2 = await InnerTubeClient.SearchAsync(artist.Title + " artist", 3);
                                         var fallbackMatch = searchResults2.FirstOrDefault(r =>
@@ -148,12 +188,20 @@ namespace YTMusicWP
                                         if (fallbackMatch != null && !string.IsNullOrEmpty(fallbackMatch.ThumbnailUrl))
                                         {
                                             string fallbackAvatar = GetArtistAvatar(fallbackMatch.ThumbnailUrl);
+                                            string ytmChannelId = fallbackMatch.VideoId.Replace("CHANNEL:", "");
                                             string ck = "AvatarCache_" + artist.Title.ToLowerInvariant();
+                                            string ckId = "AvatarChId_" + artist.Title.ToLowerInvariant();
                                             localSettings[ck] = fallbackAvatar;
+                                            if (!string.IsNullOrEmpty(ytmChannelId)) localSettings[ckId] = ytmChannelId;
 
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
                                                 artistItems[idx].ThumbnailUrl = fallbackAvatar;
+                                                if (!string.IsNullOrEmpty(ytmChannelId))
+                                                {
+                                                    artistItems[idx].ChannelId = ytmChannelId;
+                                                    artistItems[idx].VideoId = "CHANNEL:" + ytmChannelId;
+                                                }
                                             });
                                         }
                                     }
