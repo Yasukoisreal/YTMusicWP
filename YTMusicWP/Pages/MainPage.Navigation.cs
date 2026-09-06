@@ -55,6 +55,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CreatePlaylistDialog.Visibility = Visibility.Collapsed;
             }
+            else if (ArtistPickerBottomSheet.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseArtistPicker_Click(null, null);
+            }
             else if (AddToPlaylistDialog.Visibility == Visibility.Visible)
             {
                 e.Handled = true;

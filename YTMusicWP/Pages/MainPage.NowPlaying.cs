@@ -282,15 +282,30 @@ namespace YTMusicWP
 
         private void BottomSheetGoToArtist_Click(object sender, RoutedEventArgs e)
         {
+            var track = _bottomSheetTrack;
             CloseBottomSheet_Click(null, null);
-            if (_bottomSheetTrack != null)
+
+            if (track != null)
             {
-                if (string.IsNullOrEmpty(_bottomSheetTrack.ChannelId) && string.IsNullOrEmpty(_bottomSheetTrack.ChannelName))
+                string artistStr = track.ChannelName;
+                if (string.IsNullOrEmpty(artistStr) && !string.IsNullOrEmpty(track.ChannelId))
+                    artistStr = track.ChannelId;
+
+                if (string.IsNullOrEmpty(artistStr))
                 {
                     ShowToast("Artist info not available");
                     return;
                 }
-                OpenArtistProfile(_bottomSheetTrack.ChannelId, _bottomSheetTrack.ChannelName);
+
+                var artists = SplitArtistNames(artistStr);
+                if (artists.Count > 1)
+                {
+                    ShowArtistPicker(artists);
+                }
+                else
+                {
+                    OpenArtistProfile(track.ChannelId, artists.Count == 1 ? artists[0] : artistStr);
+                }
             }
         }
 
@@ -403,11 +418,55 @@ namespace YTMusicWP
         private void MenuGoToArtistNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
-            NowPlayingView.Visibility = Visibility.Collapsed;
-            
+
             if (currentTrack != null)
             {
-                OpenArtistProfile(currentTrack.ChannelId, currentTrack.ChannelName);
+                string artistStr = currentTrack.ChannelName;
+                var artists = SplitArtistNames(artistStr);
+
+                if (artists.Count > 1)
+                {
+                    ShowArtistPicker(artists);
+                }
+                else
+                {
+                    NowPlayingView.Visibility = Visibility.Collapsed;
+                    OpenArtistProfile(currentTrack.ChannelId, artists.Count == 1 ? artists[0] : artistStr);
+                }
+            }
+        }
+
+        private void ShowArtistPicker(System.Collections.Generic.List<string> artists)
+        {
+            ArtistPickerList.ItemsSource = artists;
+            ArtistPickerBottomSheet.Visibility = Visibility.Visible;
+        }
+
+        private void CloseArtistPicker_Click(object sender, RoutedEventArgs e)
+        {
+            ArtistPickerBottomSheet.Visibility = Visibility.Collapsed;
+        }
+
+        private void ArtistPickerList_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            string artistName = e.ClickedItem as string;
+            CloseArtistPicker_Click(null, null);
+
+            if (!string.IsNullOrEmpty(artistName))
+            {
+                NowPlayingView.Visibility = Visibility.Collapsed;
+
+                var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                string cachedChId = localSettings["AvatarChId_" + artistName.ToLowerInvariant()] as string;
+
+                if (!string.IsNullOrEmpty(cachedChId))
+                {
+                    OpenArtistProfile(cachedChId, artistName, true);
+                }
+                else
+                {
+                    OpenArtistProfile("", artistName);
+                }
             }
         }
 
