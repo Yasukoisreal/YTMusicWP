@@ -509,13 +509,6 @@ namespace YTMusicWP
             AddToPlaylistDialog.Visibility = Visibility.Visible;
         }
 
-        private void DialogNewPlaylist_Click(object sender, RoutedEventArgs e)
-        {
-            AddToPlaylistDialog.Visibility = Visibility.Collapsed;
-            NewPlaylistNameTextBox.Text = "";
-            CreatePlaylistDialog.Visibility = Visibility.Visible;
-        }
-
         private void CancelAddToPlaylist_Click(object sender, RoutedEventArgs e)
         {
             _trackPendingForPlaylist = null;
