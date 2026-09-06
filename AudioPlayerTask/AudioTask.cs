@@ -289,8 +289,16 @@ namespace AudioPlayerTask
             return null;
         }
 
+        private static string _cachedPoTokenVideoId = null;
+        private static RemotePoTokenResult _cachedPoTokenResult = null;
+
         private async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
+            if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
+            {
+                return _cachedPoTokenResult;
+            }
+
             try
             {
                 string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
@@ -326,7 +334,11 @@ namespace AudioPlayerTask
                         }
 
                         if (!string.IsNullOrEmpty(result.PoToken))
+                        {
+                            _cachedPoTokenVideoId = videoId;
+                            _cachedPoTokenResult = result;
                             return result;
+                        }
                         return null;
                     }
                 }
@@ -387,15 +399,15 @@ namespace AudioPlayerTask
             if (!string.IsNullOrEmpty(url)) return url;
 
             // 3. IOS (with remote poToken)
-            url = await TryInnerTubeClient(videoId, "IOS", "19.29.1", "5", "Apple", "iPhone14,5", "iOS", "16.4.1",
-                "com.google.ios.youtube/19.29.1 (iPhone14,5; U; CPU iOS 16_4_1 like Mac OS X;)", true);
+            url = await TryInnerTubeClient(videoId, "IOS", "19.45.4", "5", "Apple", "iPhone16,2", "iPhone", "17.5.1.21F90",
+                "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
             if (!string.IsNullOrEmpty(url)) return url;
 
             return null;
         }
 
         private async Task<string> TryInnerTubeClient(string videoId, string clientName, string clientVersion, 
-            string clientId, string deviceMake, string deviceModel, string osName, string osVersion, string userAgent, bool usePoToken, string cookie = null, string auth = null)
+            string clientId, string deviceMake, string deviceModel, string osName, string osVersion, string userAgent, bool usePoToken, string cookie = null, string auth = null, string apiKey = null)
         {
             try
             {
@@ -420,6 +432,8 @@ namespace AudioPlayerTask
                 if (!string.IsNullOrEmpty(visitorData))
                     vdField = ",\"visitorData\":\"" + visitorData + "\"";
 
+                string sdkVersionField = clientName == "ANDROID" ? "\"androidSdkVersion\":30," : "";
+
                 string requestBody = "{" +
                     "\"contentCheckOk\":true," +
                     "\"context\":{\"client\":{" +
@@ -431,7 +445,7 @@ namespace AudioPlayerTask
                         "\"osName\":\"" + osName + "\"," +
                         "\"osVersion\":\"" + osVersion + "\"," +
                         "\"platform\":\"MOBILE\"," +
-                        "\"androidSdkVersion\":30," +
+                        sdkVersionField +
                         "\"hl\":\"en\"," +
                         "\"gl\":\"US\"," +
                         "\"clientFormFactor\":0" +
@@ -446,9 +460,10 @@ namespace AudioPlayerTask
                     "application/json"
                 );
 
+                string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI");
                 // [FIX] Use per-request headers instead of DefaultRequestHeaders to avoid race condition
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
-                    new Uri("https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=playabilityStatus,streamingData"));
+                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData"));
                 request.Content = content;
                 request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
                 request.Headers.Add("X-YouTube-Client-Name", clientId);

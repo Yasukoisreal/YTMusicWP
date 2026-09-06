@@ -33,8 +33,16 @@ namespace YTMusicWP
             return null;
         }
 
+        private static string _cachedPoTokenVideoId = null;
+        private static RemotePoTokenResult _cachedPoTokenResult = null;
+
         private static async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
+            if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
+            {
+                return _cachedPoTokenResult;
+            }
+
             try
             {
                 // Cloudflare Worker acts as TLS proxy to Render (bgutil-ytdlp-pot-provider)
@@ -67,7 +75,11 @@ namespace YTMusicWP
                         }
 
                         if (!string.IsNullOrEmpty(result.PoToken))
+                        {
+                            _cachedPoTokenVideoId = videoId;
+                            _cachedPoTokenResult = result;
                             return result;
+                        }
                         return null;
                     }
                 }
