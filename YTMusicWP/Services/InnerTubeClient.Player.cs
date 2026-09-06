@@ -107,7 +107,7 @@ namespace YTMusicWP
 
         private static readonly PlayerClientConfig[] _playerClients = new PlayerClientConfig[]
         {
-            // 0. ANDROID - Ưu tiên số 1: Không bị bóp băng thông (throttling), ổn định nhất
+            // 0. ANDROID v20.49.37 - Ưu tiên số 1: Không bị bóp băng thông (throttling), lấy itag 18 trực tiếp
             new PlayerClientConfig {
                 ClientName = "ANDROID",
                 ClientVersion = "20.49.37",
@@ -117,28 +117,17 @@ namespace YTMusicWP
                 RequireCookie = false,
                 RequestClientNameHeader = "3"
             },
-            // 1. VISIONOS - Fallback nếu ANDROID yêu cầu poToken/BotGuard
+            // 1. ANDROID v21.02.35 (Pixel 7) - Dự phòng Android version mới của yt-dlp
             new PlayerClientConfig {
-                ClientName = "VISIONOS",
-                ClientVersion = "1.02",
-                UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
-                ExtraClientParams = ",\"deviceMake\":\"Apple\",\"deviceModel\":\"RealityDevice14,1\",\"osName\":\"visionOS\",\"osVersion\":\"1.0.2.21O209\",\"timeZone\":\"UTC\",\"utcOffsetMinutes\":0",
-                ApiKey = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc",
+                ClientName = "ANDROID",
+                ClientVersion = "21.02.35",
+                UserAgent = "com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip",
+                ExtraClientParams = ",\"deviceMake\":\"Google\",\"deviceModel\":\"Pixel 7\",\"osName\":\"Android\",\"osVersion\":\"11\",\"platform\":\"MOBILE\",\"androidSdkVersion\":30,\"clientFormFactor\":0",
+                ApiKey = "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI",
                 RequireCookie = false,
-                RequestClientNameHeader = "101"
+                RequestClientNameHeader = "3"
             },
-            // 2. IOS - Extremely reliable, no signature cipher, high quality
-            new PlayerClientConfig {
-                ClientName = "IOS",
-                ClientVersion = "19.45.4",
-                UserAgent = "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)",
-                ExtraClientParams = ",\"deviceMake\":\"Apple\",\"deviceModel\":\"iPhone16,2\",\"osName\":\"iPhone\",\"osVersion\":\"17.5.1.21F90\",\"utcOffsetMinutes\":0,\"timeZone\":\"UTC\"",
-                ApiKey = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc",
-                RequireCookie = false,
-                RequestClientNameHeader = "5",
-                SupportsPoToken = true
-            },
-            // 3. WEB_REMIX (YouTube Music) - Best for premium/cookie users
+            // 2. WEB_REMIX (YouTube Music) - Best for premium/cookie users
             new PlayerClientConfig {
                 ClientName = "WEB_REMIX",
                 ClientVersion = "1.20260304.03.00",
@@ -149,15 +138,25 @@ namespace YTMusicWP
                 RequestClientNameHeader = "67",
                 SupportsPoToken = true
             },
-            // 4. TVHTML5
+            // 3. VISIONOS - Fallback Apple Vision (lấy itag 140 trực tiếp không mã hóa)
             new PlayerClientConfig {
-                ClientName = "TVHTML5",
-                ClientVersion = "7.20250312.16.00",
-                UserAgent = "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
-                ExtraClientParams = "",
-                ApiKey = "AIzaSyDCU8hByM-4DrUqRUYnGn-3llEO78bcxq8",
+                ClientName = "VISIONOS",
+                ClientVersion = "1.02",
+                UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
+                ExtraClientParams = ",\"deviceMake\":\"Apple\",\"deviceModel\":\"RealityDevice14,1\",\"osName\":\"visionOS\",\"osVersion\":\"1.0.2.21O209\",\"timeZone\":\"UTC\",\"utcOffsetMinutes\":0",
+                ApiKey = "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc",
                 RequireCookie = false,
-                RequestClientNameHeader = "7"
+                RequestClientNameHeader = "101"
+            },
+            // 4. ANDROID_VR (Meta Oculus Quest) - Fallback VR lấy itag 18 và itag 140 trực tiếp
+            new PlayerClientConfig {
+                ClientName = "ANDROID_VR",
+                ClientVersion = "1.65.10",
+                UserAgent = "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12) gzip",
+                ExtraClientParams = ",\"deviceMake\":\"Oculus\",\"deviceModel\":\"Quest 3\",\"osName\":\"Android\",\"osVersion\":\"12\",\"platform\":\"MOBILE\",\"clientFormFactor\":0",
+                ApiKey = "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI",
+                RequireCookie = false,
+                RequestClientNameHeader = "28"
             }
         };
 

@@ -382,9 +382,14 @@ namespace AudioPlayerTask
         {
             _innerTubeDebug = "";
             
-            // 0. InnerTube ANDROID (Ưu tiên số 1 - không bị bóp băng thông/throttling)
+            // 0. InnerTube ANDROID v20.49.37 (Ưu tiên số 1 - không bị bóp băng thông/throttling, lấy itag 18)
             string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
                 "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
+            if (!string.IsNullOrEmpty(url)) return url;
+
+            // 0.5. InnerTube ANDROID v21.02.35 (Dự phòng phiên bản Android mới nhất Pixel 7)
+            url = await TryInnerTubeClient(videoId, "ANDROID", "21.02.35", "3", "Google", "Pixel 7", "Android", "11",
+                "com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
             // 1. Cookie Auth (WEB_REMIX) - 100% bypasses BotGuard if logged in
@@ -402,24 +407,14 @@ namespace AudioPlayerTask
                 }
             }
 
-            // 2. VISIONOS (bypass poToken)
+            // 2. VISIONOS (lấy itag 140 trực tiếp không mã hóa)
             url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
-            // 2.5. MWEB (Mobile Web)
-            url = await TryInnerTubeClient(videoId, "MWEB", "2.20230405.08.01", "2", "Apple", "iPhone", "iOS", "14",
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15", false);
-            if (!string.IsNullOrEmpty(url)) return url;
-
-            // 2.6. TVHTML5
-            url = await TryInnerTubeClient(videoId, "TVHTML5", "7.20250312.16.00", "7", "Sony", "Bravia", "Android", "9",
-                "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version", false);
-            if (!string.IsNullOrEmpty(url)) return url;
-
-            // 3. IOS (with remote poToken)
-            url = await TryInnerTubeClient(videoId, "IOS", "19.45.4", "5", "Apple", "iPhone16,2", "iPhone", "17.5.1.21F90",
-                "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
+            // 3. ANDROID_VR (Meta Oculus Quest - lấy itag 18 và itag 140 trực tiếp)
+            url = await TryInnerTubeClient(videoId, "ANDROID_VR", "1.65.10", "28", "Oculus", "Quest 3", "Android", "12",
+                "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
             return null;
