@@ -329,6 +329,7 @@ namespace YTMusicWP
 
         private void CancelCreatePlaylist_Click(object sender, RoutedEventArgs e)
         {
+            _trackPendingForPlaylist = null;
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
         }
 
@@ -340,16 +341,36 @@ namespace YTMusicWP
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
 
             string plId = await CreateYouTubePlaylistAsync(name);
-            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+            var newPl = new YouTubePlaylistInfo
             {
                 PlaylistId = plId,
                 Title = name,
                 TrackCount = 0,
                 ThumbnailUrl = ""
-            });
+            };
+            _youtubeUserPlaylists.Add(newPl);
+
+            if (_trackPendingForPlaylist != null)
+            {
+                var trackToAdd = _trackPendingForPlaylist;
+                _trackPendingForPlaylist = null;
+                await AddToYouTubePlaylistAsync(plId, trackToAdd.VideoId);
+                if (plId.StartsWith("LOCAL_"))
+                {
+                    await AddTrackToLocalPlaylistAsync(plId, trackToAdd);
+                    if (!string.IsNullOrEmpty(trackToAdd.ThumbnailUrl))
+                        newPl.ThumbnailUrl = trackToAdd.ThumbnailUrl;
+                }
+                newPl.TrackCount++;
+                ShowToast("Added to " + name);
+            }
+            else
+            {
+                ShowToast("Playlist created!");
+            }
+
             SaveYouTubePlaylistsCacheAsync();
             RefreshLibraryList();
-            ShowToast("Playlist created!");
         }
 
         private void PlaylistItem_Holding(object sender, HoldingRoutedEventArgs e)
@@ -479,25 +500,25 @@ namespace YTMusicWP
             ShowToast("Playlist is empty!");
         }
 
-        private async void MenuAddToPlaylist_Click(object sender, RoutedEventArgs e)
+        private void MenuAddToPlaylist_Click(object sender, RoutedEventArgs e)
         {
             _trackPendingForPlaylist = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
             if (_trackPendingForPlaylist == null) return;
-
-            // Require login
-            string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
-            {
-                ShowToast("Sign in to add to playlist");
-                return;
-            }
 
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
             AddToPlaylistDialog.Visibility = Visibility.Visible;
         }
 
+        private void DialogNewPlaylist_Click(object sender, RoutedEventArgs e)
+        {
+            AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+            NewPlaylistNameTextBox.Text = "";
+            CreatePlaylistDialog.Visibility = Visibility.Visible;
+        }
+
         private void CancelAddToPlaylist_Click(object sender, RoutedEventArgs e)
         {
+            _trackPendingForPlaylist = null;
             AddToPlaylistDialog.Visibility = Visibility.Collapsed;
         }
 

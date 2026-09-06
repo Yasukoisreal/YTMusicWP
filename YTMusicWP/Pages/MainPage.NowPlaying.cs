@@ -46,17 +46,10 @@ namespace YTMusicWP
             ShowToast(success ? "Added to Liked Songs!" : "Failed to Like song");
         }
 
-        private async void MenuAddToPlaylistNowPlaying_Click(object sender, RoutedEventArgs e)
+        private void MenuAddToPlaylistNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
+            if (currentTrack == null) return;
             NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
-
-            string token = await GetAccessTokenAsync();
-            if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
-            {
-                ShowToast("Sign in to add to playlist");
-                return;
-            }
 
             _trackPendingForPlaylist = currentTrack;
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
@@ -276,19 +269,11 @@ namespace YTMusicWP
             if (_bottomSheetTrack != null) PlayTrack(_bottomSheetTrack);
         }
 
-        private async void BottomSheetAddToPlaylist_Click(object sender, RoutedEventArgs e)
+        private void BottomSheetAddToPlaylist_Click(object sender, RoutedEventArgs e)
         {
             CloseBottomSheet_Click(null, null);
             if (_bottomSheetTrack != null)
             {
-                // Require login
-                string token = await GetAccessTokenAsync();
-                if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
-                {
-                    ShowToast("Sign in to add to playlist");
-                    return;
-                }
-
                 _trackPendingForPlaylist = _bottomSheetTrack;
                 DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
                 AddToPlaylistDialog.Visibility = Visibility.Visible;
