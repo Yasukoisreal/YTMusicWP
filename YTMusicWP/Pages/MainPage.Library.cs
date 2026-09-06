@@ -329,7 +329,6 @@ namespace YTMusicWP
 
         private void CancelCreatePlaylist_Click(object sender, RoutedEventArgs e)
         {
-            _trackPendingForPlaylist = null;
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
         }
 
@@ -341,36 +340,16 @@ namespace YTMusicWP
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
 
             string plId = await CreateYouTubePlaylistAsync(name);
-            var newPl = new YouTubePlaylistInfo
+            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
             {
                 PlaylistId = plId,
                 Title = name,
                 TrackCount = 0,
                 ThumbnailUrl = ""
-            };
-            _youtubeUserPlaylists.Add(newPl);
-
-            if (_trackPendingForPlaylist != null)
-            {
-                var trackToAdd = _trackPendingForPlaylist;
-                _trackPendingForPlaylist = null;
-                await AddToYouTubePlaylistAsync(plId, trackToAdd.VideoId);
-                if (plId.StartsWith("LOCAL_"))
-                {
-                    await AddTrackToLocalPlaylistAsync(plId, trackToAdd);
-                    if (!string.IsNullOrEmpty(trackToAdd.ThumbnailUrl))
-                        newPl.ThumbnailUrl = trackToAdd.ThumbnailUrl;
-                }
-                newPl.TrackCount++;
-                ShowToast("Added to " + name);
-            }
-            else
-            {
-                ShowToast("Playlist created!");
-            }
-
+            });
             SaveYouTubePlaylistsCacheAsync();
             RefreshLibraryList();
+            ShowToast("Playlist created!");
         }
 
         private void PlaylistItem_Holding(object sender, HoldingRoutedEventArgs e)
@@ -518,21 +497,24 @@ namespace YTMusicWP
         private async void DialogPlaylistList_ItemClick(object sender, ItemClickEventArgs e)
         {
             var ytPlaylist = e.ClickedItem as YouTubePlaylistInfo;
-            if (ytPlaylist != null && _trackPendingForPlaylist != null)
+            var track = _trackPendingForPlaylist;
+            _trackPendingForPlaylist = null;
+            AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+
+            if (ytPlaylist != null && track != null)
             {
-                AddToPlaylistDialog.Visibility = Visibility.Collapsed;
                 ShowToast("Adding to " + ytPlaylist.Title + "...");
 
-                bool success = (await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist.VideoId)) != null;
+                bool success = (await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, track.VideoId)) != null;
                 if (success)
                 {
                     // Save track to local cache for local playlists
                     if (ytPlaylist.PlaylistId.StartsWith("LOCAL_"))
                     {
-                        await AddTrackToLocalPlaylistAsync(ytPlaylist.PlaylistId, _trackPendingForPlaylist);
+                        await AddTrackToLocalPlaylistAsync(ytPlaylist.PlaylistId, track);
                         // Use first track's thumbnail as playlist cover
-                        if (string.IsNullOrEmpty(ytPlaylist.ThumbnailUrl) && !string.IsNullOrEmpty(_trackPendingForPlaylist.ThumbnailUrl))
-                            ytPlaylist.ThumbnailUrl = _trackPendingForPlaylist.ThumbnailUrl;
+                        if (string.IsNullOrEmpty(ytPlaylist.ThumbnailUrl) && !string.IsNullOrEmpty(track.ThumbnailUrl))
+                            ytPlaylist.ThumbnailUrl = track.ThumbnailUrl;
                     }
                     ytPlaylist.TrackCount++;
                     SaveYouTubePlaylistsCacheAsync();
@@ -542,10 +524,6 @@ namespace YTMusicWP
                 {
                     ShowToast("Failed to add to playlist");
                 }
-            }
-            else
-            {
-                AddToPlaylistDialog.Visibility = Visibility.Collapsed;
             }
         }
 
