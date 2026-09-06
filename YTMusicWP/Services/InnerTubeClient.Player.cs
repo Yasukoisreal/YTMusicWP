@@ -66,12 +66,12 @@ namespace YTMusicWP
                         {
                             var data = JObject.Parse(json);
                             result.PoToken = data["po_token"]?.ToString() ?? data["poToken"]?.ToString();
-                            result.VisitorData = data["visitor_data"]?.ToString() ?? data["visitorData"]?.ToString() ?? data["visit_identifier"]?.ToString();
+                            result.VisitorData = data["visitor_data"]?.ToString() ?? data["visitorData"]?.ToString() ?? data["visit_identifier"]?.ToString() ?? data["contentBinding"]?.ToString() ?? data["content_binding"]?.ToString();
                         }
                         catch
                         {
                             result.PoToken = ExtractJsonField(json, "po_token") ?? ExtractJsonField(json, "poToken");
-                            result.VisitorData = ExtractJsonField(json, "visitor_data") ?? ExtractJsonField(json, "visitorData") ?? ExtractJsonField(json, "visit_identifier");
+                            result.VisitorData = ExtractJsonField(json, "visitor_data") ?? ExtractJsonField(json, "visitorData") ?? ExtractJsonField(json, "visit_identifier") ?? ExtractJsonField(json, "contentBinding") ?? ExtractJsonField(json, "content_binding");
                         }
 
                         if (!string.IsNullOrEmpty(result.PoToken))

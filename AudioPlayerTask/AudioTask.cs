@@ -326,11 +326,13 @@ namespace AudioPlayerTask
                             if (obj.ContainsKey("visitor_data")) result.VisitorData = obj.GetNamedString("visitor_data");
                             else if (obj.ContainsKey("visitorData")) result.VisitorData = obj.GetNamedString("visitorData");
                             else if (obj.ContainsKey("visit_identifier")) result.VisitorData = obj.GetNamedString("visit_identifier");
+                            else if (obj.ContainsKey("contentBinding")) result.VisitorData = obj.GetNamedString("contentBinding");
+                            else if (obj.ContainsKey("content_binding")) result.VisitorData = obj.GetNamedString("content_binding");
                         }
                         else
                         {
                             result.PoToken = ExtractJsonField(json, "po_token") ?? ExtractJsonField(json, "poToken");
-                            result.VisitorData = ExtractJsonField(json, "visitor_data") ?? ExtractJsonField(json, "visitorData") ?? ExtractJsonField(json, "visit_identifier");
+                            result.VisitorData = ExtractJsonField(json, "visitor_data") ?? ExtractJsonField(json, "visitorData") ?? ExtractJsonField(json, "visit_identifier") ?? ExtractJsonField(json, "contentBinding") ?? ExtractJsonField(json, "content_binding");
                         }
 
                         if (!string.IsNullOrEmpty(result.PoToken))
