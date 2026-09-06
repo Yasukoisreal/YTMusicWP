@@ -75,7 +75,17 @@ namespace YTMusicWP
 
         private static readonly PlayerClientConfig[] _playerClients = new PlayerClientConfig[]
         {
-            // 0. VISIONOS - Bypass poToken! Client vẫn được YouTube phục vụ stream đầy đủ mà không cần poToken
+            // 0. ANDROID - Ưu tiên số 1: Không bị bóp băng thông (throttling), ổn định nhất
+            new PlayerClientConfig {
+                ClientName = "ANDROID",
+                ClientVersion = "20.49.37",
+                UserAgent = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip",
+                ExtraClientParams = ",\"deviceMake\":\"Nokia\",\"deviceModel\":\"LumiaWP\",\"osName\":\"Android\",\"osVersion\":\"11\",\"platform\":\"MOBILE\",\"androidSdkVersion\":30,\"clientFormFactor\":0",
+                ApiKey = "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI",
+                RequireCookie = false,
+                RequestClientNameHeader = "3"
+            },
+            // 1. VISIONOS - Fallback nếu ANDROID yêu cầu poToken/BotGuard
             new PlayerClientConfig {
                 ClientName = "VISIONOS",
                 ClientVersion = "1.02",
@@ -85,7 +95,7 @@ namespace YTMusicWP
                 RequireCookie = false,
                 RequestClientNameHeader = "101"
             },
-            // 1. IOS - Extremely reliable, no signature cipher, high quality
+            // 2. IOS - Extremely reliable, no signature cipher, high quality
             new PlayerClientConfig {
                 ClientName = "IOS",
                 ClientVersion = "19.45.4",
@@ -96,7 +106,7 @@ namespace YTMusicWP
                 RequestClientNameHeader = "5",
                 SupportsPoToken = true
             },
-            // 2. WEB_REMIX (YouTube Music) - Best for premium/cookie users
+            // 3. WEB_REMIX (YouTube Music) - Best for premium/cookie users
             new PlayerClientConfig {
                 ClientName = "WEB_REMIX",
                 ClientVersion = "1.20260304.03.00",
@@ -106,16 +116,6 @@ namespace YTMusicWP
                 RequireCookie = true,
                 RequestClientNameHeader = "67",
                 SupportsPoToken = true
-            },
-            // 3. ANDROID (Original stable fallback)
-            new PlayerClientConfig {
-                ClientName = "ANDROID",
-                ClientVersion = "20.49.37",
-                UserAgent = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip",
-                ExtraClientParams = ",\"deviceMake\":\"Nokia\",\"deviceModel\":\"LumiaWP\",\"osName\":\"Android\",\"osVersion\":\"11\",\"platform\":\"MOBILE\",\"androidSdkVersion\":30,\"clientFormFactor\":0",
-                ApiKey = "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI",
-                RequireCookie = false,
-                RequestClientNameHeader = "3"
             },
             // 4. TVHTML5
             new PlayerClientConfig {
@@ -169,15 +169,14 @@ namespace YTMusicWP
                             "\"hl\":\"en\",\"gl\":\"US\"" +
                             vdField +
                             client.ExtraClientParams +
-                        "}" + poTokenField + "}," +
+                        "}}" + poTokenField + "," +
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
                     var req = new HttpRequestMessage(HttpMethod.Post,
                         "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    // DO NOT add User-Agent header as WP8.1 strict header parsing throws FormatException for complex iOS/Mac User-Agents.
-                    // The User-Agent is already included in the JSON payload context.client.userAgent
+                    req.Headers.TryAddWithoutValidation("User-Agent", client.UserAgent);
                     
                     if (!string.IsNullOrEmpty(client.RequestClientNameHeader))
                         req.Headers.Add("X-YouTube-Client-Name", client.RequestClientNameHeader);

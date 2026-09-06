@@ -323,7 +323,12 @@ namespace AudioPlayerTask
         {
             _innerTubeDebug = "";
             
-            // 0. Cookie Auth (WEB_REMIX) - 100% bypasses BotGuard if logged in
+            // 0. InnerTube ANDROID (Ưu tiên số 1 - không bị bóp băng thông/throttling)
+            string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
+                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
+            if (!string.IsNullOrEmpty(url)) return url;
+
+            // 1. Cookie Auth (WEB_REMIX) - 100% bypasses BotGuard if logged in
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
             if (settings.ContainsKey("GoogleCookieString") && settings.ContainsKey("GoogleSAPISID"))
             {
@@ -338,19 +343,24 @@ namespace AudioPlayerTask
                 }
             }
 
-            // 1. VISIONOS (bypass poToken)
-            string url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
+            // 2. VISIONOS (bypass poToken)
+            url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
-            // 2. IOS (with remote poToken)
-            url = await TryInnerTubeClient(videoId, "IOS", "19.29.1", "5", "Apple", "iPhone14,5", "iOS", "16.4.1",
-                "com.google.ios.youtube/19.29.1 (iPhone14,5; U; CPU iOS 16_4_1 like Mac OS X;)", true);
+            // 2.5. MWEB (Mobile Web)
+            url = await TryInnerTubeClient(videoId, "MWEB", "2.20230405.08.01", "2", "Apple", "iPhone", "iOS", "14",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
-            // 3. InnerTube ANDROID
-            url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
-                "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
+            // 2.6. TVHTML5
+            url = await TryInnerTubeClient(videoId, "TVHTML5", "7.20250312.16.00", "7", "Sony", "Bravia", "Android", "9",
+                "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version", false);
+            if (!string.IsNullOrEmpty(url)) return url;
+
+            // 3. IOS (with remote poToken)
+            url = await TryInnerTubeClient(videoId, "IOS", "19.29.1", "5", "Apple", "iPhone14,5", "iOS", "16.4.1",
+                "com.google.ios.youtube/19.29.1 (iPhone14,5; U; CPU iOS 16_4_1 like Mac OS X;)", true);
             if (!string.IsNullOrEmpty(url)) return url;
 
             return null;
