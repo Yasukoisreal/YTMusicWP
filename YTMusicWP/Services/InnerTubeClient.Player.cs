@@ -719,6 +719,181 @@ namespace YTMusicWP
 
             return list;
         }
+
+        /// <summary>
+        /// Retrieves song credits (Performed by, Written by, Produced by, Source) and detailed metadata.
+        /// </summary>
+        public static async Task<SongCredits> GetSongCreditsAsync(string videoId, string title, string artist, string creditsBrowseId = null, string albumName = null)
+        {
+            var credits = new SongCredits
+            {
+                Title = title ?? "",
+                Artist = artist ?? "",
+                Album = !string.IsNullOrEmpty(albumName) ? albumName : "Single / Album",
+                HasCredits = false
+            };
+
+            if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:"))
+            {
+                credits.AudioFormat = "Local Audio File";
+                return credits;
+            }
+
+            try
+            {
+                // 1. If creditsBrowseId is missing, try to search for the track to obtain its MPTC browseId
+                if (string.IsNullOrEmpty(creditsBrowseId))
+                {
+                    try
+                    {
+                        string q = string.IsNullOrEmpty(artist) ? title : (title + " " + artist);
+                        string vd = await GetVisitorDataAsync();
+                        var searchBody = new JObject
+                        {
+                            ["context"] = BuildMusicContext(vd),
+                            ["query"] = q
+                        };
+                        var searchData = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/search?prettyPrint=false", searchBody, true);
+                        var allItems = searchData?.SelectTokens("$..musicResponsiveListItemRenderer");
+                        if (allItems != null)
+                        {
+                            foreach (var item in allItems)
+                            {
+                                var menuItems = item["menu"]?["menuRenderer"]?["items"];
+                                if (menuItems != null)
+                                {
+                                    foreach (var mi in menuItems)
+                                    {
+                                        string bId = mi["menuNavigationItemRenderer"]?["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                                        if (!string.IsNullOrEmpty(bId) && bId.StartsWith("MPTC"))
+                                        {
+                                            creditsBrowseId = bId;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!string.IsNullOrEmpty(creditsBrowseId)) break;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                // 2. If we have a creditsBrowseId (MPTC...), fetch the official song credits dialog
+                if (!string.IsNullOrEmpty(creditsBrowseId))
+                {
+                    try
+                    {
+                        string vd = await GetVisitorDataAsync();
+                        var browseBody = new JObject
+                        {
+                            ["context"] = BuildMusicContext(vd),
+                            ["browseId"] = creditsBrowseId
+                        };
+                        var browseData = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", browseBody, true);
+                        var sections = browseData?.SelectTokens("$..dismissableDialogContentSectionRenderer");
+                        if (sections != null)
+                        {
+                            foreach (var sec in sections)
+                            {
+                                string secTitle = sec["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                var subRuns = sec["subtitle"]?["runs"];
+                                string secContent = "";
+                                if (subRuns != null)
+                                {
+                                    foreach (var r in subRuns)
+                                    {
+                                        secContent += r["text"]?.ToString();
+                                    }
+                                }
+                                secContent = secContent.Trim();
+
+                                if (secTitle.IndexOf("Performed", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    credits.PerformedBy = secContent;
+                                else if (secTitle.IndexOf("Written", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    credits.WrittenBy = secContent;
+                                else if (secTitle.IndexOf("Produced", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    credits.ProducedBy = secContent;
+                                else if (secTitle.IndexOf("Source", StringComparison.OrdinalIgnoreCase) >= 0 || secTitle.IndexOf("Provided", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    credits.ProvidedBy = secContent;
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(credits.PerformedBy) || !string.IsNullOrEmpty(credits.WrittenBy) || !string.IsNullOrEmpty(credits.ProvidedBy))
+                        {
+                            credits.HasCredits = true;
+                        }
+                    }
+                    catch { }
+                }
+
+                // 3. Supplement with video details (Plays / Views, Publish Date, Format)
+                try
+                {
+                    string vd = await GetVisitorDataAsync();
+                    string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+                    string reqBody = "{\"contentCheckOk\":true,\"context\":{\"client\":{\"clientName\":\"WEB_REMIX\",\"clientVersion\":\"1.20260304.03.00\",\"hl\":\"en\",\"gl\":\"US\"" + vdField + "}},\"videoId\":\"" + videoId + "\"}";
+                    var req = new HttpRequestMessage(HttpMethod.Post, "https://music.youtube.com/youtubei/v1/player?prettyPrint=false&fields=videoDetails,microformat");
+                    req.Content = new StringContent(reqBody, Encoding.UTF8, "application/json");
+                    req.Headers.TryAddWithoutValidation("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0");
+                    req.Headers.TryAddWithoutValidation("Referer", "https://music.youtube.com/");
+
+                    using (var resp = await _client.SendAsync(req))
+                    {
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            string json = await resp.Content.ReadAsStringAsync();
+                            var data = JObject.Parse(json);
+                            var details = data["videoDetails"];
+                            if (details != null)
+                            {
+                                string vc = details["viewCount"]?.ToString();
+                                if (!string.IsNullOrEmpty(vc))
+                                {
+                                    long viewNum;
+                                    if (long.TryParse(vc, out viewNum))
+                                    {
+                                        if (viewNum >= 1000000000)
+                                            credits.ViewCount = (viewNum / 1000000000.0).ToString("0.#") + "B plays";
+                                        else if (viewNum >= 1000000)
+                                            credits.ViewCount = (viewNum / 1000000.0).ToString("0.#") + "M plays";
+                                        else if (viewNum >= 1000)
+                                            credits.ViewCount = (viewNum / 1000.0).ToString("0.#") + "K plays";
+                                        else
+                                            credits.ViewCount = viewNum.ToString("N0") + " plays";
+                                    }
+                                }
+
+                                string pubDate = data["microformat"]?["microformatDataRenderer"]?["publishDate"]?.ToString()
+                                    ?? data["microformat"]?["microformatDataRenderer"]?["uploadDate"]?.ToString();
+                                if (!string.IsNullOrEmpty(pubDate))
+                                {
+                                    DateTime dt;
+                                    if (DateTime.TryParse(pubDate, out dt))
+                                    {
+                                        credits.PublishDate = dt.ToString("MMM d, yyyy");
+                                    }
+                                    else
+                                    {
+                                        credits.PublishDate = pubDate;
+                                    }
+                                }
+
+                                if (string.IsNullOrEmpty(credits.PerformedBy))
+                                {
+                                    credits.PerformedBy = details["author"]?.ToString() ?? artist;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                credits.AudioFormat = "Opus / AAC 128-256 kbps";
+            }
+            catch { }
+
+            return credits;
+        }
     }
 
     public class CaptionTrack

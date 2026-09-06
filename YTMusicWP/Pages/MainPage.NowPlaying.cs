@@ -742,6 +742,102 @@ namespace YTMusicWP
             ShowToast("Removed from queue");
         }
 
+        // ══════════════════════════════════════════
+        // SONG CREDITS DIALOG
+        // ══════════════════════════════════════════
+        private async void MenuSongCreditsNowPlaying_Click(object sender, RoutedEventArgs e)
+        {
+            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            if (currentTrack == null) return;
+
+            SongCreditsDialog.Visibility = Visibility.Visible;
+            SongCreditsLoading.Visibility = Visibility.Visible;
+            SongCreditsContent.Visibility = Visibility.Collapsed;
+
+            SongCreditsTrackTitle.Text = currentTrack.Title ?? "";
+            CreditsPerformedBySection.Visibility = Visibility.Collapsed;
+            CreditsWrittenBySection.Visibility = Visibility.Collapsed;
+            CreditsProducedBySection.Visibility = Visibility.Collapsed;
+            CreditsProvidedBySection.Visibility = Visibility.Collapsed;
+            CreditsViewsText.Text = "--";
+            CreditsDateText.Text = "--";
+            CreditsAlbumText.Text = !string.IsNullOrEmpty(currentTrack.AlbumName) ? currentTrack.AlbumName : "Single / Album";
+            CreditsAudioText.Text = "Opus / AAC";
+
+            try
+            {
+                var credits = await InnerTubeClient.GetSongCreditsAsync(
+                    currentTrack.VideoId,
+                    currentTrack.Title,
+                    currentTrack.ChannelName,
+                    currentTrack.CreditsBrowseId,
+                    currentTrack.AlbumName);
+
+                if (credits != null)
+                {
+                    if (!string.IsNullOrEmpty(credits.PerformedBy))
+                    {
+                        CreditsPerformedByText.Text = credits.PerformedBy;
+                        CreditsPerformedBySection.Visibility = Visibility.Visible;
+                    }
+                    else if (!string.IsNullOrEmpty(currentTrack.ChannelName))
+                    {
+                        CreditsPerformedByText.Text = currentTrack.ChannelName;
+                        CreditsPerformedBySection.Visibility = Visibility.Visible;
+                    }
+
+                    if (!string.IsNullOrEmpty(credits.WrittenBy))
+                    {
+                        CreditsWrittenByText.Text = credits.WrittenBy;
+                        CreditsWrittenBySection.Visibility = Visibility.Visible;
+                    }
+
+                    if (!string.IsNullOrEmpty(credits.ProducedBy))
+                    {
+                        CreditsProducedByText.Text = credits.ProducedBy;
+                        CreditsProducedBySection.Visibility = Visibility.Visible;
+                    }
+
+                    if (!string.IsNullOrEmpty(credits.ProvidedBy))
+                    {
+                        CreditsProvidedByText.Text = credits.ProvidedBy;
+                        CreditsProvidedBySection.Visibility = Visibility.Visible;
+                    }
+
+                    if (!string.IsNullOrEmpty(credits.ViewCount))
+                    {
+                        CreditsViewsText.Text = credits.ViewCount;
+                    }
+
+                    if (!string.IsNullOrEmpty(credits.PublishDate))
+                    {
+                        CreditsDateText.Text = credits.PublishDate;
+                    }
+
+                    if (!string.IsNullOrEmpty(credits.Album))
+                    {
+                        CreditsAlbumText.Text = credits.Album;
+                    }
+
+                    if (!string.IsNullOrEmpty(credits.AudioFormat))
+                    {
+                        CreditsAudioText.Text = credits.AudioFormat;
+                    }
+                }
+            }
+            catch { }
+            finally
+            {
+                SongCreditsLoading.Visibility = Visibility.Collapsed;
+                SongCreditsContent.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void CloseSongCreditsDialog_Click(object sender, RoutedEventArgs e)
+        {
+            SongCreditsDialog.Visibility = Visibility.Collapsed;
+        }
+
     }
 }
 

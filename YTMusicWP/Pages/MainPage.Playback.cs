@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics.Imaging;
 using Windows.Media.Playback;
 using Windows.Storage;
+using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -64,7 +68,7 @@ namespace YTMusicWP
             BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
-            UpdateNowPlayingGradient(track.Title, track.ChannelName);
+            UpdateNowPlayingGradient(track.Title, track.ChannelName, track.ThumbnailUrl);
 
             YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, null);
 
@@ -691,7 +695,7 @@ namespace YTMusicWP
                         BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                         var ignored = UpdateLyricsAsync(title, artist);
-                        UpdateNowPlayingGradient(title, artist);
+                        UpdateNowPlayingGradient(title, artist, thumb);
                     }
                 }
             }
@@ -777,7 +781,7 @@ namespace YTMusicWP
                         var _ = YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(currentTrack);
 
                         var ignored = UpdateLyricsAsync(title, artist);
-                        UpdateNowPlayingGradient(title, artist);
+                        UpdateNowPlayingGradient(title, artist, thumb);
                         YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(title, artist, thumb, currentQueueTracks);
                         UpdateQueueActiveState();
                         TriggerAutoplayIfNearingEndAsync(currentTrack);
@@ -792,14 +796,191 @@ namespace YTMusicWP
             }
         }
 
-        // ── Genre-Based Animated Gradient for Now Playing ──
+        // ── Dynamic & Genre-Based Animated Gradient for Now Playing ──
         private DispatcherTimer _gradientPulseTimer;
         private Windows.UI.Color _currentGradientColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);
         private bool _gradientPulseUp = true;
+        private static readonly Dictionary<string, Windows.UI.Color> _dominantColorCache = new Dictionary<string, Windows.UI.Color>();
 
-        private void UpdateNowPlayingGradient(string title, string artist)
+        private async Task<Windows.UI.Color?> ExtractDominantColorAsync(string thumbUrl)
         {
-            // Detect genre from title/artist keywords → Spotify-like gradient colors
+            if (string.IsNullOrEmpty(thumbUrl)) return null;
+
+            lock (_dominantColorCache)
+            {
+                Windows.UI.Color cached;
+                if (_dominantColorCache.TryGetValue(thumbUrl, out cached))
+                    return cached;
+            }
+
+            try
+            {
+                byte[] imgBytes = null;
+                using (var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter())
+                {
+                    filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
+                    filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
+                    using (var client = new Windows.Web.Http.HttpClient(filter))
+                    {
+                        var cts = new CancellationTokenSource(3500);
+                        using (var resp = await client.GetAsync(new Uri(thumbUrl)).AsTask(cts.Token))
+                        {
+                            if (!resp.IsSuccessStatusCode) return null;
+                            var buffer = await resp.Content.ReadAsBufferAsync().AsTask(cts.Token);
+                            imgBytes = new byte[buffer.Length];
+                            using (var dr = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
+                            {
+                                dr.ReadBytes(imgBytes);
+                            }
+                        }
+                    }
+                }
+
+                if (imgBytes == null || imgBytes.Length == 0) return null;
+
+                using (var ms = new InMemoryRandomAccessStream())
+                {
+                    using (var writer = new DataWriter(ms))
+                    {
+                        writer.WriteBytes(imgBytes);
+                        await writer.StoreAsync();
+                    }
+                    ms.Seek(0);
+
+                    var decoder = await BitmapDecoder.CreateAsync(ms);
+                    var transform = new BitmapTransform
+                    {
+                        ScaledWidth = 24,
+                        ScaledHeight = 24,
+                        InterpolationMode = BitmapInterpolationMode.Fant
+                    };
+
+                    var pixelData = await decoder.GetPixelDataAsync(
+                        BitmapPixelFormat.Bgra8,
+                        BitmapAlphaMode.Premultiplied,
+                        transform,
+                        ExifOrientationMode.RespectExifOrientation,
+                        ColorManagementMode.ColorManageToSRgb);
+
+                    byte[] pixels = pixelData.DetachPixelData();
+                    if (pixels == null || pixels.Length < 4) return null;
+
+                    // Analyze pixels to find dominant vibrant color
+                    double bestScore = -1.0;
+                    byte bestR = 30, bestG = 50, bestB = 70;
+
+                    for (int i = 0; i < pixels.Length; i += 4)
+                    {
+                        byte b = pixels[i];
+                        byte g = pixels[i + 1];
+                        byte r = pixels[i + 2];
+                        byte a = pixels[i + 3];
+
+                        if (a < 128) continue;
+
+                        // Perceived luminance
+                        double lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                        if (lum < 25 || lum > 230) continue; // Skip near black or near white
+
+                        double max = Math.Max(r, Math.Max(g, b));
+                        double min = Math.Min(r, Math.Min(g, b));
+                        double delta = max - min;
+                        double sat = max == 0 ? 0 : delta / max;
+
+                        if (sat < 0.15) continue; // Skip grayish pixels
+
+                        // Score: favors higher saturation, and luminance close to 105
+                        double lumDist = Math.Abs(lum - 105.0) / 105.0;
+                        double score = (sat * 2.2) + (1.0 - lumDist);
+
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            bestR = r;
+                            bestG = g;
+                            bestB = b;
+                        }
+                    }
+
+                    if (bestScore > 0)
+                    {
+                        // Ensure pleasant luminance for background (white text remains clear)
+                        double lum = 0.299 * bestR + 0.587 * bestG + 0.114 * bestB;
+                        if (lum > 130)
+                        {
+                            double factor = 130.0 / lum;
+                            bestR = (byte)(bestR * factor);
+                            bestG = (byte)(bestG * factor);
+                            bestB = (byte)(bestB * factor);
+                        }
+
+                        var resultColor = Windows.UI.Color.FromArgb(255, bestR, bestG, bestB);
+                        lock (_dominantColorCache)
+                        {
+                            if (_dominantColorCache.Count > 60) _dominantColorCache.Clear();
+                            _dominantColorCache[thumbUrl] = resultColor;
+                        }
+                        return resultColor;
+                    }
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        private void AnimateGradientTo(Windows.UI.Color targetColor)
+        {
+            _currentGradientColor = targetColor;
+            try
+            {
+                var storyboard = new Windows.UI.Xaml.Media.Animation.Storyboard();
+                var colorAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
+                {
+                    To = targetColor,
+                    Duration = new Duration(TimeSpan.FromMilliseconds(800)),
+                    EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
+                };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(colorAnim, NowPlayingGradientTop);
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(colorAnim, "Color");
+                storyboard.Children.Add(colorAnim);
+
+                if (FullscreenLyricsGradientTop != null)
+                {
+                    var lyricsAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
+                    {
+                        To = targetColor,
+                        Duration = new Duration(TimeSpan.FromMilliseconds(800)),
+                        EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
+                    };
+                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(lyricsAnim, FullscreenLyricsGradientTop);
+                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(lyricsAnim, "Color");
+                    storyboard.Children.Add(lyricsAnim);
+                }
+
+                storyboard.Begin();
+                StartGradientPulse();
+            }
+            catch { }
+        }
+
+        private void UpdateNowPlayingGradient(string title, string artist, string thumbUrl = null)
+        {
+            // If cached dominant color exists for this thumbnail, use it directly
+            if (!string.IsNullOrEmpty(thumbUrl))
+            {
+                lock (_dominantColorCache)
+                {
+                    Windows.UI.Color cached;
+                    if (_dominantColorCache.TryGetValue(thumbUrl, out cached))
+                    {
+                        AnimateGradientTo(cached);
+                        return;
+                    }
+                }
+            }
+
+            // Fallback: Detect genre from title/artist keywords → Spotify-like gradient colors
             string combined = (title + " " + artist).ToLowerInvariant();
             Windows.UI.Color topColor;
 
@@ -830,27 +1011,24 @@ namespace YTMusicWP
             else
                 topColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);     // Default dark blue-gray
 
-            _currentGradientColor = topColor;
+            // Immediate zero-latency transition to genre preview color
+            AnimateGradientTo(topColor);
 
-            try
+            // Asynchronously extract true dominant color from album artwork in background
+            if (!string.IsNullOrEmpty(thumbUrl))
             {
-                // Smooth color transition animation
-                var storyboard = new Windows.UI.Xaml.Media.Animation.Storyboard();
-                var colorAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
+                Task.Run(async () =>
                 {
-                    To = topColor,
-                    Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                    EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
-                };
-                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(colorAnim, NowPlayingGradientTop);
-                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(colorAnim, "Color");
-                storyboard.Children.Add(colorAnim);
-                storyboard.Begin();
-
-                // Start ambient pulse animation
-                StartGradientPulse();
+                    var color = await ExtractDominantColorAsync(thumbUrl);
+                    if (color.HasValue)
+                    {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                        {
+                            AnimateGradientTo(color.Value);
+                        });
+                    }
+                });
             }
-            catch { }
         }
 
         private void StartGradientPulse()

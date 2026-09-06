@@ -122,6 +122,7 @@
     <Compile Include="Services\QrCodeGenerator.cs" />
     <Compile Include="Services\TileService.cs" />
     <Compile Include="Models\YouTubeTrack.cs" />
+    <Compile Include="Models\SongCredits.cs" />
     <Compile Include="Models\DatabaseEntities.cs" />
     <Compile Include="Services\DatabaseHelper.cs" />
     <Compile Include="Models\LibraryItem.cs" />

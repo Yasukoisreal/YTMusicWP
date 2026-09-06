@@ -70,6 +70,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseNowPlayingMenu_Click(null, null);
             }
+            else if (SongCreditsDialog.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseSongCreditsDialog_Click(null, null);
+            }
             else if (PlaylistDetailsView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;

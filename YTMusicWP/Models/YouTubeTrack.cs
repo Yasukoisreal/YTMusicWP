@@ -10,6 +10,8 @@ namespace YTMusicWP
         public string Title { get; set; }
         public string ChannelName { get; set; }
         public string ChannelId { get; set; }
+        public string AlbumName { get; set; }
+        public string CreditsBrowseId { get; set; }
         
         private double _coverWidth = 140;
         public double CoverWidth

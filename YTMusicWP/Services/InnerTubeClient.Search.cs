@@ -386,12 +386,57 @@ namespace YTMusicWP
                 else if (type == "playlist") videoId = "PLAYLIST:" + browseId.Replace("VL", "");
             }
 
+            // Extract AlbumName if present
+            string albumName = null;
+            if (cols.Count() > 2)
+            {
+                var albumRuns = cols[2]?["musicResponsiveListItemFlexColumnRenderer"]?["text"]?["runs"];
+                if (albumRuns != null && albumRuns.HasValues)
+                {
+                    albumName = albumRuns[0]?["text"]?.ToString();
+                }
+            }
+            if (string.IsNullOrEmpty(albumName) && cols.Count() > 1)
+            {
+                var runs = cols[1]?["musicResponsiveListItemFlexColumnRenderer"]?["text"]?["runs"];
+                if (runs != null && runs.HasValues)
+                {
+                    foreach (var r in runs)
+                    {
+                        string bId = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                        if (!string.IsNullOrEmpty(bId) && bId.StartsWith("MPREb_"))
+                        {
+                            albumName = r["text"]?.ToString();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Extract Song Credits BrowseId (starts with MPTC)
+            string creditsBrowseId = null;
+            var menuItems = mr["menu"]?["menuRenderer"]?["items"];
+            if (menuItems != null && menuItems.HasValues)
+            {
+                foreach (var mi in menuItems)
+                {
+                    string bId = mi["menuNavigationItemRenderer"]?["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                    if (!string.IsNullOrEmpty(bId) && bId.StartsWith("MPTC"))
+                    {
+                        creditsBrowseId = bId;
+                        break;
+                    }
+                }
+            }
+
             return new YouTubeTrack
             {
                 VideoId = videoId,
                 Title = title,
                 ChannelName = CleanChannelName(artist),
                 ChannelId = channelId,
+                AlbumName = albumName,
+                CreditsBrowseId = creditsBrowseId,
                 ThumbnailUrl = thumbUrl,
                 SetVideoId = setVideoId,
                 CoverWidth = coverWidth
