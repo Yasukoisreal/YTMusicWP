@@ -49,6 +49,35 @@ namespace YTMusicWP
             get { return (VideoId != null && VideoId.StartsWith("LOCAL:")) ? Visibility.Collapsed : Visibility.Visible; }
         }
 
+        private bool _isPlaying;
+        public bool IsPlaying
+        {
+            get { return _isPlaying; }
+            set
+            {
+                if (_isPlaying != value)
+                {
+                    _isPlaying = value;
+                    OnPropertyChanged("IsPlaying");
+                    OnPropertyChanged("PlayingBadgeVisibility");
+                    OnPropertyChanged("TitleColor");
+                }
+            }
+        }
+
+        public Visibility PlayingBadgeVisibility
+        {
+            get { return _isPlaying ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _activeGreenBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84));
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _defaultWhiteBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+
+        public Windows.UI.Xaml.Media.Brush TitleColor
+        {
+            get { return _isPlaying ? _activeGreenBrush : _defaultWhiteBrush; }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string name)
         {

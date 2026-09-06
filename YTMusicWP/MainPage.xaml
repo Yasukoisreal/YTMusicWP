@@ -455,7 +455,7 @@
         </Storyboard>
 
         <DataTemplate x:Key="QueueItemTemplate">
-            <Grid Margin="0,0,0,10" Background="Transparent">
+            <Grid Margin="0,0,0,12" Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -463,22 +463,27 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Rectangle Grid.Column="0" Width="45" Height="45" RadiusX="8" RadiusY="8" Margin="0,0,10,0">
-                    <Rectangle.Fill>
-                        <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
-                            <ImageBrush.ImageSource>
-                                <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="100"/>
-                            </ImageBrush.ImageSource>
-                        </ImageBrush>
-                    </Rectangle.Fill>
-                </Rectangle>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,5,0">
-                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                <Grid Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Rectangle Width="46" Height="46" RadiusX="8" RadiusY="8">
+                        <Rectangle.Fill>
+                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
+                                <ImageBrush.ImageSource>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="100"/>
+                                </ImageBrush.ImageSource>
+                            </ImageBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Border Visibility="{Binding PlayingBadgeVisibility}" Background="#B2000000" CornerRadius="8" Width="46" Height="46">
+                        <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE102;" Foreground="#1DB954" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Grid>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,6,0">
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding TitleColor}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="13" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
-                <Button Grid.Column="2" Content="↑" Click="QueueMoveUp_Click" Foreground="#B3B3B3" FontSize="18" Background="Transparent" BorderThickness="0" MinWidth="36" MinHeight="36" Padding="0"/>
-                <Button Grid.Column="3" Content="↓" Click="QueueMoveDown_Click" Foreground="#B3B3B3" FontSize="18" Background="Transparent" BorderThickness="0" MinWidth="36" MinHeight="36" Padding="0"/>
-                <Button Grid.Column="4" Content="✕" Click="QueueRemove_Click" Foreground="#666666" FontSize="16" Background="Transparent" BorderThickness="0" MinWidth="36" MinHeight="36" Padding="0"/>
+                <Button Grid.Column="2" Content="↑" Click="QueueMoveUp_Click" Foreground="#888888" FontSize="18" Background="Transparent" BorderThickness="0" MinWidth="34" MinHeight="36" Padding="0"/>
+                <Button Grid.Column="3" Content="↓" Click="QueueMoveDown_Click" Foreground="#888888" FontSize="18" Background="Transparent" BorderThickness="0" MinWidth="34" MinHeight="36" Padding="0"/>
+                <Button Grid.Column="4" Content="✕" Click="QueueRemove_Click" Foreground="#555555" FontSize="15" Background="Transparent" BorderThickness="0" MinWidth="34" MinHeight="36" Padding="0"/>
             </Grid>
         </DataTemplate>
         <DataTemplate x:Key="HomeSectionNormalTemplate">
@@ -2007,7 +2012,14 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Grid Grid.Column="0" Background="Transparent" Tapped="MiniPlayer_Tapped">
+                    <Grid x:Name="MiniPlayerInfoGrid" Grid.Column="0" Background="Transparent"
+                          Tapped="MiniPlayer_Tapped"
+                          ManipulationMode="TranslateX,System"
+                          ManipulationDelta="MiniPlayer_ManipulationDelta"
+                          ManipulationCompleted="MiniPlayer_ManipulationCompleted">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="MiniPlayerTranslate" X="0"/>
+                        </Grid.RenderTransform>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -2188,10 +2200,16 @@
                     </Button>
                     <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock Text="NOW PLAYING" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="#AAFFFFFF" CharacterSpacing="150" HorizontalAlignment="Center"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                            <Ellipse x:Name="DotPlayer" Width="7" Height="7" Fill="#1DB954" Margin="0,0,4,0" Opacity="1.0"/>
-                            <Ellipse x:Name="DotLyrics" Width="7" Height="7" Fill="White" Margin="4,0,4,0" Opacity="0.3"/>
-                            <Ellipse x:Name="DotQueue" Width="7" Height="7" Fill="White" Margin="4,0,0,0" Opacity="0.3"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
+                            <Border Background="Transparent" Padding="8,6" Tapped="DotPlayer_Tapped">
+                                <Ellipse x:Name="DotPlayer" Width="7" Height="7" Fill="#1DB954" Opacity="1.0"/>
+                            </Border>
+                            <Border Background="Transparent" Padding="8,6" Tapped="DotLyrics_Tapped">
+                                <Ellipse x:Name="DotLyrics" Width="7" Height="7" Fill="White" Opacity="0.3"/>
+                            </Border>
+                            <Border Background="Transparent" Padding="8,6" Tapped="DotQueue_Tapped">
+                                <Ellipse x:Name="DotQueue" Width="7" Height="7" Fill="White" Opacity="0.3"/>
+                            </Border>
                         </StackPanel>
                     </StackPanel>
                     <Button Grid.Column="2" Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Background="#01000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -2255,8 +2273,19 @@
                     </PivotItem>
                     <!-- Queue page -->
                     <PivotItem>
-                        <Grid>
-                            <ListView x:Name="QueueListView" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="10,20,10,10" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
+                        <Grid Margin="15,10,15,10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0" Margin="0,5,0,10">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="UP NEXT" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="50"/>
+                                    <TextBlock x:Name="QueueCountText" Text="" FontSize="12" Foreground="#888888" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button Content="Clear" Click="QueueClear_Click" Foreground="#888888" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Padding="8,4" MinWidth="0" MinHeight="0"/>
+                            </Grid>
+                            <ListView Grid.Row="1" x:Name="QueueListView" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
                         </Grid>
                     </PivotItem>
                 </Pivot>
@@ -2288,6 +2317,9 @@
                             </Canvas>
                             <TextBlock x:Name="BigArtist" Text="Artist" FontSize="16" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
                         </StackPanel>
+                        <Button x:Name="NowPlayingQueueBtn" Grid.Column="1" Click="QueueButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48" VerticalAlignment="Center" Margin="0,0,4,0">
+                            <SymbolIcon x:Name="QueueIcon" Symbol="List" Foreground="White"/>
+                        </Button>
                         <Button x:Name="BigHeartBtn" Grid.Column="2" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0"/>
                     </Grid>
                     <StackPanel Margin="0,0,0,5">

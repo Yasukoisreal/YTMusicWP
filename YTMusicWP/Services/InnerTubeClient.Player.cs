@@ -639,6 +639,86 @@ namespace YTMusicWP
 
             return fallbackUrl;
         }
+
+        /// <summary>
+        /// Fetch algorithmic radio tracks for a video from YouTube Music /next endpoint.
+        /// </summary>
+        public static async Task<List<YouTubeTrack>> GetRadioTracksAsync(string videoId)
+        {
+            var list = new List<YouTubeTrack>();
+            if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:")) return list;
+
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                var body = new JObject
+                {
+                    ["context"] = BuildMusicContext(vd),
+                    ["videoId"] = videoId,
+                    ["playlistId"] = "RDAMVM" + videoId,
+                    ["isAudioOnly"] = true
+                };
+
+                string apiUrl = "https://music.youtube.com/youtubei/v1/next?prettyPrint=false";
+                var data = await PostInnerTubeAsync(apiUrl, body, true);
+                if (data == null) return list;
+
+                var items = data.SelectToken("$..playlistPanelRenderer.contents") as JArray;
+                if (items != null)
+                {
+                    foreach (var item in items)
+                    {
+                        var renderer = item["playlistPanelVideoRenderer"];
+                        if (renderer != null)
+                        {
+                            string vid = renderer["videoId"]?.ToString();
+                            string title = renderer.SelectToken("title.runs[0].text")?.ToString() ?? "";
+
+                            string artist = "";
+                            var bylineRuns = renderer.SelectToken("shortBylineText.runs") as JArray
+                                         ?? renderer.SelectToken("longBylineText.runs") as JArray;
+                            if (bylineRuns != null && bylineRuns.Count > 0)
+                            {
+                                var artistList = new List<string>();
+                                foreach (var run in bylineRuns)
+                                {
+                                    string text = run["text"]?.ToString();
+                                    if (!string.IsNullOrWhiteSpace(text) && text != " • " && !text.Contains("views") && !text.Contains("likes"))
+                                    {
+                                        artistList.Add(text.Trim());
+                                    }
+                                }
+                                artist = artistList.Count > 0 ? string.Join(", ", artistList) : bylineRuns[0]["text"]?.ToString() ?? "";
+                            }
+
+                            string thumb = "";
+                            var thumbs = renderer.SelectToken("thumbnail.thumbnails") as JArray;
+                            if (thumbs != null && thumbs.Count > 0)
+                            {
+                                thumb = thumbs[thumbs.Count - 1]["url"]?.ToString() ?? "";
+                            }
+
+                            if (!string.IsNullOrEmpty(vid) && !string.IsNullOrEmpty(title))
+                            {
+                                list.Add(new YouTubeTrack
+                                {
+                                    VideoId = vid,
+                                    Title = title,
+                                    ChannelName = string.IsNullOrEmpty(artist) ? "Unknown Artist" : artist,
+                                    ThumbnailUrl = thumb
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[InnerTube] GetRadioTracksAsync error: " + ex.Message);
+            }
+
+            return list;
+        }
     }
 
     public class CaptionTrack

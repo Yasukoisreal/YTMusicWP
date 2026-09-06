@@ -109,6 +109,33 @@ namespace YTMusicWP
             }
         }
 
+        private void MiniPlayer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+        {
+            if (MiniPlayerTranslate == null) return;
+            double newX = MiniPlayerTranslate.X + e.Delta.Translation.X;
+            if (newX > 80) newX = 80;
+            if (newX < -80) newX = -80;
+            MiniPlayerTranslate.X = newX;
+        }
+
+        private void MiniPlayer_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
+        {
+            if (MiniPlayerTranslate == null) return;
+            double totalX = e.Cumulative.Translation.X;
+            double velX = e.Velocities.Linear.X;
+
+            MiniPlayerTranslate.X = 0;
+
+            if (totalX < -40 || velX < -0.15)
+            {
+                NextButton_Click(null, null);
+            }
+            else if (totalX > 40 || velX > 0.15)
+            {
+                PrevButton_Click(null, null);
+            }
+        }
+
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
         {
             NowPlayingView.Visibility = Visibility.Visible;
@@ -190,6 +217,44 @@ namespace YTMusicWP
             if (currentTrack != null) await DownloadTrackAsync(currentTrack);
         }
 
+        private void DotPlayer_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            NowPlayingPivot.SelectedIndex = 0;
+        }
+
+        private void DotLyrics_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            NowPlayingPivot.SelectedIndex = 1;
+        }
+
+        private void DotQueue_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            NowPlayingPivot.SelectedIndex = 2;
+        }
+
+        private void QueueButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (NowPlayingPivot.SelectedIndex == 2)
+            {
+                NowPlayingPivot.SelectedIndex = 0;
+            }
+            else
+            {
+                NowPlayingPivot.SelectedIndex = 2;
+            }
+        }
+
+        private void QueueClear_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentQueueTracks.Count <= 1) return;
+            var playing = currentQueueTracks.FirstOrDefault(t => t.VideoId == currentTrack?.VideoId) ?? currentTrack;
+            currentQueueTracks.Clear();
+            if (playing != null) currentQueueTracks.Add(playing);
+            UpdateQueueActiveState();
+            SyncQueueToBackground(false);
+            ShowToast("Queue cleared");
+        }
+
         private void NowPlayingPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             int idx = NowPlayingPivot.SelectedIndex;
@@ -197,6 +262,21 @@ namespace YTMusicWP
             DotLyrics.Opacity = idx == 1 ? 1.0 : 0.3;
             DotQueue.Opacity  = idx == 2 ? 1.0 : 0.3;
             MiniLyricCanvas.Opacity = idx == 0 ? 1.0 : 0.0;
+
+            if (QueueIcon != null)
+            {
+                QueueIcon.Foreground = idx == 2 ? _greenBrush : _whiteBrush;
+            }
+
+            if (idx == 2)
+            {
+                UpdateQueueActiveState();
+                var playing = currentQueueTracks.FirstOrDefault(t => t.IsPlaying);
+                if (playing != null)
+                {
+                    try { QueueListView.ScrollIntoView(playing); } catch { }
+                }
+            }
             
             ForceUpdateLyricUI();
         }
@@ -512,7 +592,8 @@ namespace YTMusicWP
 
             if (insertIdx > currentQueueTracks.Count) insertIdx = currentQueueTracks.Count;
             currentQueueTracks.Insert(insertIdx, _bottomSheetTrack);
-            SyncQueueToBackground();
+            UpdateQueueActiveState();
+            SyncQueueToBackground(false);
 
             ShowToast("Added to queue: " + _bottomSheetTrack.Title);
         }
@@ -530,7 +611,23 @@ namespace YTMusicWP
 
             try
             {
-                // Search with Music filter for similar songs
+                var radioResults = await InnerTubeClient.GetRadioTracksAsync(track.VideoId);
+                if (radioResults != null && radioResults.Count > 0)
+                {
+                    searchResults.Clear();
+                    searchResults.Add(track);
+                    foreach (var t in radioResults)
+                    {
+                        if (t.VideoId != track.VideoId)
+                            searchResults.Add(t);
+                    }
+
+                    PlayTrack(track);
+                    ShowToast("Radio: " + searchResults.Count + " songs");
+                    return;
+                }
+
+                // Fallback: search with Music filter for similar songs
                 string query = track.Title + " " + track.ChannelName + " similar songs";
                 // Use Music/Songs filter param
                 var results = await InnerTubeClient.SearchAsync(query, 25, "EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D");
@@ -604,7 +701,8 @@ namespace YTMusicWP
             if (idx > 0)
             {
                 currentQueueTracks.Move(idx, idx - 1);
-                SyncQueueToBackground();
+                UpdateQueueActiveState();
+                SyncQueueToBackground(false);
             }
         }
 
@@ -619,7 +717,8 @@ namespace YTMusicWP
             if (idx >= 0 && idx < currentQueueTracks.Count - 1)
             {
                 currentQueueTracks.Move(idx, idx + 1);
-                SyncQueueToBackground();
+                UpdateQueueActiveState();
+                SyncQueueToBackground(false);
             }
         }
 
@@ -638,7 +737,8 @@ namespace YTMusicWP
             }
 
             currentQueueTracks.Remove(track);
-            SyncQueueToBackground();
+            UpdateQueueActiveState();
+            SyncQueueToBackground(false);
             ShowToast("Removed from queue");
         }
 

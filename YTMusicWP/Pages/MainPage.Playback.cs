@@ -165,9 +165,12 @@ namespace YTMusicWP
                 { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }, { "FastUrl", urls[relativeStartIndex] }
             };
             try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
+
+            UpdateQueueActiveState();
+            TriggerAutoplayIfNearingEndAsync(track);
         }
 
-        private void SyncQueueToBackground()
+        private void SyncQueueToBackground(bool playImmediate = false)
         {
             if (currentQueueTracks.Count == 0) return;
             
@@ -206,10 +209,107 @@ namespace YTMusicWP
             }
 
             var message = new ValueSet {
-                { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
-                { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }
+                { playImmediate ? "UpdatePlaylist" : "UpdateQueueOnly", "" },
+                { "Urls", urls },
+                { "Titles", titles },
+                { "Artists", artists },
+                { "VideoIds", videoIds },
+                { "Thumbnails", thumbnails }
             };
+
+            if (playImmediate)
+            {
+                message.Add("StartIndex", relativeStartIndex);
+            }
+            else
+            {
+                message.Add("CurrentIndex", relativeStartIndex);
+            }
+
             try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
+
+            if (currentTrack != null)
+            {
+                YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(currentTrack.Title, currentTrack.ChannelName, currentTrack.ThumbnailUrl, currentQueueTracks.Skip(actualCurrentIndex + 1));
+            }
+        }
+
+        public void UpdateQueueActiveState()
+        {
+            if (currentQueueTracks == null) return;
+            string currentVid = currentTrack?.VideoId;
+            for (int i = 0; i < currentQueueTracks.Count; i++)
+            {
+                var item = currentQueueTracks[i];
+                item.IsPlaying = (!string.IsNullOrEmpty(currentVid) && item.VideoId == currentVid);
+            }
+            if (QueueCountText != null)
+            {
+                QueueCountText.Text = currentQueueTracks.Count > 0 ? "(" + currentQueueTracks.Count + ")" : "";
+            }
+        }
+
+        private bool _isFetchingAutoplay = false;
+
+        private async void TriggerAutoplayIfNearingEndAsync(YouTubeTrack track)
+        {
+            if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
+            if (_isFetchingAutoplay) return;
+
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            bool autoplay = settings.ContainsKey("Autoplay") ? (bool)settings["Autoplay"] : true;
+            if (!autoplay) return;
+
+            int idx = -1;
+            for (int i = 0; i < currentQueueTracks.Count; i++)
+            {
+                if (currentQueueTracks[i].VideoId == track.VideoId)
+                {
+                    idx = i;
+                    break;
+                }
+            }
+
+            if (idx < currentQueueTracks.Count - 2) return;
+
+            _isFetchingAutoplay = true;
+            try
+            {
+                var radioTracks = await InnerTubeClient.GetRadioTracksAsync(track.VideoId);
+                if (radioTracks == null || radioTracks.Count == 0)
+                {
+                    radioTracks = await InnerTubeClient.SearchAsync(track.Title + " " + track.ChannelName, 20);
+                }
+
+                if (radioTracks != null && radioTracks.Count > 0)
+                {
+                    int added = 0;
+                    foreach (var item in radioTracks)
+                    {
+                        if (item.VideoId.StartsWith("CHANNEL:") || item.VideoId.StartsWith("PLAYLIST:")) continue;
+                        if (!currentQueueTracks.Any(t => t.VideoId == item.VideoId))
+                        {
+                            currentQueueTracks.Add(item);
+                            added++;
+                            if (added >= 15) break;
+                        }
+                    }
+
+                    if (added > 0)
+                    {
+                        UpdateQueueActiveState();
+                        SyncQueueToBackground(false);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[Autoplay] Failed to fetch radio tracks: " + ex.Message);
+            }
+            finally
+            {
+                _isFetchingAutoplay = false;
+            }
         }
 
         private async void HeartButton_Click(object sender, RoutedEventArgs e)
@@ -679,6 +779,8 @@ namespace YTMusicWP
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist);
                         YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(title, artist, thumb, currentQueueTracks);
+                        UpdateQueueActiveState();
+                        TriggerAutoplayIfNearingEndAsync(currentTrack);
 
                         // Restart marquee if NowPlaying is visible
                         if (NowPlayingView.Visibility == Visibility.Visible)
