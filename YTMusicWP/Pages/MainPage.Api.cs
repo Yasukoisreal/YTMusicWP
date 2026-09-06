@@ -199,8 +199,15 @@ namespace YTMusicWP
                         list.AddRange(contResult.Tracks);
                         _nextSearchToken = contResult.ContinuationToken ?? "";
                     }
+                    else
+                    {
+                        _nextSearchToken = "";
+                    }
                 }
-                catch { }
+                catch
+                {
+                    _nextSearchToken = "";
+                }
                 return list;
             }
 

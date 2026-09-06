@@ -10,8 +10,15 @@ namespace YTMusicWP.Services
 {
     public static class AppleMusicLyricsApi
     {
-        private static readonly HttpClient _client = new HttpClient() { Timeout = TimeSpan.FromSeconds(5) };
-        
+        private static readonly HttpClient _httpClient = CreateHttpClient();
+
+        private static HttpClient CreateHttpClient()
+        {
+            var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            client.DefaultRequestHeaders.Add("User-Agent", "YTMusicWP/1.0");
+            return client;
+        }
+
         public static async Task<string[]> GetLyricsAsync(string title, string artist, int duration = -1)
         {
             try
@@ -23,21 +30,20 @@ namespace YTMusicWP.Services
                     url += "&d=" + duration;
                 }
 
-                _client.DefaultRequestHeaders.UserAgent.TryParseAdd("YTMusicWP/1.0");
-                var response = await _client.GetAsync(url);
-                    if (response.IsSuccessStatusCode)
+                var response = await _httpClient.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    string jsonStr = await response.Content.ReadAsStringAsync();
+                    JsonObject jsonObj;
+                    if (JsonObject.TryParse(jsonStr, out jsonObj))
                     {
-                        string jsonStr = await response.Content.ReadAsStringAsync();
-                        JsonObject jsonObj;
-                        if (JsonObject.TryParse(jsonStr, out jsonObj))
+                        if (jsonObj.ContainsKey("ttml") && jsonObj["ttml"].ValueType == JsonValueType.String)
                         {
-                            if (jsonObj.ContainsKey("ttml") && jsonObj["ttml"].ValueType == JsonValueType.String)
-                            {
-                                string ttml = jsonObj["ttml"].GetString();
-                                return ParseTTML(ttml);
-                            }
+                            string ttml = jsonObj["ttml"].GetString();
+                            return ParseTTML(ttml);
                         }
                     }
+                }
             }
             catch (Exception ex)
             {

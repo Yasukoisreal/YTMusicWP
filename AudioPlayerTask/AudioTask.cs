@@ -36,6 +36,7 @@ namespace AudioPlayerTask
         private string _resolvedUrl = null;
         private bool _innerTubeAttempted = false;
         private double _playbackRate = 1.0;
+        private DateTime _sleepTimerExpiry = DateTime.MaxValue;
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -127,6 +128,22 @@ namespace AudioPlayerTask
                 {
                     _playbackRate = (double)e.Data["SetPlaybackRate"];
                     _mediaPlayer.PlaybackRate = _playbackRate;
+                }
+                catch { }
+            }
+            else if (e.Data.ContainsKey("SetSleepTimer"))
+            {
+                try
+                {
+                    int minutes = Convert.ToInt32(e.Data["SetSleepTimer"]);
+                    if (minutes <= 0)
+                    {
+                        _sleepTimerExpiry = DateTime.MaxValue;
+                    }
+                    else
+                    {
+                        _sleepTimerExpiry = DateTime.UtcNow.AddMinutes(minutes);
+                    }
                 }
                 catch { }
             }
@@ -838,8 +855,17 @@ namespace AudioPlayerTask
         {
             try
             {
-                if (_mediaPlayer == null || _trackList.Count <= 1) return;
+                if (_mediaPlayer == null || _trackList.Count == 0) return;
                 if (_mediaPlayer.CurrentState != MediaPlayerState.Playing) return;
+
+                // Sleep Timer Check (functions even when phone is locked or screen is off)
+                if (DateTime.UtcNow >= _sleepTimerExpiry)
+                {
+                    _sleepTimerExpiry = DateTime.MaxValue;
+                    _mediaPlayer.Pause();
+                    SendToast("Sleep Timer: Music paused.");
+                    return;
+                }
 
                 var pos = _mediaPlayer.Position;
                 var naturalDuration = _mediaPlayer.NaturalDuration;
@@ -861,8 +887,8 @@ namespace AudioPlayerTask
                     }
                 }
 
-                // Gapless: Pre-resolve next track URL 15s before end
-                if (remaining <= 15 && remaining > 10 && string.IsNullOrEmpty(_preResolvedNextUrl))
+                // Gapless: Pre-resolve next track URL 15s before end (only if playlist has > 1 track)
+                if (_trackList.Count > 1 && remaining <= 15 && remaining > 10 && string.IsNullOrEmpty(_preResolvedNextUrl))
                 {
                     PreResolveNextTrack();
                 }

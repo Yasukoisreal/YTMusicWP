@@ -80,6 +80,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 SuggestionPopup.Visibility = Visibility.Collapsed;
             }
+            else if (_currentTab != 0)
+            {
+                e.Handled = true;
+                SwitchTab(0);
+            }
         }
 
         private void NavHome_Click(object sender, RoutedEventArgs e) { SwitchTab(0); }

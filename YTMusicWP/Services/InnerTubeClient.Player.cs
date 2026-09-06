@@ -168,15 +168,16 @@ namespace YTMusicWP
                 return null;
 
             // Lấy visitorData giống MetroTube (sw.js_data hoặc homepage)
-            string vd = await GetVisitorDataAsync();
-            LastResolveDebug = "vd:" + (vd != null ? "OK" : "NULL");
-
-            string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+            string defaultVd = await GetVisitorDataAsync();
+            LastResolveDebug = "vd:" + (defaultVd != null ? "OK" : "NULL");
 
             foreach (var client in _playerClients)
             {
                 if (client.RequireCookie && !HasCookieAuth)
                     continue; // Bỏ qua nếu client yêu cầu cookie mà chưa đăng nhập
+
+                string vd = defaultVd;
+                string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
 
                 try
                 {

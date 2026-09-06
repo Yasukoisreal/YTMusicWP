@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Media.Playback;
 using Windows.Networking.BackgroundTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -593,6 +594,7 @@ namespace YTMusicWP
                 _sleepMinutesLeft = 0;
                 MenuSleepTimerStatus.Text = "Off";
                 ShowToast("Sleep Timer: Off");
+                try { BackgroundMediaPlayer.SendMessageToBackground(new Windows.Foundation.Collections.ValueSet { { "SetSleepTimer", 0 } }); } catch { }
             }
             else
             {
@@ -603,6 +605,7 @@ namespace YTMusicWP
                 MenuSleepTimerStatus.Text = _sleepMinutesLeft + " min left";
                 _sleepTimer.Start();
                 ShowToast("Sleep Timer set for " + _sleepMinutesLeft + " minutes");
+                try { BackgroundMediaPlayer.SendMessageToBackground(new Windows.Foundation.Collections.ValueSet { { "SetSleepTimer", _sleepMinutesLeft } }); } catch { }
             }
         }
 
@@ -798,7 +801,8 @@ namespace YTMusicWP
                     return;
                 }
 
-                string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars()));
+                string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars())).Trim();
+                if (string.IsNullOrEmpty(safeTitle)) safeTitle = track.VideoId;
                 StorageFile destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(safeTitle + ".m4a", CreationCollisionOption.ReplaceExisting);
 
                 BackgroundDownloader downloader = new BackgroundDownloader();
