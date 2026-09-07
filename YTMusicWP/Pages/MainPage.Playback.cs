@@ -732,7 +732,12 @@ namespace YTMusicWP
                             {
                                 if (_isAppleMusicStyle)
                                 {
-                                    var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(finalThumbUrl);
+                                    var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(thumb);
+                                    var cachedBackdrop = Services.LumiaBlurHelper.GetCached(thumb);
+                                    if (cachedBackdrop != null && AppleMusicBackdrop != null)
+                                    {
+                                        AppleMusicBackdrop.Source = cachedBackdrop;
+                                    }
                                     if (cachedFaded != null)
                                     {
                                         AppleMusicArtwork.Source = cachedFaded;
@@ -837,7 +842,12 @@ namespace YTMusicWP
                             {
                                 if (_isAppleMusicStyle)
                                 {
-                                    var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(finalThumbUrl);
+                                    var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(thumb);
+                                    var cachedBackdrop = Services.LumiaBlurHelper.GetCached(thumb);
+                                    if (cachedBackdrop != null && AppleMusicBackdrop != null)
+                                    {
+                                        AppleMusicBackdrop.Source = cachedBackdrop;
+                                    }
                                     if (cachedFaded != null)
                                     {
                                         AppleMusicArtwork.Source = cachedFaded;
@@ -1089,9 +1099,13 @@ namespace YTMusicWP
                 (byte)(from.B + (to.B - from.B) * t));
         }
 
+        private int _appleMusicBackdropSeq = 0;
+
         private async Task UpdateAppleMusicBackdropAsync(string thumbnailUrl, Windows.UI.Color seedColor)
         {
             if (string.IsNullOrEmpty(thumbnailUrl)) return;
+
+            int currentSeq = ++_appleMusicBackdropSeq;
 
             var black = Windows.UI.Colors.Black;
             if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.05);
@@ -1114,6 +1128,7 @@ namespace YTMusicWP
                     AppleMusicArtwork.Source = cachedFaded;
                     if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
                 }
+                PrecacheNextTrackArtwork();
                 return;
             }
 
@@ -1122,22 +1137,30 @@ namespace YTMusicWP
             try
             {
                 var bytes = await _dominantHttpClient.GetByteArrayAsync(cleanUrl);
+                if (currentSeq != _appleMusicBackdropSeq) return;
+
                 if (bytes != null && bytes.Length > 0)
                 {
                     using (var stream = new System.IO.MemoryStream(bytes))
                     {
                         var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 64, 108, 120);
+                        if (currentSeq != _appleMusicBackdropSeq) return;
+
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
 
                         // Render true alpha-faded artwork with deep dissolve (260px) into the heavily blurred backdrop
                         var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 260);
+                        if (currentSeq != _appleMusicBackdropSeq) return;
+
                         Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
                         if (AppleMusicArtwork != null)
                         {
                             AppleMusicArtwork.Source = faded;
                             if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
                         }
+
+                        PrecacheNextTrackArtwork();
                     }
                 }
             }
@@ -1145,6 +1168,65 @@ namespace YTMusicWP
             {
                 System.Diagnostics.Debug.WriteLine("[AppleMusicBackdrop] Render error: " + ex.Message);
             }
+        }
+
+        private void PrecacheNextTrackArtwork()
+        {
+            if (!_isAppleMusicStyle || currentTrack == null || currentQueueTracks == null || currentQueueTracks.Count == 0) return;
+            try
+            {
+                int curIdx = -1;
+                for (int i = 0; i < currentQueueTracks.Count; i++)
+                {
+                    if (currentQueueTracks[i].VideoId == currentTrack.VideoId)
+                    {
+                        curIdx = i;
+                        break;
+                    }
+                }
+                if (curIdx >= 0 && curIdx + 1 < currentQueueTracks.Count)
+                {
+                    var nextTrack = currentQueueTracks[curIdx + 1];
+                    if (nextTrack != null && !string.IsNullOrEmpty(nextTrack.ThumbnailUrl))
+                    {
+                        string nextThumb = nextTrack.ThumbnailUrl;
+                        if (Services.LumiaBlurHelper.GetCachedFaded(nextThumb) == null)
+                        {
+                            var ignored = PrecacheArtworkAsync(nextThumb);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private async Task PrecacheArtworkAsync(string thumbUrl)
+        {
+            try
+            {
+                string cleanUrl = GetAppleMusicThumbnail(thumbUrl);
+                var bytes = await _dominantHttpClient.GetByteArrayAsync(cleanUrl);
+                if (bytes != null && bytes.Length > 0)
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Low, async () =>
+                    {
+                        try
+                        {
+                            if (Services.LumiaBlurHelper.GetCachedFaded(thumbUrl) != null) return;
+                            using (var stream = new System.IO.MemoryStream(bytes))
+                            {
+                                var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 64, 108, 120);
+                                Services.LumiaBlurHelper.PutCache(thumbUrl, blurred);
+
+                                var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 260);
+                                Services.LumiaBlurHelper.PutCachedFaded(thumbUrl, faded);
+                            }
+                        }
+                        catch { }
+                    });
+                }
+            }
+            catch { }
         }
 
         private static Windows.UI.Color AdjustAmbientColor(Windows.UI.Color c)
@@ -1449,6 +1531,11 @@ namespace YTMusicWP
 
             // Immediate zero-latency transition to genre preview color
             AnimateGradientTo(topColor);
+
+            if (_isAppleMusicStyle && !string.IsNullOrEmpty(thumbUrl))
+            {
+                var ignoredBg = UpdateAppleMusicBackdropAsync(thumbUrl, topColor);
+            }
 
             // Asynchronously extract true dominant color from album artwork in background
             if (!string.IsNullOrEmpty(thumbUrl))

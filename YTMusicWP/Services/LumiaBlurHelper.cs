@@ -10,21 +10,35 @@ namespace YTMusicWP.Services
 {
     internal static class LumiaBlurHelper
     {
-        // LRU cache: max 3 entries keyed by URL
-        private static readonly string[] _cacheKeys = new string[3];
-        private static readonly WriteableBitmap[] _cacheValues = new WriteableBitmap[3];
+        // LRU cache: max 6 entries keyed by canonical URL
+        private static readonly string[] _cacheKeys = new string[6];
+        private static readonly WriteableBitmap[] _cacheValues = new WriteableBitmap[6];
         private static int _cacheIndex;
 
-        // Faded artwork cache: max 3 entries
-        private static readonly string[] _fadedCacheKeys = new string[3];
-        private static readonly WriteableBitmap[] _fadedCacheValues = new WriteableBitmap[3];
+        // Faded artwork cache: max 6 entries
+        private static readonly string[] _fadedCacheKeys = new string[6];
+        private static readonly WriteableBitmap[] _fadedCacheValues = new WriteableBitmap[6];
         private static int _fadedCacheIndex;
+
+        private static string NormalizeKey(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return "";
+            try
+            {
+                return MainPage.GetAppleMusicThumbnail(key);
+            }
+            catch
+            {
+                return key;
+            }
+        }
 
         public static WriteableBitmap GetCached(string key)
         {
+            string normKey = NormalizeKey(key);
             for (int i = 0; i < _cacheKeys.Length; i++)
             {
-                if (_cacheKeys[i] == key && _cacheValues[i] != null)
+                if (_cacheKeys[i] == normKey && _cacheValues[i] != null)
                     return _cacheValues[i];
             }
             return null;
@@ -32,16 +46,17 @@ namespace YTMusicWP.Services
 
         public static void PutCache(string key, WriteableBitmap bitmap)
         {
-            _cacheKeys[_cacheIndex] = key;
+            _cacheKeys[_cacheIndex] = NormalizeKey(key);
             _cacheValues[_cacheIndex] = bitmap;
             _cacheIndex = (_cacheIndex + 1) % _cacheKeys.Length;
         }
 
         public static WriteableBitmap GetCachedFaded(string key)
         {
+            string normKey = NormalizeKey(key);
             for (int i = 0; i < _fadedCacheKeys.Length; i++)
             {
-                if (_fadedCacheKeys[i] == key && _fadedCacheValues[i] != null)
+                if (_fadedCacheKeys[i] == normKey && _fadedCacheValues[i] != null)
                     return _fadedCacheValues[i];
             }
             return null;
@@ -49,7 +64,7 @@ namespace YTMusicWP.Services
 
         public static void PutCachedFaded(string key, WriteableBitmap bitmap)
         {
-            _fadedCacheKeys[_fadedCacheIndex] = key;
+            _fadedCacheKeys[_fadedCacheIndex] = NormalizeKey(key);
             _fadedCacheValues[_fadedCacheIndex] = bitmap;
             _fadedCacheIndex = (_fadedCacheIndex + 1) % _fadedCacheKeys.Length;
         }
