@@ -72,6 +72,67 @@
             </Setter>
         </Style>
 
+        <Style x:Key="AppleMusicButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="{TemplateBinding Background}" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="ButtonScale" ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1.28" Duration="0:0:0.1">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1.28" Duration="0:0:0.1">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <ContentPresenter x:Name="ContentPresenter" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="ChipButtonStyle" TargetType="Button">
             <Setter Property="MinHeight" Value="0"/>
             <Setter Property="MinWidth" Value="0"/>
@@ -2552,8 +2613,8 @@
                             <TextBlock x:Name="AppleMusicMainArtist" Text="" FontSize="13" Foreground="#B3FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button x:Name="AppleMusicMainHeartBtn" Content="☆" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="24" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0"/>
-                            <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0" Margin="4,0,0,0">
+                            <Button x:Name="AppleMusicMainHeartBtn" Content="☆" Click="HeartButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Foreground="White" FontSize="24" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0"/>
+                            <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource AppleMusicButtonStyle}" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0" Margin="4,0,0,0">
                                 <Viewbox Width="18" Height="18">
                                     <Path Data="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" Fill="White"/>
                                 </Viewbox>
@@ -2592,12 +2653,12 @@
                             <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52" Padding="0">
+                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Width="52" Height="52" Padding="0">
                             <Viewbox Width="38" Height="38">
                                 <Path Data="M19.95,16.98 L13.75,12.83 Q13.53,12.68 13.41,12.46 T13.3,12 T13.41,11.54 T13.75,11.18 L19.95,7.03 Q20.08,6.93 20.23,6.9 Q20.38,6.88 20.5,6.88 Q20.9,6.88 21.2,7.15 Q21.5,7.43 21.5,7.88 V16.13 Q21.5,16.58 21.2,16.86 T20.5,17.13 Q20.37,17.13 20.23,17.11 T19.95,16.98 Z M9.95,16.98 L3.75,12.83 Q3.53,12.68 3.41,12.46 T3.3,12 T3.41,11.54 T3.75,11.18 L9.95,7.02 Q10.08,6.93 10.23,6.9 Q10.38,6.88 10.5,6.88 Q10.9,6.88 11.2,7.15 Q11.5,7.43 11.5,7.88 V16.13 Q11.5,16.58 11.2,16.86 T10.5,17.13 Q10.37,17.13 10.23,17.11 T9.95,16.98 Z" Fill="White" Stretch="Uniform"/>
                             </Viewbox>
                         </Button>
-                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="56" Height="56" Padding="0">
+                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Width="56" Height="56" Padding="0">
                             <Grid>
                                 <Viewbox x:Name="AppleMusicPlayBox" Width="38" Height="38" Visibility="Visible">
                                     <Path Data="M8,17.18 V6.82 Q8,6.4 8.3,6.11 Q8.6,5.82 9,5.82 Q9.13,5.82 9.26,5.86 T9.53,5.97 L17.68,11.15 Q17.91,11.3 18.02,11.53 Q18.13,11.76 18.13,12.01 T18.02,12.48 T17.68,12.86 L9.53,18.02 Q9.4,18.1 9.26,18.14 Q9.13,18.18 9,18.18 Q8.6,18.18 8.3,17.89 T8,17.18 Z" Fill="White" Stretch="Uniform"/>
@@ -2607,7 +2668,7 @@
                                 </Viewbox>
                             </Grid>
                         </Button>
-                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52" Padding="0">
+                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Width="52" Height="52" Padding="0">
                             <Viewbox Width="38" Height="38">
                                 <Path Data="M2.5,16.13 V7.88 Q2.5,7.43 2.8,7.15 Q3.1,6.88 3.5,6.88 Q3.63,6.88 3.78,6.9 Q3.93,6.93 4.05,7.02 L10.25,11.17 Q10.48,11.32 10.59,11.53 T10.7,12 T10.59,12.46 T10.25,12.82 L4.05,16.97 Q3.93,17.08 3.78,17.1 T3.5,17.13 Q3.1,17.13 2.8,16.86 T2.5,16.13 Z M12.5,16.13 V7.88 Q12.5,7.43 12.8,7.15 Q13.1,6.88 13.5,6.88 Q13.63,6.88 13.78,6.9 Q13.93,6.93 14.06,7.03 L20.26,11.18 Q20.49,11.33 20.6,11.54 T20.71,12 T20.6,12.46 T20.26,12.82 L14.06,16.97 Q13.93,17.07 13.78,17.1 T13.5,17.13 Q13.1,17.13 12.8,16.86 T12.5,16.13 Z" Fill="White" Stretch="Uniform"/>
                             </Viewbox>
