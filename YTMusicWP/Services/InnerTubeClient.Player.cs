@@ -36,7 +36,7 @@ namespace YTMusicWP
         private static string _cachedPoTokenVideoId = null;
         private static RemotePoTokenResult _cachedPoTokenResult = null;
 
-        private static async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
+        private static async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName, string visitorData = null)
         {
             if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
             {
@@ -46,7 +46,9 @@ namespace YTMusicWP
             try
             {
                 // Cloudflare Worker acts as TLS proxy to Render (bgutil-ytdlp-pot-provider)
-                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/?content_binding=" + Uri.EscapeDataString(videoId ?? "");
+                string binding = !string.IsNullOrEmpty(visitorData) ? visitorData : (videoId ?? "");
+                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
+                string body = "{\"content_binding\":\"" + binding + "\"}";
                 
                 var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                 filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
@@ -54,7 +56,8 @@ namespace YTMusicWP
                 
                 using (var httpClient = new Windows.Web.Http.HttpClient(filter))
                 {
-                    using (var resp = await httpClient.GetAsync(new Uri(serverUrl)))
+                    var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                    using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
                     {
                         if (!resp.IsSuccessStatusCode) return null;
                         string json = await resp.Content.ReadAsStringAsync();
@@ -74,6 +77,10 @@ namespace YTMusicWP
 
                         if (!string.IsNullOrEmpty(result.PoToken))
                         {
+                            if (string.IsNullOrEmpty(result.VisitorData) && !string.IsNullOrEmpty(visitorData))
+                            {
+                                result.VisitorData = visitorData;
+                            }
                             _cachedPoTokenVideoId = videoId;
                             _cachedPoTokenResult = result;
                             return result;
@@ -194,7 +201,7 @@ namespace YTMusicWP
                     string poTokenField = "";
                     if (client.SupportsPoToken)
                     {
-                        var tokenInfo = await FetchRemotePoTokenAsync(videoId, client.ClientName);
+                        var tokenInfo = await FetchRemotePoTokenAsync(videoId, client.ClientName, vd);
                         if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                         {
                             poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";

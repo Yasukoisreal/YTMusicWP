@@ -309,7 +309,7 @@ namespace AudioPlayerTask
         private static string _cachedPoTokenVideoId = null;
         private static RemotePoTokenResult _cachedPoTokenResult = null;
 
-        private async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
+        private async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName, string visitorData = null)
         {
             if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
             {
@@ -318,7 +318,9 @@ namespace AudioPlayerTask
 
             try
             {
-                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/?content_binding=" + Uri.EscapeDataString(videoId ?? "");
+                string binding = !string.IsNullOrEmpty(visitorData) ? visitorData : (videoId ?? "");
+                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
+                string body = "{\"content_binding\":\"" + binding + "\"}";
                 
                 var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                 filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
@@ -326,7 +328,8 @@ namespace AudioPlayerTask
                 
                 using (var httpClient = new Windows.Web.Http.HttpClient(filter))
                 {
-                    using (var resp = await httpClient.GetAsync(new Uri(serverUrl)))
+                    var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                    using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
                     {
                         if (!resp.IsSuccessStatusCode) return null;
                         string json = await resp.Content.ReadAsStringAsync();
@@ -352,6 +355,10 @@ namespace AudioPlayerTask
 
                         if (!string.IsNullOrEmpty(result.PoToken))
                         {
+                            if (string.IsNullOrEmpty(result.VisitorData) && !string.IsNullOrEmpty(visitorData))
+                            {
+                                result.VisitorData = visitorData;
+                            }
                             _cachedPoTokenVideoId = videoId;
                             _cachedPoTokenResult = result;
                             return result;
@@ -433,7 +440,7 @@ namespace AudioPlayerTask
                 string poTokenField = "";
                 if (usePoToken)
                 {
-                    var tokenInfo = await FetchRemotePoTokenAsync(videoId, clientName);
+                    var tokenInfo = await FetchRemotePoTokenAsync(videoId, clientName, visitorData);
                     if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                     {
                         poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
