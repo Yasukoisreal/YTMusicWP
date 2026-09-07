@@ -1126,7 +1126,7 @@ namespace YTMusicWP
                 {
                     using (var stream = new System.IO.MemoryStream(bytes))
                     {
-                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80);
+                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 64, 108, 120);
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
 
