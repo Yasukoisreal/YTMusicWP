@@ -1042,6 +1042,28 @@ namespace YTMusicWP
             if (LyricsFadeBottomStop1 != null) LyricsFadeBottomStop1.Color = lyricsFadeTransparent;
             if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
             if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;
+
+            bool isNowPlayingVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
+                                    || (FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible);
+            if (isNowPlayingVisible)
+            {
+                UpdateStatusBarColor(true);
+            }
+        }
+
+        private void UpdateStatusBarColor(bool isNowPlaying)
+        {
+            try
+            {
+                var statusBar = Windows.UI.ViewManagement.StatusBar.GetForCurrentView();
+                if (statusBar != null)
+                {
+                    statusBar.BackgroundColor = isNowPlaying ? _currentGradientColor : Windows.UI.Color.FromArgb(255, 18, 18, 18);
+                    statusBar.BackgroundOpacity = 1.0;
+                    statusBar.ForegroundColor = Windows.UI.Colors.White;
+                }
+            }
+            catch { }
         }
 
         private void UpdateNowPlayingGradient(string title, string artist, string thumbUrl = null)

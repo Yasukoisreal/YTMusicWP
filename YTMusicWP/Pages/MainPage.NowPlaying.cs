@@ -139,6 +139,7 @@ namespace YTMusicWP
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
         {
             NowPlayingView.Visibility = Visibility.Visible;
+            UpdateStatusBarColor(true);
             if (NowPlayingGradientTop != null)
             {
                 NowPlayingGradientTop.Color = _currentGradientColor;
@@ -192,6 +193,7 @@ namespace YTMusicWP
             else
             {
                 NowPlayingView.Visibility = Visibility.Collapsed;
+                UpdateStatusBarColor(false);
                 RestoreSearchBoxFocus();
             }
         }
@@ -306,6 +308,7 @@ namespace YTMusicWP
         private void SlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingView.Visibility = Visibility.Collapsed;
+            UpdateStatusBarColor(false);
             RestoreSearchBoxFocus();
         }
 
@@ -532,6 +535,7 @@ namespace YTMusicWP
                 else
                 {
                     NowPlayingView.Visibility = Visibility.Collapsed;
+                    UpdateStatusBarColor(false);
                     OpenArtistProfile(currentTrack.ChannelId, artists.Count == 1 ? artists[0] : artistStr);
                 }
             }
@@ -556,6 +560,7 @@ namespace YTMusicWP
             if (!string.IsNullOrEmpty(artistName))
             {
                 NowPlayingView.Visibility = Visibility.Collapsed;
+                UpdateStatusBarColor(false);
 
                 var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 string cachedChId = localSettings["AvatarChId_" + artistName.ToLowerInvariant()] as string;

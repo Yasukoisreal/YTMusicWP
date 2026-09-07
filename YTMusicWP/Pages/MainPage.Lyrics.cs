@@ -472,6 +472,7 @@ namespace YTMusicWP
 
             // Show with fade-in
             FullscreenLyricsView.Visibility = Visibility.Visible;
+            UpdateStatusBarColor(true);
             FullscreenLyricsView.Opacity = 0;
             var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
             var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
@@ -529,6 +530,8 @@ namespace YTMusicWP
             fadeOut.Completed += (s, a) =>
             {
                 FullscreenLyricsView.Visibility = Visibility.Collapsed;
+                bool npOpen = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible);
+                UpdateStatusBarColor(npOpen);
                 // Refresh regular lyrics containers to match current sync state
                 RefreshRegularLyricsContainers();
             };
