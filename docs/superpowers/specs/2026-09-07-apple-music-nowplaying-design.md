@@ -1,299 +1,298 @@
-# Apple Music Now Playing Style — Design Spec
+# Apple Music Now Playing Style — Design Spec (v2 — Faithful to SimpMusic)
 
 ## Goal
 
-Add a second Now Playing visual style inspired by Apple Music's frosted-glass aesthetic, selectable via a Settings toggle. The default style (Spotify/Dynamic Gradient) remains unchanged. When "Apple Music" is selected, the Now Playing screen shows a blurred album artwork backdrop with a dark gradient wash, rounded album art, and a depth-of-field lyrics effect.
+Replicate SimpMusic's Apple Music Now Playing style as faithfully as WP8.1 allows. This means matching the **layout structure**, **color system**, **component hierarchy**, and **visual language** 1:1 — not a "simplified" or "inspired" adaptation.
 
-## Background
+## Layout Architecture
 
-The existing Now Playing (`NowPlayingView`) uses a `LinearGradientBrush` with dominant-color extraction for a Spotify-like gradient look. This spec adds an alternative "Apple Music" visual mode that reuses the same Pivot (Player/Lyrics/Queue), transport controls, and playback logic — only the **visual layer** changes.
+SimpMusic's Apple Music layout uses a **Dock-based view switching** system (not the current Pivot). Three views — MAIN, LYRICS, QUEUE — are selected via a bottom **Dock bar** (3 circular buttons: Lyrics / [Cast] / Queue). All three views share an identical **BottomCluster** at the bottom.
 
-Reference: SimpMusic's Apple Music composables (`NowPlayingContentAppleMusic.kt`, `AppleMusicShared.kt`, `AppleMusicLyricsLines.kt`).
+### Existing vs Apple Music layout comparison
+
+```
+┌─ CURRENT (Spotify-style) ─────┐     ┌─ APPLE MUSIC (target) ─────────┐
+│ [↓ Close]  NOW PLAYING  [⋯]  │     │                                │
+│            ● ● ●              │     │     ──── (grabber bar) ────     │
+│                               │     │                                │
+│  ┌── Pivot (swipe) ─────────┐ │     │  ┌── View body ──────────────┐ │
+│  │  Player / Lyrics / Queue │ │     │  │  MAIN: artwork (60%) +    │ │
+│  └──────────────────────────┘ │     │  │    title row               │ │
+│                               │     │  │  LYRICS: compact header +  │ │
+│  [MiniLyric] Title / ♡ / Q   │     │  │    scrollable lyrics       │ │
+│  ════ Slider ════             │     │  │  QUEUE: compact header +   │ │
+│  00:00            -03:30      │     │  │    pills + queue list      │ │
+│  🔀 ⏮ [▶] ⏭ 🔁             │     │  └────────────────────────────┘ │
+└───────────────────────────────┘     │                                │
+                                      │  ═══ BottomCluster ══════════  │
+                                      │  ──── ThinSlider (no thumb) ── │
+                                      │  00:00   [AAC badge]   -03:30  │
+                                      │     ⏪     ▶(plain white)  ⏩  │
+                                      │  🔉 ════ Volume Slider ════ 🔊 │
+                                      │     [Lyrics] [Cast] [Queue]    │
+                                      └────────────────────────────────┘
+```
 
 ---
 
-## Architecture Overview
+## 1. Background Layer — Frosted Artwork Backdrop
 
-```
-┌───────────────────────────────────────────────┐
-│  Settings: NowPlayingStyle = "Default" | "AppleMusic"  │
-│  (Saved in LocalSettings)                              │
-└───────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────┐
-│  MainPage.NowPlaying.cs        │
-│  ─ On track change / open:     │
-│    if AppleMusic → show blur   │
-│    backdrop + dark wash        │
-│    else → show gradient        │
-└─────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────┐
-│  Services/LumiaBlurHelper.cs   │
-│  ─ RenderBlurredAsync(         │
-│      Stream, targetW, targetH, │
-│      kernelSize)               │
-│  ─ Returns WriteableBitmap     │
-│  ─ LRU cache (max 3 entries)   │
-└─────────────────────────────────┘
-```
+### SimpMusic behavior (lines 232-262)
+1. Album art loaded full-size, displayed with `blur(80.dp, Unbounded)` covering the entire screen
+2. A semi-transparent gradient wash sits on top: `alpha(0.62f).background(backdropBrush)`
+3. `backdropBrush` is a 3-stop vertical gradient derived from the dominant (seed) color:
+   - `0.00`: `lerp(seedColor, Black, 0.05)` — barely darkened
+   - `0.48`: `lerp(seedColor, Black, 0.32)` — moderately dark
+   - `1.00`: `lerp(seedColor, Black, 0.78)` — heavily darkened
 
-**Key design decision:** No new XAML page or UserControl. The Apple Music mode reuses the existing `NowPlayingView` Grid but swaps the background layer (hide gradient Rectangles, show blur Image) and adjusts element styling at runtime via code-behind.
+### WP8.1 implementation
+- Use **Lumia Imaging SDK** `BlurFilter(80)` on a 120×200 bitmap for the frosted backdrop
+- `Image x:Name="AppleMusicBackdrop"` stretches to fill (GPU-scale via `Stretch="UniformToFill"`)
+- Wash Rectangle on top with `Opacity="0.62"` and a `LinearGradientBrush` using the seed-tinted 3-stop gradient
+- Seed color = existing `ExtractDominantColorAsync()` result (skip `AdjustAmbientColor` clamp — Apple Music uses brighter colors than Spotify mode)
 
----
-
-## 1. LumiaBlurHelper Service
-
-**File:** `Services/LumiaBlurHelper.cs`
-
-A small static helper that renders a blurred bitmap from a thumbnail stream using the Lumia Imaging SDK.
-
-### API
+### LumiaBlurHelper service
 
 ```csharp
+// Services/LumiaBlurHelper.cs
 internal static class LumiaBlurHelper
 {
-    /// <summary>
-    /// Renders a heavily blurred version of the source image.
-    /// Target bitmap is small (e.g. 120×200) — XAML GPU-scales it via Stretch="UniformToFill".
-    /// </summary>
     static async Task<WriteableBitmap> RenderBlurredAsync(
         Stream source, int targetWidth, int targetHeight, int kernelSize);
 }
 ```
 
-### Implementation Details
-
-- **Pipeline:** `StreamImageSource(source)` → `FilterEffect { Filters = [BlurFilter(kernelSize)] }` → `WriteableBitmapRenderer(effect, bitmap)` → `RenderAsync()`.
-- **Target size:** 120×200 pixels. At kernel size 80+, resolution is imperceptible. This keeps RAM usage under 100KB per bitmap.
-- **Kernel size:** 80 (matches SimpMusic's `BACKDROP_BLUR_RADIUS = 80.dp`). Capped at 256 per SDK limit.
-- **LRU cache:** `Dictionary<string, WriteableBitmap>` keyed by thumbnail URL, max 3 entries. On eviction, oldest entry removed. Cache is cleared on low-memory events.
-- **No WinRT dependency in signature:** Takes `System.IO.Stream`, matching `StreamImageSource`'s constructor.
-
-### Memory Budget (512MB target)
-
-| Item | Size |
-|------|------|
-| WriteableBitmap 120×200 BGRA | ~96 KB |
-| Cache (3 entries) | ~288 KB |
-| Lumia pipeline transient | ~200 KB (freed after render) |
-| **Total peak** | **~490 KB** |
+Pipeline: `StreamImageSource(stream)` → `FilterEffect { BlurFilter(80) }` → `WriteableBitmapRenderer(120×200)` → GPU-scale.
+LRU cache: max 3 entries keyed by thumbnail URL.
 
 ---
 
-## 2. XAML Changes — NowPlayingView Background Layer
+## 2. MAIN View — Full-Bleed Artwork + Title Row + BottomCluster
 
-**File:** `MainPage.xaml` (lines ~2192-2207)
+### SimpMusic behavior (lines 372-735)
+- Artwork fills the **top ~60%** of the screen (dynamic: `screenHeight - bottomContentHeight`)
+- Artwork fades at the bottom via a 300dp alpha mask (`appleMusicVerticalFadeEdges(topFade=0, bottomFade=300dp)`) dissolving into the page gradient
+- **Title row** below artwork: `[Title (marquee)] [Artist]` on left, `[⊕] [☆] [⋯]` actions on right
+- **BottomCluster** below title row (fixed, shared with all views)
 
-Add new elements **inside** the existing `NowPlayingView` Grid, before the gradient Rectangles:
+### WP8.1 implementation
+- Replace the current 300×300 centered album art with a **full-width artwork Image** spanning the top portion of the view
+- Bottom of artwork uses a gradient overlay Rectangle (transparent → seed-tinted dark) to create the dissolve effect
+- Title row: reuse existing `BigTitle` (marquee) + `BigArtist`, but reposition below the artwork area. Add `BigHeartBtn` and menu button inline.
 
-```xml
-<!-- Apple Music: Blurred backdrop image (hidden by default) -->
-<Image x:Name="AppleMusicBackdrop" Stretch="UniformToFill" Visibility="Collapsed" />
-
-<!-- Apple Music: Dark gradient wash over the blur -->
-<Rectangle x:Name="AppleMusicWash" Visibility="Collapsed">
-    <Rectangle.Fill>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-            <GradientStop x:Name="AppleMusicWashTop" Color="#0D000000" Offset="0"/>
-            <GradientStop x:Name="AppleMusicWashMid" Color="#52000000" Offset="0.48"/>
-            <GradientStop x:Name="AppleMusicWashBot" Color="#C8000000" Offset="1.0"/>
-        </LinearGradientBrush>
-    </Rectangle.Fill>
-</Rectangle>
-```
-
-**Wash gradient math** (from SimpMusic):
-- Top: `lerp(seedColor, Black, 0.05)` → for a wash overlay on blur, use alpha ~5% black = `#0D000000`
-- Mid @48%: `lerp(seedColor, Black, 0.32)` → alpha ~32% black = `#52000000`
-- Bottom: `lerp(seedColor, Black, 0.78)` → alpha ~78% black = `#C8000000`
-
-### Visibility Toggle Logic
-
-When Apple Music mode is active:
-- `AppleMusicBackdrop.Visibility = Visible`
-- `AppleMusicWash.Visibility = Visible`
-- The existing `#99000000` overlay Rectangle → `Collapsed`
-- The existing gradient Rectangle → `Collapsed`
-
-When Default mode is active:
-- `AppleMusicBackdrop.Visibility = Collapsed`
-- `AppleMusicWash.Visibility = Collapsed`
-- Existing gradient Rectangles → `Visible` (as they are now)
+### WP8.1 limitation: No per-element alpha mask
+SimpMusic's `appleMusicVerticalFadeEdges` uses `CompositingStrategy.Offscreen` + `BlendMode.DstIn`. WinRT XAML has no equivalent. **Substitute:** A gradient-filled Rectangle overlaying the bottom of the artwork, transitioning from transparent to the page gradient's bottom color. This is visually identical at blur level 80.
 
 ---
 
-## 3. Album Art Display — Apple Music Mode
+## 3. BottomCluster — Shared Across All Views
 
-In Apple Music mode, the Player PivotItem changes the album art appearance:
+SimpMusic's `AppleMusicBottomCluster` (lines 761-818) renders identically in MAIN, LYRICS, and QUEUE:
 
-| Property | Default (Spotify) | Apple Music |
-|----------|-------------------|-------------|
-| Size | 300×300 | 260×260 |
-| Corner radius | 16 | 20 |
-| Shadow | Offset shadow rectangle | Drop shadow via darker copy underneath |
-| Margin top | -10 | 10 (centered with backdrop visible) |
+### 3.1 ThinSlider (progress bar)
+- **No thumb knob** — track-only bar
+- Default height: 7dp, **springs to 14dp on touch/drag** (animated)
+- Active portion: white (`#EBFFFFFF` = 92% white)
+- Inactive track: `#42FFFFFF` (26% white)
+- Enclosing Box: fixed 18dp height (prevents layout jump during spring)
 
-This is done by adjusting the existing `BigCoverRectangle` properties in code-behind — no new XAML elements needed.
+### WP8.1 implementation
+The existing `ModernSliderStyle` has a thumb. Create a new `AppleMusicSliderStyle` that:
+- Hides the thumb (width/height = 0)
+- Uses white fill color (not green)
+- Sets track height to 7px
+- WP8.1 XAML sliders cannot spring-animate height. **Substitute:** Keep the thin track at fixed 7dp. The touch target remains the full Slider control height.
+
+### 3.2 TimesRow
+- `elapsed` left, `[codec badge]` center, `-remaining` right
+- Remaining shown as negative: `-3:30`
+- Codec badge: pill with translucent background (`#29FFFFFF`), GraphicEq icon + codec text (e.g. "AAC")
+
+### WP8.1 implementation
+- Change time format to show remaining as `-mm:ss` on right (currently shows total)
+- Codec badge: WP8.1 `BackgroundMediaPlayer` doesn't expose codec info. **Substitute:** Omit the badge. Show only elapsed and remaining times.
+
+### 3.3 TransportRow
+- **⏪ FastRewind** (46dp icon in 56dp touch target)
+- **▶/⏸ Play/Pause** (66dp icon in 76dp touch target) — **plain white, NO container disc/circle**
+- **⏩ FastForward** (46dp icon in 56dp touch target)
+- Spacing: `spacedBy(58dp, centered)` — NOT spread-evenly
+- Disabled buttons: 40% white alpha
+
+### WP8.1 implementation
+- Remove the green circle (`#1DB954` Border with CornerRadius=32) from Play/Pause
+- Use plain white Play/Pause icon at 50dp in 60dp button (scaled for WP8.1 screen density)
+- Prev/Next icons at 36dp in 48dp buttons
+- Center-aligned with fixed spacing (not Grid columns stretching evenly)
+- **No shuffle/repeat in transport row** — those move to the Queue pills
+
+### 3.4 VolumeRow
+- `🔉` (18dp) — ThinSlider (same style as progress) — `🔊` (18dp)
+- Icon tint: 72% white (`AppleMusicTextSecondary`)
+
+### WP8.1 implementation
+- WP8.1 has hardware volume rocker, but SimpMusic shows this row. **Include it** for visual fidelity.
+- Use a second Slider with the same AppleMusicSliderStyle
+- Volume control via `MediaElement.Volume` or system volume API
+- Icons: Segoe UI Symbol volume glyphs at 18dp, tinted `#B8FFFFFF`
+
+### 3.5 Dock (view switcher)
+- 3 circular buttons: **Lyrics** / **[Cast]** / **Queue**
+- Each: 40dp circle, 22dp icon
+- Active state: light background (seed-derived `lerp(seedColor, White, 0.75)`) + dark glyph (`lerp(seedColor, Black, 0.6)`)
+- Inactive: transparent bg + 85% white glyph
+- Re-tapping active tab returns to MAIN (toggle behavior)
+
+### WP8.1 implementation
+- Replace the current top dot indicators (`DotPlayer/DotLyrics/DotQueue`) with bottom Dock buttons
+- 3 Borders with CornerRadius=20, each containing a Segoe UI Symbol icon
+- Tapped event toggles between views using existing Pivot (programmatic `SelectedIndex` change, headers remain hidden)
+- Active/inactive colors computed from seed color using the same `lerp` formula
+- Cast button: WP8.1 has no Miracast API. **Omit Cast** — show only 2 dock buttons (Lyrics + Queue)
 
 ---
 
-## 4. Lyrics — Depth-of-Field Effect
+## 4. LYRICS View
 
-In Apple Music mode, the lyrics view uses a "focus" effect where the current line is bold white, and lines farther from the current index become progressively dimmer and smaller.
+### SimpMusic behavior (AppleMusicLyricsView.kt)
+1. **Compact header**: 55dp album art thumbnail + title (labelSmall size) + artist (bodySmall) + `[⊕][☆][⋯]` actions
+2. **Lyrics body**: full-page scrollable lyrics with depth-of-field focus effect
+3. **Auto-hide cluster**: BottomCluster shows on touch/scroll, auto-hides after 8 seconds
+4. **Floating action buttons**: bottom-right, 38dp circles with 24% white bg: Share, Fullscreen, Vote
+5. **Footer**: sync type text + provider text, right-aligned at bottom of lyrics list
 
-### Color Scheme
+### Depth-of-field lyrics (AppleMusicLyricsLines.kt)
+- **All lines same font size** (28sp) — NOT scaled like current Spotify mode
+- Active line: **white `#FFFFFF`**, alpha 1.0
+- Inactive line: **grey `#9B9B9B`** (a real grey color, not white-with-reduced-alpha)
+- Alpha falloff: 0.25 per line distance, floor 0.25
+- Already-sung lines get +1 distance (recede faster)
+- Pre-roll (no active line yet): all lines at 0.6 alpha
+- **Blur per line**: `fontSizeDp × min(distance × 0.095, 0.45)` — sung lines blur with distance
 
-| Line | Color | Opacity |
-|------|-------|---------|
-| Active (current) | White `#FFFFFF` | 1.0 |
-| ±1 line | `#9B9B9B` | 0.85 |
-| ±2 lines | `#9B9B9B` | 0.60 |
-| ±3+ lines | `#9B9B9B` | 0.40 |
-
-### Font Size Scaling
-
-| Line | Font Size |
-|------|-----------|
-| Active | User's configured size (default 24) |
-| ±1 | Active × 0.90 |
-| ±2 | Active × 0.82 |
-| ±3+ | Active × 0.75 |
-
-**WP8.1 constraint — no real-time blur on text.** SimpMusic uses Compose's `Modifier.blur()` for a true depth-of-field effect on lyric text. WinRT XAML has no per-element blur. Instead, we approximate the effect using opacity + font-size falloff, which is visually similar and costs zero GPU.
-
-### Implementation
-
-The existing `ForceUpdateLyricUI()` in `MainPage.Playback.cs` already iterates visible lyric items and applies Opacity + Scale transforms. In Apple Music mode, it will:
-1. Skip the Scale animation (no zoom in/out).
-2. Apply the opacity/size table above based on `|index - currentLyricIndex|`.
-3. Set the foreground color to `#9B9B9B` for inactive lines (vs the current green-accent dimming).
+### WP8.1 implementation
+- **Compact header**: New XAML row at top of lyrics PivotItem with small Image + TextBlocks + action buttons
+- **Lyrics colors**: Change `ColorBrush` to `#9B9B9B` for inactive, `#FFFFFF` for active (currently uses dimmed accent)
+- **Font size**: Set all lines to the same configured font size (no size variation between active/inactive)
+- **Alpha falloff**: Apply via `Opacity` property on each ListViewItem container: `max(0.25, 1.0 - |distance| × 0.25)` with +1 penalty for past lines
+- **No blur**: WinRT has no per-element blur. Alpha + grey color provides 80% of the visual effect. This is an acceptable trade.
+- **Auto-hide cluster**: Timer-based. On lyrics view entry, show BottomCluster. On scroll/tap, restart 8s timer. On timer expire, animate cluster out (`Opacity` 1→0, `Height` → 0). The freed space lets lyrics list grow.
+- **Floating buttons**: Fullscreen button retained (existing). Share/Vote omitted (not implemented in current app).
+- **Lyrics bottom fade**: Existing gradient overlay Rectangle, updated to use Apple Music tinted colors
 
 ---
 
-## 5. Transport Controls — Apple Music Mode Adjustments
+## 5. QUEUE View
 
-In Apple Music mode, the transport controls area (`Grid.Row="2"` StackPanel) receives minor visual tweaks via code-behind property changes:
+### SimpMusic behavior (AppleMusicQueueView.kt)
+1. **Compact header** (same as Lyrics)
+2. **Pills row**: 4 rounded-rect buttons: `[Info] [PlaylistAdd] [Shuffle] [Repeat]`
+   - 40dp height, RoundedCornerShape(20dp)
+   - Active: seed-derived light bg + dark icon; Inactive: 24% white bg + white icon
+3. **"Continue Playing" header**: "Now Playing" label + playlist name + Endless Queue switch
+4. **Queue list**: `SongFullWidthItems` rows with long-press drag-to-reorder
+5. **BottomCluster** (always visible, unlike Lyrics)
+6. Top/bottom fade edges on queue list (24dp top, 48dp bottom)
 
-| Element | Default (Spotify) | Apple Music |
-|---------|-------------------|-------------|
-| Play/Pause button | Green circle `#1DB954` with black icon | White circle with black icon |
-| Slider accent | `#1DB954` | White `#FFFFFF` |
-| Shuffle/Repeat active dot | `#1DB954` | White `#FFFFFF` |
-| Time text | `#B3B3B3` | `#B8FFFFFF` (72% white) |
-
-**No structural layout changes** — only Foreground/Background color swaps in code-behind when the mode switches.
+### WP8.1 implementation
+- **Compact header**: Same component as Lyrics view header
+- **Pills row**: 4 Borders with rounded corners. Shuffle + Repeat migrate from current transport row. Info → tap opens track info dialog (existing). PlaylistAdd → existing `AddToPlaylistDialog`.
+- **Queue list**: Reuse existing `QueueListView` + `QueueItemTemplate`. No drag-to-reorder (WP8.1 ListView limitation). Show existing "Clear" button instead.
+- **"Continue Playing" header**: Show "Now Playing" label + autoplay toggle (existing `AutoplayToggle` concept, repositioned)
+- **Endless Queue switch**: Map to existing Autoplay setting
+- **BottomCluster**: Always visible (no auto-hide like Lyrics view)
+- **Queue fade edges**: Top/bottom gradient overlay Rectangles
 
 ---
 
-## 6. Settings Toggle
+## 6. Grabber Bar (dismiss handle)
 
-**File:** `MainPage.xaml` (Settings panel, after the Playback section ~line 1485)
+SimpMusic uses a **36×5dp rounded bar** at top center, `35% white` on tap to dismiss.
 
-Add a new settings section:
+### WP8.1 implementation
+- Replace the current `[↓ Close]` chevron button + `NOW PLAYING` text + `[⋯]` with:
+  - A small rounded Rectangle (36×5) at top center for visual consistency
+  - The `[↓ Close]` button remains functional but repositioned (or keep tap-on-grabber to close)
+  - The `[⋯]` menu button moves to the title row's `AppleMusicHeaderActions`
 
-```xml
-<!-- ═══════ APPEARANCE ═══════ -->
-<Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
-    <StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-            <Border Background="#EC4899" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
-                <TextBlock Text="🎨" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Border>
-            <TextBlock Text="Appearance" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
-        </StackPanel>
-        
-        <!-- Now Playing Style -->
-        <TextBlock Text="Now Playing Style" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" Margin="0,0,0,4"/>
-        <TextBlock Text="Visual style for the music player screen" Foreground="#555" FontSize="11" Margin="0,0,0,10"/>
-        <ComboBox x:Name="NowPlayingStyleComboBox" Background="#252525" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch" SelectionChanged="NowPlayingStyleComboBox_SelectionChanged">
-            <ComboBoxItem Content="Default (Dynamic Gradient)" Tag="Default" IsSelected="True"/>
-            <ComboBoxItem Content="Apple Music (Blurred Artwork)" Tag="AppleMusic"/>
-        </ComboBox>
-    </StackPanel>
-</Border>
-```
+---
 
-### Persistence & Activation
+## 7. Color System
 
-- **When does a style change take effect?** Immediately on the next `MiniPlayer_Tapped` (opening Now Playing). If Now Playing is already open when the user changes the setting, it does **not** hot-swap — the new style applies when they close and reopen. This avoids complex mid-session state transitions.
-- **Key:** `NowPlayingStyle` in `ApplicationData.Current.LocalSettings`
-- **Values:** `"Default"` (default), `"AppleMusic"`
-- Read on app startup in `MainPage` constructor
-- Written on `ComboBox.SelectionChanged`
-- Helper property in code-behind:
+All colors derived from dominant/seed color at runtime:
+
+| Token | SimpMusic Value | Usage |
+|-------|----------------|-------|
+| `backdropBrush top` | `lerp(seed, Black, 0.05)` | Top of page gradient |
+| `backdropBrush mid@48%` | `lerp(seed, Black, 0.32)` | Mid of page gradient |
+| `backdropBrush bot` | `lerp(seed, Black, 0.78)` | Bottom of page gradient |
+| `BACKDROP_TINT_ALPHA` | `0.62` | Opacity of gradient wash over blur |
+| `activePillContainer` | `lerp(seed, White, 0.75)` | Active dock/pill bg |
+| `activePillContent` | `lerp(seed, Black, 0.6)` | Active dock/pill icon |
+| `TextSecondary` | `White @ 72%` = `#B8FFFFFF` | Volume icons, times text |
+| `PillInactive` | `White @ 24%` = `#3DFFFFFF` | Inactive pill bg |
+| `TrackInactive` | `White @ 26%` = `#42FFFFFF` | Slider inactive track |
+| `TrackActive` | `White @ 92%` = `#EBFFFFFF` | Slider active track |
+| `InactiveLineColor` | `#9B9B9B` | Lyrics inactive line |
+| `Active line` | `#FFFFFF` | Lyrics active line |
+
+### lerp implementation for WP8.1
 
 ```csharp
-private bool IsAppleMusicStyle
+static Windows.UI.Color LerpColor(Windows.UI.Color from, Windows.UI.Color to, double t)
 {
-    get
-    {
-        var val = ApplicationData.Current.LocalSettings.Values["NowPlayingStyle"];
-        return val != null && val.ToString() == "AppleMusic";
-    }
+    return Windows.UI.Color.FromArgb(255,
+        (byte)(from.R + (to.R - from.R) * t),
+        (byte)(from.G + (to.G - from.G) * t),
+        (byte)(from.B + (to.B - from.B) * t));
 }
 ```
 
 ---
 
-## 7. Backdrop Update Flow
+## 8. Settings Toggle
 
-When a new track starts playing (or Now Playing opens):
+ComboBox in a new **Appearance** section in Settings:
+- "Default (Dynamic Gradient)" — current behavior
+- "Apple Music (Blurred Artwork)" — this spec
 
-```
-1. UpdateNowPlayingGradient() is called (existing)
-2. Check IsAppleMusicStyle:
-   a. If false → existing gradient flow (unchanged)
-   b. If true →
-      i.   Download thumbnail (reuse existing _dominantHttpClient + byte[])
-      ii.  Call LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80)
-      iii. Set AppleMusicBackdrop.Source = resultBitmap
-      iv.  Extract dominant color (existing ExtractDominantColorAsync)
-      v.   Tint the wash gradient stops using the dominant color
-      vi.  Update status bar color to match tinted backdrop
-```
-
-The tinting in step (v) adjusts the wash `GradientStop` colors:
-- Top: `Color.FromArgb(13, seed.R, seed.G, seed.B)` — very subtle seed tint
-- Mid: `Color.FromArgb(82, seed.R, seed.G, seed.B)` — moderate tint
-- Bottom: `Color.FromArgb(200, seed.R, seed.G, seed.B)` — heavy dark tint
-
-This gives the frosted-glass backdrop a warm color cast matching the album art, similar to SimpMusic.
+Saved as `NowPlayingStyle` in `LocalSettings`. Style applied on next `MiniPlayer_Tapped` open (not hot-swapped mid-session).
 
 ---
 
-## 8. Status Bar Integration
+## 9. Status Bar
 
-When Apple Music mode is active, the status bar uses the tinted dominant color (same as Default mode). The existing `UpdateStatusBarColor()` and `AnimateStatusBarColorAsync()` work unchanged — they already read `_currentGradientColor`.
-
----
-
-## 9. Scope Exclusions
-
-The following SimpMusic features are **intentionally excluded** to keep scope minimal and respect WP8.1 limitations:
-
-| Feature | Reason |
-|---------|--------|
-| Video/Canvas background | No MediaElement compositing on WP8.1 |
-| Crossfade between views | Adds complexity, low value on small screens |
-| Volume row | WP8.1 has hardware volume rocker |
-| Drag-to-reorder queue | ListView reorder is unreliable on WP8.1 |
-| Codec badge pill | No codec info available from BackgroundMediaPlayer |
-| Auto-hide lyrics cluster timer | Adds state machine complexity for minimal UX gain |
-| Real-time per-element text blur | No XAML blur support in WinRT; approximated via opacity |
+Use the seed color directly (same `lerp(seed, Black, 0.05)` as the gradient top) for status bar background. Existing `UpdateStatusBarColor()` + `AnimateStatusBarColorAsync()` work unchanged — just feed a different target color based on mode.
 
 ---
 
-## 10. File Change Summary
+## 10. WP8.1 Adaptations Summary
+
+| SimpMusic Feature | WP8.1 Adaptation | Reason |
+|-------------------|-------------------|--------|
+| `Modifier.blur()` on artwork | Lumia Imaging `BlurFilter` pre-render | No runtime XAML blur |
+| `Modifier.blur()` on lyrics text | Alpha + grey color falloff only | No per-element blur in WinRT |
+| `appleMusicVerticalFadeEdges` (DstIn mask) | Gradient overlay Rectangles | No compositing blend modes |
+| ThinSlider spring animation (7→14dp) | Fixed 7dp track | No Slider track height animation |
+| `appleMusicPressInflate` spring scale | Omit | Complex per-element spring, minimal visual impact |
+| Cast dock button | Omit | No Miracast API on WP8.1 |
+| Codec badge pill | Omit | No codec info from BackgroundMediaPlayer |
+| Drag-to-reorder queue | Omit | ListView reorder unreliable on WP8.1 |
+| HorizontalPager (artwork swipe) | No horizontal swipe on artwork | Pivot already handles view switching |
+| Canvas/video backdrop | Omit | No MediaElement compositing |
+| Crossfade between MAIN/LYRICS/QUEUE | Pivot handles transitions | Native Pivot slide animation |
+| `Endless Queue` switch | Map to existing Autoplay toggle | Same concept |
+
+---
+
+## 11. File Change Summary
 
 | File | Change |
 |------|--------|
-| `Services/LumiaBlurHelper.cs` | **NEW** — Static blur rendering helper |
-| `MainPage.xaml` | Add `AppleMusicBackdrop` Image + `AppleMusicWash` Rectangle in NowPlayingView; Add Appearance section in Settings |
-| `Pages/MainPage.Playback.cs` | Modify `UpdateNowPlayingGradient()` to branch on `IsAppleMusicStyle`; add blur backdrop update logic |
-| `Pages/MainPage.NowPlaying.cs` | Add `ApplyNowPlayingStyle()` method; modify `MiniPlayer_Tapped()` to apply style; add settings change handler |
-| `Pages/MainPage.Lyrics.cs` | Modify lyric item styling in Apple Music mode (opacity/size table) |
+| `Services/LumiaBlurHelper.cs` | **NEW** — Blur rendering helper |
+| `MainPage.xaml` | Major restructure of NowPlayingView: new background layer, full-bleed artwork, BottomCluster layout, Dock bar, compact headers, Apple Music slider style, grabber bar. Add Appearance section in Settings. |
+| `Pages/MainPage.Playback.cs` | Branch `UpdateNowPlayingGradient()` on style; add blur backdrop update; add `LerpColor()`; modify `AnimateGradientTo()` for Apple Music color system |
+| `Pages/MainPage.NowPlaying.cs` | Add `ApplyNowPlayingStyle()`, dock button handlers, auto-hide cluster timer, compact header update, transport reconfig |
+| `Pages/MainPage.Lyrics.cs` | Apple Music lyrics styling: uniform font size, `#9B9B9B` inactive color, alpha falloff with distance penalty |
 
-**Total estimated new code:** ~200 lines across all files.
+**Estimated new/modified code:** ~500-600 lines across all files.
