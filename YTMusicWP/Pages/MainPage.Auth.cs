@@ -135,7 +135,13 @@ namespace YTMusicWP
                 GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
                 NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
 
-                int npStyle = SafeGetInt(settings, "NowPlayingStyle", 0);
+                object styleVal = settings.ContainsKey("NowPlayingStyle") ? settings["NowPlayingStyle"] : null;
+                int npStyle = 0;
+                if (styleVal != null)
+                {
+                    if (styleVal is int) npStyle = (int)styleVal;
+                    else if (styleVal is string) int.TryParse((string)styleVal, out npStyle);
+                }
                 if (NowPlayingStyleComboBox != null)
                 {
                     NowPlayingStyleComboBox.SelectedIndex = (npStyle == 1) ? 1 : 0;
@@ -256,8 +262,10 @@ namespace YTMusicWP
         {
             if (NowPlayingStyleComboBox == null) return;
             int idx = NowPlayingStyleComboBox.SelectedIndex;
+            var item = NowPlayingStyleComboBox.SelectedItem as ComboBoxItem;
+            string styleTag = (item != null && item.Tag != null) ? item.Tag.ToString() : idx.ToString();
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
-            settings.Values["NowPlayingStyle"] = idx;
+            settings.Values["NowPlayingStyle"] = styleTag;
             _isAppleMusicStyle = (idx == 1);
         }
 

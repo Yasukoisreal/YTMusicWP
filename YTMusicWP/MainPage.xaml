@@ -1533,7 +1533,7 @@
                                     <TextBlock Text="Now Playing Style" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
                                     <TextBlock Text="Visual style for the player screen" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                                 </StackPanel>
-                                <ComboBox x:Name="NowPlayingStyleComboBox" Grid.Column="1" Background="#252525" Foreground="White" BorderThickness="0" Width="160" VerticalAlignment="Center" SelectionChanged="NowPlayingStyleComboBox_SelectionChanged">
+                                <ComboBox x:Name="NowPlayingStyleComboBox" Grid.Column="1" Background="#252525" Foreground="White" BorderThickness="0" Width="160" VerticalAlignment="Center">
                                     <ComboBoxItem Content="Default (Gradient)" Tag="0" IsSelected="True"/>
                                     <ComboBoxItem Content="Apple Music (Blur)" Tag="1"/>
                                 </ComboBox>
