@@ -318,8 +318,7 @@ namespace AudioPlayerTask
 
             try
             {
-                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
-                string body = "{\"content_binding\":\"" + videoId + "\",\"client\":\"" + clientName + "\"}";
+                string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/?content_binding=" + Uri.EscapeDataString(videoId ?? "");
                 
                 var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                 filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
@@ -327,8 +326,7 @@ namespace AudioPlayerTask
                 
                 using (var httpClient = new Windows.Web.Http.HttpClient(filter))
                 {
-                    var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
-                    using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
+                    using (var resp = await httpClient.GetAsync(new Uri(serverUrl)))
                     {
                         if (!resp.IsSuccessStatusCode) return null;
                         string json = await resp.Content.ReadAsStringAsync();
@@ -417,6 +415,11 @@ namespace AudioPlayerTask
                 "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
+            // 4. Fallback cuối cùng: Thử VISIONOS với poToken từ Render server (vượt qua BotGuard)
+            url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
+            if (!string.IsNullOrEmpty(url)) return url;
+
             return null;
         }
 
@@ -450,6 +453,7 @@ namespace AudioPlayerTask
 
                 string requestBody = "{" +
                     "\"contentCheckOk\":true," +
+                    "\"racyCheckOk\":true," +
                     "\"context\":{\"client\":{" +
                         "\"clientName\":\"" + clientName + "\"," +
                         "\"clientVersion\":\"" + clientVersion + "\"," +
