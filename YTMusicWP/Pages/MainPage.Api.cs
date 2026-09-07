@@ -184,6 +184,41 @@ namespace YTMusicWP
             return url;
         }
 
+        /// <summary>
+        /// True square high-res thumbnail for Apple Music Now Playing (360×360 full bleed).
+        /// Avoids 16:9 letterbox/pillarbox bars from YouTube.
+        /// </summary>
+        public static string GetAppleMusicThumbnail(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return "ms-appx:///Assets/Logo.scale-240.png";
+
+            if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
+            {
+                int eqIdx = url.LastIndexOf("=");
+                if (eqIdx > 0)
+                    return url.Substring(0, eqIdx) + "=w500-h500-l90-rj";
+                return url + "=w500-h500-l90-rj";
+            }
+
+            if (url.Contains("ytimg.com") || url.Contains("img.youtube.com"))
+            {
+                int viIdx = url.IndexOf("/vi/");
+                if (viIdx > 0)
+                {
+                    int endIdx = url.IndexOf("/", viIdx + 4);
+                    if (endIdx > 0)
+                    {
+                        string vidId = url.Substring(viIdx + 4, endIdx - (viIdx + 4));
+                        return "https://i.ytimg.com/vi/" + vidId + "/hqdefault.jpg";
+                    }
+                }
+                if (url.Contains("mqdefault.jpg")) return url.Replace("mqdefault.jpg", "hqdefault.jpg");
+                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "hqdefault.jpg");
+            }
+
+            return url;
+        }
+
         public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "", string searchFilter = null)
         {
             var list = new List<YouTubeTrack>(20);

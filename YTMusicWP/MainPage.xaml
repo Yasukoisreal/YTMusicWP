@@ -2246,12 +2246,12 @@
         </Grid>
 
         <!-- ═══════════════════════════════════ NOW PLAYING VIEW ═══════════════════════════════════ -->
-        <Grid x:Name="NowPlayingView" Visibility="Collapsed" Canvas.ZIndex="100" Grid.RowSpan="3">
+        <Grid x:Name="NowPlayingView" Background="#FF000000" Visibility="Collapsed" Canvas.ZIndex="100" Grid.RowSpan="3">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="NowPlayingTransform" Y="1000"/>
             </Grid.RenderTransform>
-            <!-- Semi-transparent overlay to ensure text readability over canvas -->
-            <Rectangle Fill="#99000000" />
+            <!-- Solid black base to ensure Home screen never bleeds through -->
+            <Rectangle Fill="#FF000000" />
             <!-- Gradient background (genre-based color) -->
             <Rectangle x:Name="DefaultNowPlayingBackground">
                 <Rectangle.Fill>
@@ -2265,7 +2265,7 @@
             <!-- Apple Music: frosted artwork backdrop (Collapsed by default, shown by code) -->
             <Image x:Name="AppleMusicBackdrop" Stretch="UniformToFill" Visibility="Collapsed"/>
             <!-- Apple Music: tinted gradient wash over the blur -->
-            <Rectangle x:Name="AppleMusicWash" Opacity="0.62" Visibility="Collapsed">
+            <Rectangle x:Name="AppleMusicWash" Opacity="0.65" Visibility="Collapsed">
                 <Rectangle.Fill>
                     <LinearGradientBrush x:Name="AppleMusicWashGradient" StartPoint="0,0" EndPoint="0,1">
                         <GradientStop x:Name="AppleMusicGradTop" Color="#1A1A2E" Offset="0"/>
@@ -2280,8 +2280,8 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <!-- Apple Music: grabber bar (replaces header in AM mode) -->
-                <Border x:Name="AppleMusicGrabber" Visibility="Collapsed" Grid.Row="0" Background="Transparent" Tapped="CloseNowPlaying_Click" Height="40" VerticalAlignment="Top" Margin="0,25,0,0">
+                <!-- Apple Music: grabber bar (floating at top in AM mode) -->
+                <Border x:Name="AppleMusicGrabber" Visibility="Collapsed" Grid.Row="0" Canvas.ZIndex="20" Background="Transparent" Tapped="CloseNowPlaying_Click" Height="32" VerticalAlignment="Top" Margin="0,18,0,0">
                     <Border Background="#59FFFFFF" CornerRadius="3" Width="36" Height="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <Grid x:Name="DefaultNowPlayingHeader" Grid.Row="0" Margin="0,20,0,0" Height="70">
@@ -2311,7 +2311,7 @@
                         <Viewbox Width="22" Height="22"><Path Data="M12,16A2,2 0 0,1 10,14A2,2 0 0,1 12,12A2,2 0 0,1 14,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10M12,22A2,2 0 0,1 10,20A2,2 0 0,1 12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22Z" Fill="White"/></Viewbox>
                     </Button>
                 </Grid>
-                <Pivot x:Name="NowPlayingPivot" Grid.Row="1" Foreground="White" Margin="0,10,0,0" SelectionChanged="NowPlayingPivot_SelectionChanged">
+                <Pivot x:Name="NowPlayingPivot" Grid.Row="1" Foreground="White" Margin="0" SelectionChanged="NowPlayingPivot_SelectionChanged">
                     <Pivot.HeaderTemplate>
                         <DataTemplate><Grid Height="0" Visibility="Collapsed"/></DataTemplate>
                     </Pivot.HeaderTemplate>
@@ -2338,14 +2338,14 @@
                                 </Rectangle>
                             </Grid>
                             <!-- Apple Music: full-bleed artwork with bottom fade -->
-                            <Grid x:Name="AppleMusicArtworkGrid" Visibility="Collapsed" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-                                <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Top"/>
-                                <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="240" IsHitTestVisible="False">
+                            <Grid x:Name="AppleMusicArtworkGrid" Visibility="Collapsed" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="360">
+                                <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" Height="360"/>
+                                <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="200" IsHitTestVisible="False">
                                     <Rectangle.Fill>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                             <GradientStop x:Name="AppleMusicArtFadeTop" Color="#00000000" Offset="0"/>
-                                            <GradientStop x:Name="AppleMusicArtFadeMid" Color="#55000000" Offset="0.45"/>
-                                            <GradientStop x:Name="AppleMusicArtFadeBot" Color="#EE000000" Offset="1"/>
+                                            <GradientStop x:Name="AppleMusicArtFadeMid" Color="#66000000" Offset="0.45"/>
+                                            <GradientStop x:Name="AppleMusicArtFadeBot" Color="#FF0D0D0D" Offset="1"/>
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
@@ -2539,21 +2539,21 @@
                     </Grid>
                 </StackPanel>
                 <!-- Apple Music: BottomCluster -->
-                <StackPanel x:Name="AppleMusicBottomCluster" Grid.Row="2" Visibility="Collapsed" Margin="20,0,20,20">
+                <StackPanel x:Name="AppleMusicBottomCluster" Grid.Row="2" Visibility="Collapsed" Margin="20,0,20,12">
                     <!-- Title & Artist Row -->
-                    <Grid x:Name="AppleMusicMainTitleRow" Margin="0,0,0,8">
+                    <Grid x:Name="AppleMusicMainTitleRow" Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
-                            <TextBlock x:Name="AppleMusicMainTitle" Text="" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
-                            <TextBlock x:Name="AppleMusicMainArtist" Text="" FontSize="14" Foreground="#B3FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,3,0,0"/>
+                            <TextBlock x:Name="AppleMusicMainTitle" Text="" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            <TextBlock x:Name="AppleMusicMainArtist" Text="" FontSize="13" Foreground="#B3FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button x:Name="AppleMusicMainHeartBtn" Content="☆" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="26" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0"/>
-                            <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" Margin="4,0,0,0">
-                                <Viewbox Width="20" Height="20">
+                            <Button x:Name="AppleMusicMainHeartBtn" Content="☆" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="24" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0"/>
+                            <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0" Margin="4,0,0,0">
+                                <Viewbox Width="18" Height="18">
                                     <Path Data="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" Fill="White"/>
                                 </Viewbox>
                             </Button>
@@ -2583,38 +2583,38 @@
                     </Grid>
 
                     <!-- TransportRow -->
-                    <Grid Margin="0,10,0,0" HorizontalAlignment="Center">
+                    <Grid Margin="0,8,0,0" HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="46"/>
+                            <ColumnDefinition Width="42"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="46"/>
+                            <ColumnDefinition Width="42"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52">
-                            <Viewbox Width="36" Height="36">
+                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
+                            <Viewbox Width="32" Height="32">
                                 <Path Data="M11,18V6L2.5,12L11,18M11.5,12L20,18V6L11.5,12Z" Fill="White"/>
                             </Viewbox>
                         </Button>
-                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="66" Height="66">
+                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="62" Height="62">
                             <Grid>
-                                <Viewbox x:Name="AppleMusicPlayBox" Width="52" Height="52" Visibility="Visible">
+                                <Viewbox x:Name="AppleMusicPlayBox" Width="48" Height="48" Visibility="Visible">
                                     <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White"/>
                                 </Viewbox>
-                                <Viewbox x:Name="AppleMusicPauseBox" Width="52" Height="52" Visibility="Collapsed">
+                                <Viewbox x:Name="AppleMusicPauseBox" Width="48" Height="48" Visibility="Collapsed">
                                     <Path Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="White"/>
                                 </Viewbox>
                             </Grid>
                         </Button>
-                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52">
-                            <Viewbox Width="36" Height="36">
+                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
+                            <Viewbox Width="32" Height="32">
                                 <Path Data="M4,18L12.5,12L4,6V18M13,6V18L21.5,12L13,6Z" Fill="White"/>
                             </Viewbox>
                         </Button>
                     </Grid>
 
                     <!-- VolumeRow -->
-                    <Grid Margin="0,12,0,0">
+                    <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -2630,7 +2630,7 @@
                     </Grid>
 
                     <!-- Dock -->
-                    <Grid Margin="0,12,0,0">
+                    <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>

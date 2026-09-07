@@ -930,6 +930,14 @@ namespace YTMusicWP
                 UpdateAppleMusicCompactHeaders();
                 if (currentTrack != null && !string.IsNullOrEmpty(currentTrack.ThumbnailUrl))
                 {
+                    try
+                    {
+                        string amThumb = GetAppleMusicThumbnail(currentTrack.ThumbnailUrl);
+                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(amThumb, UriKind.Absolute)) { DecodePixelWidth = 480 };
+                        if (AppleMusicArtwork != null) AppleMusicArtwork.Source = amBmp;
+                    }
+                    catch { }
+
                     var ignoredBg = UpdateAppleMusicBackdropAsync(currentTrack.ThumbnailUrl, _currentGradientColor);
                 }
 
@@ -1042,12 +1050,25 @@ namespace YTMusicWP
             if (AppleMusicQueueTitle != null) AppleMusicQueueTitle.Text = title;
             if (AppleMusicQueueArtist != null) AppleMusicQueueArtist.Text = artist;
 
+            if (currentTrack != null && !string.IsNullOrEmpty(currentTrack.ThumbnailUrl))
+            {
+                try
+                {
+                    string amThumb = GetAppleMusicThumbnail(currentTrack.ThumbnailUrl);
+                    var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(amThumb, UriKind.Absolute)) { DecodePixelWidth = 480 };
+                    if (AppleMusicArtwork != null) AppleMusicArtwork.Source = amBmp;
+                }
+                catch { }
+            }
+            else if (BigCoverImage != null && BigCoverImage.ImageSource != null && AppleMusicArtwork != null)
+            {
+                AppleMusicArtwork.Source = BigCoverImage.ImageSource as Windows.UI.Xaml.Media.Imaging.BitmapImage;
+            }
+
             if (BigCoverImage != null && BigCoverImage.ImageSource != null)
             {
                 if (AppleMusicLyricsThumb != null) AppleMusicLyricsThumb.ImageSource = BigCoverImage.ImageSource;
                 if (AppleMusicQueueThumb != null) AppleMusicQueueThumb.ImageSource = BigCoverImage.ImageSource;
-                if (AppleMusicArtwork != null)
-                    AppleMusicArtwork.Source = BigCoverImage.ImageSource as Windows.UI.Xaml.Media.Imaging.BitmapImage;
             }
 
             bool isFav = favoriteTracks.Any(t => t.VideoId == currentTrack.VideoId);

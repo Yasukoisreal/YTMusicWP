@@ -728,7 +728,18 @@ namespace YTMusicWP
                             bigBmp.DecodePixelWidth = isWide ? 540 : 480;
                             bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
-                            if (AppleMusicArtwork != null) AppleMusicArtwork.Source = bigBmp;
+                            if (AppleMusicArtwork != null)
+                            {
+                                if (_isAppleMusicStyle)
+                                {
+                                    var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
+                                    AppleMusicArtwork.Source = amBmp;
+                                }
+                                else
+                                {
+                                    AppleMusicArtwork.Source = bigBmp;
+                                }
+                            }
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
 
@@ -812,7 +823,18 @@ namespace YTMusicWP
                             bigBmp.DecodePixelWidth = isWide ? 540 : 480;
                             bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
-                            if (AppleMusicArtwork != null) AppleMusicArtwork.Source = bigBmp;
+                            if (AppleMusicArtwork != null)
+                            {
+                                if (_isAppleMusicStyle)
+                                {
+                                    var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
+                                    AppleMusicArtwork.Source = amBmp;
+                                }
+                                else
+                                {
+                                    AppleMusicArtwork.Source = bigBmp;
+                                }
+                            }
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
 
@@ -958,6 +980,8 @@ namespace YTMusicWP
                     byte bestR = 30, bestG = 50, bestB = 70;
                     long totalR = 0, totalG = 0, totalB = 0;
                     int validCount = 0;
+                    long allTotalR = 0, allTotalG = 0, allTotalB = 0;
+                    int allOpaqueCount = 0;
 
                     for (int i = 0; i < pixels.Length; i += 4)
                     {
@@ -968,9 +992,14 @@ namespace YTMusicWP
 
                         if (a < 128) continue;
 
-                        // Perceived luminance
+                        allTotalR += r;
+                        allTotalG += g;
+                        allTotalB += b;
+                        allOpaqueCount++;
+
+                        // Perceived luminance: allow cream/pastel tones [15, 248]
                         double lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                        if (lum < 20 || lum > 235) continue; // Skip near black or near white
+                        if (lum < 15 || lum > 248) continue;
 
                         totalR += r;
                         totalG += g;
@@ -982,7 +1011,7 @@ namespace YTMusicWP
                         double delta = max - min;
                         double sat = max == 0 ? 0 : delta / max;
 
-                        if (sat < 0.12) continue; // Skip grayish pixels
+                        if (sat < 0.10) continue; // Skip grayish pixels
 
                         // Score: favors higher saturation, and luminance close to 110
                         double lumDist = Math.Abs(lum - 110.0) / 110.0;
@@ -1004,6 +1033,14 @@ namespace YTMusicWP
                         bestG = (byte)(totalG / validCount);
                         bestB = (byte)(totalB / validCount);
                         bestScore = 1.0;
+                    }
+                    else if (bestScore <= 0 && allOpaqueCount > 0)
+                    {
+                        // Ultimate fallback: average of all opaque pixels
+                        bestR = (byte)(allTotalR / allOpaqueCount);
+                        bestG = (byte)(allTotalG / allOpaqueCount);
+                        bestB = (byte)(allTotalB / allOpaqueCount);
+                        bestScore = 0.5;
                     }
 
                     if (bestScore > 0)
@@ -1050,12 +1087,14 @@ namespace YTMusicWP
                 return;
             }
 
-            // Fast low-res fallback: load 40px thumbnail immediately so colors show without delay
+            string cleanUrl = GetDominantColorThumbnailUrl(thumbnailUrl);
+
+            // Fast low-res preview: load 120px thumbnail immediately so backdrop colors show without delay
             if (AppleMusicBackdrop != null)
             {
                 try
                 {
-                    var fastBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(thumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 40 };
+                    var fastBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(cleanUrl, UriKind.Absolute)) { DecodePixelWidth = 120 };
                     AppleMusicBackdrop.Source = fastBmp;
                 }
                 catch { }
@@ -1063,12 +1102,15 @@ namespace YTMusicWP
 
             try
             {
-                var bytes = await _dominantHttpClient.GetByteArrayAsync(thumbnailUrl);
-                using (var stream = new System.IO.MemoryStream(bytes))
+                var bytes = await _dominantHttpClient.GetByteArrayAsync(cleanUrl);
+                if (bytes != null && bytes.Length > 0)
                 {
-                    var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80);
-                    Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
-                    if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
+                    using (var stream = new System.IO.MemoryStream(bytes))
+                    {
+                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80);
+                        Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
+                        if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
+                    }
                 }
             }
             catch { }
