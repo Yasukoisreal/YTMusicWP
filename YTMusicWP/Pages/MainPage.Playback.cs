@@ -1126,12 +1126,12 @@ namespace YTMusicWP
                 {
                     using (var stream = new System.IO.MemoryStream(bytes))
                     {
-                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 180, 300, 25);
+                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80);
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
 
-                        // Render true alpha-faded artwork from high-res source (500x500) so it's crystal sharp
-                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 180);
+                        // Render true alpha-faded artwork with deep dissolve (260px) into the heavily blurred backdrop
+                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 260);
                         Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
                         if (AppleMusicArtwork != null)
                         {

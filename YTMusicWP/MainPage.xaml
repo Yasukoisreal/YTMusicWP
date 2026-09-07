@@ -2265,7 +2265,7 @@
             <!-- Apple Music: frosted artwork backdrop (Collapsed by default, shown by code) -->
             <Image x:Name="AppleMusicBackdrop" Stretch="UniformToFill" Visibility="Collapsed"/>
             <!-- Apple Music: tinted gradient wash over the blur -->
-            <Rectangle x:Name="AppleMusicWash" Opacity="0.38" Visibility="Collapsed">
+            <Rectangle x:Name="AppleMusicWash" Opacity="0.62" Visibility="Collapsed">
                 <Rectangle.Fill>
                     <LinearGradientBrush x:Name="AppleMusicWashGradient" StartPoint="0,0" EndPoint="0,1">
                         <GradientStop x:Name="AppleMusicGradTop" Color="#1A1A2E" Offset="0"/>
