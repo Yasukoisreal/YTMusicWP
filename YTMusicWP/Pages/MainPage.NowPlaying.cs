@@ -865,6 +865,14 @@ namespace YTMusicWP
             SongCreditsDialog.Visibility = Visibility.Collapsed;
         }
 
+        #region Apple Music NowPlaying Stubs (Task 3)
+        private void DockLyrics_Tapped(object sender, TappedRoutedEventArgs e) { }
+        private void DockQueue_Tapped(object sender, TappedRoutedEventArgs e) { }
+        private void AppleMusicVolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e) { }
+        private void QueueInfoPill_Tapped(object sender, TappedRoutedEventArgs e) { }
+        private void QueueAddPill_Tapped(object sender, TappedRoutedEventArgs e) { }
+        #endregion
+
     }
 }
 
