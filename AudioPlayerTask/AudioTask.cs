@@ -832,8 +832,8 @@ namespace AudioPlayerTask
                 // Live Tile & Badge update from Background (matching TileService.cs)
                 try
                 {
-                    bool isLiveTileEnabled = !ls.ContainsKey("LiveTileEnabled") || (bool)ls["LiveTileEnabled"];
-                    int liveTileMode = ls.ContainsKey("LiveTileMode") ? (int)ls["LiveTileMode"] : 0;
+                    bool isLiveTileEnabled = ls.ContainsKey("EnableLiveTile") ? (bool)ls["EnableLiveTile"] : (!ls.ContainsKey("LiveTileEnabled") || (bool)ls["LiveTileEnabled"]);
+                    int liveTileMode = ls.ContainsKey("LiveTileMode") ? Convert.ToInt32(ls["LiveTileMode"]) : 0;
 
                     if (isLiveTileEnabled && liveTileMode != 2 && !string.IsNullOrEmpty(thumb))
                     {
