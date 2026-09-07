@@ -471,7 +471,7 @@ namespace YTMusicWP
                                     // [OPT-1] Reuse cached easing + single storyboard
                                     AnimateLyricOut(oldContainer, oldScale);
                                 }
-                                else { currentLyrics[oldIndex].Opacity = 0.35; }
+                                else { currentLyrics[oldIndex].Opacity = 0.5; }
                             }
                             else
                             {
@@ -947,24 +947,8 @@ namespace YTMusicWP
 
                     if (bestScore > 0)
                     {
-                        // Ensure pleasant luminance for background (white text remains clear)
-                        double lum = 0.299 * bestR + 0.587 * bestG + 0.114 * bestB;
-                        if (lum > 140)
-                        {
-                            double factor = 140.0 / lum;
-                            bestR = (byte)(bestR * factor);
-                            bestG = (byte)(bestG * factor);
-                            bestB = (byte)(bestB * factor);
-                        }
-                        else if (lum < 40)
-                        {
-                            double factor = 40.0 / Math.Max(lum, 1.0);
-                            bestR = (byte)Math.Min(255, (int)(bestR * factor));
-                            bestG = (byte)Math.Min(255, (int)(bestG * factor));
-                            bestB = (byte)Math.Min(255, (int)(bestB * factor));
-                        }
-
-                        var resultColor = Windows.UI.Color.FromArgb(255, bestR, bestG, bestB);
+                        var rawColor = Windows.UI.Color.FromArgb(255, bestR, bestG, bestB);
+                        var resultColor = AdjustAmbientColor(rawColor);
                         lock (_dominantColorCache)
                         {
                             if (_dominantColorCache.Count > 60) _dominantColorCache.Clear();
@@ -977,6 +961,40 @@ namespace YTMusicWP
             catch { }
 
             return null;
+        }
+
+        private static Windows.UI.Color AdjustAmbientColor(Windows.UI.Color c)
+        {
+            double r = c.R, g = c.G, b = c.B;
+
+            // 1. Clamp maximum channel to avoid harsh neon/blinding glare
+            double maxChannel = Math.Max(r, Math.Max(g, b));
+            if (maxChannel > 140.0)
+            {
+                double scale = 140.0 / maxChannel;
+                r *= scale;
+                g *= scale;
+                b *= scale;
+            }
+
+            // 2. Clamp perceived luminance (Rec. 601) to dark-mode ambient range [35, 65]
+            double lum = 0.299 * r + 0.587 * g + 0.114 * b;
+            if (lum > 65.0)
+            {
+                double scale = 65.0 / lum;
+                r *= scale;
+                g *= scale;
+                b *= scale;
+            }
+            else if (lum < 35.0)
+            {
+                double scale = 35.0 / Math.Max(lum, 1.0);
+                r = Math.Min(255.0, r * scale);
+                g = Math.Min(255.0, g * scale);
+                b = Math.Min(255.0, b * scale);
+            }
+
+            return Windows.UI.Color.FromArgb(255, (byte)Math.Round(r), (byte)Math.Round(g), (byte)Math.Round(b));
         }
 
         private static Windows.UI.Color CalculateLyricsBottomFadeColor(Windows.UI.Color targetColor)
@@ -1007,6 +1025,7 @@ namespace YTMusicWP
 
         private void AnimateGradientTo(Windows.UI.Color targetColor)
         {
+            targetColor = AdjustAmbientColor(targetColor);
             _currentGradientColor = targetColor;
             try
             {
@@ -1447,7 +1466,7 @@ namespace YTMusicWP
             if (_lyricOutSb == null)
             {
                 var easeInOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
-                _lyricOutOpAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.35, Duration = _dur500, EasingFunction = easeInOut };
+                _lyricOutOpAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.5, Duration = _dur500, EasingFunction = easeInOut };
                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricOutOpAnim, "Opacity");
 
                 _lyricOutSxAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0.85, Duration = _dur450, EasingFunction = easeInOut };
@@ -1478,7 +1497,7 @@ namespace YTMusicWP
             if (_lyricInSb == null)
             {
                 var easeOut = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
-                _lyricInOpAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { From = 0.35, To = 1.0, Duration = _dur450, EasingFunction = easeOut };
+                _lyricInOpAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { From = 0.5, To = 1.0, Duration = _dur450, EasingFunction = easeOut };
                 Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_lyricInOpAnim, "Opacity");
 
                 _lyricInSxAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1.0, Duration = _dur400, EasingFunction = easeOut };
@@ -1541,7 +1560,7 @@ namespace YTMusicWP
                 byte r = (byte)Math.Max(0, Math.Min(255, baseColor.R + shift));
                 byte g = (byte)Math.Max(0, Math.Min(255, baseColor.G + shift));
                 byte b = (byte)Math.Max(0, Math.Min(255, baseColor.B + shift));
-                var targetColor = Windows.UI.Color.FromArgb(255, r, g, b);
+                var targetColor = AdjustAmbientColor(Windows.UI.Color.FromArgb(255, r, g, b));
 
                 var targetMidColor = Windows.UI.Color.FromArgb(
                     255,

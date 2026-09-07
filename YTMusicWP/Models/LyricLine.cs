@@ -12,7 +12,7 @@ namespace YTMusicWP
         public string Text { get { return _text; } set { _text = value; OnPropertyChanged("Text"); } }
 
         // [OPT] Static shared brush — avoids creating 50-100 brush objects per song
-        private static readonly SolidColorBrush _defaultLyricBrush = new SolidColorBrush(Windows.UI.Colors.Gray);
+        private static readonly SolidColorBrush _defaultLyricBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
 
         private SolidColorBrush _colorBrush = _defaultLyricBrush;
         public SolidColorBrush ColorBrush { get { return _colorBrush; } set { _colorBrush = value; OnPropertyChanged("ColorBrush"); } }
