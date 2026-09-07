@@ -1279,6 +1279,13 @@ namespace YTMusicWP
                 var statusBar = Windows.UI.ViewManagement.StatusBar.GetForCurrentView();
                 if (statusBar == null) return;
 
+                if (_isAppleMusicStyle && NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
+                {
+                    statusBar.BackgroundOpacity = 0.0;
+                    statusBar.ForegroundColor = Windows.UI.Colors.White;
+                    return;
+                }
+
                 var startColor = _currentStatusBarColor;
                 if (startColor.R == targetColor.R && startColor.G == targetColor.G && startColor.B == targetColor.B)
                 {
@@ -1328,6 +1335,26 @@ namespace YTMusicWP
             if (!Dispatcher.HasThreadAccess)
             {
                 var ignored = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => UpdateStatusBarColor(isNowPlaying, animate, durationMs));
+                return;
+            }
+
+            if (isNowPlaying && _isAppleMusicStyle)
+            {
+                if (_statusBarAnimCts != null)
+                {
+                    _statusBarAnimCts.Cancel();
+                    _statusBarAnimCts = null;
+                }
+                try
+                {
+                    var statusBar = Windows.UI.ViewManagement.StatusBar.GetForCurrentView();
+                    if (statusBar != null)
+                    {
+                        statusBar.BackgroundOpacity = 0.0;
+                        statusBar.ForegroundColor = Windows.UI.Colors.White;
+                    }
+                }
+                catch { }
                 return;
             }
 
