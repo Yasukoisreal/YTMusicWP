@@ -2599,7 +2599,7 @@
                         </Button>
                         <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="62" Height="62">
                             <Grid>
-                                <Viewbox x:Name="AppleMusicPlayBox" Width="48" Height="48" Visibility="Visible">
+                                <Viewbox x:Name="AppleMusicPlayBox" Width="48" Height="48" Visibility="Visible" Margin="3,0,0,0">
                                     <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White"/>
                                 </Viewbox>
                                 <Viewbox x:Name="AppleMusicPauseBox" Width="48" Height="48" Visibility="Collapsed">
