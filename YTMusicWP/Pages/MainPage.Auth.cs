@@ -19,6 +19,9 @@ namespace YTMusicWP
         private static readonly SolidColorBrush _authOrangeBrush = new SolidColorBrush(Windows.UI.Colors.Orange);
         private static readonly SolidColorBrush _authRedBrush = new SolidColorBrush(Windows.UI.Colors.Red);
 
+        // Now Playing visual style (false = Default gradient, true = Apple Music blur)
+        private bool _isAppleMusicStyle;
+
         /// <summary>
         /// Toggle Account section between signed-out and signed-in panels
         /// </summary>
@@ -132,6 +135,14 @@ namespace YTMusicWP
                 GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
                 NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
 
+                int npStyle = SafeGetInt(settings, "NowPlayingStyle", 0);
+                if (NowPlayingStyleComboBox != null)
+                {
+                    NowPlayingStyleComboBox.SelectedIndex = (npStyle == 1) ? 1 : 0;
+                    NowPlayingStyleComboBox.SelectionChanged += NowPlayingStyleComboBox_SelectionChanged;
+                }
+                _isAppleMusicStyle = (npStyle == 1);
+
                 LiveTileToggle.IsOn = YTMusicWP.Services.TileService.IsLiveTileEnabled;
                 int tileMode = YTMusicWP.Services.TileService.LiveTileMode;
                 if (tileMode >= 0 && tileMode < LiveTileModeComboBox.Items.Count)
@@ -239,6 +250,15 @@ namespace YTMusicWP
             {
                 YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks, 5, true);
             }
+        }
+
+        private void NowPlayingStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (NowPlayingStyleComboBox == null) return;
+            int idx = NowPlayingStyleComboBox.SelectedIndex;
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
+            settings.Values["NowPlayingStyle"] = idx;
+            _isAppleMusicStyle = (idx == 1);
         }
 
         private async void RefreshStorageStats_Click(object sender, RoutedEventArgs e)
