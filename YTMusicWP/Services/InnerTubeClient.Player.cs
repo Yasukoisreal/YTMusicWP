@@ -36,7 +36,7 @@ namespace YTMusicWP
         private static string _cachedPoTokenVideoId = null;
         private static RemotePoTokenResult _cachedPoTokenResult = null;
 
-        private static async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName, string visitorData = null)
+        private static async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
             if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
             {
@@ -45,10 +45,9 @@ namespace YTMusicWP
 
             try
             {
-                // Cloudflare Worker acts as TLS proxy to Render (bgutil-ytdlp-pot-provider)
-                string binding = !string.IsNullOrEmpty(visitorData) ? visitorData : (videoId ?? "");
+                // Let Render server generate its own matching pair of visitorData and poToken
                 string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
-                string body = "{\"content_binding\":\"" + binding + "\"}";
+                string body = "{}";
                 
                 var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                 filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
@@ -77,10 +76,6 @@ namespace YTMusicWP
 
                         if (!string.IsNullOrEmpty(result.PoToken))
                         {
-                            if (string.IsNullOrEmpty(result.VisitorData) && !string.IsNullOrEmpty(visitorData))
-                            {
-                                result.VisitorData = visitorData;
-                            }
                             _cachedPoTokenVideoId = videoId;
                             _cachedPoTokenResult = result;
                             return result;
@@ -201,7 +196,7 @@ namespace YTMusicWP
                     string poTokenField = "";
                     if (client.SupportsPoToken)
                     {
-                        var tokenInfo = await FetchRemotePoTokenAsync(videoId, client.ClientName, vd);
+                        var tokenInfo = await FetchRemotePoTokenAsync(videoId, client.ClientName);
                         if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                         {
                             poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";

@@ -309,7 +309,7 @@ namespace AudioPlayerTask
         private static string _cachedPoTokenVideoId = null;
         private static RemotePoTokenResult _cachedPoTokenResult = null;
 
-        private async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName, string visitorData = null)
+        private async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
             if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
             {
@@ -318,9 +318,9 @@ namespace AudioPlayerTask
 
             try
             {
-                string binding = !string.IsNullOrEmpty(visitorData) ? visitorData : (videoId ?? "");
+                // Let Render server generate its own matching pair of visitorData and poToken
                 string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
-                string body = "{\"content_binding\":\"" + binding + "\"}";
+                string body = "{}";
                 
                 var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                 filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
@@ -355,10 +355,6 @@ namespace AudioPlayerTask
 
                         if (!string.IsNullOrEmpty(result.PoToken))
                         {
-                            if (string.IsNullOrEmpty(result.VisitorData) && !string.IsNullOrEmpty(visitorData))
-                            {
-                                result.VisitorData = visitorData;
-                            }
                             _cachedPoTokenVideoId = videoId;
                             _cachedPoTokenResult = result;
                             return result;
@@ -440,7 +436,7 @@ namespace AudioPlayerTask
                 string poTokenField = "";
                 if (usePoToken)
                 {
-                    var tokenInfo = await FetchRemotePoTokenAsync(videoId, clientName, visitorData);
+                    var tokenInfo = await FetchRemotePoTokenAsync(videoId, clientName);
                     if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                     {
                         poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
@@ -456,6 +452,11 @@ namespace AudioPlayerTask
                 if (!string.IsNullOrEmpty(visitorData))
                     vdField = ",\"visitorData\":\"" + visitorData + "\"";
 
+                string platformField = "";
+                if (clientName == "ANDROID" || clientName == "ANDROID_VR")
+                {
+                    platformField = "\"platform\":\"MOBILE\",\"clientFormFactor\":0,";
+                }
                 string sdkVersionField = clientName == "ANDROID" ? "\"androidSdkVersion\":30," : "";
 
                 string requestBody = "{" +
@@ -469,11 +470,10 @@ namespace AudioPlayerTask
                         "\"userAgent\":\"" + userAgent + "\"," +
                         "\"osName\":\"" + osName + "\"," +
                         "\"osVersion\":\"" + osVersion + "\"," +
-                        "\"platform\":\"MOBILE\"," +
+                        platformField +
                         sdkVersionField +
                         "\"hl\":\"en\"," +
-                        "\"gl\":\"US\"," +
-                        "\"clientFormFactor\":0" +
+                        "\"gl\":\"US\"" +
                         vdField +
                     "}}" + poTokenField + "," +
                     "\"videoId\":\"" + videoId + "\"" +
