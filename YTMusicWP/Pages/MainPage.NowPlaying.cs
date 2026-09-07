@@ -310,6 +310,8 @@ namespace YTMusicWP
                 UpdateDockActiveState(NowPlayingPivot.SelectedIndex == 0 ? -1 : NowPlayingPivot.SelectedIndex);
                 if (AppleMusicMainTitleRow != null)
                     AppleMusicMainTitleRow.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+                if (AppleMusicArtworkGrid != null)
+                    AppleMusicArtworkGrid.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
 
             if (idx == 2)
@@ -910,7 +912,8 @@ namespace YTMusicWP
 
             // Player page art
             if (DefaultNowPlayingArtwork != null) DefaultNowPlayingArtwork.Visibility = spVis;
-            if (AppleMusicArtworkGrid != null) AppleMusicArtworkGrid.Visibility = amVis;
+            if (AppleMusicArtworkGrid != null)
+                AppleMusicArtworkGrid.Visibility = (_isAppleMusicStyle && (NowPlayingPivot == null || NowPlayingPivot.SelectedIndex == 0)) ? Visibility.Visible : Visibility.Collapsed;
             if (BigCoverRectangle != null) BigCoverRectangle.Visibility = spVis;
             if (BigCoverShadow != null) BigCoverShadow.Visibility = spVis;
 
@@ -1102,6 +1105,25 @@ namespace YTMusicWP
             _trackPendingForPlaylist = currentTrack;
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
             AddToPlaylistDialog.Visibility = Visibility.Visible;
+        }
+
+        private double _amSwipeStartX;
+        private void AppleMusicArtworkGrid_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+        {
+            _amSwipeStartX = e.Position.X;
+        }
+
+        private void AppleMusicArtworkGrid_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
+        {
+            double deltaX = e.Position.X - _amSwipeStartX;
+            if (deltaX < -50)
+            {
+                NextButton_Click(null, null);
+            }
+            else if (deltaX > 50)
+            {
+                PrevButton_Click(null, null);
+            }
         }
         #endregion
 

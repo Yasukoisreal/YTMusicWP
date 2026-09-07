@@ -2280,6 +2280,20 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
+                <!-- Apple Music: full-bleed artwork with gentle bottom fade -->
+                <Grid x:Name="AppleMusicArtworkGrid" Grid.Row="0" Grid.RowSpan="2" Canvas.ZIndex="15" Visibility="Collapsed" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="480" ManipulationMode="TranslateX" ManipulationStarted="AppleMusicArtworkGrid_ManipulationStarted" ManipulationCompleted="AppleMusicArtworkGrid_ManipulationCompleted">
+                    <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Top" Width="480" Height="480"/>
+                    <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="140" IsHitTestVisible="False">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop x:Name="AppleMusicArtFadeTop" Color="#00000000" Offset="0"/>
+                                <GradientStop x:Name="AppleMusicArtFadeMid" Color="#28000000" Offset="0.5"/>
+                                <GradientStop x:Name="AppleMusicArtFadeBot" Color="#FF121212" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Grid>
+
                 <!-- Apple Music: grabber bar (floating at top in AM mode) -->
                 <Border x:Name="AppleMusicGrabber" Visibility="Collapsed" Grid.Row="0" Canvas.ZIndex="30" Background="Transparent" Tapped="CloseNowPlaying_Click" Height="32" VerticalAlignment="Top" Margin="0,18,0,0">
                     <Border Background="#59FFFFFF" CornerRadius="3" Width="36" Height="5" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -2334,19 +2348,6 @@
                                     </Rectangle.RenderTransform>
                                     <Rectangle.Fill>
                                         <ImageBrush x:Name="BigCoverImage" Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center"/>
-                                    </Rectangle.Fill>
-                                </Rectangle>
-                            </Grid>
-                            <!-- Apple Music: full-bleed artwork with gentle bottom fade -->
-                            <Grid x:Name="AppleMusicArtworkGrid" Visibility="Collapsed" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="-19,-50,-19,0" Height="480">
-                                <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Top" Width="480" Height="480"/>
-                                <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="120" IsHitTestVisible="False">
-                                    <Rectangle.Fill>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop x:Name="AppleMusicArtFadeTop" Color="#00000000" Offset="0"/>
-                                            <GradientStop x:Name="AppleMusicArtFadeMid" Color="#40000000" Offset="0.5"/>
-                                            <GradientStop x:Name="AppleMusicArtFadeBot" Color="#FF121212" Offset="1"/>
-                                        </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
                             </Grid>

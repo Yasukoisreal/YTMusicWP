@@ -45,7 +45,7 @@ namespace YTMusicWP.Services
             using (var filterEffect = new FilterEffect(imageSource))
             {
                 filterEffect.Filters = new IFilter[] { new BlurFilter(kernelSize) };
-                using (var renderer = new WriteableBitmapRenderer(filterEffect, bitmap))
+                using (var renderer = new WriteableBitmapRenderer(filterEffect, bitmap, OutputOption.Stretch))
                 {
                     await renderer.RenderAsync();
                 }
