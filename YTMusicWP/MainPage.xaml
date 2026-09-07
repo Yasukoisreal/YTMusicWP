@@ -93,28 +93,28 @@
                                 <VisualStateGroup x:Name="CommonStates">
                                     <VisualState x:Name="Normal">
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.2">
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.4">
                                                 <DoubleAnimation.EasingFunction>
-                                                    <CubicEase EasingMode="EaseOut"/>
+                                                    <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="6"/>
                                                 </DoubleAnimation.EasingFunction>
                                             </DoubleAnimation>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.2">
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.4">
                                                 <DoubleAnimation.EasingFunction>
-                                                    <CubicEase EasingMode="EaseOut"/>
+                                                    <ElasticEase EasingMode="EaseOut" Oscillations="1" Springiness="6"/>
                                                 </DoubleAnimation.EasingFunction>
                                             </DoubleAnimation>
                                         </Storyboard>
                                     </VisualState>
                                     <VisualState x:Name="Pressed">
                                         <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1.28" Duration="0:0:0.1">
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1.28" Duration="0:0:0.12">
                                                 <DoubleAnimation.EasingFunction>
-                                                    <CubicEase EasingMode="EaseOut"/>
+                                                    <BackEase EasingMode="EaseOut" Amplitude="0.6"/>
                                                 </DoubleAnimation.EasingFunction>
                                             </DoubleAnimation>
-                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1.28" Duration="0:0:0.1">
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1.28" Duration="0:0:0.12">
                                                 <DoubleAnimation.EasingFunction>
-                                                    <CubicEase EasingMode="EaseOut"/>
+                                                    <BackEase EasingMode="EaseOut" Amplitude="0.6"/>
                                                 </DoubleAnimation.EasingFunction>
                                             </DoubleAnimation>
                                         </Storyboard>
