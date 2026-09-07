@@ -1133,24 +1133,25 @@ namespace YTMusicWP
         {
             try
             {
-                // Find HorizontalTemplate Grid inside the slider's visual tree
-                var templateGrid = FindChildByName(slider, "HorizontalTemplate") as Grid;
-                if (templateGrid == null) return;
+                var trackRect = FindChildByName(slider, "HorizontalTrackRect") as Windows.UI.Xaml.Shapes.Rectangle;
+                var decreaseRect = FindChildByName(slider, "HorizontalDecreaseRect") as Windows.UI.Xaml.Shapes.Rectangle;
+                if (trackRect == null || decreaseRect == null) return;
 
-                var ct = templateGrid.RenderTransform as CompositeTransform;
-                if (ct == null) return;
+                double targetH = inflate ? 14 : 7;
+                var duration = new Duration(TimeSpan.FromMilliseconds(inflate ? 200 : 300));
+                var easing = new CubicEase { EasingMode = inflate ? EasingMode.EaseOut : EasingMode.EaseInOut };
 
-                double targetY = inflate ? 2.0 : 1.0;
                 var sb = new Storyboard();
-                var anim = new DoubleAnimation
-                {
-                    To = targetY,
-                    Duration = new Duration(TimeSpan.FromMilliseconds(inflate ? 200 : 300)),
-                    EasingFunction = new CubicEase { EasingMode = inflate ? EasingMode.EaseOut : EasingMode.EaseInOut }
-                };
-                Storyboard.SetTarget(anim, ct);
-                Storyboard.SetTargetProperty(anim, "ScaleY");
-                sb.Children.Add(anim);
+                var a1 = new DoubleAnimation { To = targetH, Duration = duration, EasingFunction = easing, EnableDependentAnimation = true };
+                Storyboard.SetTarget(a1, trackRect);
+                Storyboard.SetTargetProperty(a1, "Height");
+                sb.Children.Add(a1);
+
+                var a2 = new DoubleAnimation { To = targetH, Duration = duration, EasingFunction = easing, EnableDependentAnimation = true };
+                Storyboard.SetTarget(a2, decreaseRect);
+                Storyboard.SetTargetProperty(a2, "Height");
+                sb.Children.Add(a2);
+
                 sb.Begin();
             }
             catch { }
