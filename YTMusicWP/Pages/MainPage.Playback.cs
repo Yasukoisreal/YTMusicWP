@@ -345,6 +345,7 @@ namespace YTMusicWP
                 favoriteTracks.Remove(existing); 
                 BigHeartBtn.Content = "♡"; 
                 BigHeartBtn.Foreground = _whiteBrush; 
+                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "☆"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
                 if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♡"; AppleMusicLyricsHeartBtn.Foreground = _whiteBrush; }
                 if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♡"; AppleMusicQueueHeartBtn.Foreground = _whiteBrush; }
                 var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(currentTrack.VideoId);
@@ -354,6 +355,7 @@ namespace YTMusicWP
                 favoriteTracks.Insert(0, currentTrack); 
                 BigHeartBtn.Content = "♥"; 
                 BigHeartBtn.Foreground = _greenBrush; 
+                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "★"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
                 if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♥"; AppleMusicLyricsHeartBtn.Foreground = _greenBrush; }
                 if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♥"; AppleMusicQueueHeartBtn.Foreground = _greenBrush; }
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(currentTrack);
@@ -726,6 +728,7 @@ namespace YTMusicWP
                             bigBmp.DecodePixelWidth = isWide ? 540 : 480;
                             bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
+                            if (AppleMusicArtwork != null) AppleMusicArtwork.Source = bigBmp;
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
 
@@ -809,6 +812,7 @@ namespace YTMusicWP
                             bigBmp.DecodePixelWidth = isWide ? 540 : 480;
                             bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
+                            if (AppleMusicArtwork != null) AppleMusicArtwork.Source = bigBmp;
                             AlbumArtEntranceStoryboard.Begin();
                             MenuCoverImage.ImageSource = bigBmp;
 
@@ -1037,12 +1041,24 @@ namespace YTMusicWP
             if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.32);
             if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.78);
             if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.78);
+            if (AppleMusicArtFadeMid != null) AppleMusicArtFadeMid.Color = LerpColor(seedColor, black, 0.32);
 
             var cached = Services.LumiaBlurHelper.GetCached(thumbnailUrl);
             if (cached != null)
             {
                 if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = cached;
                 return;
+            }
+
+            // Fast low-res fallback: load 40px thumbnail immediately so colors show without delay
+            if (AppleMusicBackdrop != null)
+            {
+                try
+                {
+                    var fastBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(thumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 40 };
+                    AppleMusicBackdrop.Source = fastBmp;
+                }
+                catch { }
             }
 
             try

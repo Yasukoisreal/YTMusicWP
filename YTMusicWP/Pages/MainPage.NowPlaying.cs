@@ -306,7 +306,11 @@ namespace YTMusicWP
             }
 
             if (_isAppleMusicStyle)
+            {
                 UpdateDockActiveState(NowPlayingPivot.SelectedIndex == 0 ? -1 : NowPlayingPivot.SelectedIndex);
+                if (AppleMusicMainTitleRow != null)
+                    AppleMusicMainTitleRow.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
 
             if (idx == 2)
             {
@@ -896,6 +900,7 @@ namespace YTMusicWP
             var spVis = _isAppleMusicStyle ? Visibility.Collapsed : Visibility.Visible;
 
             // Background
+            if (DefaultNowPlayingBackground != null) DefaultNowPlayingBackground.Visibility = spVis;
             if (AppleMusicBackdrop != null) AppleMusicBackdrop.Visibility = amVis;
             if (AppleMusicWash != null) AppleMusicWash.Visibility = amVis;
 
@@ -904,6 +909,7 @@ namespace YTMusicWP
             if (DefaultNowPlayingHeader != null) DefaultNowPlayingHeader.Visibility = spVis;
 
             // Player page art
+            if (DefaultNowPlayingArtwork != null) DefaultNowPlayingArtwork.Visibility = spVis;
             if (AppleMusicArtworkGrid != null) AppleMusicArtworkGrid.Visibility = amVis;
             if (BigCoverRectangle != null) BigCoverRectangle.Visibility = spVis;
             if (BigCoverShadow != null) BigCoverShadow.Visibility = spVis;
@@ -911,6 +917,8 @@ namespace YTMusicWP
             // Controls
             if (AppleMusicBottomCluster != null) AppleMusicBottomCluster.Visibility = amVis;
             if (DefaultNowPlayingControls != null) DefaultNowPlayingControls.Visibility = spVis;
+            if (AppleMusicMainTitleRow != null)
+                AppleMusicMainTitleRow.Visibility = (NowPlayingPivot != null && NowPlayingPivot.SelectedIndex == 0) ? amVis : Visibility.Collapsed;
 
             // Compact headers
             if (AppleMusicLyricsHeader != null) AppleMusicLyricsHeader.Visibility = amVis;
@@ -919,6 +927,12 @@ namespace YTMusicWP
 
             if (_isAppleMusicStyle)
             {
+                UpdateAppleMusicCompactHeaders();
+                if (currentTrack != null && !string.IsNullOrEmpty(currentTrack.ThumbnailUrl))
+                {
+                    var ignoredBg = UpdateAppleMusicBackdropAsync(currentTrack.ThumbnailUrl, _currentGradientColor);
+                }
+
                 if (AppleMusicVolumeSlider != null)
                 {
                     try
@@ -989,14 +1003,12 @@ namespace YTMusicWP
             if (DockLyricsBtn != null)
             {
                 DockLyricsBtn.Background = viewIndex == 1 ? activeBg : inactiveBg;
-                var tb = DockLyricsBtn.Child as TextBlock;
-                if (tb != null) tb.Foreground = viewIndex == 1 ? activeIcon : inactiveIcon;
+                if (DockLyricsPath != null) DockLyricsPath.Fill = viewIndex == 1 ? activeIcon : inactiveIcon;
             }
             if (DockQueueBtn != null)
             {
                 DockQueueBtn.Background = viewIndex == 2 ? activeBg : inactiveBg;
-                var fi = DockQueueBtn.Child as FontIcon;
-                if (fi != null) fi.Foreground = viewIndex == 2 ? activeIcon : inactiveIcon;
+                if (DockQueuePath != null) DockQueuePath.Fill = viewIndex == 2 ? activeIcon : inactiveIcon;
             }
         }
 
@@ -1023,6 +1035,8 @@ namespace YTMusicWP
             var title = currentTrack.Title ?? "";
             var artist = currentTrack.ChannelName ?? "";
 
+            if (AppleMusicMainTitle != null) AppleMusicMainTitle.Text = title;
+            if (AppleMusicMainArtist != null) AppleMusicMainArtist.Text = artist;
             if (AppleMusicLyricsTitle != null) AppleMusicLyricsTitle.Text = title;
             if (AppleMusicLyricsArtist != null) AppleMusicLyricsArtist.Text = artist;
             if (AppleMusicQueueTitle != null) AppleMusicQueueTitle.Text = title;
@@ -1037,6 +1051,11 @@ namespace YTMusicWP
             }
 
             bool isFav = favoriteTracks.Any(t => t.VideoId == currentTrack.VideoId);
+            if (AppleMusicMainHeartBtn != null)
+            {
+                AppleMusicMainHeartBtn.Content = isFav ? "★" : "☆";
+                AppleMusicMainHeartBtn.Foreground = _whiteBrush;
+            }
             var heartContent = isFav ? "♥" : "♡";
             var heartFg = isFav ? _greenBrush : _whiteBrush;
             if (AppleMusicLyricsHeartBtn != null)

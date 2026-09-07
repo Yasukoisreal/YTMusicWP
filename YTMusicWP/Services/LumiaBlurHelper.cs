@@ -49,6 +49,7 @@ namespace YTMusicWP.Services
                     await renderer.RenderAsync();
                 }
             }
+            bitmap.Invalidate();
             return bitmap;
         }
     }

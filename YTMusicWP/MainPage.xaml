@@ -2253,7 +2253,7 @@
             <!-- Semi-transparent overlay to ensure text readability over canvas -->
             <Rectangle Fill="#99000000" />
             <!-- Gradient background (genre-based color) -->
-            <Rectangle>
+            <Rectangle x:Name="DefaultNowPlayingBackground">
                 <Rectangle.Fill>
                     <LinearGradientBrush x:Name="NowPlayingGradient" StartPoint="0,0" EndPoint="0,1">
                         <GradientStop x:Name="NowPlayingGradientTop" Color="#1A1A2E" Offset="0"/>
@@ -2324,7 +2324,7 @@
                     <!-- Player page -->
                     <PivotItem>
                         <Grid>
-                            <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-10,0,0">
+                            <Grid x:Name="DefaultNowPlayingArtwork" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,-10,0,0">
                                 <!-- Shadow effect -->
                                 <Rectangle x:Name="BigCoverShadow" Width="290" Height="290" RadiusX="16" RadiusY="16" Fill="#40000000" Margin="10,10,0,0"/>
                                 <!-- Album art -->
@@ -2338,13 +2338,14 @@
                                 </Rectangle>
                             </Grid>
                             <!-- Apple Music: full-bleed artwork with bottom fade -->
-                            <Grid x:Name="AppleMusicArtworkGrid" Visibility="Collapsed" VerticalAlignment="Top" HorizontalAlignment="Stretch">
-                                <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Center"/>
-                                <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="200" IsHitTestVisible="False">
+                            <Grid x:Name="AppleMusicArtworkGrid" Visibility="Collapsed" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                                <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                                <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="240" IsHitTestVisible="False">
                                     <Rectangle.Fill>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                             <GradientStop x:Name="AppleMusicArtFadeTop" Color="#00000000" Offset="0"/>
-                                            <GradientStop x:Name="AppleMusicArtFadeBot" Color="#CC000000" Offset="1"/>
+                                            <GradientStop x:Name="AppleMusicArtFadeMid" Color="#55000000" Offset="0.45"/>
+                                            <GradientStop x:Name="AppleMusicArtFadeBot" Color="#EE000000" Offset="1"/>
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
@@ -2539,58 +2540,112 @@
                 </StackPanel>
                 <!-- Apple Music: BottomCluster -->
                 <StackPanel x:Name="AppleMusicBottomCluster" Grid.Row="2" Visibility="Collapsed" Margin="20,0,20,20">
-                    <!-- ThinSlider -->
-                    <Slider x:Name="AppleMusicSlider" Minimum="0" Maximum="100" Value="0" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerReleased="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Style="{StaticResource AppleMusicSliderStyle}"/>
-                    <!-- TimesRow -->
-                    <Grid Margin="0,2,0,0">
-                        <TextBlock x:Name="AppleMusicCurrentTime" Text="0:00" FontSize="12" Foreground="#B8FFFFFF" HorizontalAlignment="Left"/>
-                        <TextBlock x:Name="AppleMusicRemainingTime" Text="-0:00" FontSize="12" Foreground="#B8FFFFFF" HorizontalAlignment="Right"/>
-                    </Grid>
-                    <!-- TransportRow -->
-                    <Grid Margin="0,12,0,0" HorizontalAlignment="Center">
+                    <!-- Title & Artist Row -->
+                    <Grid x:Name="AppleMusicMainTitleRow" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="58"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="58"/>
+                            <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
-                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE100;" Foreground="White" FontSize="30"/>
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock x:Name="AppleMusicMainTitle" Text="" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            <TextBlock x:Name="AppleMusicMainArtist" Text="" FontSize="14" Foreground="#B3FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button x:Name="AppleMusicMainHeartBtn" Content="☆" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="26" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0"/>
+                            <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" Margin="4,0,0,0">
+                                <Viewbox Width="20" Height="20">
+                                    <Path Data="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" Fill="White"/>
+                                </Viewbox>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- ThinSlider -->
+                    <Slider x:Name="AppleMusicSlider" Minimum="0" Maximum="100" Value="0" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerReleased="MusicSlider_PointerCaptureLost" PointerPressed="MusicSlider_PointerPressed" Style="{StaticResource AppleMusicSliderStyle}"/>
+
+                    <!-- TimesRow with Codec Badge -->
+                    <Grid Margin="0,2,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" x:Name="AppleMusicCurrentTime" Text="0:00" FontSize="12" Foreground="#B8FFFFFF" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" x:Name="AppleMusicCodecBadge" Background="#29FFFFFF" CornerRadius="8" Padding="8,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Viewbox Width="13" Height="13" Margin="0,0,4,0">
+                                    <Path Data="M10,20H14V4H10V20M4,17H8V7H4V17M16,17H20V7H16V17Z" Fill="#E6FFFFFF"/>
+                                </Viewbox>
+                                <TextBlock Text="OPUS" FontSize="11" Foreground="#E6FFFFFF" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Grid.Column="2" x:Name="AppleMusicRemainingTime" Text="-0:00" FontSize="12" Foreground="#B8FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- TransportRow -->
+                    <Grid Margin="0,10,0,0" HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="46"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="46"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52">
+                            <Viewbox Width="36" Height="36">
+                                <Path Data="M11,18V6L2.5,12L11,18M11.5,12L20,18V6L11.5,12Z" Fill="White"/>
+                            </Viewbox>
                         </Button>
-                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="60" Height="60">
-                            <SymbolIcon x:Name="AppleMusicPlayIcon" Symbol="Play" Foreground="White" RenderTransformOrigin="0.5,0.5">
-                                <SymbolIcon.RenderTransform>
-                                    <ScaleTransform ScaleX="2.2" ScaleY="2.2"/>
-                                </SymbolIcon.RenderTransform>
-                            </SymbolIcon>
+                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="66" Height="66">
+                            <Grid>
+                                <Viewbox x:Name="AppleMusicPlayBox" Width="52" Height="52" Visibility="Visible">
+                                    <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White"/>
+                                </Viewbox>
+                                <Viewbox x:Name="AppleMusicPauseBox" Width="52" Height="52" Visibility="Collapsed">
+                                    <Path Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="White"/>
+                                </Viewbox>
+                            </Grid>
                         </Button>
-                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
-                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE101;" Foreground="White" FontSize="30"/>
+                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52">
+                            <Viewbox Width="36" Height="36">
+                                <Path Data="M4,18L12.5,12L4,6V18M13,6V18L21.5,12L13,6Z" Fill="White"/>
+                            </Viewbox>
                         </Button>
                     </Grid>
+
                     <!-- VolumeRow -->
-                    <Grid Margin="0,14,0,0">
+                    <Grid Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <FontIcon Grid.Column="0" FontFamily="Segoe UI Symbol" Glyph="&#xE993;" Foreground="#B8FFFFFF" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <Viewbox Grid.Column="0" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center">
+                            <Path Data="M5,9V15H9L14,20V4L9,9H5M18.5,12C18.5,10.23 17.5,8.71 16,7.97V16.02C17.5,15.28 18.5,13.76 18.5,12Z" Fill="#B8FFFFFF"/>
+                        </Viewbox>
                         <Slider x:Name="AppleMusicVolumeSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="100" Style="{StaticResource AppleMusicSliderStyle}" ValueChanged="AppleMusicVolumeSlider_ValueChanged"/>
-                        <FontIcon Grid.Column="2" FontFamily="Segoe UI Symbol" Glyph="&#xE994;" Foreground="#B8FFFFFF" FontSize="16" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        <Viewbox Grid.Column="2" Width="18" Height="18" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <Path Data="M14,3.23V5.29C16.89,6.15 19,8.83 19,12C19,15.17 16.89,17.85 14,18.71V20.77C18.01,19.86 21,16.28 21,12C21,7.72 18.01,4.14 14,3.23M16.5,12C16.5,10.23 15.5,8.71 14,7.97V16.02C15.5,15.28 16.5,13.76 16.5,12M5,9V15H9L14,20V4L9,9H5Z" Fill="#B8FFFFFF"/>
+                        </Viewbox>
                     </Grid>
+
                     <!-- Dock -->
-                    <Grid Margin="0,14,0,0">
+                    <Grid Margin="0,12,0,0">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Border x:Name="DockLyricsBtn" Grid.Column="0" Background="Transparent" CornerRadius="20" Width="40" Height="40" HorizontalAlignment="Center" Tapped="DockLyrics_Tapped">
-                            <TextBlock Text="♪" FontSize="20" Foreground="#D9FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Viewbox Width="22" Height="22">
+                                <Path x:Name="DockLyricsPath" Data="M20,2H4A2,2 0 0,0 2,4V22L6,18H20A2,2 0 0,0 22,20V4A2,2 0 0,0 20,2M13,11H11V7H13V9H17V11H13Z" Fill="#D9FFFFFF"/>
+                            </Viewbox>
                         </Border>
-                        <Border x:Name="DockQueueBtn" Grid.Column="1" Background="Transparent" CornerRadius="20" Width="40" Height="40" HorizontalAlignment="Center" Tapped="DockQueue_Tapped">
-                            <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE142;" Foreground="#D9FFFFFF" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Grid Grid.Column="1"/>
+                        <Border x:Name="DockQueueBtn" Grid.Column="2" Background="Transparent" CornerRadius="20" Width="40" Height="40" HorizontalAlignment="Center" Tapped="DockQueue_Tapped">
+                            <Viewbox Width="22" Height="22">
+                                <Path x:Name="DockQueuePath" Data="M15,6H3V8H15V6M15,10H3V12H15V10M3,16H11V14H3V16M17,6V14.18C16.69,14.07 16.35,14 16,14A3,3 0 0,0 13,17A3,3 0 0,0 16,20A3,3 0 0,0 19,17V8H22V6H17Z" Fill="#D9FFFFFF"/>
+                            </Viewbox>
                         </Border>
                     </Grid>
                 </StackPanel>

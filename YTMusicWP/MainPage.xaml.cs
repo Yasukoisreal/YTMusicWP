@@ -100,8 +100,10 @@ namespace YTMusicWP
             Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;
             MiniPlayIcon.Symbol = sym;
             BigPlayIcon.Symbol = sym;
-            if (AppleMusicPlayIcon != null)
-                AppleMusicPlayIcon.Symbol = sym;
+            if (AppleMusicPlayBox != null)
+                AppleMusicPlayBox.Visibility = isPlaying ? Visibility.Collapsed : Visibility.Visible;
+            if (AppleMusicPauseBox != null)
+                AppleMusicPauseBox.Visibility = isPlaying ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private static readonly HttpClient _apiClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };

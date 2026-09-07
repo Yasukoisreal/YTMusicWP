@@ -267,6 +267,7 @@ namespace YTMusicWP
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
             settings.Values["NowPlayingStyle"] = styleTag;
             _isAppleMusicStyle = (idx == 1);
+            ApplyNowPlayingStyle();
         }
 
         private async void RefreshStorageStats_Click(object sender, RoutedEventArgs e)
