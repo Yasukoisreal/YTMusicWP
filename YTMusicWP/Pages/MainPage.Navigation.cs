@@ -123,7 +123,6 @@ namespace YTMusicWP
             _currentTab = tab;
 
             // [OPT] Stop background timers that animate offscreen elements
-            if (_gradientPulseTimer != null) _gradientPulseTimer.Stop();
             StopTitleMarquee();
             StopShortsLoop();
 

@@ -797,10 +797,8 @@ namespace YTMusicWP
             }
         }
 
-        // ── Dynamic & Genre-Based Animated Gradient for Now Playing ──
-        private DispatcherTimer _gradientPulseTimer;
+        // ── Dynamic & Genre-Based Gradient for Now Playing ──
         private Windows.UI.Color _currentGradientColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);
-        private bool _gradientPulseUp = true;
         private static readonly Dictionary<string, Windows.UI.Color> _dominantColorCache = new Dictionary<string, Windows.UI.Color>();
         private static readonly HttpClient _dominantHttpClient = CreateDominantHttpClient();
         private int _gradientSequence = 0;
@@ -1023,181 +1021,27 @@ namespace YTMusicWP
             return Windows.UI.Color.FromArgb(0, fadeColor.R, fadeColor.G, fadeColor.B);
         }
 
+        // [PERF] Instant direct assignment — eliminates CPU-bound dependent ColorAnimation lag on WP8.1
         private void AnimateGradientTo(Windows.UI.Color targetColor)
         {
             targetColor = AdjustAmbientColor(targetColor);
             _currentGradientColor = targetColor;
-            try
-            {
-                var midColor = Windows.UI.Color.FromArgb(
-                    255,
-                    (byte)(targetColor.R * 0.35),
-                    (byte)(targetColor.G * 0.35),
-                    (byte)(targetColor.B * 0.35));
 
-                var lyricsFadeColor = CalculateLyricsBottomFadeColor(targetColor);
-                var lyricsFadeTransparent = CalculateLyricsBottomFadeTransparent(lyricsFadeColor);
+            var midColor = Windows.UI.Color.FromArgb(
+                255,
+                (byte)(targetColor.R * 0.35),
+                (byte)(targetColor.G * 0.35),
+                (byte)(targetColor.B * 0.35));
 
-                // If views are collapsed or before animation starts, guarantee base color assignment
-                if (NowPlayingGradientTop != null)
-                {
-                    if (NowPlayingView == null || NowPlayingView.Visibility != Visibility.Visible)
-                        NowPlayingGradientTop.Color = targetColor;
-                }
-                if (NowPlayingGradientMid != null)
-                {
-                    if (NowPlayingView == null || NowPlayingView.Visibility != Visibility.Visible)
-                        NowPlayingGradientMid.Color = midColor;
-                }
-                if (LyricsFadeBottomStop0 != null)
-                {
-                    if (NowPlayingView == null || NowPlayingView.Visibility != Visibility.Visible)
-                        LyricsFadeBottomStop0.Color = lyricsFadeColor;
-                }
-                if (LyricsFadeBottomStop1 != null)
-                {
-                    if (NowPlayingView == null || NowPlayingView.Visibility != Visibility.Visible)
-                        LyricsFadeBottomStop1.Color = lyricsFadeTransparent;
-                }
-                if (FullscreenLyricsGradientTop != null)
-                {
-                    if (FullscreenLyricsView == null || FullscreenLyricsView.Visibility != Visibility.Visible)
-                        FullscreenLyricsGradientTop.Color = targetColor;
-                }
-                if (FullscreenLyricsGradientMid != null)
-                {
-                    if (FullscreenLyricsView == null || FullscreenLyricsView.Visibility != Visibility.Visible)
-                        FullscreenLyricsGradientMid.Color = midColor;
-                }
+            var lyricsFadeColor = CalculateLyricsBottomFadeColor(targetColor);
+            var lyricsFadeTransparent = CalculateLyricsBottomFadeTransparent(lyricsFadeColor);
 
-                var storyboard = new Windows.UI.Xaml.Media.Animation.Storyboard();
-                var ease = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
-
-                // 1. NowPlaying Top
-                if (NowPlayingGradientTop != null)
-                {
-                    var colorAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                    {
-                        From = NowPlayingGradientTop.Color,
-                        To = targetColor,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease,
-                        EnableDependentAnimation = true
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(colorAnim, NowPlayingGradientTop);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(colorAnim, "Color");
-                    storyboard.Children.Add(colorAnim);
-                }
-
-                // 2. NowPlaying Mid
-                if (NowPlayingGradientMid != null)
-                {
-                    var midAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                    {
-                        From = NowPlayingGradientMid.Color,
-                        To = midColor,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease,
-                        EnableDependentAnimation = true
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(midAnim, NowPlayingGradientMid);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(midAnim, "Color");
-                    storyboard.Children.Add(midAnim);
-                }
-
-                // 3. Fullscreen Lyrics Top
-                if (FullscreenLyricsGradientTop != null)
-                {
-                    var lyricsAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                    {
-                        From = FullscreenLyricsGradientTop.Color,
-                        To = targetColor,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease,
-                        EnableDependentAnimation = true
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(lyricsAnim, FullscreenLyricsGradientTop);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(lyricsAnim, "Color");
-                    storyboard.Children.Add(lyricsAnim);
-                }
-
-                // 4. Fullscreen Lyrics Mid
-                if (FullscreenLyricsGradientMid != null)
-                {
-                    var lyricsMidAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                    {
-                        From = FullscreenLyricsGradientMid.Color,
-                        To = midColor,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease,
-                        EnableDependentAnimation = true
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(lyricsMidAnim, FullscreenLyricsGradientMid);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(lyricsMidAnim, "Color");
-                    storyboard.Children.Add(lyricsMidAnim);
-                }
-
-                // 5. Lyrics Bottom Fade Opaque Stop
-                if (LyricsFadeBottomStop0 != null)
-                {
-                    var fadeAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                    {
-                        From = LyricsFadeBottomStop0.Color,
-                        To = lyricsFadeColor,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease,
-                        EnableDependentAnimation = true
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeAnim, LyricsFadeBottomStop0);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeAnim, "Color");
-                    storyboard.Children.Add(fadeAnim);
-                }
-
-                // 6. Lyrics Bottom Fade Transparent Stop
-                if (LyricsFadeBottomStop1 != null)
-                {
-                    var fadeTransAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                    {
-                        From = LyricsFadeBottomStop1.Color,
-                        To = lyricsFadeTransparent,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease,
-                        EnableDependentAnimation = true
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeTransAnim, LyricsFadeBottomStop1);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeTransAnim, "Color");
-                    storyboard.Children.Add(fadeTransAnim);
-                }
-
-                storyboard.Completed += (s, e) =>
-                {
-                    if (NowPlayingGradientTop != null) NowPlayingGradientTop.Color = targetColor;
-                    if (NowPlayingGradientMid != null) NowPlayingGradientMid.Color = midColor;
-                    if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = lyricsFadeColor;
-                    if (LyricsFadeBottomStop1 != null) LyricsFadeBottomStop1.Color = lyricsFadeTransparent;
-                    if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
-                    if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;
-                };
-
-                storyboard.Begin();
-                StartGradientPulse();
-            }
-            catch
-            {
-                var midColor = Windows.UI.Color.FromArgb(
-                    255,
-                    (byte)(targetColor.R * 0.35),
-                    (byte)(targetColor.G * 0.35),
-                    (byte)(targetColor.B * 0.35));
-                var lyricsFadeColor = CalculateLyricsBottomFadeColor(targetColor);
-                var lyricsFadeTransparent = CalculateLyricsBottomFadeTransparent(lyricsFadeColor);
-                if (NowPlayingGradientTop != null) NowPlayingGradientTop.Color = targetColor;
-                if (NowPlayingGradientMid != null) NowPlayingGradientMid.Color = midColor;
-                if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = lyricsFadeColor;
-                if (LyricsFadeBottomStop1 != null) LyricsFadeBottomStop1.Color = lyricsFadeTransparent;
-                if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
-                if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;
-            }
+            if (NowPlayingGradientTop != null) NowPlayingGradientTop.Color = targetColor;
+            if (NowPlayingGradientMid != null) NowPlayingGradientMid.Color = midColor;
+            if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = lyricsFadeColor;
+            if (LyricsFadeBottomStop1 != null) LyricsFadeBottomStop1.Color = lyricsFadeTransparent;
+            if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
+            if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;
         }
 
         private void UpdateNowPlayingGradient(string title, string artist, string thumbUrl = null)
@@ -1270,24 +1114,6 @@ namespace YTMusicWP
             }
         }
 
-        private void StartGradientPulse()
-        {
-            if (NowPlayingView.Visibility != Visibility.Visible && FullscreenLyricsView.Visibility != Visibility.Visible)
-            {
-                return;
-            }
-
-            if (_gradientPulseTimer != null)
-            {
-                _gradientPulseTimer.Stop();
-                _gradientPulseTimer.Tick -= GradientPulse_Tick;
-            }
-            // Invalidate cached gradient storyboard so it re-targets after color change
-            _gradientPulseSb = null;
-            _gradientPulseTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-            _gradientPulseTimer.Tick += GradientPulse_Tick;
-            _gradientPulseTimer.Start();
-        }
 
         // ═══════════════════════════════════════════════════════
         // Lyrics animation helpers
@@ -1538,116 +1364,7 @@ namespace YTMusicWP
             _lyricFsOpSb.Begin();
         }
 
-        // [OPT-6] Cached gradient pulse objects
-        private Windows.UI.Xaml.Media.Animation.Storyboard _gradientPulseSb;
-        private Windows.UI.Xaml.Media.Animation.ColorAnimation _gradientPulseAnim;
-        private Windows.UI.Xaml.Media.Animation.ColorAnimation _gradientPulseMidAnim;
-        private Windows.UI.Xaml.Media.Animation.ColorAnimation _gradientPulseFadeAnim;
-        private Windows.UI.Xaml.Media.Animation.ColorAnimation _gradientPulseFadeTransAnim;
 
-        private void GradientPulse_Tick(object sender, object e)
-        {
-            try
-            {
-                if (NowPlayingView.Visibility != Visibility.Visible && FullscreenLyricsView.Visibility != Visibility.Visible)
-                {
-                    _gradientPulseTimer?.Stop();
-                    return;
-                }
-
-                var baseColor = _currentGradientColor;
-                int shift = _gradientPulseUp ? 15 : -15;
-                byte r = (byte)Math.Max(0, Math.Min(255, baseColor.R + shift));
-                byte g = (byte)Math.Max(0, Math.Min(255, baseColor.G + shift));
-                byte b = (byte)Math.Max(0, Math.Min(255, baseColor.B + shift));
-                var targetColor = AdjustAmbientColor(Windows.UI.Color.FromArgb(255, r, g, b));
-
-                var targetMidColor = Windows.UI.Color.FromArgb(
-                    255,
-                    (byte)(targetColor.R * 0.35),
-                    (byte)(targetColor.G * 0.35),
-                    (byte)(targetColor.B * 0.35));
-
-                var targetFadeColor = CalculateLyricsBottomFadeColor(targetColor);
-                var targetFadeTrans = CalculateLyricsBottomFadeTransparent(targetFadeColor);
-
-                // Reuse storyboard + animation — only update To value
-                if (_gradientPulseSb == null)
-                {
-                    _gradientPulseAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                    {
-                        Duration = new Duration(TimeSpan.FromSeconds(3)),
-                        EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut },
-                        EnableDependentAnimation = true
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_gradientPulseAnim, NowPlayingGradientTop);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_gradientPulseAnim, "Color");
-                    _gradientPulseSb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-                    _gradientPulseSb.Children.Add(_gradientPulseAnim);
-
-                    if (NowPlayingGradientMid != null)
-                    {
-                        _gradientPulseMidAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                        {
-                            Duration = new Duration(TimeSpan.FromSeconds(3)),
-                            EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut },
-                            EnableDependentAnimation = true
-                        };
-                        Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_gradientPulseMidAnim, NowPlayingGradientMid);
-                        Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_gradientPulseMidAnim, "Color");
-                        _gradientPulseSb.Children.Add(_gradientPulseMidAnim);
-                    }
-
-                    if (LyricsFadeBottomStop0 != null)
-                    {
-                        _gradientPulseFadeAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                        {
-                            Duration = new Duration(TimeSpan.FromSeconds(3)),
-                            EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut },
-                            EnableDependentAnimation = true
-                        };
-                        Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_gradientPulseFadeAnim, LyricsFadeBottomStop0);
-                        Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_gradientPulseFadeAnim, "Color");
-                        _gradientPulseSb.Children.Add(_gradientPulseFadeAnim);
-                    }
-
-                    if (LyricsFadeBottomStop1 != null)
-                    {
-                        _gradientPulseFadeTransAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
-                        {
-                            Duration = new Duration(TimeSpan.FromSeconds(3)),
-                            EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut },
-                            EnableDependentAnimation = true
-                        };
-                        Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_gradientPulseFadeTransAnim, LyricsFadeBottomStop1);
-                        Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_gradientPulseFadeTransAnim, "Color");
-                        _gradientPulseSb.Children.Add(_gradientPulseFadeTransAnim);
-                    }
-                }
-                _gradientPulseSb.Stop();
-                if (NowPlayingGradientTop != null) _gradientPulseAnim.From = NowPlayingGradientTop.Color;
-                _gradientPulseAnim.To = targetColor;
-                if (_gradientPulseMidAnim != null && NowPlayingGradientMid != null)
-                {
-                    _gradientPulseMidAnim.From = NowPlayingGradientMid.Color;
-                    _gradientPulseMidAnim.To = targetMidColor;
-                }
-                if (_gradientPulseFadeAnim != null && LyricsFadeBottomStop0 != null)
-                {
-                    _gradientPulseFadeAnim.From = LyricsFadeBottomStop0.Color;
-                    _gradientPulseFadeAnim.To = targetFadeColor;
-                }
-                if (_gradientPulseFadeTransAnim != null && LyricsFadeBottomStop1 != null)
-                {
-                    _gradientPulseFadeTransAnim.From = LyricsFadeBottomStop1.Color;
-                    _gradientPulseFadeTransAnim.To = targetFadeTrans;
-                }
-                _gradientPulseSb.Begin();
-
-                _gradientPulseUp = !_gradientPulseUp;
-            }
-            catch { }
-        }
 
 
     }

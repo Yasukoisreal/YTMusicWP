@@ -182,8 +182,6 @@ namespace YTMusicWP
             // Block SearchBox focus BEFORE any panel changes
             if (SearchBox != null) SearchBox.IsTabStop = false;
             
-            // Stop gradient animation timer
-            if (_gradientPulseTimer != null) { _gradientPulseTimer.Stop(); }
             StopTitleMarquee();
 
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
