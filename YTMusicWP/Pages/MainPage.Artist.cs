@@ -29,6 +29,8 @@ namespace YTMusicWP
                     PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
                 }
                 PlaylistSongsList.ItemsSource = null;
+                ResetPlaylistFilter();
+                _currentPlaylistFullTracks = null;
                 PlaylistDetailsView.Visibility = Visibility.Visible;
                 PlaylistSlideInStoryboard.Begin();
                 
@@ -85,8 +87,7 @@ namespace YTMusicWP
                 
                 _currentViewingYtPlaylistId = playlistId;
                 _currentViewingPlaylist = new UserPlaylist { Name = playlistName, Tracks = tracks };
-                PlaylistSongsList.ItemsSource = _currentViewingPlaylist.Tracks;
-                PlaylistDetailsTrackCount.Text = tracks.Count + (string.IsNullOrEmpty(_playlistContinuationToken) ? "" : "+") + " tracks";
+                SetPlaylistViewTracks(_currentViewingPlaylist.Tracks, tracks.Count + (string.IsNullOrEmpty(_playlistContinuationToken) ? "" : "+") + " tracks");
 
                 HookPlaylistSongsScroll(); // Make sure scroll is hooked for continuation
             }

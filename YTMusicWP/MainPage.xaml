@@ -1131,8 +1131,10 @@
                     <TextBlock Text="⋮" FontSize="22" Foreground="White" FontWeight="Bold"/>
                     <Button.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem Text="Export Playlists" Click="ExportPlaylists_Click"/>
-                            <MenuFlyoutItem Text="Import Playlists" Click="ImportPlaylists_Click"/>
+                            <MenuFlyoutItem Text="Export Playlists (JSON)" Click="ExportPlaylists_Click"/>
+                            <MenuFlyoutItem Text="Import Playlists (JSON)" Click="ImportPlaylists_Click"/>
+                            <MenuFlyoutItem Text="💾 Export as M3U" Click="ExportAllPlaylistsM3u_Click"/>
+                            <MenuFlyoutItem Text="📥 Import M3U Playlist" Click="ImportM3uPlaylist_Click"/>
                         </MenuFlyout>
                     </Button.Flyout>
                 </Button>
@@ -1726,6 +1728,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
@@ -1744,13 +1747,31 @@
                     <Button Grid.Column="2" Click="PlaylistPinToStart_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" ToolTipService.ToolTip="Pin to Start">
                         <TextBlock Text="📌" FontSize="20" Foreground="White"/>
                     </Button>
-                    <Button Grid.Column="4" Content="⋮" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
+                    <Button Grid.Column="3" Click="PlaylistSearchToggle_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" ToolTipService.ToolTip="Filter songs">
+                        <TextBlock Text="🔍" FontSize="18" Foreground="White"/>
+                    </Button>
+                    <Button Grid.Column="5" Content="⋮" Foreground="#B3B3B3" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
                         <Button.Flyout>
                             <MenuFlyout>
                                 <MenuFlyoutItem Text="📌 Pin to Start Screen" Click="PlaylistPinToStart_Click"/>
+                                <MenuFlyoutItem Text="💾 Export to M3U" Click="ExportPlaylistM3u_Click"/>
                                 <MenuFlyoutItem Text="✖ Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
                             </MenuFlyout>
                         </Button.Flyout>
+                    </Button>
+                </Grid>
+                <!-- Quick Filter Bar -->
+                <Grid x:Name="PlaylistFilterContainer" Margin="0,15,0,0" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="PlaylistFilterBox" PlaceholderText="Find in playlist..." 
+                             TextChanged="PlaylistFilterBox_TextChanged"
+                             Background="#242424" Foreground="White" BorderThickness="0"
+                             FontSize="14" Height="42" Padding="12,8" Margin="0"/>
+                    <Button Grid.Column="1" Click="PlaylistFilterClear_Click" Style="{StaticResource IconButtonStyle}" Width="42" Height="42" Margin="6,0,0,0">
+                        <TextBlock Text="✕" FontSize="16" Foreground="#B3B3B3"/>
                     </Button>
                 </Grid>
             </StackPanel>

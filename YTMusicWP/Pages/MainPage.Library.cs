@@ -22,6 +22,8 @@ namespace YTMusicWP
         private string _libraryFilter = "all";
         private ObservableCollection<LibraryItem> _libraryItems = new ObservableCollection<LibraryItem>();
         private bool _isViewingLikedSongs = false;
+        private List<YouTubeTrack> _currentPlaylistFullTracks;
+        private string _pendingExportM3u;
 
         private static readonly SolidColorBrush _libChipActiveTextBrush = new SolidColorBrush(Windows.UI.Colors.Black);
 
@@ -146,6 +148,87 @@ namespace YTMusicWP
             LibraryEmptyState.Visibility = _libraryItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        private void SetPlaylistViewTracks(IEnumerable<YouTubeTrack> tracks, string trackCountText = null)
+        {
+            _currentPlaylistFullTracks = tracks != null ? tracks.ToList() : new List<YouTubeTrack>();
+            ResetPlaylistFilter();
+            PlaylistSongsList.ItemsSource = tracks;
+            if (!string.IsNullOrEmpty(trackCountText))
+                PlaylistDetailsTrackCount.Text = trackCountText;
+            else
+                PlaylistDetailsTrackCount.Text = _currentPlaylistFullTracks.Count + " tracks";
+        }
+
+        private void ResetPlaylistFilter()
+        {
+            if (PlaylistFilterBox != null) PlaylistFilterBox.Text = "";
+            if (PlaylistFilterContainer != null) PlaylistFilterContainer.Visibility = Visibility.Collapsed;
+        }
+
+        private void PlaylistSearchToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (PlaylistFilterContainer == null) return;
+            if (PlaylistFilterContainer.Visibility == Visibility.Collapsed)
+            {
+                PlaylistFilterContainer.Visibility = Visibility.Visible;
+                if (PlaylistFilterBox != null)
+                {
+                    PlaylistFilterBox.Focus(FocusState.Programmatic);
+                }
+            }
+            else
+            {
+                PlaylistFilterClear_Click(null, null);
+                PlaylistFilterContainer.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void PlaylistFilterClear_Click(object sender, RoutedEventArgs e)
+        {
+            if (PlaylistFilterBox != null)
+            {
+                PlaylistFilterBox.Text = "";
+            }
+            if (_currentPlaylistFullTracks != null)
+            {
+                PlaylistSongsList.ItemsSource = _currentPlaylistFullTracks;
+                PlaylistDetailsTrackCount.Text = _currentPlaylistFullTracks.Count + " tracks";
+            }
+        }
+
+        private void PlaylistFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (PlaylistFilterBox == null) return;
+
+            if (_currentPlaylistFullTracks == null || _currentPlaylistFullTracks.Count == 0)
+            {
+                var source = PlaylistSongsList.ItemsSource as IEnumerable<YouTubeTrack>;
+                if (source != null)
+                {
+                    _currentPlaylistFullTracks = source.ToList();
+                }
+            }
+
+            if (_currentPlaylistFullTracks == null) return;
+
+            string query = PlaylistFilterBox.Text.Trim();
+            if (string.IsNullOrEmpty(query))
+            {
+                PlaylistSongsList.ItemsSource = _currentPlaylistFullTracks;
+                PlaylistDetailsTrackCount.Text = _currentPlaylistFullTracks.Count + " tracks";
+                return;
+            }
+
+            query = query.ToLowerInvariant();
+            var filtered = _currentPlaylistFullTracks.Where(t =>
+                (!string.IsNullOrEmpty(t.Title) && t.Title.ToLowerInvariant().Contains(query)) ||
+                (!string.IsNullOrEmpty(t.ChannelName) && t.ChannelName.ToLowerInvariant().Contains(query))
+            ).ToList();
+
+            PlaylistSongsList.ItemsSource = filtered;
+            PlaylistDetailsTrackCount.Text = string.Format("{0} of {1} tracks", filtered.Count, _currentPlaylistFullTracks.Count);
+        }
+
         private void LibraryUnified_ItemClick(object sender, ItemClickEventArgs e)
         {
             var item = e.ClickedItem as LibraryItem;
@@ -168,8 +251,7 @@ namespace YTMusicWP
                     {
                         PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     }
-                    PlaylistSongsList.ItemsSource = favoriteTracks;
-                    PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs";
+                    SetPlaylistViewTracks(favoriteTracks, favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs");
                     PlaylistDetailsView.Visibility = Visibility.Visible;
                     PlaylistSlideInStoryboard.Begin();
                     HookPlaylistSongsScroll();
@@ -190,8 +272,7 @@ namespace YTMusicWP
                         {
                             PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                         }
-                        PlaylistSongsList.ItemsSource = pl.Tracks;
-                        PlaylistDetailsTrackCount.Text = (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks";
+                        SetPlaylistViewTracks(pl.Tracks, (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks");
                         PlaylistDetailsView.Visibility = Visibility.Visible;
                         PlaylistSlideInStoryboard.Begin();
                     }
@@ -202,8 +283,7 @@ namespace YTMusicWP
                     _currentViewingYtPlaylistId = null;
                     PlaylistDetailsTitle.Text = "Downloaded Songs";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
-                    PlaylistSongsList.ItemsSource = downloadedTracks;
-                    PlaylistDetailsTrackCount.Text = downloadedTracks.Count + " tracks";
+                    SetPlaylistViewTracks(downloadedTracks, downloadedTracks.Count + " tracks");
                     PlaylistDetailsView.Visibility = Visibility.Visible;
                     PlaylistSlideInStoryboard.Begin();
                     break;
@@ -213,8 +293,7 @@ namespace YTMusicWP
                     _currentViewingYtPlaylistId = null;
                     PlaylistDetailsTitle.Text = "Recently Played";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
-                    PlaylistSongsList.ItemsSource = historyTracks;
-                    PlaylistDetailsTrackCount.Text = historyTracks.Count + " tracks";
+                    SetPlaylistViewTracks(historyTracks, historyTracks.Count + " tracks");
                     PlaylistDetailsView.Visibility = Visibility.Visible;
                     PlaylistSlideInStoryboard.Begin();
                     break;
@@ -248,8 +327,7 @@ namespace YTMusicWP
             {
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             }
-            PlaylistSongsList.ItemsSource = favoriteTracks;
-            PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs";
+            SetPlaylistViewTracks(favoriteTracks, favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs");
             PlaylistDetailsView.Visibility = Visibility.Visible;
             PlaylistSlideInStoryboard.Begin();
             HookPlaylistSongsScroll();
@@ -271,8 +349,7 @@ namespace YTMusicWP
             {
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             }
-            PlaylistSongsList.ItemsSource = pl.Tracks;
-            PlaylistDetailsTrackCount.Text = (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks";
+            SetPlaylistViewTracks(pl.Tracks, (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks");
             PlaylistDetailsView.Visibility = Visibility.Visible;
             PlaylistSlideInStoryboard.Begin();
         }
@@ -453,18 +530,13 @@ namespace YTMusicWP
             PlaylistDetailsCoverBrush.ImageSource = null;
             PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             _isViewingLikedSongs = false;
+            ResetPlaylistFilter();
+            _currentPlaylistFullTracks = null;
         }
 
         private void PlayAllPlaylist_Click(object sender, RoutedEventArgs e)
         {
-            // Try _currentViewingPlaylist first (local playlists, YT playlists after load)
-            if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Count > 0)
-            {
-                PlayTrack(_currentViewingPlaylist.Tracks[0]);
-                return;
-            }
-
-            // Fallback: use whatever is bound to PlaylistSongsList (Liked Songs, Downloads, Recent, etc.)
+            // If filtered or active in list, play first track of displayed items
             var source = PlaylistSongsList.ItemsSource as System.Collections.IEnumerable;
             if (source != null)
             {
@@ -474,6 +546,13 @@ namespace YTMusicWP
                     PlayTrack(firstTrack);
                     return;
                 }
+            }
+
+            // Fallback: _currentViewingPlaylist
+            if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Count > 0)
+            {
+                PlayTrack(_currentViewingPlaylist.Tracks[0]);
+                return;
             }
 
             ShowToast("Playlist is empty!");
@@ -1118,7 +1197,13 @@ namespace YTMusicWP
         {
             try
             {
-                if (!string.IsNullOrEmpty(_pendingExportJson))
+                if (!string.IsNullOrEmpty(_pendingExportM3u))
+                {
+                    await FileIO.WriteTextAsync(file, _pendingExportM3u);
+                    ShowToast("Exported M3U playlist successfully!");
+                    _pendingExportM3u = null;
+                }
+                else if (!string.IsNullOrEmpty(_pendingExportJson))
                 {
                     await FileIO.WriteTextAsync(file, _pendingExportJson);
                     ShowToast("Exported " + _youtubeUserPlaylists.Count + " playlists!");
@@ -1126,6 +1211,265 @@ namespace YTMusicWP
                 }
             }
             catch (Exception ex) { ShowToast("Export failed: " + ex.Message); }
+        }
+
+        private void ExportPlaylistM3u_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var tracks = _currentPlaylistFullTracks;
+                if (tracks == null || tracks.Count == 0)
+                {
+                    var source = PlaylistSongsList.ItemsSource as IEnumerable<YouTubeTrack>;
+                    if (source != null) tracks = source.ToList();
+                }
+
+                if (tracks == null || tracks.Count == 0)
+                {
+                    ShowToast("Playlist is empty!");
+                    return;
+                }
+
+                string plTitle = PlaylistDetailsTitle.Text ?? "Playlist";
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("#EXTM3U");
+                sb.AppendLine("#PLAYLIST:" + plTitle);
+
+                foreach (var t in tracks)
+                {
+                    string name = !string.IsNullOrEmpty(t.ChannelName) ? string.Format("{0} - {1}", t.ChannelName, t.Title) : t.Title;
+                    sb.AppendLine(string.Format("#EXTINF:-1,{0}", name));
+                    if (t.VideoId != null && t.VideoId.StartsWith("LOCAL:"))
+                        sb.AppendLine(t.VideoId.Substring(6));
+                    else
+                        sb.AppendLine(string.Format("https://www.youtube.com/watch?v={0}", t.VideoId));
+                }
+
+                _pendingExportM3u = sb.ToString();
+
+                var picker = new FileSavePicker();
+                picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
+                picker.FileTypeChoices.Add("M3U Playlist", new List<string> { ".m3u" });
+                picker.SuggestedFileName = SanitizeFileName(plTitle);
+                picker.PickSaveFileAndContinue();
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Export M3U failed: " + ex.Message);
+            }
+        }
+
+        private async void ExportAllPlaylistsM3u_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("#EXTM3U");
+                sb.AppendLine("#PLAYLIST:All YTMusic Playlists");
+
+                int count = 0;
+                if (favoriteTracks.Count > 0)
+                {
+                    foreach (var t in favoriteTracks)
+                    {
+                        string name = !string.IsNullOrEmpty(t.ChannelName) ? string.Format("{0} - {1}", t.ChannelName, t.Title) : t.Title;
+                        sb.AppendLine(string.Format("#EXTINF:-1,{0}", name));
+                        sb.AppendLine(string.Format("https://www.youtube.com/watch?v={0}", t.VideoId));
+                        count++;
+                    }
+                }
+
+                foreach (var pl in _youtubeUserPlaylists)
+                {
+                    if (pl.PlaylistId.StartsWith("LOCAL_"))
+                    {
+                        var localTracks = await LoadLocalPlaylistTracksAsync(pl.PlaylistId);
+                        foreach (var t in localTracks)
+                        {
+                            string name = !string.IsNullOrEmpty(t.ChannelName) ? string.Format("{0} - {1}", t.ChannelName, t.Title) : t.Title;
+                            sb.AppendLine(string.Format("#EXTINF:-1,{0}", name));
+                            if (t.VideoId != null && t.VideoId.StartsWith("LOCAL:"))
+                                sb.AppendLine(t.VideoId.Substring(6));
+                            else
+                                sb.AppendLine(string.Format("https://www.youtube.com/watch?v={0}", t.VideoId));
+                            count++;
+                        }
+                    }
+                }
+
+                if (count == 0)
+                {
+                    ShowToast("No tracks to export!");
+                    return;
+                }
+
+                _pendingExportM3u = sb.ToString();
+
+                var picker = new FileSavePicker();
+                picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
+                picker.FileTypeChoices.Add("M3U Playlist", new List<string> { ".m3u" });
+                picker.SuggestedFileName = "all_playlists";
+                picker.PickSaveFileAndContinue();
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Export M3U failed: " + ex.Message);
+            }
+        }
+
+        private void ImportM3uPlaylist_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var picker = new FileOpenPicker();
+                picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
+                picker.FileTypeFilter.Add(".m3u");
+                picker.FileTypeFilter.Add(".m3u8");
+                picker.PickSingleFileAndContinue();
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Import M3U failed: " + ex.Message);
+            }
+        }
+
+        private async Task ImportM3uFileAsync(StorageFile file)
+        {
+            try
+            {
+                var lines = await FileIO.ReadLinesAsync(file);
+                string playlistName = file.DisplayName;
+                var tracks = new List<YouTubeTrack>();
+
+                string currentTitle = "";
+                string currentArtist = "";
+
+                foreach (var rawLine in lines)
+                {
+                    string line = rawLine != null ? rawLine.Trim() : "";
+                    if (string.IsNullOrEmpty(line)) continue;
+
+                    if (line.StartsWith("#PLAYLIST:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string name = line.Substring(10).Trim();
+                        if (!string.IsNullOrEmpty(name)) playlistName = name;
+                    }
+                    else if (line.StartsWith("#EXTINF:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        int commaIdx = line.IndexOf(',');
+                        if (commaIdx >= 0 && commaIdx + 1 < line.Length)
+                        {
+                            string info = line.Substring(commaIdx + 1).Trim();
+                            int dashIdx = info.IndexOf(" - ");
+                            if (dashIdx > 0)
+                            {
+                                currentArtist = info.Substring(0, dashIdx).Trim();
+                                currentTitle = info.Substring(dashIdx + 3).Trim();
+                            }
+                            else
+                            {
+                                currentArtist = "";
+                                currentTitle = info;
+                            }
+                        }
+                    }
+                    else if (!line.StartsWith("#"))
+                    {
+                        string videoId = ExtractVideoIdFromM3uLine(line);
+                        if (!string.IsNullOrEmpty(videoId))
+                        {
+                            tracks.Add(new YouTubeTrack
+                            {
+                                VideoId = videoId,
+                                Title = !string.IsNullOrEmpty(currentTitle) ? currentTitle : (videoId.StartsWith("LOCAL:") ? videoId.Substring(6) : videoId),
+                                ChannelName = currentArtist ?? "",
+                                ThumbnailUrl = videoId.StartsWith("LOCAL:") ? "" : string.Format("https://i.ytimg.com/vi/{0}/hqdefault.jpg", videoId)
+                            });
+                        }
+                        currentTitle = "";
+                        currentArtist = "";
+                    }
+                }
+
+                if (tracks.Count == 0)
+                {
+                    ShowToast("No valid tracks found in M3U file");
+                    return;
+                }
+
+                string playlistId = "LOCAL_" + Guid.NewGuid().ToString("N");
+                var plInfo = new YouTubePlaylistInfo
+                {
+                    PlaylistId = playlistId,
+                    Title = playlistName,
+                    TrackCount = tracks.Count,
+                    ThumbnailUrl = tracks.FirstOrDefault(t => !string.IsNullOrEmpty(t.ThumbnailUrl))?.ThumbnailUrl ?? ""
+                };
+
+                _youtubeUserPlaylists.Insert(0, plInfo);
+                SaveYouTubePlaylistsCacheAsync();
+                await SaveLocalPlaylistTracksAsync(playlistId, tracks);
+
+                RefreshLibraryList();
+                ShowToast(string.Format("Imported '{0}' ({1} songs)!", playlistName, tracks.Count));
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Failed to import M3U: " + ex.Message);
+            }
+        }
+
+        private static string ExtractVideoIdFromM3uLine(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return null;
+
+            int vIdx = line.IndexOf("v=");
+            if (vIdx >= 0)
+            {
+                string id = line.Substring(vIdx + 2);
+                int ampIdx = id.IndexOf('&');
+                if (ampIdx >= 0) id = id.Substring(0, ampIdx);
+                return id.Trim();
+            }
+
+            int beIdx = line.IndexOf("youtu.be/");
+            if (beIdx >= 0)
+            {
+                string id = line.Substring(beIdx + 9);
+                int qIdx = id.IndexOf('?');
+                if (qIdx >= 0) id = id.Substring(0, qIdx);
+                return id.Trim();
+            }
+
+            if (line.StartsWith("LOCAL:", StringComparison.OrdinalIgnoreCase))
+                return line;
+
+            if (line.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ||
+                line.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ||
+                line.EndsWith(".m4a", StringComparison.OrdinalIgnoreCase) ||
+                line.EndsWith(".aac", StringComparison.OrdinalIgnoreCase))
+            {
+                return "LOCAL:" + System.IO.Path.GetFileName(line);
+            }
+
+            if (line.Length == 11 && !line.Contains(" ") && !line.Contains("/") && !line.Contains(":"))
+                return line;
+
+            return null;
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return "playlist";
+            char[] invalids = System.IO.Path.GetInvalidFileNameChars();
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in name)
+            {
+                if (System.Array.IndexOf(invalids, c) < 0)
+                    sb.Append(c);
+            }
+            string res = sb.ToString().Trim();
+            return string.IsNullOrEmpty(res) ? "playlist" : res;
         }
 
         private void ImportPlaylists_Click(object sender, RoutedEventArgs e)
@@ -1144,6 +1488,13 @@ namespace YTMusicWP
         {
             try
             {
+                if (file.FileType.Equals(".m3u", StringComparison.OrdinalIgnoreCase) ||
+                    file.FileType.Equals(".m3u8", StringComparison.OrdinalIgnoreCase))
+                {
+                    await ImportM3uFileAsync(file);
+                    return;
+                }
+
                 string json = await FileIO.ReadTextAsync(file);
                 var data = JObject.Parse(json);
                 var playlists = data["playlists"] as JArray;
