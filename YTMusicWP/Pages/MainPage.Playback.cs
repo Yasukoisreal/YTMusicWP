@@ -967,6 +967,45 @@ namespace YTMusicWP
             return null;
         }
 
+        internal static Windows.UI.Color LerpColor(Windows.UI.Color from, Windows.UI.Color to, double t)
+        {
+            return Windows.UI.Color.FromArgb(255,
+                (byte)(from.R + (to.R - from.R) * t),
+                (byte)(from.G + (to.G - from.G) * t),
+                (byte)(from.B + (to.B - from.B) * t));
+        }
+
+        private async Task UpdateAppleMusicBackdropAsync(string thumbnailUrl, Windows.UI.Color seedColor)
+        {
+            if (string.IsNullOrEmpty(thumbnailUrl)) return;
+
+            var black = Windows.UI.Colors.Black;
+            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.05);
+            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.32);
+            if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.78);
+            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.78);
+
+            var cached = Services.LumiaBlurHelper.GetCached(thumbnailUrl);
+            if (cached != null)
+            {
+                if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = cached;
+                return;
+            }
+
+            try
+            {
+                var httpClient = new System.Net.Http.HttpClient();
+                var bytes = await httpClient.GetByteArrayAsync(thumbnailUrl);
+                using (var stream = new System.IO.MemoryStream(bytes))
+                {
+                    var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80);
+                    Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
+                    if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
+                }
+            }
+            catch { }
+        }
+
         private static Windows.UI.Color AdjustAmbientColor(Windows.UI.Color c)
         {
             double r = c.R, g = c.G, b = c.B;
@@ -1030,6 +1069,25 @@ namespace YTMusicWP
         // [PERF] Instant direct assignment — eliminates CPU-bound dependent ColorAnimation lag on WP8.1
         private void AnimateGradientTo(Windows.UI.Color targetColor)
         {
+            if (_isAppleMusicStyle)
+            {
+                _currentGradientColor = targetColor;
+                var black = Windows.UI.Colors.Black;
+                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.05);
+                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.32);
+                if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(targetColor, black, 0.78);
+                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.78);
+
+                var fadeColor = LerpColor(targetColor, black, 0.78);
+                if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = fadeColor;
+                if (LyricsFadeBottomStop1 != null)
+                    LyricsFadeBottomStop1.Color = Windows.UI.Color.FromArgb(0, fadeColor.R, fadeColor.G, fadeColor.B);
+
+                bool isVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible);
+                if (isVisible) UpdateStatusBarColor(true);
+                return;
+            }
+
             targetColor = AdjustAmbientColor(targetColor);
             _currentGradientColor = targetColor;
 
@@ -1165,6 +1223,10 @@ namespace YTMusicWP
                     if (_dominantColorCache.TryGetValue(thumbUrl, out cached))
                     {
                         AnimateGradientTo(cached);
+                        if (_isAppleMusicStyle)
+                        {
+                            var ignored = UpdateAppleMusicBackdropAsync(thumbUrl, cached);
+                        }
                         return;
                     }
                 }
@@ -1215,7 +1277,12 @@ namespace YTMusicWP
                         await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                         {
                             if (currentSeq != _gradientSequence) return;
-                            AnimateGradientTo(color.Value);
+                            var dominantColor = color.Value;
+                            AnimateGradientTo(dominantColor);
+                            if (_isAppleMusicStyle && thumbUrl != null)
+                            {
+                                var ignored = UpdateAppleMusicBackdropAsync(thumbUrl, dominantColor);
+                            }
                         });
                     }
                 });
