@@ -115,34 +115,35 @@ namespace YTMusicWP.Services
         {
             try
             {
+                var inv = System.Globalization.CultureInfo.InvariantCulture;
                 if (timeStr.Contains(":"))
                 {
                     var parts = timeStr.Split(':');
                     if (parts.Length == 2)
                     {
-                        double m = double.Parse(parts[0]);
-                        double s = double.Parse(parts[1]);
+                        double m = double.Parse(parts[0], inv);
+                        double s = double.Parse(parts[1], inv);
                         return (m * 60) + s;
                     }
                     else if (parts.Length == 3)
                     {
-                        double h = double.Parse(parts[0]);
-                        double m = double.Parse(parts[1]);
-                        double s = double.Parse(parts[2]);
+                        double h = double.Parse(parts[0], inv);
+                        double m = double.Parse(parts[1], inv);
+                        double s = double.Parse(parts[2], inv);
                         return (h * 3600) + (m * 60) + s;
                     }
                 }
                 else if (timeStr.EndsWith("s"))
                 {
-                    return double.Parse(timeStr.TrimEnd('s'));
+                    return double.Parse(timeStr.TrimEnd('s'), inv);
                 }
                 else if (timeStr.EndsWith("ms"))
                 {
-                    return double.Parse(timeStr.Substring(0, timeStr.Length - 2)) / 1000.0;
+                    return double.Parse(timeStr.Substring(0, timeStr.Length - 2), inv) / 1000.0;
                 }
                 else if (timeStr.Contains("."))
                 {
-                    return double.Parse(timeStr);
+                    return double.Parse(timeStr, inv);
                 }
             }
             catch { }
