@@ -1347,6 +1347,8 @@ namespace YTMusicWP
                 }
                 try
                 {
+                    Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(
+                        Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseCoreWindow);
                     var statusBar = Windows.UI.ViewManagement.StatusBar.GetForCurrentView();
                     if (statusBar != null)
                     {
@@ -1357,6 +1359,13 @@ namespace YTMusicWP
                 catch { }
                 return;
             }
+
+            try
+            {
+                Windows.UI.ViewManagement.ApplicationView.GetForCurrentView().SetDesiredBoundsMode(
+                    Windows.UI.ViewManagement.ApplicationViewBoundsMode.UseVisible);
+            }
+            catch { }
 
             var target = isNowPlaying ? _currentGradientColor : Windows.UI.Color.FromArgb(255, 18, 18, 18);
             if (animate)
