@@ -2222,7 +2222,10 @@
                         <DataTemplate><Grid Height="0" Visibility="Collapsed"/></DataTemplate>
                     </Pivot.HeaderTemplate>
                     <Pivot.ItemContainerStyle>
-                        <Style TargetType="PivotItem"><Setter Property="Margin" Value="0"/></Style>
+                        <Style TargetType="PivotItem">
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="Padding" Value="0"/>
+                        </Style>
                     </Pivot.ItemContainerStyle>
                     <!-- Player page -->
                     <PivotItem>
@@ -2247,7 +2250,7 @@
                             <ScrollViewer x:Name="LyricsFallbackScrollViewer" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
                                 <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#B3B3B3" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
                             </ScrollViewer>
-                            <ListView x:Name="LyricsListView" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="10,0" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
+                            <ListView x:Name="LyricsListView" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="15,0" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,8" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left"/>
@@ -2257,7 +2260,7 @@
                                     <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
-                            <Rectangle Height="60" VerticalAlignment="Bottom" IsHitTestVisible="False">
+                            <Rectangle Height="70" VerticalAlignment="Bottom" Margin="0,0,0,-1" IsHitTestVisible="False">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
                                         <GradientStop x:Name="LyricsFadeBottomStop0" Color="#121212" Offset="0"/>

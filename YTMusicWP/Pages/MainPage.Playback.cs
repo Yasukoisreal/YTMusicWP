@@ -981,13 +981,21 @@ namespace YTMusicWP
 
         private static Windows.UI.Color CalculateLyricsBottomFadeColor(Windows.UI.Color targetColor)
         {
-            byte midR = (byte)(targetColor.R * 0.35);
-            byte midG = (byte)(targetColor.G * 0.35);
-            byte midB = (byte)(targetColor.B * 0.35);
+            // NowPlayingGradient has:
+            // - Top (Offset 0.0): targetColor
+            // - Mid (Offset 0.55): midColor = targetColor * 0.35
+            // - Bottom (Offset 1.0): #0D0D0D (RGB: 13, 13, 13)
+            // The lyrics list bottom boundary sits at ~69% of the screen height (offset 0.69).
+            // Between offset 0.55 and 1.0:
+            // t = (0.69 - 0.55) / (1.0 - 0.55) = 0.14 / 0.45 ≈ 0.31
+            // Therefore: 69% weight of midColor + 31% weight of #0D0D0D.
+            double midR = targetColor.R * 0.35;
+            double midG = targetColor.G * 0.35;
+            double midB = targetColor.B * 0.35;
 
-            byte fadeR = (byte)Math.Max(13, (int)(midR * 0.58 + 13 * 0.42));
-            byte fadeG = (byte)Math.Max(13, (int)(midG * 0.58 + 13 * 0.42));
-            byte fadeB = (byte)Math.Max(13, (int)(midB * 0.58 + 13 * 0.42));
+            byte fadeR = (byte)Math.Min(255, Math.Max(0, (int)Math.Round(midR * 0.69 + 13.0 * 0.31)));
+            byte fadeG = (byte)Math.Min(255, Math.Max(0, (int)Math.Round(midG * 0.69 + 13.0 * 0.31)));
+            byte fadeB = (byte)Math.Min(255, Math.Max(0, (int)Math.Round(midB * 0.69 + 13.0 * 0.31)));
 
             return Windows.UI.Color.FromArgb(255, fadeR, fadeG, fadeB);
         }
