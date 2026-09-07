@@ -2597,9 +2597,9 @@
                                 <Path Data="M11,18V6L2.5,12L11,18M11.5,12L20,18V6L11.5,12Z" Fill="White"/>
                             </Viewbox>
                         </Button>
-                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="62" Height="62">
+                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="62" Height="62" Padding="0">
                             <Grid>
-                                <Viewbox x:Name="AppleMusicPlayBox" Width="48" Height="48" Visibility="Visible" Margin="3,0,0,0">
+                                <Viewbox x:Name="AppleMusicPlayBox" Width="48" Height="48" Visibility="Visible">
                                     <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White"/>
                                 </Viewbox>
                                 <Viewbox x:Name="AppleMusicPauseBox" Width="48" Height="48" Visibility="Collapsed">
