@@ -139,6 +139,18 @@ namespace YTMusicWP
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
         {
             NowPlayingView.Visibility = Visibility.Visible;
+            if (NowPlayingGradientTop != null)
+            {
+                NowPlayingGradientTop.Color = _currentGradientColor;
+                if (NowPlayingGradientMid != null)
+                {
+                    NowPlayingGradientMid.Color = Windows.UI.Color.FromArgb(
+                        255,
+                        (byte)(_currentGradientColor.R * 0.35),
+                        (byte)(_currentGradientColor.G * 0.35),
+                        (byte)(_currentGradientColor.B * 0.35));
+                }
+            }
             if (this.Resources.ContainsKey("SlideUpStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideUpStoryboard"];

@@ -802,8 +802,19 @@ namespace YTMusicWP
         private Windows.UI.Color _currentGradientColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);
         private bool _gradientPulseUp = true;
         private static readonly Dictionary<string, Windows.UI.Color> _dominantColorCache = new Dictionary<string, Windows.UI.Color>();
-        private static readonly HttpClient _dominantHttpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(6) };
+        private static readonly HttpClient _dominantHttpClient = CreateDominantHttpClient();
         private int _gradientSequence = 0;
+
+        private static HttpClient CreateDominantHttpClient()
+        {
+            var client = new HttpClient { Timeout = TimeSpan.FromSeconds(6) };
+            try
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+            }
+            catch { }
+            return client;
+        }
 
         private static string GetDominantColorThumbnailUrl(string url)
         {
@@ -827,6 +838,7 @@ namespace YTMusicWP
                         return "https://i.ytimg.com/vi/" + vidId + "/mqdefault.jpg";
                     }
                 }
+                if (url.Contains("maxresdefault.jpg")) return url.Replace("maxresdefault.jpg", "mqdefault.jpg");
                 if (url.Contains("hqdefault.jpg")) return url.Replace("hqdefault.jpg", "mqdefault.jpg");
                 if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "mqdefault.jpg");
             }
@@ -836,6 +848,7 @@ namespace YTMusicWP
         private async Task<Windows.UI.Color?> ExtractDominantColorAsync(string thumbUrl)
         {
             if (string.IsNullOrEmpty(thumbUrl)) return null;
+            if (thumbUrl.StartsWith("ms-appx:") || thumbUrl.StartsWith("ms-appdata:")) return null;
 
             lock (_dominantColorCache)
             {
@@ -866,7 +879,7 @@ namespace YTMusicWP
                     {
                         ScaledWidth = 24,
                         ScaledHeight = 24,
-                        InterpolationMode = BitmapInterpolationMode.Fant
+                        InterpolationMode = BitmapInterpolationMode.Linear
                     };
 
                     var pixelData = await decoder.GetPixelDataAsync(
@@ -977,6 +990,28 @@ namespace YTMusicWP
                     (byte)(targetColor.G * 0.35),
                     (byte)(targetColor.B * 0.35));
 
+                // If views are collapsed or before animation starts, guarantee base color assignment
+                if (NowPlayingGradientTop != null)
+                {
+                    if (NowPlayingView == null || NowPlayingView.Visibility != Visibility.Visible)
+                        NowPlayingGradientTop.Color = targetColor;
+                }
+                if (NowPlayingGradientMid != null)
+                {
+                    if (NowPlayingView == null || NowPlayingView.Visibility != Visibility.Visible)
+                        NowPlayingGradientMid.Color = midColor;
+                }
+                if (FullscreenLyricsGradientTop != null)
+                {
+                    if (FullscreenLyricsView == null || FullscreenLyricsView.Visibility != Visibility.Visible)
+                        FullscreenLyricsGradientTop.Color = targetColor;
+                }
+                if (FullscreenLyricsGradientMid != null)
+                {
+                    if (FullscreenLyricsView == null || FullscreenLyricsView.Visibility != Visibility.Visible)
+                        FullscreenLyricsGradientMid.Color = midColor;
+                }
+
                 var storyboard = new Windows.UI.Xaml.Media.Animation.Storyboard();
                 var ease = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut };
 
@@ -985,9 +1020,11 @@ namespace YTMusicWP
                 {
                     var colorAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
                     {
+                        From = NowPlayingGradientTop.Color,
                         To = targetColor,
                         Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease
+                        EasingFunction = ease,
+                        EnableDependentAnimation = true
                     };
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(colorAnim, NowPlayingGradientTop);
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(colorAnim, "Color");
@@ -999,9 +1036,11 @@ namespace YTMusicWP
                 {
                     var midAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
                     {
+                        From = NowPlayingGradientMid.Color,
                         To = midColor,
                         Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease
+                        EasingFunction = ease,
+                        EnableDependentAnimation = true
                     };
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(midAnim, NowPlayingGradientMid);
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(midAnim, "Color");
@@ -1013,9 +1052,11 @@ namespace YTMusicWP
                 {
                     var lyricsAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
                     {
+                        From = FullscreenLyricsGradientTop.Color,
                         To = targetColor,
                         Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease
+                        EasingFunction = ease,
+                        EnableDependentAnimation = true
                     };
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(lyricsAnim, FullscreenLyricsGradientTop);
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(lyricsAnim, "Color");
@@ -1027,19 +1068,40 @@ namespace YTMusicWP
                 {
                     var lyricsMidAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
                     {
+                        From = FullscreenLyricsGradientMid.Color,
                         To = midColor,
                         Duration = new Duration(TimeSpan.FromMilliseconds(800)),
-                        EasingFunction = ease
+                        EasingFunction = ease,
+                        EnableDependentAnimation = true
                     };
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(lyricsMidAnim, FullscreenLyricsGradientMid);
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(lyricsMidAnim, "Color");
                     storyboard.Children.Add(lyricsMidAnim);
                 }
 
+                storyboard.Completed += (s, e) =>
+                {
+                    if (NowPlayingGradientTop != null) NowPlayingGradientTop.Color = targetColor;
+                    if (NowPlayingGradientMid != null) NowPlayingGradientMid.Color = midColor;
+                    if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
+                    if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;
+                };
+
                 storyboard.Begin();
                 StartGradientPulse();
             }
-            catch { }
+            catch
+            {
+                var midColor = Windows.UI.Color.FromArgb(
+                    255,
+                    (byte)(targetColor.R * 0.35),
+                    (byte)(targetColor.G * 0.35),
+                    (byte)(targetColor.B * 0.35));
+                if (NowPlayingGradientTop != null) NowPlayingGradientTop.Color = targetColor;
+                if (NowPlayingGradientMid != null) NowPlayingGradientMid.Color = midColor;
+                if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
+                if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;
+            }
         }
 
         private void UpdateNowPlayingGradient(string title, string artist, string thumbUrl = null)
@@ -1414,7 +1476,8 @@ namespace YTMusicWP
                     _gradientPulseAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
                     {
                         Duration = new Duration(TimeSpan.FromSeconds(3)),
-                        EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
+                        EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut },
+                        EnableDependentAnimation = true
                     };
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_gradientPulseAnim, NowPlayingGradientTop);
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_gradientPulseAnim, "Color");
@@ -1426,7 +1489,8 @@ namespace YTMusicWP
                         _gradientPulseMidAnim = new Windows.UI.Xaml.Media.Animation.ColorAnimation
                         {
                             Duration = new Duration(TimeSpan.FromSeconds(3)),
-                            EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut }
+                            EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseInOut },
+                            EnableDependentAnimation = true
                         };
                         Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_gradientPulseMidAnim, NowPlayingGradientMid);
                         Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(_gradientPulseMidAnim, "Color");
@@ -1434,8 +1498,13 @@ namespace YTMusicWP
                     }
                 }
                 _gradientPulseSb.Stop();
+                if (NowPlayingGradientTop != null) _gradientPulseAnim.From = NowPlayingGradientTop.Color;
                 _gradientPulseAnim.To = targetColor;
-                if (_gradientPulseMidAnim != null) _gradientPulseMidAnim.To = targetMidColor;
+                if (_gradientPulseMidAnim != null && NowPlayingGradientMid != null)
+                {
+                    _gradientPulseMidAnim.From = NowPlayingGradientMid.Color;
+                    _gradientPulseMidAnim.To = targetMidColor;
+                }
                 _gradientPulseSb.Begin();
 
                 _gradientPulseUp = !_gradientPulseUp;
