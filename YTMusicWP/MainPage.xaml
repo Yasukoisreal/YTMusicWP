@@ -2371,7 +2371,7 @@
                                     <TextBlock x:Name="AppleMusicLyricsArtist" Text="" FontSize="12" Foreground="#B3B3B3" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="22" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0"/>
+                                    <Button x:Name="AppleMusicLyricsHeartBtn" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="22" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0"/>
                                     <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0">
                                         <Viewbox Width="18" Height="18"><Path Data="M12,16A2,2 0 0,1 10,14A2,2 0 0,1 12,12A2,2 0 0,1 14,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10M12,22A2,2 0 0,1 10,20A2,2 0 0,1 12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22Z" Fill="White"/></Viewbox>
                                     </Button>
@@ -2431,7 +2431,7 @@
                                         <TextBlock x:Name="AppleMusicQueueArtist" Text="" FontSize="12" Foreground="#B3B3B3" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="22" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0"/>
+                                        <Button x:Name="AppleMusicQueueHeartBtn" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="22" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0"/>
                                         <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40" Padding="0" MinWidth="0" MinHeight="0">
                                             <Viewbox Width="18" Height="18"><Path Data="M12,16A2,2 0 0,1 10,14A2,2 0 0,1 12,12A2,2 0 0,1 14,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10M12,22A2,2 0 0,1 10,20A2,2 0 0,1 12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22Z" Fill="White"/></Viewbox>
                                         </Button>

@@ -1035,6 +1035,20 @@ namespace YTMusicWP
                 if (AppleMusicArtwork != null)
                     AppleMusicArtwork.Source = BigCoverImage.ImageSource as Windows.UI.Xaml.Media.Imaging.BitmapImage;
             }
+
+            bool isFav = favoriteTracks.Any(t => t.VideoId == currentTrack.VideoId);
+            var heartContent = isFav ? "♥" : "♡";
+            var heartFg = isFav ? _greenBrush : _whiteBrush;
+            if (AppleMusicLyricsHeartBtn != null)
+            {
+                AppleMusicLyricsHeartBtn.Content = heartContent;
+                AppleMusicLyricsHeartBtn.Foreground = heartFg;
+            }
+            if (AppleMusicQueueHeartBtn != null)
+            {
+                AppleMusicQueueHeartBtn.Content = heartContent;
+                AppleMusicQueueHeartBtn.Foreground = heartFg;
+            }
         }
 
         private void QueueInfoPill_Tapped(object sender, TappedRoutedEventArgs e)

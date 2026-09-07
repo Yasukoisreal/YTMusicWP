@@ -345,6 +345,8 @@ namespace YTMusicWP
                 favoriteTracks.Remove(existing); 
                 BigHeartBtn.Content = "♡"; 
                 BigHeartBtn.Foreground = _whiteBrush; 
+                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♡"; AppleMusicLyricsHeartBtn.Foreground = _whiteBrush; }
+                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♡"; AppleMusicQueueHeartBtn.Foreground = _whiteBrush; }
                 var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(currentTrack.VideoId);
             }
             else 
@@ -352,6 +354,8 @@ namespace YTMusicWP
                 favoriteTracks.Insert(0, currentTrack); 
                 BigHeartBtn.Content = "♥"; 
                 BigHeartBtn.Foreground = _greenBrush; 
+                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♥"; AppleMusicLyricsHeartBtn.Foreground = _greenBrush; }
+                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♥"; AppleMusicQueueHeartBtn.Foreground = _greenBrush; }
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(currentTrack);
             }
 
@@ -361,11 +365,6 @@ namespace YTMusicWP
                 string rating = isAdding ? "like" : "none";
                 await RateVideoAsync(currentTrack.VideoId, rating);
             }
-        }
-
-        private void UpdatePlayPauseUI(bool isPlaying)
-        {
-            SetPlayPauseIcon(isPlaying);
         }
 
         private void ShuffleButton_Click(object sender, RoutedEventArgs e)
@@ -1123,6 +1122,8 @@ namespace YTMusicWP
                 if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = fadeColor;
                 if (LyricsFadeBottomStop1 != null)
                     LyricsFadeBottomStop1.Color = Windows.UI.Color.FromArgb(0, fadeColor.R, fadeColor.G, fadeColor.B);
+
+                UpdateDockActiveState(NowPlayingPivot != null && NowPlayingPivot.SelectedIndex > 0 ? NowPlayingPivot.SelectedIndex : -1);
 
                 bool isVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible);
                 if (isVisible) UpdateStatusBarColor(true);
