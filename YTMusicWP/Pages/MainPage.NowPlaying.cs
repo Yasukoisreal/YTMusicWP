@@ -139,7 +139,7 @@ namespace YTMusicWP
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
         {
             NowPlayingView.Visibility = Visibility.Visible;
-            UpdateStatusBarColor(true);
+            UpdateStatusBarColor(true, animate: true, durationMs: 350);
             if (NowPlayingGradientTop != null)
             {
                 NowPlayingGradientTop.Color = _currentGradientColor;
@@ -187,13 +187,14 @@ namespace YTMusicWP
 
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {
+                UpdateStatusBarColor(false, animate: true, durationMs: 300);
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"];
                 storyboard.Begin();
             }
             else
             {
                 NowPlayingView.Visibility = Visibility.Collapsed;
-                UpdateStatusBarColor(false);
+                UpdateStatusBarColor(false, animate: false);
                 RestoreSearchBoxFocus();
             }
         }
@@ -308,7 +309,7 @@ namespace YTMusicWP
         private void SlideDownStoryboard_Completed(object sender, object e)
         {
             NowPlayingView.Visibility = Visibility.Collapsed;
-            UpdateStatusBarColor(false);
+            UpdateStatusBarColor(false, animate: false);
             RestoreSearchBoxFocus();
         }
 
@@ -535,7 +536,7 @@ namespace YTMusicWP
                 else
                 {
                     NowPlayingView.Visibility = Visibility.Collapsed;
-                    UpdateStatusBarColor(false);
+                    UpdateStatusBarColor(false, animate: false);
                     OpenArtistProfile(currentTrack.ChannelId, artists.Count == 1 ? artists[0] : artistStr);
                 }
             }
@@ -560,7 +561,7 @@ namespace YTMusicWP
             if (!string.IsNullOrEmpty(artistName))
             {
                 NowPlayingView.Visibility = Visibility.Collapsed;
-                UpdateStatusBarColor(false);
+                UpdateStatusBarColor(false, animate: false);
 
                 var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 string cachedChId = localSettings["AvatarChId_" + artistName.ToLowerInvariant()] as string;

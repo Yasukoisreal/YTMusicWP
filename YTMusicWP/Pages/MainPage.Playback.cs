@@ -799,6 +799,8 @@ namespace YTMusicWP
 
         // ── Dynamic & Genre-Based Gradient for Now Playing ──
         private Windows.UI.Color _currentGradientColor = Windows.UI.Color.FromArgb(255, 30, 50, 70);
+        private Windows.UI.Color _currentStatusBarColor = Windows.UI.Color.FromArgb(255, 18, 18, 18);
+        private CancellationTokenSource _statusBarAnimCts;
         private static readonly Dictionary<string, Windows.UI.Color> _dominantColorCache = new Dictionary<string, Windows.UI.Color>();
         private static readonly HttpClient _dominantHttpClient = CreateDominantHttpClient();
         private int _gradientSequence = 0;
@@ -1051,19 +1053,99 @@ namespace YTMusicWP
             }
         }
 
-        private void UpdateStatusBarColor(bool isNowPlaying)
+        private async Task AnimateStatusBarColorAsync(Windows.UI.Color targetColor, int durationMs = 350)
         {
             try
             {
-                var statusBar = Windows.UI.ViewManagement.StatusBar.GetForCurrentView();
-                if (statusBar != null)
+                if (_statusBarAnimCts != null)
                 {
-                    statusBar.BackgroundColor = isNowPlaying ? _currentGradientColor : Windows.UI.Color.FromArgb(255, 18, 18, 18);
+                    _statusBarAnimCts.Cancel();
+                    _statusBarAnimCts = null;
+                }
+
+                var cts = new CancellationTokenSource();
+                _statusBarAnimCts = cts;
+
+                var statusBar = Windows.UI.ViewManagement.StatusBar.GetForCurrentView();
+                if (statusBar == null) return;
+
+                var startColor = _currentStatusBarColor;
+                if (startColor.R == targetColor.R && startColor.G == targetColor.G && startColor.B == targetColor.B)
+                {
+                    statusBar.BackgroundColor = targetColor;
                     statusBar.BackgroundOpacity = 1.0;
                     statusBar.ForegroundColor = Windows.UI.Colors.White;
+                    return;
+                }
+
+                int steps = 10;
+                int stepDelay = Math.Max(15, durationMs / steps);
+
+                for (int i = 1; i <= steps; i++)
+                {
+                    if (cts.IsCancellationRequested) return;
+
+                    double t = (double)i / steps;
+                    // Smooth cubic ease-in-out (smoothstep: 3t^2 - 2t^3)
+                    t = t * t * (3.0 - 2.0 * t);
+
+                    byte r = (byte)Math.Max(0, Math.Min(255, Math.Round(startColor.R + (targetColor.R - startColor.R) * t)));
+                    byte g = (byte)Math.Max(0, Math.Min(255, Math.Round(startColor.G + (targetColor.G - startColor.G) * t)));
+                    byte b = (byte)Math.Max(0, Math.Min(255, Math.Round(startColor.B + (targetColor.B - startColor.B) * t)));
+
+                    var stepColor = Windows.UI.Color.FromArgb(255, r, g, b);
+                    statusBar.BackgroundColor = stepColor;
+                    statusBar.BackgroundOpacity = 1.0;
+                    statusBar.ForegroundColor = Windows.UI.Colors.White;
+                    _currentStatusBarColor = stepColor;
+
+                    await Task.Delay(stepDelay);
+                }
+
+                if (!cts.IsCancellationRequested)
+                {
+                    statusBar.BackgroundColor = targetColor;
+                    statusBar.BackgroundOpacity = 1.0;
+                    statusBar.ForegroundColor = Windows.UI.Colors.White;
+                    _currentStatusBarColor = targetColor;
                 }
             }
             catch { }
+        }
+
+        private void UpdateStatusBarColor(bool isNowPlaying, bool animate = true, int durationMs = 350)
+        {
+            if (!Dispatcher.HasThreadAccess)
+            {
+                var ignored = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => UpdateStatusBarColor(isNowPlaying, animate, durationMs));
+                return;
+            }
+
+            var target = isNowPlaying ? _currentGradientColor : Windows.UI.Color.FromArgb(255, 18, 18, 18);
+            if (animate)
+            {
+                var _ = AnimateStatusBarColorAsync(target, durationMs);
+            }
+            else
+            {
+                if (_statusBarAnimCts != null)
+                {
+                    _statusBarAnimCts.Cancel();
+                    _statusBarAnimCts = null;
+                }
+                try
+                {
+                    var statusBar = Windows.UI.ViewManagement.StatusBar.GetForCurrentView();
+                    if (statusBar != null)
+                    {
+                        statusBar.BackgroundColor = target;
+                        statusBar.BackgroundOpacity = 1.0;
+                        statusBar.ForegroundColor = Windows.UI.Colors.White;
+                        _currentStatusBarColor = target;
+                    }
+                }
+                catch { }
+            }
         }
 
         private void UpdateNowPlayingGradient(string title, string artist, string thumbUrl = null)

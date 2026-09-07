@@ -202,7 +202,7 @@ namespace YTMusicWP
 
             Application.Current.Suspending += Current_Suspending;
             Application.Current.Resuming += Current_Resuming;
-            UpdateStatusBarColor(false);
+            UpdateStatusBarColor(false, animate: false);
         }
 
         private void HomeQuickGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -263,7 +263,7 @@ namespace YTMusicWP
 
                 bool npVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
                                || (FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible);
-                UpdateStatusBarColor(npVisible);
+                UpdateStatusBarColor(npVisible, animate: false);
             }
             catch { }
 
