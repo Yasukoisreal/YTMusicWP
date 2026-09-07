@@ -155,6 +155,7 @@ namespace AudioPlayerTask
             _isRetrying = false;
             _resolvedUrl = null;
             _innerTubeAttempted = false;
+            _isPreResolving = false;
         }
 
         // ==========================================
@@ -661,9 +662,9 @@ namespace AudioPlayerTask
                 }
             }
 
-            // FALLBACK: URL tÃƒÂ¡Ã‚Â»Ã‚Â« MainPage ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â nÃƒÂ¡Ã‚ÂºÃ‚Â¿u rÃƒÂ¡Ã‚Â»Ã¢â‚¬â€ng thÃƒÆ’Ã‚Â¬ resolve InnerTube lÃƒÂ¡Ã‚ÂºÃ‚Â§n nÃƒÂ¡Ã‚Â»Ã‚Â¯a
+            // FALLBACK: URL từ MainPage nếu có sẵn (chỉ resolve nếu chưa thử)
             string fallbackUrl = _trackList[_currentTrackIndex];
-            if (string.IsNullOrEmpty(fallbackUrl))
+            if (string.IsNullOrEmpty(fallbackUrl) && !_innerTubeAttempted)
             {
                 fallbackUrl = await ResolveViaInnerTubeDirectAsync(vidId);
             }
@@ -707,9 +708,8 @@ namespace AudioPlayerTask
                 _mediaPlayer.Play();
                 _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
 
-                // Start crossfade monitoring and gapless pre-resolve
+                // Start crossfade monitoring (gapless pre-resolve triggers near end of track)
                 StartPlaybackMonitor();
-                PreResolveNextTrack();
             }
             catch (Exception ex)
             {
@@ -828,6 +828,63 @@ namespace AudioPlayerTask
                         ls["PendingHistory"] = pending + "^^^" + historyTrackStr;
                 }
                 catch { }
+
+                // Live Tile & Badge update from Background (matching TileService.cs)
+                try
+                {
+                    bool isLiveTileEnabled = !ls.ContainsKey("LiveTileEnabled") || (bool)ls["LiveTileEnabled"];
+                    int liveTileMode = ls.ContainsKey("LiveTileMode") ? (int)ls["LiveTileMode"] : 0;
+
+                    if (isLiveTileEnabled && liveTileMode != 2 && !string.IsNullOrEmpty(thumb))
+                    {
+                        var updater = TileUpdateManager.CreateTileUpdaterForApplication();
+                        bool isDynamic = (liveTileMode == 0);
+                        updater.EnableNotificationQueue(isDynamic);
+
+                        string squareThumb = thumb;
+                        if (thumb.Contains("=w") || thumb.Contains("=s"))
+                        {
+                            int wIdx = thumb.LastIndexOf("=w");
+                            if (wIdx > 0) squareThumb = thumb.Substring(0, wIdx) + "=w500-h500-s-no";
+                            else
+                            {
+                                int sIdx = thumb.LastIndexOf("=s");
+                                if (sIdx > 0) squareThumb = thumb.Substring(0, sIdx) + "=w500-h500-s-no";
+                            }
+                        }
+
+                        string safeThumb = System.Net.WebUtility.HtmlEncode(squareThumb);
+                        string safeTitle = System.Net.WebUtility.HtmlEncode(title ?? "");
+                        string safeArtist = System.Net.WebUtility.HtmlEncode(artist ?? "");
+
+                        string xml = string.Format(
+                            "<tile><visual version=\"2\">" +
+                            "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
+                            "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
+                            "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "</visual></tile>", safeThumb, safeTitle, safeArtist);
+
+                        var doc = new XmlDocument();
+                        doc.LoadXml(xml);
+                        var notif = new TileNotification(doc)
+                        {
+                            Tag = "nowplaying",
+                            ExpirationTime = DateTimeOffset.UtcNow.AddHours(12)
+                        };
+                        updater.Update(notif);
+
+                        try
+                        {
+                            var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
+                            var badgeEl = badgeXml.SelectSingleNode("/badge") as XmlElement;
+                            badgeEl?.SetAttribute("value", "playing");
+                            BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
             }
             catch { }
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "TrackChanged", "" }, { "NewTitle", title }, { "NewArtist", artist }, { "NewVideoId", vidId }, { "NewThumbnail", thumb } }); } catch { }
@@ -894,7 +951,7 @@ namespace AudioPlayerTask
                 }
 
                 // Gapless: Pre-resolve next track URL 15s before end (only if playlist has > 1 track)
-                if (_trackList.Count > 1 && remaining <= 15 && remaining > 10 && string.IsNullOrEmpty(_preResolvedNextUrl))
+                if (_trackList.Count > 1 && remaining <= 15 && remaining > 10 && string.IsNullOrEmpty(_preResolvedNextUrl) && !_isPreResolving)
                 {
                     PreResolveNextTrack();
                 }
@@ -902,10 +959,13 @@ namespace AudioPlayerTask
             catch { }
         }
 
+        private bool _isPreResolving = false;
+
         private async void PreResolveNextTrack()
         {
-            _preResolvedNextUrl = null;
-            _preResolvedNextIndex = -1;
+            if (_isPreResolving) return;
+            if (!string.IsNullOrEmpty(_preResolvedNextUrl)) return;
+            _isPreResolving = true;
             try
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -939,13 +999,17 @@ namespace AudioPlayerTask
                 }
 
                 string url = await ResolveViaInnerTubeDirectAsync(nextVidId);
-                if (!string.IsNullOrEmpty(url))
+                if (!string.IsNullOrEmpty(url) && _currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count)
                 {
                     _preResolvedNextUrl = PrepareStreamUrl(url);
                     _preResolvedNextIndex = nextIdx;
                 }
             }
             catch { }
+            finally
+            {
+                _isPreResolving = false;
+            }
         }
 
         private void MoveNext()
