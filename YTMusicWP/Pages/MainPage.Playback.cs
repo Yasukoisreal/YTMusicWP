@@ -1117,7 +1117,7 @@ namespace YTMusicWP
                 return;
             }
 
-            string cleanUrl = GetDominantColorThumbnailUrl(thumbnailUrl);
+            string cleanUrl = GetAppleMusicThumbnail(thumbnailUrl);
 
             try
             {
@@ -1130,8 +1130,8 @@ namespace YTMusicWP
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
 
-                        // Render true alpha-faded artwork so it naturally dissolves into the blurred backdrop
-                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 220);
+                        // Render true alpha-faded artwork from high-res source (500x500) so it's crystal sharp
+                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 180);
                         Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
                         if (AppleMusicArtwork != null)
                         {
