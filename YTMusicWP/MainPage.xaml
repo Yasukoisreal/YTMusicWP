@@ -2260,8 +2260,8 @@
                             <Rectangle Height="60" VerticalAlignment="Bottom" IsHitTestVisible="False">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
-                                        <GradientStop Color="#121212" Offset="0"/>
-                                        <GradientStop Color="#00121212" Offset="1"/>
+                                        <GradientStop x:Name="LyricsFadeBottomStop0" Color="#121212" Offset="0"/>
+                                        <GradientStop x:Name="LyricsFadeBottomStop1" Color="#00121212" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
                             </Rectangle>

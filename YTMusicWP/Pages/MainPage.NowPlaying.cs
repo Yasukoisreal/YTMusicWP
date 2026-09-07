@@ -151,6 +151,13 @@ namespace YTMusicWP
                         (byte)(_currentGradientColor.B * 0.35));
                 }
             }
+            if (LyricsFadeBottomStop0 != null)
+            {
+                var fadeColor = CalculateLyricsBottomFadeColor(_currentGradientColor);
+                LyricsFadeBottomStop0.Color = fadeColor;
+                if (LyricsFadeBottomStop1 != null)
+                    LyricsFadeBottomStop1.Color = CalculateLyricsBottomFadeTransparent(fadeColor);
+            }
             if (this.Resources.ContainsKey("SlideUpStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideUpStoryboard"];
