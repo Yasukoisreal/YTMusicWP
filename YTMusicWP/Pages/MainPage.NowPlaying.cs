@@ -9,6 +9,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace YTMusicWP
 {
@@ -1123,6 +1124,75 @@ namespace YTMusicWP
             else if (deltaX > 50)
             {
                 PrevButton_Click(null, null);
+            }
+        }
+
+        // ---------- Apple Music Slider Inflate Animation ----------
+
+        private void AnimateSliderInflate(Slider slider, bool inflate)
+        {
+            try
+            {
+                // Find HorizontalTemplate Grid inside the slider's visual tree
+                var templateGrid = FindChildByName(slider, "HorizontalTemplate") as Grid;
+                if (templateGrid == null) return;
+
+                var ct = templateGrid.RenderTransform as CompositeTransform;
+                if (ct == null) return;
+
+                double targetY = inflate ? 1.6 : 1.0;
+                var sb = new Storyboard();
+                var anim = new DoubleAnimation
+                {
+                    To = targetY,
+                    Duration = new Duration(TimeSpan.FromMilliseconds(inflate ? 200 : 300)),
+                    EasingFunction = new CubicEase { EasingMode = inflate ? EasingMode.EaseOut : EasingMode.EaseInOut }
+                };
+                Storyboard.SetTarget(anim, ct);
+                Storyboard.SetTargetProperty(anim, "ScaleY");
+                sb.Children.Add(anim);
+                sb.Begin();
+            }
+            catch { }
+        }
+
+        private DependencyObject FindChildByName(DependencyObject parent, string name)
+        {
+            int count = Windows.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = Windows.UI.Xaml.Media.VisualTreeHelper.GetChild(parent, i);
+                var fe = child as FrameworkElement;
+                if (fe != null && fe.Name == name) return child;
+                var result = FindChildByName(child, name);
+                if (result != null) return result;
+            }
+            return null;
+        }
+
+        private void AppleMusicSlider_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            _isSliderManipulating = true;
+            AnimateSliderInflate(sender as Slider, true);
+        }
+
+        private void AppleMusicSlider_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            AnimateSliderInflate(sender as Slider, false);
+
+            // Seek logic — only for the seek slider, not the volume slider
+            if (sender == AppleMusicSlider)
+            {
+                _isSliderManipulating = false;
+                try
+                {
+                    if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
+                    {
+                        _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(AppleMusicSlider.Value, Math.Max(0, _appMediaPlayer.NaturalDuration.TotalSeconds - 2)));
+                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                    }
+                }
+                catch { }
             }
         }
         #endregion
