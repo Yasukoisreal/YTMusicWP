@@ -2587,13 +2587,13 @@
                     <Grid Margin="0,8,0,0" HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="62"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="62"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
-                            <Viewbox Width="32" Height="32">
+                        <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52" Padding="0">
+                            <Viewbox Width="38" Height="38">
                                 <Path Data="M19.95,16.98 L13.75,12.83 Q13.53,12.68 13.41,12.46 T13.3,12 T13.41,11.54 T13.75,11.18 L19.95,7.03 Q20.08,6.93 20.23,6.9 Q20.38,6.88 20.5,6.88 Q20.9,6.88 21.2,7.15 Q21.5,7.43 21.5,7.88 V16.13 Q21.5,16.58 21.2,16.86 T20.5,17.13 Q20.37,17.13 20.23,17.11 T19.95,16.98 Z M9.95,16.98 L3.75,12.83 Q3.53,12.68 3.41,12.46 T3.3,12 T3.41,11.54 T3.75,11.18 L9.95,7.02 Q10.08,6.93 10.23,6.9 Q10.38,6.88 10.5,6.88 Q10.9,6.88 11.2,7.15 Q11.5,7.43 11.5,7.88 V16.13 Q11.5,16.58 11.2,16.86 T10.5,17.13 Q10.37,17.13 10.23,17.11 T9.95,16.98 Z" Fill="White" Stretch="Uniform"/>
                             </Viewbox>
                         </Button>
@@ -2607,8 +2607,8 @@
                                 </Viewbox>
                             </Grid>
                         </Button>
-                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
-                            <Viewbox Width="32" Height="32">
+                        <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="52" Height="52" Padding="0">
+                            <Viewbox Width="38" Height="38">
                                 <Path Data="M2.5,16.13 V7.88 Q2.5,7.43 2.8,7.15 Q3.1,6.88 3.5,6.88 Q3.63,6.88 3.78,6.9 Q3.93,6.93 4.05,7.02 L10.25,11.17 Q10.48,11.32 10.59,11.53 T10.7,12 T10.59,12.46 T10.25,12.82 L4.05,16.97 Q3.93,17.08 3.78,17.1 T3.5,17.13 Q3.1,17.13 2.8,16.86 T2.5,16.13 Z M12.5,16.13 V7.88 Q12.5,7.43 12.8,7.15 Q13.1,6.88 13.5,6.88 Q13.63,6.88 13.78,6.9 Q13.93,6.93 14.06,7.03 L20.26,11.18 Q20.49,11.33 20.6,11.54 T20.71,12 T20.6,12.46 T20.26,12.82 L14.06,16.97 Q13.93,17.07 13.78,17.1 T13.5,17.13 Q13.1,17.13 12.8,16.86 T12.5,16.13 Z" Fill="White" Stretch="Uniform"/>
                             </Viewbox>
                         </Button>
