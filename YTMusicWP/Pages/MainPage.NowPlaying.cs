@@ -1140,7 +1140,7 @@ namespace YTMusicWP
                 var ct = templateGrid.RenderTransform as CompositeTransform;
                 if (ct == null) return;
 
-                double targetY = inflate ? 1.25 : 1.0;
+                double targetY = inflate ? 2.0 : 1.0;
                 var sb = new Storyboard();
                 var anim = new DoubleAnimation
                 {
