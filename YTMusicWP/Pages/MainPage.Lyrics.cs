@@ -428,9 +428,26 @@ namespace YTMusicWP
         }
         private void LyricsListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.ItemContainer != null)
+            if (args.ItemContainer == null) return;
+
+            if (_isAppleMusicStyle)
             {
-                // Start all items in "inactive" state
+                // Apple Music: no scale, alpha based on distance from active line
+                args.ItemContainer.RenderTransform = null;
+                int distance = Math.Abs(args.ItemIndex - currentLyricIndex);
+                if (args.ItemIndex < currentLyricIndex && currentLyricIndex >= 0)
+                    distance += 1; // past-line penalty
+
+                if (currentLyricIndex < 0)
+                    args.ItemContainer.Opacity = 0.6; // pre-roll
+                else if (args.ItemIndex == currentLyricIndex)
+                    args.ItemContainer.Opacity = 1.0;
+                else
+                    args.ItemContainer.Opacity = Math.Max(0.25, 1.0 - distance * 0.25);
+            }
+            else
+            {
+                // Spotify: scale + dim
                 args.ItemContainer.Opacity = 0.5;
                 var st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
                 args.ItemContainer.RenderTransformOrigin = new Point(0, 0.5);
@@ -550,17 +567,29 @@ namespace YTMusicWP
                 var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
                 if (container == null) continue;
 
-                if (i == currentLyricIndex)
+                if (_isAppleMusicStyle)
                 {
-                    container.Opacity = 1.0;
-                    var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                    if (st != null) { st.ScaleX = 1.0; st.ScaleY = 1.0; }
+                    container.RenderTransform = null;
+                    int dist = Math.Abs(i - currentLyricIndex);
+                    if (i < currentLyricIndex && currentLyricIndex >= 0) dist += 1;
+                    if (currentLyricIndex < 0) container.Opacity = 0.6;
+                    else if (i == currentLyricIndex) container.Opacity = 1.0;
+                    else container.Opacity = Math.Max(0.25, 1.0 - dist * 0.25);
                 }
                 else
                 {
-                    container.Opacity = 0.5;
-                    var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                    if (st != null) { st.ScaleX = 0.85; st.ScaleY = 0.85; }
+                    if (i == currentLyricIndex)
+                    {
+                        container.Opacity = 1.0;
+                        var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                        if (st != null) { st.ScaleX = 1.0; st.ScaleY = 1.0; }
+                    }
+                    else
+                    {
+                        container.Opacity = 0.5;
+                        var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                        if (st != null) { st.ScaleX = 0.85; st.ScaleY = 0.85; }
+                    }
                 }
             }
 

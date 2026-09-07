@@ -490,9 +490,9 @@ namespace YTMusicWP
                         // Animate OLD lyric
                         if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                         {
-                            currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
+                            currentLyrics[oldIndex].ColorBrush = _isAppleMusicStyle ? _appleMusicLyricInactiveBrush : _lyricInactiveBrush;
 
-                            if (!isFullscreen)
+                            if (!isFullscreen && !_isAppleMusicStyle)
                             {
                                 var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                                 if (oldContainer != null)
@@ -509,7 +509,7 @@ namespace YTMusicWP
                                 }
                                 else { currentLyrics[oldIndex].Opacity = 0.5; }
                             }
-                            else
+                            else if (isFullscreen)
                             {
                                 var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                                 if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
@@ -523,6 +523,18 @@ namespace YTMusicWP
                         {
                             var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                             if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
+                        }
+                        else if (_isAppleMusicStyle)
+                        {
+                            for (int i = 0; i < currentLyrics.Count; i++)
+                            {
+                                var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
+                                if (container == null) continue;
+                                int dist = Math.Abs(i - currentLyricIndex);
+                                if (i < currentLyricIndex) dist += 1;
+                                container.Opacity = (i == currentLyricIndex) ? 1.0 : Math.Max(0.25, 1.0 - dist * 0.25);
+                                container.RenderTransform = null;
+                            }
                         }
                         else
                         {
@@ -1378,6 +1390,18 @@ namespace YTMusicWP
                 {
                     var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                     if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
+                }
+                else if (_isAppleMusicStyle)
+                {
+                    for (int i = 0; i < currentLyrics.Count; i++)
+                    {
+                        var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
+                        if (container == null) continue;
+                        int dist = Math.Abs(i - currentLyricIndex);
+                        if (i < currentLyricIndex) dist += 1;
+                        container.Opacity = (i == currentLyricIndex) ? 1.0 : Math.Max(0.25, 1.0 - dist * 0.25);
+                        container.RenderTransform = null;
+                    }
                 }
                 else
                 {
