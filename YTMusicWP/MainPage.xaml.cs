@@ -198,6 +198,7 @@ namespace YTMusicWP
 
             BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
             HardwareButtons.BackPressed += HardwareButtons_BackPressed;
+            NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
 
             Application.Current.Suspending += Current_Suspending;
             Application.Current.Resuming += Current_Resuming;
@@ -231,6 +232,7 @@ namespace YTMusicWP
                 }
                 BackgroundMediaPlayer.MessageReceivedFromBackground -= BackgroundMediaPlayer_MessageReceivedFromBackground;
                 _appMediaPlayer.CurrentStateChanged -= BackgroundMediaPlayer_CurrentStateChanged;
+                NetworkInformation.NetworkStatusChanged -= NetworkInformation_NetworkStatusChanged;
             }
             catch { }
         }
@@ -254,6 +256,8 @@ namespace YTMusicWP
                 BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
                 _appMediaPlayer.CurrentStateChanged -= BackgroundMediaPlayer_CurrentStateChanged;
                 _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged;
+                NetworkInformation.NetworkStatusChanged -= NetworkInformation_NetworkStatusChanged;
+                NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
                 SyncBackgroundPlayer();
             }
             catch { }
@@ -334,8 +338,30 @@ namespace YTMusicWP
 
         private bool IsInternetAvailable()
         {
-            var profile = NetworkInformation.GetInternetConnectionProfile();
-            return (profile != null && profile.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess);
+            try
+            {
+                var profile = NetworkInformation.GetInternetConnectionProfile();
+                return (profile != null && profile.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async void NetworkInformation_NetworkStatusChanged(object sender)
+        {
+            try
+            {
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    if (IsInternetAvailable() && homeTracks.Count == 0)
+                    {
+                        var ignored = LoadHomeRecommendations();
+                    }
+                });
+            }
+            catch { }
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)

@@ -13,6 +13,7 @@ BundleArtifacts/
 
 # Release builds
 Release_v*/
+YTMusicWP_Release/
 
 # Certificates
 *.pfx

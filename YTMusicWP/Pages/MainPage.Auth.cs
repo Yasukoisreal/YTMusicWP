@@ -327,6 +327,8 @@ namespace YTMusicWP
             try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json"); await f.DeleteAsync(); } catch { }
             try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("favorites.json"); await f.DeleteAsync(); } catch { }
             try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("history.json"); await f.DeleteAsync(); } catch { }
+            try { await YTMusicWP.Services.DatabaseHelper.ClearHistoryAsync(); } catch { }
+            try { await YTMusicWP.Services.DatabaseHelper.ClearFavoritesAsync(); } catch { }
 
             LoginStatusText.Text = "Not logged in";
             LoginStatusText.Foreground = _authGrayBrush;

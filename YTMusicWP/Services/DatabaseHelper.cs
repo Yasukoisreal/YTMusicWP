@@ -92,6 +92,23 @@ namespace YTMusicWP.Services
             if (_db != null) await _db.CreateTableAsync<HistoryEntity>();
         }
 
+        public static async Task RemoveHistoryAsync(string videoId)
+        {
+            if (_db == null || string.IsNullOrEmpty(videoId)) return;
+            try
+            {
+                var existing = await _db.Table<HistoryEntity>().Where(x => x.VideoId == videoId).FirstOrDefaultAsync();
+                if (existing != null)
+                {
+                    await _db.DeleteAsync(existing);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("RemoveHistoryAsync Error: " + ex.Message);
+            }
+        }
+
         // ==========================================
         // FAVORITES
         // ==========================================

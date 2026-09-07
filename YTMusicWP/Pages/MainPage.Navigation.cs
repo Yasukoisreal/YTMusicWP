@@ -15,75 +15,80 @@ namespace YTMusicWP
 
         private void HardwareButtons_BackPressed(object sender, BackPressedEventArgs e)
         {
-            if (CustomBottomSheet.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseBottomSheet_Click(null, null);
-            }
-            else if (SettingsPanel.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseSettings_Click(null, null);
-            }
-            else if (FullscreenLyricsView.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseFullscreenLyrics_Tapped(null, null);
-            }
-            else if (ShortsView.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseShortsView();
-            }
-            else if (ArtistProfileView.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseArtistProfile_Click(null, null);
-            }
-            else if (LoginWebContainer.Visibility == Visibility.Visible)
+            if (LoginWebContainer.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 CloseLoginWeb_Click(null, null);
-            }
-            else if (CreateBottomSheet.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseCreateSheet();
-            }
-            else if (CreatePlaylistDialog.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CreatePlaylistDialog.Visibility = Visibility.Collapsed;
-            }
-            else if (ArtistPickerBottomSheet.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseArtistPicker_Click(null, null);
-            }
-            else if (AddToPlaylistDialog.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                AddToPlaylistDialog.Visibility = Visibility.Collapsed;
-            }
-            else if (NowPlayingMenuDialog.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseNowPlayingMenu_Click(null, null);
             }
             else if (SongCreditsDialog.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 CloseSongCreditsDialog_Click(null, null);
             }
-            else if (PlaylistDetailsView.Visibility == Visibility.Visible)
+            else if (NowPlayingMenuDialog.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
-                ClosePlaylistDetails_Click(null, null);
+                CloseNowPlayingMenu_Click(null, null);
+            }
+            else if (ArtistPickerBottomSheet.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseArtistPicker_Click(null, null);
+            }
+            else if (CustomBottomSheet.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseBottomSheet_Click(null, null);
+            }
+            else if (CreatePlaylistDialog.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CreatePlaylistDialog.Visibility = Visibility.Collapsed;
+            }
+            else if (AddToPlaylistDialog.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+            }
+            else if (FullscreenLyricsView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseFullscreenLyrics_Tapped(null, null);
             }
             else if (NowPlayingView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 CloseNowPlaying_Click(null, null);
+            }
+            else if (CreateBottomSheet.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseCreateSheet();
+            }
+            else if (ShortsView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseShortsView();
+            }
+            else if (SettingsPanel.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseSettings_Click(null, null);
+            }
+            else if (PlaylistDetailsView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                ClosePlaylistDetails_Click(null, null);
+            }
+            else if (MoodCategoryView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseMoodCategory_Click(null, null);
+            }
+            else if (ArtistProfileView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseArtistProfile_Click(null, null);
             }
             else if (SuggestionPopup.Visibility == Visibility.Visible)
             {
@@ -138,10 +143,16 @@ namespace YTMusicWP
                 PlaylistDetailsCoverBrush.ImageSource = null;
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             }
+            if (MoodCategoryView.Visibility == Visibility.Visible)
+            {
+                MoodCategoryView.Visibility = Visibility.Collapsed;
+                MoodCategorySectionList.ItemsSource = null;
+            }
             // Close Shorts if open
             if (_shortsIsOpen) CloseShortsView();
             // Also close Settings if open
             SettingsPanel.Visibility = Visibility.Collapsed;
+            SuggestionPopup.Visibility = Visibility.Collapsed;
             // Fade-in animation for active panel
             var panels = new[] { HomePanel, SearchPanel, LibraryPanel };
             for (int i = 0; i < panels.Length; i++)

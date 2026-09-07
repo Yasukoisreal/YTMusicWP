@@ -601,14 +601,15 @@ namespace YTMusicWP
             }
         }
 
-        private void ClearRecentHistory_Click(object sender, RoutedEventArgs e)
+        private async void ClearRecentHistory_Click(object sender, RoutedEventArgs e)
         {
             historyTracks.Clear();
             historyQuickGridTracks.Clear();
             homeHistoryCarouselTracks.Clear();
             HomeHistorySection.Visibility = Visibility.Collapsed;
-            var ignored = SaveHistoryAsyncTask();
-            var ignoredStorage = UpdateStorageDisplayAsync();
+            await SaveHistoryAsyncTask();
+            await YTMusicWP.Services.DatabaseHelper.ClearHistoryAsync();
+            await UpdateStorageDisplayAsync();
             ShowToast("Recent history cleared!");
         }
 
@@ -726,13 +727,19 @@ namespace YTMusicWP
                     downloadedTracks.Remove(track);
 
                     var fav = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
-                    if (fav != null) { favoriteTracks.Remove(fav); SaveFavoritesAsync(); }
+                    if (fav != null) 
+                    { 
+                        favoriteTracks.Remove(fav); 
+                        SaveFavoritesAsync(); 
+                        var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
+                    }
 
                     var hist = historyTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
                     if (hist != null)
                     {
                         historyTracks.Remove(hist);
                         var ignoredHist = SaveHistoryAsyncTask();
+                        var _ = YTMusicWP.Services.DatabaseHelper.RemoveHistoryAsync(track.VideoId);
                         RefreshHomeHistorySections();
                     }
 
@@ -764,7 +771,16 @@ namespace YTMusicWP
                 {
                     try
                     {
+                        var resFile = download.ResultFile;
                         download.AttachAsync().Cancel();
+                        if (resFile != null)
+                        {
+                            var props = await resFile.GetBasicPropertiesAsync();
+                            if (props.Size == 0)
+                            {
+                                await resFile.DeleteAsync();
+                            }
+                        }
                     }
                     catch { }
                 }
@@ -777,6 +793,7 @@ namespace YTMusicWP
             if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
             if (!IsInternetAvailable()) { ShowToast("Internet required to download"); return; }
 
+            StorageFile destinationFile = null;
             try
             {
                 DownloadStatusBar.Visibility = Visibility.Visible;
@@ -795,7 +812,7 @@ namespace YTMusicWP
 
                 string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars())).Trim();
                 if (string.IsNullOrEmpty(safeTitle)) safeTitle = track.VideoId;
-                StorageFile destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(safeTitle + ".m4a", CreationCollisionOption.ReplaceExisting);
+                destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(safeTitle + ".m4a", CreationCollisionOption.ReplaceExisting);
 
                 BackgroundDownloader downloader = new BackgroundDownloader();
                 DownloadOperation download = downloader.CreateDownload(new Uri(streamUrl), destinationFile);
@@ -827,6 +844,7 @@ namespace YTMusicWP
             }
             catch
             {
+                try { if (destinationFile != null) await destinationFile.DeleteAsync(); } catch { }
                 DownloadStatusBar.Visibility = Visibility.Collapsed;
                 ShowToast("Download failed or cancelled.");
             }

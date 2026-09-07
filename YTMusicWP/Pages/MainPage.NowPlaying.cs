@@ -474,8 +474,7 @@ namespace YTMusicWP
                 if (hist != null)
                 {
                     historyTracks.Remove(hist);
-                    var _ = YTMusicWP.Services.DatabaseHelper.ClearHistoryAsync(); // Just a workaround, normally shouldn't remove history on download delete, but kept for parity.
-                    foreach (var h in historyTracks) { var __ = YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(h); }
+                    var _ = YTMusicWP.Services.DatabaseHelper.RemoveHistoryAsync(track.VideoId);
                     RefreshHomeHistorySections();
                 }
 

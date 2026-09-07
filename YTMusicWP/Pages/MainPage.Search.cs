@@ -390,6 +390,7 @@ namespace YTMusicWP
         private void CloseMoodCategory_Click(object sender, RoutedEventArgs e)
         {
             MoodCategoryView.Visibility = Visibility.Collapsed;
+            MoodCategorySectionList.ItemsSource = null;
         }
 
         private void DiscoverItem_Click(object sender, ItemClickEventArgs e)

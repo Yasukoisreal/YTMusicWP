@@ -365,6 +365,13 @@ namespace YTMusicWP
                 {
                     if (file.Name.EndsWith(".m4a") && !file.Name.StartsWith("temp_play_"))
                     {
+                        var props = await file.GetBasicPropertiesAsync();
+                        if (props.Size == 0)
+                        {
+                            try { await file.DeleteAsync(); } catch { }
+                            continue;
+                        }
+
                         currentFileNames.Add(file.Name);
                         string localId = "LOCAL:" + file.Name;
                         if (!existingIds.Contains(localId))
