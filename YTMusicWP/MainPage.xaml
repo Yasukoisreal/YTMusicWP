@@ -2587,9 +2587,9 @@
                     <Grid Margin="0,8,0,0" HorizontalAlignment="Center">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="42"/>
+                            <ColumnDefinition Width="62"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="42"/>
+                            <ColumnDefinition Width="62"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
@@ -2597,12 +2597,12 @@
                                 <Path Data="M11,18V6L2.5,12L11,18M11.5,12L20,18V6L11.5,12Z" Fill="White" Stretch="Uniform"/>
                             </Viewbox>
                         </Button>
-                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="62" Height="62" Padding="0">
+                        <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="56" Height="56" Padding="0">
                             <Grid>
-                                <Viewbox x:Name="AppleMusicPlayBox" Width="48" Height="48" Visibility="Visible">
+                                <Viewbox x:Name="AppleMusicPlayBox" Width="38" Height="38" Visibility="Visible">
                                     <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White" Stretch="Uniform"/>
                                 </Viewbox>
-                                <Viewbox x:Name="AppleMusicPauseBox" Width="48" Height="48" Visibility="Collapsed">
+                                <Viewbox x:Name="AppleMusicPauseBox" Width="38" Height="38" Visibility="Collapsed">
                                     <Path Data="M6,5H10V19H6ZM14,5H18V19H14Z" Fill="White" Stretch="Uniform"/>
                                 </Viewbox>
                             </Grid>
