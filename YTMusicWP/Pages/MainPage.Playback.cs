@@ -1077,8 +1077,12 @@ namespace YTMusicWP
             if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.05);
             if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.32);
             if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.78);
-            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.78);
-            if (AppleMusicArtFadeMid != null) AppleMusicArtFadeMid.Color = LerpColor(seedColor, black, 0.32);
+            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.45);
+            if (AppleMusicArtFadeMid != null)
+            {
+                var midFade = LerpColor(seedColor, black, 0.45);
+                AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
+            }
 
             var cached = Services.LumiaBlurHelper.GetCached(thumbnailUrl);
             if (cached != null)
@@ -1089,17 +1093,6 @@ namespace YTMusicWP
 
             string cleanUrl = GetDominantColorThumbnailUrl(thumbnailUrl);
 
-            // Fast low-res preview: load 120px thumbnail immediately so backdrop colors show without delay
-            if (AppleMusicBackdrop != null)
-            {
-                try
-                {
-                    var fastBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(cleanUrl, UriKind.Absolute)) { DecodePixelWidth = 120 };
-                    AppleMusicBackdrop.Source = fastBmp;
-                }
-                catch { }
-            }
-
             try
             {
                 var bytes = await _dominantHttpClient.GetByteArrayAsync(cleanUrl);
@@ -1107,13 +1100,16 @@ namespace YTMusicWP
                 {
                     using (var stream = new System.IO.MemoryStream(bytes))
                     {
-                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80);
+                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 180, 300, 25);
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[AppleMusicBackdrop] Render error: " + ex.Message);
+            }
         }
 
         private static Windows.UI.Color AdjustAmbientColor(Windows.UI.Color c)
@@ -1186,7 +1182,12 @@ namespace YTMusicWP
                 if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.05);
                 if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.32);
                 if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(targetColor, black, 0.78);
-                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.78);
+                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.45);
+                if (AppleMusicArtFadeMid != null)
+                {
+                    var midFade = LerpColor(targetColor, black, 0.45);
+                    AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
+                }
 
                 var fadeColor = LerpColor(targetColor, black, 0.78);
                 if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = fadeColor;

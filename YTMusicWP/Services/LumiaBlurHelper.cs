@@ -39,6 +39,7 @@ namespace YTMusicWP.Services
         public static async Task<WriteableBitmap> RenderBlurredAsync(
             Stream source, int targetWidth, int targetHeight, int kernelSize)
         {
+            if (source != null && source.CanSeek) source.Position = 0;
             var bitmap = new WriteableBitmap(targetWidth, targetHeight);
             using (var imageSource = new StreamImageSource(source))
             using (var filterEffect = new FilterEffect(imageSource))
