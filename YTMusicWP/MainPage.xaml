@@ -2594,22 +2594,22 @@
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" Click="PrevButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
                             <Viewbox Width="32" Height="32">
-                                <Path Data="M11,18V6L2.5,12L11,18M11.5,12L20,18V6L11.5,12Z" Fill="White"/>
+                                <Path Data="M11,18V6L2.5,12L11,18M11.5,12L20,18V6L11.5,12Z" Fill="White" Stretch="Uniform"/>
                             </Viewbox>
                         </Button>
                         <Button x:Name="AppleMusicPlayBtn" Grid.Column="2" Click="PlayPauseButton_Click" Style="{StaticResource IconButtonStyle}" Width="62" Height="62" Padding="0">
                             <Grid>
                                 <Viewbox x:Name="AppleMusicPlayBox" Width="48" Height="48" Visibility="Visible">
-                                    <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White"/>
+                                    <Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White" Stretch="Uniform"/>
                                 </Viewbox>
                                 <Viewbox x:Name="AppleMusicPauseBox" Width="48" Height="48" Visibility="Collapsed">
-                                    <Path Data="M14,19H18V5H14M6,19H10V5H6V19Z" Fill="White"/>
+                                    <Path Data="M6,5H10V19H6ZM14,5H18V19H14Z" Fill="White" Stretch="Uniform"/>
                                 </Viewbox>
                             </Grid>
                         </Button>
                         <Button Grid.Column="4" Click="NextButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48">
                             <Viewbox Width="32" Height="32">
-                                <Path Data="M4,18L12.5,12L4,6V18M13,6V18L21.5,12L13,6Z" Fill="White"/>
+                                <Path Data="M4,18L12.5,12L4,6V18M13,6V18L21.5,12L13,6Z" Fill="White" Stretch="Uniform"/>
                             </Viewbox>
                         </Button>
                     </Grid>
