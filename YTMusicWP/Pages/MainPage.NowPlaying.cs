@@ -8,6 +8,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 
 namespace YTMusicWP
 {
@@ -139,6 +140,11 @@ namespace YTMusicWP
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
         {
             NowPlayingView.Visibility = Visibility.Visible;
+            ApplyNowPlayingStyle();
+            if (_isAppleMusicStyle)
+            {
+                UpdateAppleMusicCompactHeaders();
+            }
             UpdateStatusBarColor(true, animate: true, durationMs: 350);
             if (NowPlayingGradientTop != null)
             {
@@ -184,6 +190,12 @@ namespace YTMusicWP
             if (SearchBox != null) SearchBox.IsTabStop = false;
             
             StopTitleMarquee();
+
+            if (AppleMusicGrabber != null)
+            {
+                var tr = AppleMusicGrabber.RenderTransform as Windows.UI.Xaml.Media.TranslateTransform;
+                if (tr != null) tr.Y = 0;
+            }
 
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {
@@ -292,6 +304,9 @@ namespace YTMusicWP
             {
                 QueueIcon.Foreground = idx == 2 ? _greenBrush : _whiteBrush;
             }
+
+            if (_isAppleMusicStyle)
+                UpdateDockActiveState(NowPlayingPivot.SelectedIndex == 0 ? -1 : NowPlayingPivot.SelectedIndex);
 
             if (idx == 2)
             {
@@ -865,12 +880,175 @@ namespace YTMusicWP
             SongCreditsDialog.Visibility = Visibility.Collapsed;
         }
 
-        #region Apple Music NowPlaying Stubs (Task 3)
-        private void DockLyrics_Tapped(object sender, TappedRoutedEventArgs e) { }
-        private void DockQueue_Tapped(object sender, TappedRoutedEventArgs e) { }
-        private void AppleMusicVolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e) { }
-        private void QueueInfoPill_Tapped(object sender, TappedRoutedEventArgs e) { }
-        private void QueueAddPill_Tapped(object sender, TappedRoutedEventArgs e) { }
+        #region Apple Music NowPlaying Logic (Task 5)
+        private void ApplyNowPlayingStyle()
+        {
+            var styleVal = Windows.Storage.ApplicationData.Current.LocalSettings.Values["NowPlayingStyle"];
+            int npStyle = 0;
+            if (styleVal != null)
+            {
+                if (styleVal is int) npStyle = (int)styleVal;
+                else if (styleVal is string) int.TryParse((string)styleVal, out npStyle);
+            }
+            _isAppleMusicStyle = (npStyle == 1);
+
+            var amVis = _isAppleMusicStyle ? Visibility.Visible : Visibility.Collapsed;
+            var spVis = _isAppleMusicStyle ? Visibility.Collapsed : Visibility.Visible;
+
+            // Background
+            if (AppleMusicBackdrop != null) AppleMusicBackdrop.Visibility = amVis;
+            if (AppleMusicWash != null) AppleMusicWash.Visibility = amVis;
+
+            // Header vs Grabber
+            if (AppleMusicGrabber != null) AppleMusicGrabber.Visibility = amVis;
+            if (DefaultNowPlayingHeader != null) DefaultNowPlayingHeader.Visibility = spVis;
+
+            // Player page art
+            if (AppleMusicArtworkGrid != null) AppleMusicArtworkGrid.Visibility = amVis;
+            if (BigCoverRectangle != null) BigCoverRectangle.Visibility = spVis;
+            if (BigCoverShadow != null) BigCoverShadow.Visibility = spVis;
+
+            // Controls
+            if (AppleMusicBottomCluster != null) AppleMusicBottomCluster.Visibility = amVis;
+            if (DefaultNowPlayingControls != null) DefaultNowPlayingControls.Visibility = spVis;
+
+            // Compact headers
+            if (AppleMusicLyricsHeader != null) AppleMusicLyricsHeader.Visibility = amVis;
+            if (AppleMusicQueueHeader != null) AppleMusicQueueHeader.Visibility = amVis;
+            if (AppleMusicQueuePills != null) AppleMusicQueuePills.Visibility = amVis;
+
+            if (_isAppleMusicStyle)
+            {
+                if (AppleMusicVolumeSlider != null)
+                {
+                    try
+                    {
+                        double vol = _appMediaPlayer != null ? _appMediaPlayer.Volume : Windows.Media.Playback.BackgroundMediaPlayer.Current.Volume;
+                        AppleMusicVolumeSlider.Value = vol * 100.0;
+                    }
+                    catch { }
+                }
+
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
+                bool isShuffle = settings.Values.ContainsKey("ShuffleMode") ? (bool)settings.Values["ShuffleMode"] : false;
+                int repeatMode = settings.Values.ContainsKey("RepeatMode") ? (int)settings.Values["RepeatMode"] : 0;
+                if (AppleMusicShuffleIcon != null)
+                    AppleMusicShuffleIcon.Foreground = isShuffle ? _greenBrush : _whiteBrush;
+                if (AppleMusicRepeatIcon != null)
+                {
+                    if (repeatMode == 0) { AppleMusicRepeatIcon.Glyph = "\uE1CD"; AppleMusicRepeatIcon.Foreground = _whiteBrush; }
+                    else if (repeatMode == 1) { AppleMusicRepeatIcon.Glyph = "\uE1CD"; AppleMusicRepeatIcon.Foreground = _greenBrush; }
+                    else if (repeatMode == 2) { AppleMusicRepeatIcon.Glyph = "\uE1CC"; AppleMusicRepeatIcon.Foreground = _greenBrush; }
+                }
+            }
+
+            UpdateDockActiveState(NowPlayingPivot != null ? (NowPlayingPivot.SelectedIndex == 0 ? -1 : NowPlayingPivot.SelectedIndex) : -1);
+        }
+
+        private void DockLyrics_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (NowPlayingPivot == null) return;
+            if (NowPlayingPivot.SelectedIndex == 1)
+            {
+                NowPlayingPivot.SelectedIndex = 0;
+                UpdateDockActiveState(-1);
+            }
+            else
+            {
+                NowPlayingPivot.SelectedIndex = 1;
+                UpdateDockActiveState(1);
+            }
+        }
+
+        private void DockQueue_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (NowPlayingPivot == null) return;
+            if (NowPlayingPivot.SelectedIndex == 2)
+            {
+                NowPlayingPivot.SelectedIndex = 0;
+                UpdateDockActiveState(-1);
+            }
+            else
+            {
+                NowPlayingPivot.SelectedIndex = 2;
+                UpdateDockActiveState(2);
+            }
+        }
+
+        private void UpdateDockActiveState(int viewIndex)
+        {
+            if (!_isAppleMusicStyle) return;
+
+            var white = Windows.UI.Colors.White;
+            var black = Windows.UI.Colors.Black;
+            var activeBg = new SolidColorBrush(LerpColor(_currentGradientColor, white, 0.75));
+            var activeIcon = new SolidColorBrush(LerpColor(_currentGradientColor, black, 0.6));
+            var inactiveBg = new SolidColorBrush(Windows.UI.Colors.Transparent);
+            var inactiveIcon = new SolidColorBrush(Windows.UI.Color.FromArgb(0xD9, 0xFF, 0xFF, 0xFF));
+
+            if (DockLyricsBtn != null)
+            {
+                DockLyricsBtn.Background = viewIndex == 1 ? activeBg : inactiveBg;
+                var tb = DockLyricsBtn.Child as TextBlock;
+                if (tb != null) tb.Foreground = viewIndex == 1 ? activeIcon : inactiveIcon;
+            }
+            if (DockQueueBtn != null)
+            {
+                DockQueueBtn.Background = viewIndex == 2 ? activeBg : inactiveBg;
+                var fi = DockQueueBtn.Child as FontIcon;
+                if (fi != null) fi.Foreground = viewIndex == 2 ? activeIcon : inactiveIcon;
+            }
+        }
+
+        private void AppleMusicVolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        {
+            try
+            {
+                if (_appMediaPlayer != null)
+                {
+                    _appMediaPlayer.Volume = e.NewValue / 100.0;
+                }
+                else
+                {
+                    Windows.Media.Playback.BackgroundMediaPlayer.Current.Volume = e.NewValue / 100.0;
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateAppleMusicCompactHeaders()
+        {
+            if (!_isAppleMusicStyle || currentTrack == null) return;
+
+            var title = currentTrack.Title ?? "";
+            var artist = currentTrack.ChannelName ?? "";
+
+            if (AppleMusicLyricsTitle != null) AppleMusicLyricsTitle.Text = title;
+            if (AppleMusicLyricsArtist != null) AppleMusicLyricsArtist.Text = artist;
+            if (AppleMusicQueueTitle != null) AppleMusicQueueTitle.Text = title;
+            if (AppleMusicQueueArtist != null) AppleMusicQueueArtist.Text = artist;
+
+            if (BigCoverImage != null && BigCoverImage.ImageSource != null)
+            {
+                if (AppleMusicLyricsThumb != null) AppleMusicLyricsThumb.ImageSource = BigCoverImage.ImageSource;
+                if (AppleMusicQueueThumb != null) AppleMusicQueueThumb.ImageSource = BigCoverImage.ImageSource;
+                if (AppleMusicArtwork != null)
+                    AppleMusicArtwork.Source = BigCoverImage.ImageSource as Windows.UI.Xaml.Media.Imaging.BitmapImage;
+            }
+        }
+
+        private void QueueInfoPill_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            OpenNowPlayingMenu_Click(sender, e);
+        }
+
+        private void QueueAddPill_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (currentTrack == null) return;
+            _trackPendingForPlaylist = currentTrack;
+            DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
+            AddToPlaylistDialog.Visibility = Visibility.Visible;
+        }
         #endregion
 
     }

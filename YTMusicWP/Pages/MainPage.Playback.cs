@@ -70,6 +70,10 @@ namespace YTMusicWP
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
             UpdateNowPlayingGradient(track.Title, track.ChannelName, track.ThumbnailUrl);
+            if (_isAppleMusicStyle)
+            {
+                UpdateAppleMusicCompactHeaders();
+            }
 
             YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, null);
 
@@ -359,6 +363,11 @@ namespace YTMusicWP
             }
         }
 
+        private void UpdatePlayPauseUI(bool isPlaying)
+        {
+            SetPlayPauseIcon(isPlaying);
+        }
+
         private void ShuffleButton_Click(object sender, RoutedEventArgs e)
         {
             var settings = ApplicationData.Current.LocalSettings;
@@ -366,6 +375,8 @@ namespace YTMusicWP
             settings.Values["ShuffleMode"] = newState;
             ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
             ShuffleDot.Visibility = newState ? Visibility.Visible : Visibility.Collapsed;
+            if (AppleMusicShuffleIcon != null)
+                AppleMusicShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
         }
 
         private void RepeatButton_Click(object sender, RoutedEventArgs e)
@@ -382,6 +393,13 @@ namespace YTMusicWP
             if (mode == 0) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _whiteBrush; RepeatDot.Visibility = Visibility.Collapsed; }
             else if (mode == 1) { RepeatIcon.Glyph = "\uE1CD"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
             else if (mode == 2) { RepeatIcon.Glyph = "\uE1CC"; RepeatIcon.Foreground = _greenBrush; RepeatDot.Visibility = Visibility.Visible; }
+
+            if (AppleMusicRepeatIcon != null)
+            {
+                if (mode == 0) { AppleMusicRepeatIcon.Glyph = "\uE1CD"; AppleMusicRepeatIcon.Foreground = _whiteBrush; }
+                else if (mode == 1) { AppleMusicRepeatIcon.Glyph = "\uE1CD"; AppleMusicRepeatIcon.Foreground = _greenBrush; }
+                else if (mode == 2) { AppleMusicRepeatIcon.Glyph = "\uE1CC"; AppleMusicRepeatIcon.Foreground = _greenBrush; }
+            }
         }
 
         private void SetupTimer()
@@ -430,6 +448,21 @@ namespace YTMusicWP
                         TotalTimeText.Text     = dur.ToString(@"m\:ss");
                         MiniProgressBar.Maximum = dur.TotalSeconds;
                         MiniProgressBar.Value   = pos.TotalSeconds;
+
+                        if (_isAppleMusicStyle)
+                        {
+                            if (AppleMusicSlider != null)
+                            {
+                                AppleMusicSlider.Maximum = dur.TotalSeconds;
+                                AppleMusicSlider.Value = pos.TotalSeconds;
+                            }
+                            if (AppleMusicCurrentTime != null) AppleMusicCurrentTime.Text = CurrentTimeText.Text;
+                            if (AppleMusicRemainingTime != null && dur.TotalSeconds > 0)
+                            {
+                                var remain = Math.Max(0, dur.TotalSeconds - pos.TotalSeconds);
+                                AppleMusicRemainingTime.Text = "-" + string.Format("{0}:{1:D2}", (int)remain / 60, (int)remain % 60);
+                            }
+                        }
 
                         if (NowPlayingView.Visibility != Visibility.Visible && FullscreenLyricsView.Visibility != Visibility.Visible) return;
                         bool isFullscreen = FullscreenLyricsView.Visibility == Visibility.Visible;
@@ -565,7 +598,8 @@ namespace YTMusicWP
                 if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                 {
                     // FIX #7: Clamp giá trị seek để không bị âm với clip ngắn
-                    _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(MusicSlider.Value, Math.Max(0, _appMediaPlayer.NaturalDuration.TotalSeconds - 2)));
+                    var slider = (sender as Slider) ?? MusicSlider;
+                    _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(slider.Value, Math.Max(0, _appMediaPlayer.NaturalDuration.TotalSeconds - 2)));
                     if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
                 }
             }
@@ -701,6 +735,10 @@ namespace YTMusicWP
 
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist, thumb);
+                        if (_isAppleMusicStyle)
+                        {
+                            UpdateAppleMusicCompactHeaders();
+                        }
                     }
                 }
             }
@@ -787,6 +825,10 @@ namespace YTMusicWP
 
                         var ignored = UpdateLyricsAsync(title, artist);
                         UpdateNowPlayingGradient(title, artist, thumb);
+                        if (_isAppleMusicStyle)
+                        {
+                            UpdateAppleMusicCompactHeaders();
+                        }
                         YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(title, artist, thumb, currentQueueTracks);
                         UpdateQueueActiveState();
                         TriggerAutoplayIfNearingEndAsync(currentTrack);
@@ -994,8 +1036,7 @@ namespace YTMusicWP
 
             try
             {
-                var httpClient = new System.Net.Http.HttpClient();
-                var bytes = await httpClient.GetByteArrayAsync(thumbnailUrl);
+                var bytes = await _dominantHttpClient.GetByteArrayAsync(thumbnailUrl);
                 using (var stream = new System.IO.MemoryStream(bytes))
                 {
                     var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 120, 200, 80);

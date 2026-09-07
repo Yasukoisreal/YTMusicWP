@@ -100,6 +100,8 @@ namespace YTMusicWP
             Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;
             MiniPlayIcon.Symbol = sym;
             BigPlayIcon.Symbol = sym;
+            if (AppleMusicPlayIcon != null)
+                AppleMusicPlayIcon.Symbol = sym;
         }
 
         private static readonly HttpClient _apiClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };
