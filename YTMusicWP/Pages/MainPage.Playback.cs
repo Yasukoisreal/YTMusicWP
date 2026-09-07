@@ -732,8 +732,18 @@ namespace YTMusicWP
                             {
                                 if (_isAppleMusicStyle)
                                 {
-                                    var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
-                                    AppleMusicArtwork.Source = amBmp;
+                                    var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(finalThumbUrl);
+                                    if (cachedFaded != null)
+                                    {
+                                        AppleMusicArtwork.Source = cachedFaded;
+                                        if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
+                                    }
+                                    else
+                                    {
+                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
+                                        AppleMusicArtwork.Source = amBmp;
+                                        if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
+                                    }
                                 }
                                 else
                                 {
@@ -827,8 +837,18 @@ namespace YTMusicWP
                             {
                                 if (_isAppleMusicStyle)
                                 {
-                                    var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
-                                    AppleMusicArtwork.Source = amBmp;
+                                    var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(finalThumbUrl);
+                                    if (cachedFaded != null)
+                                    {
+                                        AppleMusicArtwork.Source = cachedFaded;
+                                        if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
+                                    }
+                                    else
+                                    {
+                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
+                                        AppleMusicArtwork.Source = amBmp;
+                                        if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
+                                    }
                                 }
                                 else
                                 {
@@ -1085,9 +1105,15 @@ namespace YTMusicWP
             }
 
             var cached = Services.LumiaBlurHelper.GetCached(thumbnailUrl);
+            var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(thumbnailUrl);
             if (cached != null)
             {
                 if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = cached;
+                if (cachedFaded != null && AppleMusicArtwork != null)
+                {
+                    AppleMusicArtwork.Source = cachedFaded;
+                    if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
+                }
                 return;
             }
 
@@ -1103,6 +1129,15 @@ namespace YTMusicWP
                         var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 180, 300, 25);
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
+
+                        // Render true alpha-faded artwork so it naturally dissolves into the blurred backdrop
+                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 220);
+                        Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
+                        if (AppleMusicArtwork != null)
+                        {
+                            AppleMusicArtwork.Source = faded;
+                            if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
+                        }
                     }
                 }
             }
