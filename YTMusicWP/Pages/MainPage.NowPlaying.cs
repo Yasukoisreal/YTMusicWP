@@ -1138,20 +1138,28 @@ namespace YTMusicWP
                 if (trackRect == null || decreaseRect == null) return;
 
                 double targetH = inflate ? 14 : 7;
+                double targetR = inflate ? 7 : 4;
                 var duration = new Duration(TimeSpan.FromMilliseconds(inflate ? 200 : 300));
                 var easing = new CubicEase { EasingMode = inflate ? EasingMode.EaseOut : EasingMode.EaseInOut };
 
                 var sb = new Storyboard();
-                var a1 = new DoubleAnimation { To = targetH, Duration = duration, EasingFunction = easing, EnableDependentAnimation = true };
-                Storyboard.SetTarget(a1, trackRect);
-                Storyboard.SetTargetProperty(a1, "Height");
-                sb.Children.Add(a1);
+                foreach (var rect in new[] { trackRect, decreaseRect })
+                {
+                    var ah = new DoubleAnimation { To = targetH, Duration = duration, EasingFunction = easing, EnableDependentAnimation = true };
+                    Storyboard.SetTarget(ah, rect);
+                    Storyboard.SetTargetProperty(ah, "Height");
+                    sb.Children.Add(ah);
 
-                var a2 = new DoubleAnimation { To = targetH, Duration = duration, EasingFunction = easing, EnableDependentAnimation = true };
-                Storyboard.SetTarget(a2, decreaseRect);
-                Storyboard.SetTargetProperty(a2, "Height");
-                sb.Children.Add(a2);
+                    var arx = new DoubleAnimation { To = targetR, Duration = duration, EasingFunction = easing, EnableDependentAnimation = true };
+                    Storyboard.SetTarget(arx, rect);
+                    Storyboard.SetTargetProperty(arx, "RadiusX");
+                    sb.Children.Add(arx);
 
+                    var ary = new DoubleAnimation { To = targetR, Duration = duration, EasingFunction = easing, EnableDependentAnimation = true };
+                    Storyboard.SetTarget(ary, rect);
+                    Storyboard.SetTargetProperty(ary, "RadiusY");
+                    sb.Children.Add(ary);
+                }
                 sb.Begin();
             }
             catch { }
