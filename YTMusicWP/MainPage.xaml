@@ -2282,7 +2282,7 @@
                 </Grid.RowDefinitions>
                 <!-- Apple Music: full-bleed artwork with gentle bottom fade -->
                 <Grid x:Name="AppleMusicArtworkGrid" Grid.Row="0" Grid.RowSpan="2" Canvas.ZIndex="15" Visibility="Collapsed" VerticalAlignment="Top" HorizontalAlignment="Stretch" Height="480" ManipulationMode="TranslateX" ManipulationStarted="AppleMusicArtworkGrid_ManipulationStarted" ManipulationCompleted="AppleMusicArtworkGrid_ManipulationCompleted">
-                    <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Top" Width="480" Height="480"/>
+                    <Image x:Name="AppleMusicArtwork" Stretch="UniformToFill" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="480"/>
                     <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="140" IsHitTestVisible="False">
                         <Rectangle.Fill>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
