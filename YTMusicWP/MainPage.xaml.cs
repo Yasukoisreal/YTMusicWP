@@ -257,12 +257,20 @@ namespace YTMusicWP
                     return;
                 }
 
-                // Listen to animation completion from XamlAnimatedGif
+                // Listen to animation completion and loaded events from XamlAnimatedGif
+                XamlAnimatedGif.AnimationBehavior.Loaded += SplashAnimatedImage_Loaded;
                 XamlAnimatedGif.AnimationBehavior.AnimationCompleted += SplashAnimatedImage_AnimationCompleted;
                 XamlAnimatedGif.AnimationBehavior.Error += SplashAnimatedImage_Error;
 
-                // Fallback safety timer: dismiss after 4.2 seconds if animation doesn't signal
-                _splashTimeoutTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(4200) };
+                // Set RepeatBehavior to 1 iteration explicitly
+                try
+                {
+                    XamlAnimatedGif.AnimationBehavior.SetRepeatBehavior(SplashAnimatedImage, new Windows.UI.Xaml.Media.Animation.RepeatBehavior(1));
+                }
+                catch { }
+
+                // Fallback safety timer: dismiss at 3.4 seconds (112 frames * 30ms = 3.36s)
+                _splashTimeoutTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(3400) };
                 _splashTimeoutTimer.Tick += (s, e) =>
                 {
                     DismissSplash(animate: true);
@@ -273,6 +281,26 @@ namespace YTMusicWP
             {
                 _splashReadyTcs.TrySetResult(true);
                 DismissSplash(animate: false);
+            }
+        }
+
+        private void SplashAnimatedImage_Loaded(object sender, EventArgs e)
+        {
+            if (sender == SplashAnimatedImage)
+            {
+                var animator = XamlAnimatedGif.AnimationBehavior.GetAnimator(SplashAnimatedImage);
+                if (animator != null)
+                {
+                    animator.CurrentFrameChanged += (s, args) =>
+                    {
+                        // Stop immediately on the final frame so it cannot loop back to start
+                        if (animator.CurrentFrameIndex >= animator.FrameCount - 1)
+                        {
+                            try { animator.Pause(); } catch { }
+                            DismissSplash(animate: true);
+                        }
+                    };
+                }
             }
         }
 
@@ -335,6 +363,7 @@ namespace YTMusicWP
         {
             try
             {
+                XamlAnimatedGif.AnimationBehavior.Loaded -= SplashAnimatedImage_Loaded;
                 XamlAnimatedGif.AnimationBehavior.AnimationCompleted -= SplashAnimatedImage_AnimationCompleted;
                 XamlAnimatedGif.AnimationBehavior.Error -= SplashAnimatedImage_Error;
             }

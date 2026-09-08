@@ -3367,7 +3367,7 @@
                    Width="560" Height="560"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    gif:AnimationBehavior.SourceUri="ms-appx:///Assets/Hero_logo_animation_001.gif"
-                   gif:AnimationBehavior.RepeatBehavior="1"
+                   gif:AnimationBehavior.RepeatBehavior="1x"
                    gif:AnimationBehavior.AutoStart="True" />
         </Grid>
     </Grid>
