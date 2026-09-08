@@ -157,7 +157,13 @@ namespace YTMusicWP
                 if (tileSpeed >= 0 && tileSpeed < LiveTileSpeedComboBox.Items.Count)
                     LiveTileSpeedComboBox.SelectedIndex = tileSpeed;
 
-                // Now attach handlers � changes will save & apply immediately
+                if (SplashAnimationToggle != null)
+                {
+                    SplashAnimationToggle.IsOn = SafeGetBool(settings, "EnableSplashAnimation", true);
+                    SplashAnimationToggle.Toggled += SplashAnimationToggle_Toggled;
+                }
+
+                // Now attach handlers  changes will save & apply immediately
                 // Quality handler removed
 
                 AutoplayToggle.Toggled += AutoplayToggle_Toggled;
@@ -217,6 +223,13 @@ namespace YTMusicWP
         {
             ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
             try { _appMediaPlayer.Volume = NormalizeVolumeToggle.IsOn ? 0.75 : 1.0; } catch { }
+        }
+
+        private void SplashAnimationToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (SplashAnimationToggle == null) return;
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            settings["EnableSplashAnimation"] = SplashAnimationToggle.IsOn;
         }
 
         private void LiveTileToggle_Toggled(object sender, RoutedEventArgs e)

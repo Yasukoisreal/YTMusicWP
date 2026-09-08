@@ -237,7 +237,120 @@ namespace YTMusicWP
             Application.Current.Suspending += Current_Suspending;
             Application.Current.Resuming += Current_Resuming;
             UpdateStatusBarColor(false, animate: false);
+            InitializeStartupSplash();
         }
+
+        #region Startup Splash Animation
+        private DispatcherTimer _splashTimeoutTimer;
+        private bool _splashDismissed = false;
+
+        private void InitializeStartupSplash()
+        {
+            try
+            {
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                bool enableSplash = SafeGetBool(settings, "EnableSplashAnimation", true);
+
+                if (!enableSplash)
+                {
+                    DismissSplash(animate: false);
+                    return;
+                }
+
+                // Listen to animation completion from XamlAnimatedGif
+                XamlAnimatedGif.AnimationBehavior.AnimationCompleted += SplashAnimatedImage_AnimationCompleted;
+                XamlAnimatedGif.AnimationBehavior.Error += SplashAnimatedImage_Error;
+
+                // Fallback safety timer: dismiss after 4.2 seconds if animation doesn't signal
+                _splashTimeoutTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(4200) };
+                _splashTimeoutTimer.Tick += (s, e) =>
+                {
+                    DismissSplash(animate: true);
+                };
+                _splashTimeoutTimer.Start();
+            }
+            catch
+            {
+                DismissSplash(animate: false);
+            }
+        }
+
+        private void SplashAnimatedImage_AnimationCompleted(object sender, XamlAnimatedGif.AnimationCompletedEventArgs e)
+        {
+            if (sender == SplashAnimatedImage)
+            {
+                DismissSplash(animate: true);
+            }
+        }
+
+        private void SplashAnimatedImage_Error(object sender, XamlAnimatedGif.AnimationErrorEventArgs e)
+        {
+            if (sender == SplashAnimatedImage)
+            {
+                DismissSplash(animate: false);
+            }
+        }
+
+        private void SplashOverlay_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            DismissSplash(animate: true);
+        }
+
+        private void DismissSplash(bool animate = true)
+        {
+            if (_splashDismissed) return;
+            _splashDismissed = true;
+
+            if (_splashTimeoutTimer != null)
+            {
+                _splashTimeoutTimer.Stop();
+                _splashTimeoutTimer = null;
+            }
+
+            if (!animate || SplashFadeOutStoryboard == null)
+            {
+                CleanupSplash();
+                return;
+            }
+
+            try
+            {
+                SplashFadeOutStoryboard.Begin();
+            }
+            catch
+            {
+                CleanupSplash();
+            }
+        }
+
+        private void SplashFadeOutStoryboard_Completed(object sender, object e)
+        {
+            CleanupSplash();
+        }
+
+        private void CleanupSplash()
+        {
+            try
+            {
+                XamlAnimatedGif.AnimationBehavior.AnimationCompleted -= SplashAnimatedImage_AnimationCompleted;
+                XamlAnimatedGif.AnimationBehavior.Error -= SplashAnimatedImage_Error;
+            }
+            catch { }
+
+            if (SplashOverlay != null)
+            {
+                SplashOverlay.Visibility = Visibility.Collapsed;
+            }
+            if (SplashAnimatedImage != null)
+            {
+                try
+                {
+                    XamlAnimatedGif.AnimationBehavior.SetSourceUri(SplashAnimatedImage, null);
+                }
+                catch { }
+            }
+        }
+        #endregion
 
         private void HomeQuickGrid_SizeChanged(object sender, SizeChangedEventArgs e)
         {
