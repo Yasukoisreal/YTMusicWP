@@ -914,6 +914,20 @@ namespace YTMusicWP
             if (AppleMusicGrabber != null) AppleMusicGrabber.Visibility = amVis;
             if (DefaultNowPlayingHeader != null) DefaultNowPlayingHeader.Visibility = spVis;
 
+            if (NowPlayingPivot != null)
+            {
+                if (_isAppleMusicStyle)
+                {
+                    Grid.SetRow(NowPlayingPivot, 0);
+                    Grid.SetRowSpan(NowPlayingPivot, 2);
+                }
+                else
+                {
+                    Grid.SetRow(NowPlayingPivot, 1);
+                    Grid.SetRowSpan(NowPlayingPivot, 1);
+                }
+            }
+
             // Player page art
             if (DefaultNowPlayingArtwork != null) DefaultNowPlayingArtwork.Visibility = spVis;
             if (AppleMusicArtworkGrid != null)
