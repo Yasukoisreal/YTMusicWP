@@ -489,71 +489,66 @@ namespace YTMusicWP
                             // Target ListView = fullscreen or regular
                         var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
 
-                        // Animate OLD lyric
-                        if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
+                        if (_isAppleMusicStyle && !isFullscreen)
                         {
-                            currentLyrics[oldIndex].ColorBrush = _isAppleMusicStyle ? _appleMusicLyricInactiveBrush : _lyricInactiveBrush;
-
-                            if (!isFullscreen && !_isAppleMusicStyle)
-                            {
-                                var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
-                                if (oldContainer != null)
-                                {
-                                    var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                    if (oldScale == null)
-                                    {
-                                        oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
-                                        oldContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                        oldContainer.RenderTransform = oldScale;
-                                    }
-                                    // [OPT-1] Reuse cached easing + single storyboard
-                                    AnimateLyricOut(oldContainer, oldScale);
-                                }
-                                else { currentLyrics[oldIndex].Opacity = 0.5; }
-                            }
-                            else if (isFullscreen)
-                            {
-                                var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
-                                if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
-                            }
-                        }
-
-                        // Animate NEW lyric
-                        currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
-
-                        if (isFullscreen)
-                        {
-                            var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                            if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
-                        }
-                        else if (_isAppleMusicStyle)
-                        {
-                            for (int i = 0; i < currentLyrics.Count; i++)
-                            {
-                                var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
-                                if (container == null) continue;
-                                int dist = Math.Abs(i - currentLyricIndex);
-                                if (i < currentLyricIndex) dist += 1;
-                                container.Opacity = (i == currentLyricIndex) ? 1.0 : Math.Max(0.25, 1.0 - dist * 0.25);
-                                container.RenderTransform = null;
-                            }
+                            UpdateLyricsVisualState();
                         }
                         else
                         {
-                            var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                            if (newContainer != null)
+                            // Animate OLD lyric
+                            if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                             {
-                                var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                if (scaleTransform == null)
+                                currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
+
+                                if (!isFullscreen)
                                 {
-                                    scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                                    newContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                    newContainer.RenderTransform = scaleTransform;
+                                    var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                                    if (oldContainer != null)
+                                    {
+                                        var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                        if (oldScale == null)
+                                        {
+                                            oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
+                                            oldContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                            oldContainer.RenderTransform = oldScale;
+                                        }
+                                        // [OPT-1] Reuse cached easing + single storyboard
+                                        AnimateLyricOut(oldContainer, oldScale);
+                                    }
+                                    else { currentLyrics[oldIndex].Opacity = 0.5; }
                                 }
-                                // [OPT-1] Reuse cached easing + single storyboard
-                                AnimateLyricIn(newContainer, scaleTransform);
+                                else
+                                {
+                                    var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                                    if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
+                                }
                             }
-                            else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+
+                            // Animate NEW lyric
+                            currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
+
+                            if (isFullscreen)
+                            {
+                                var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                                if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
+                            }
+                            else
+                            {
+                                var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                                if (newContainer != null)
+                                {
+                                    var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                    if (scaleTransform == null)
+                                    {
+                                        scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                                        newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                        newContainer.RenderTransform = scaleTransform;
+                                    }
+                                    // [OPT-1] Reuse cached easing + single storyboard
+                                    AnimateLyricIn(newContainer, scaleTransform);
+                                }
+                                else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+                            }
                         }
 
                         // Smooth center-scroll (replaces abrupt ScrollIntoView)
@@ -1292,25 +1287,16 @@ namespace YTMusicWP
 
         private void UpdateLyricsFadeColors(Windows.UI.Color seedColor)
         {
-            if (LyricsFadeBottomStop0 == null) return;
+            if (LyricsBottomFadeRect != null)
+                LyricsBottomFadeRect.Visibility = _isAppleMusicStyle ? Visibility.Collapsed : Visibility.Visible;
 
-            if (_isAppleMusicStyle)
-            {
-                // In Apple Music style, the lyrics bottom sits at ~70% screen height.
-                // AppleMusicWash gradient at 70% is halfway between AppleMusicGradMid (0.32 black) and AppleMusicGradBot (0.78 black).
-                // Lerp at 0.50 perfectly matches the background wash at the bottom of the lyrics view.
-                var fadeColor = LerpColor(seedColor, Windows.UI.Colors.Black, 0.50);
-                LyricsFadeBottomStop0.Color = fadeColor;
-                if (LyricsFadeBottomStop1 != null)
-                    LyricsFadeBottomStop1.Color = Windows.UI.Color.FromArgb(0, fadeColor.R, fadeColor.G, fadeColor.B);
-            }
-            else
-            {
-                var fadeColor = CalculateLyricsBottomFadeColor(seedColor);
-                LyricsFadeBottomStop0.Color = fadeColor;
-                if (LyricsFadeBottomStop1 != null)
-                    LyricsFadeBottomStop1.Color = CalculateLyricsBottomFadeTransparent(fadeColor);
-            }
+            if (_isAppleMusicStyle) return;
+
+            if (LyricsFadeBottomStop0 == null) return;
+            var fadeColor = CalculateLyricsBottomFadeColor(seedColor);
+            LyricsFadeBottomStop0.Color = fadeColor;
+            if (LyricsFadeBottomStop1 != null)
+                LyricsFadeBottomStop1.Color = CalculateLyricsBottomFadeTransparent(fadeColor);
         }
 
         // [PERF] Instant direct assignment — eliminates CPU-bound dependent ColorAnimation lag on WP8.1
@@ -1618,40 +1604,36 @@ namespace YTMusicWP
             if (isLyricsUIVisible)
             {
                 var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
-                currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
                 
-                if (isFullscreen)
+                if (_isAppleMusicStyle && !isFullscreen)
                 {
-                    var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                    if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
-                }
-                else if (_isAppleMusicStyle)
-                {
-                    for (int i = 0; i < currentLyrics.Count; i++)
-                    {
-                        var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
-                        if (container == null) continue;
-                        int dist = Math.Abs(i - currentLyricIndex);
-                        if (i < currentLyricIndex) dist += 1;
-                        container.Opacity = (i == currentLyricIndex) ? 1.0 : Math.Max(0.25, 1.0 - dist * 0.25);
-                        container.RenderTransform = null;
-                    }
+                    UpdateLyricsVisualState();
                 }
                 else
                 {
-                    var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                    if (newContainer != null)
+                    currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
+                    
+                    if (isFullscreen)
                     {
-                        var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (scaleTransform == null)
-                        {
-                            scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                            newContainer.RenderTransformOrigin = new Point(0, 0.5);
-                            newContainer.RenderTransform = scaleTransform;
-                        }
-                        AnimateLyricIn(newContainer, scaleTransform);
+                        var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                        if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
                     }
-                    else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+                    else
+                    {
+                        var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                        if (newContainer != null)
+                        {
+                            var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                            if (scaleTransform == null)
+                            {
+                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                                newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                newContainer.RenderTransform = scaleTransform;
+                            }
+                            AnimateLyricIn(newContainer, scaleTransform);
+                        }
+                        else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+                    }
                 }
                 
                 ScrollViewer scrollViewer = null;

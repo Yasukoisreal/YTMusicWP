@@ -918,10 +918,11 @@ namespace YTMusicWP
             if (AppleMusicMainTitleRow != null)
                 AppleMusicMainTitleRow.Visibility = (NowPlayingPivot != null && NowPlayingPivot.SelectedIndex == 0) ? amVis : Visibility.Collapsed;
 
-            // Compact headers
+            // Compact headers & lyrics bottom fade
             if (AppleMusicLyricsHeader != null) AppleMusicLyricsHeader.Visibility = amVis;
             if (AppleMusicQueueHeader != null) AppleMusicQueueHeader.Visibility = amVis;
             if (AppleMusicQueuePills != null) AppleMusicQueuePills.Visibility = amVis;
+            if (LyricsBottomFadeRect != null) LyricsBottomFadeRect.Visibility = spVis;
 
             if (_isAppleMusicStyle)
             {
@@ -979,6 +980,7 @@ namespace YTMusicWP
 
             UpdateDockActiveState(NowPlayingPivot != null ? (NowPlayingPivot.SelectedIndex == 0 ? -1 : NowPlayingPivot.SelectedIndex) : -1);
             UpdateLyricsFadeColors(_currentGradientColor);
+            UpdateLyricsVisualState();
         }
 
         private void DockLyrics_Tapped(object sender, TappedRoutedEventArgs e)

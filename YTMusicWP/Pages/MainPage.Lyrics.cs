@@ -347,6 +347,7 @@ namespace YTMusicWP
                                     foreach (var cl in captionLines) currentLyrics.Add(cl);
                                     currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
                                     captionFound = true;
+                                    UpdateLyricsVisualState();
                                     System.Diagnostics.Debug.WriteLine("[Lyrics] Caption fallback: " + captionLines.Count + " lines (" + preferred.LanguageName + ")");
                                 }
                             }
@@ -408,6 +409,7 @@ namespace YTMusicWP
             parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
             foreach (var p in parsedLines) currentLyrics.Add(p);
             currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
+            UpdateLyricsVisualState();
         }
 
         private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
@@ -432,24 +434,18 @@ namespace YTMusicWP
 
             if (_isAppleMusicStyle)
             {
-                // Apple Music: no scale, alpha based on distance from active line
                 args.ItemContainer.RenderTransform = null;
-                int distance = Math.Abs(args.ItemIndex - currentLyricIndex);
-                if (args.ItemIndex < currentLyricIndex && currentLyricIndex >= 0)
-                    distance += 1; // past-line penalty
-
-                if (currentLyricIndex < 0)
-                    args.ItemContainer.Opacity = 0.6; // pre-roll
-                else if (args.ItemIndex == currentLyricIndex)
-                    args.ItemContainer.Opacity = 1.0;
-                else
-                    args.ItemContainer.Opacity = Math.Max(0.25, 1.0 - distance * 0.25);
+                args.ItemContainer.Opacity = 1.0;
             }
             else
             {
                 // Spotify: scale + dim
-                args.ItemContainer.Opacity = 0.5;
-                var st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.5;
+                var st = new Windows.UI.Xaml.Media.ScaleTransform
+                {
+                    ScaleX = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.85,
+                    ScaleY = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.85
+                };
                 args.ItemContainer.RenderTransformOrigin = new Point(0, 0.5);
                 args.ItemContainer.RenderTransform = st;
             }
@@ -560,24 +556,73 @@ namespace YTMusicWP
             fadeOut.Begin();
         }
 
+        private void UpdateLyricsVisualState()
+        {
+            if (currentLyrics == null || currentLyrics.Count == 0) return;
+
+            if (_isAppleMusicStyle)
+            {
+                for (int i = 0; i < currentLyrics.Count; i++)
+                {
+                    if (currentLyricIndex < 0)
+                    {
+                        currentLyrics[i].Opacity = 0.50;
+                        currentLyrics[i].ColorBrush = _lyricActiveBrush;
+                    }
+                    else if (i == currentLyricIndex)
+                    {
+                        currentLyrics[i].Opacity = 1.0;
+                        currentLyrics[i].ColorBrush = _lyricActiveBrush;
+                    }
+                    else
+                    {
+                        int dist = Math.Abs(i - currentLyricIndex);
+                        if (i < currentLyricIndex) dist += 1; // past lines fade more
+
+                        // Apple Music distance-based opacity falloff:
+                        // dist = 1: 0.55 (future) / 0.35 (past)
+                        // dist = 2: 0.35 (future) / 0.20 (past)
+                        // dist = 3: 0.20 (future) / 0.15 (past)
+                        // dist >= 4: 0.15
+                        double op;
+                        if (dist == 1) op = 0.55;
+                        else if (dist == 2) op = 0.35;
+                        else if (dist == 3) op = 0.20;
+                        else op = 0.15;
+
+                        currentLyrics[i].Opacity = op;
+                        currentLyrics[i].ColorBrush = _lyricActiveBrush;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < currentLyrics.Count; i++)
+                {
+                    if (i == currentLyricIndex)
+                    {
+                        currentLyrics[i].Opacity = 1.0;
+                        currentLyrics[i].ColorBrush = _lyricActiveBrush;
+                    }
+                    else
+                    {
+                        currentLyrics[i].Opacity = 0.50;
+                        currentLyrics[i].ColorBrush = _lyricInactiveBrush;
+                    }
+                }
+            }
+        }
+
         private void RefreshRegularLyricsContainers()
         {
-            for (int i = 0; i < currentLyrics.Count; i++)
-            {
-                var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
-                if (container == null) continue;
+            UpdateLyricsVisualState();
 
-                if (_isAppleMusicStyle)
+            if (!_isAppleMusicStyle)
+            {
+                for (int i = 0; i < currentLyrics.Count; i++)
                 {
-                    container.RenderTransform = null;
-                    int dist = Math.Abs(i - currentLyricIndex);
-                    if (i < currentLyricIndex && currentLyricIndex >= 0) dist += 1;
-                    if (currentLyricIndex < 0) container.Opacity = 0.6;
-                    else if (i == currentLyricIndex) container.Opacity = 1.0;
-                    else container.Opacity = Math.Max(0.25, 1.0 - dist * 0.25);
-                }
-                else
-                {
+                    var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                    if (container == null) continue;
                     if (i == currentLyricIndex)
                     {
                         container.Opacity = 1.0;
@@ -589,6 +634,18 @@ namespace YTMusicWP
                         container.Opacity = 0.5;
                         var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
                         if (st != null) { st.ScaleX = 0.85; st.ScaleY = 0.85; }
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < currentLyrics.Count; i++)
+                {
+                    var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                    if (container != null)
+                    {
+                        container.RenderTransform = null;
+                        container.Opacity = 1.0;
                     }
                 }
             }
