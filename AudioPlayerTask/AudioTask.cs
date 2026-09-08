@@ -128,6 +128,7 @@ namespace AudioPlayerTask
                 {
                     _currentTrackIndex = (int)e.Data["CurrentIndex"];
                 }
+                ClearPreResolvedState();
                 PreResolveNextTrack();
             }
             else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext();
@@ -165,7 +166,7 @@ namespace AudioPlayerTask
             _isRetrying = false;
             _resolvedUrl = null;
             _innerTubeAttempted = false;
-            _isPreResolving = false;
+            ClearPreResolvedState();
         }
 
         // ==========================================
@@ -639,11 +640,13 @@ namespace AudioPlayerTask
 
         // ==========================================
         // MAIN PLAYBACK ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â InnerTube direct only
+        // MAIN PLAYBACK – InnerTube direct only
         // ==========================================
         private async void StartPlaybackAsync()
         {
             if (_currentTrackIndex < 0 || _currentTrackIndex >= _trackList.Count) return;
 
+            int currentSeq = ++_playbackSequence;
             string vidId = _videoIdList[_currentTrackIndex];
 
             // Offline track: phát trực tiếp (nếu bài cũ vẫn mở thì tua về 0)
@@ -659,8 +662,8 @@ namespace AudioPlayerTask
                 return;
             }
 
-            // NÃƒÂ¡Ã‚ÂºÃ‚Â¿u Ãƒâ€žÃ¢â‚¬ËœÃƒÆ’Ã‚Â£ cÃƒÆ’Ã‚Â³ URL resolved (tÃƒÂ¡Ã‚Â»Ã‚Â« retry)
-                        // Fetch SponsorBlock segments
+            // Nếu đã có URL resolved (từ retry)
+            // Fetch SponsorBlock segments
             _skipSegments = new List<YTMusicWP.Models.SponsorBlockSegment>();
             if (!vidId.StartsWith("LOCAL:"))
             {
@@ -689,10 +692,17 @@ namespace AudioPlayerTask
                 _innerTubeAttempted = true;
                 UpdateSystemMediaControls();
 
+                // Stop previous audio immediately so old audio doesn't play while loading next track
+                try { if (_mediaPlayer.CurrentState == MediaPlayerState.Playing) _mediaPlayer.Pause(); } catch { }
+
                 string directUrl = await ResolveViaInnerTubeDirectAsync(vidId);
+                if (currentSeq != _playbackSequence) return;
+                if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count || _videoIdList[_currentTrackIndex] != vidId) return;
+
                 if (!string.IsNullOrEmpty(directUrl))
                 {
                     directUrl = PrepareStreamUrl(directUrl);
+                    _trackList[_currentTrackIndex] = directUrl;
                     PlayUrl(directUrl, vidId);
                     return;
                 }
@@ -703,11 +713,18 @@ namespace AudioPlayerTask
             if (string.IsNullOrEmpty(fallbackUrl) && !_innerTubeAttempted)
             {
                 fallbackUrl = await ResolveViaInnerTubeDirectAsync(vidId);
+                if (currentSeq != _playbackSequence) return;
+                if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count || _videoIdList[_currentTrackIndex] != vidId) return;
             }
             if (!string.IsNullOrEmpty(fallbackUrl))
+            {
                 PlayUrl(PrepareStreamUrl(fallbackUrl), vidId);
+            }
             else
-                ReportErrorToUI("No stream available: " + _innerTubeDebug);
+            {
+                if (currentSeq == _playbackSequence)
+                    ReportErrorToUI("No stream available: " + _innerTubeDebug);
+            }
         }
 
         /// <summary>
@@ -720,6 +737,9 @@ namespace AudioPlayerTask
 
         private void PlayUrl(string trackUrl, string vidId)
         {
+            if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count) return;
+            if (_videoIdList[_currentTrackIndex] != vidId) return;
+
             _mediaPlayer.AutoPlay = false;
             try
             {
@@ -933,6 +953,16 @@ namespace AudioPlayerTask
         private List<YTMusicWP.Models.SponsorBlockSegment> _skipSegments = new List<YTMusicWP.Models.SponsorBlockSegment>();
         
         private int _preResolvedNextIndex = -1;
+        private string _preResolvedNextVideoId = null;
+        private int _playbackSequence = 0;
+
+        private void ClearPreResolvedState()
+        {
+            _preResolvedNextUrl = null;
+            _preResolvedNextIndex = -1;
+            _preResolvedNextVideoId = null;
+            _isPreResolving = false;
+        }
 
         private void StartPlaybackMonitor()
         {
@@ -1027,19 +1057,23 @@ namespace AudioPlayerTask
                     }
                 }
 
+                if (nextIdx < 0 || nextIdx >= _videoIdList.Count) return;
                 string nextVidId = _videoIdList[nextIdx];
                 if (nextVidId.StartsWith("LOCAL:"))
                 {
                     _preResolvedNextUrl = _trackList[nextIdx];
                     _preResolvedNextIndex = nextIdx;
+                    _preResolvedNextVideoId = nextVidId;
                     return;
                 }
 
                 string url = await ResolveViaInnerTubeDirectAsync(nextVidId);
-                if (!string.IsNullOrEmpty(url) && _currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count)
+                // Strict check: verify target index and videoId still match after async call
+                if (!string.IsNullOrEmpty(url) && nextIdx < _videoIdList.Count && _videoIdList[nextIdx] == nextVidId)
                 {
                     _preResolvedNextUrl = PrepareStreamUrl(url);
                     _preResolvedNextIndex = nextIdx;
+                    _preResolvedNextVideoId = nextVidId;
                 }
             }
             catch { }
@@ -1059,30 +1093,20 @@ namespace AudioPlayerTask
             if (repeat == 2) { ResetRetryState(); _currentLoadedVidId = ""; StartPlaybackAsync(); return; }
             ResetRetryState();
 
-            // Use pre-resolved URL if available (gapless)
-            string preUrl = _preResolvedNextUrl;
-            int preIdx = _preResolvedNextIndex;
-            _preResolvedNextUrl = null;
-            _preResolvedNextIndex = -1;
-
-            if (preIdx >= 0 && preIdx < _trackList.Count && !string.IsNullOrEmpty(preUrl))
+            // Calculate expected next index
+            int targetIdx;
+            if (shuffle)
             {
-                _currentTrackIndex = preIdx;
-                _trackList[_currentTrackIndex] = preUrl;
-                _innerTubeAttempted = true;
-            }
-            else if (shuffle)
-            {
-                _currentTrackIndex = _rand.Next(0, _trackList.Count);
+                targetIdx = _rand.Next(0, _trackList.Count);
             }
             else
             {
-                _currentTrackIndex++;
-                if (_currentTrackIndex >= _trackList.Count)
+                targetIdx = _currentTrackIndex + 1;
+                if (targetIdx >= _trackList.Count)
                 {
                     if (repeat == 1 || autoplay)
                     {
-                        _currentTrackIndex = 0;
+                        targetIdx = 0;
                     }
                     else
                     {
@@ -1090,6 +1114,24 @@ namespace AudioPlayerTask
                         return; // Stop playback when queue ends and autoplay is off
                     }
                 }
+            }
+
+            string preUrl = _preResolvedNextUrl;
+            int preIdx = _preResolvedNextIndex;
+            string preVid = _preResolvedNextVideoId;
+            ClearPreResolvedState();
+
+            _currentTrackIndex = targetIdx;
+
+            // Only use pre-resolved URL if it matches targetIdx and targetVidId EXACTLY
+            if (preIdx == targetIdx && !string.IsNullOrEmpty(preUrl) && targetIdx < _videoIdList.Count && preVid == _videoIdList[targetIdx])
+            {
+                _trackList[_currentTrackIndex] = preUrl;
+                _innerTubeAttempted = true;
+            }
+            else
+            {
+                _innerTubeAttempted = false;
             }
 
             StartPlaybackAsync();
@@ -1104,6 +1146,7 @@ namespace AudioPlayerTask
             int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;
             if (repeat == 2) { ResetRetryState(); StartPlaybackAsync(); return; }
             ResetRetryState();
+            ClearPreResolvedState();
             if (shuffle) _currentTrackIndex = _rand.Next(0, _trackList.Count);
             else { _currentTrackIndex--; if (_currentTrackIndex < 0) { if (repeat == 1) _currentTrackIndex = _trackList.Count - 1; else { _currentTrackIndex = 0; return; } } }
             StartPlaybackAsync();
