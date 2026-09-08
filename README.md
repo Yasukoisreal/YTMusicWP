@@ -56,6 +56,11 @@
   <img src="Pictures/09.png" width="200" />          
   <img src="Pictures/10.png" width="200" /> 
 </p> 
+<p align="center">          
+  <img src="Pictures/11.png" width="200" />          
+  <img src="Pictures/12.png" width="200" />          
+  <img src="Pictures/13.png" width="200" /> 
+</p> 
 
 ## Supported Devices
 
