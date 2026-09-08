@@ -493,6 +493,21 @@ namespace YTMusicWP
 
                         if (!_isAppleMusicStyle && !isFullscreen)
                         {
+                            // Defensive sweep: ensure all other realized containers outside active and old lines are reset to inactive scale/opacity
+                            for (int i = 0; i < currentLyrics.Count; i++)
+                            {
+                                if (i == currentLyricIndex || i == oldIndex) continue;
+                                var c = targetListView.ContainerFromIndex(i) as FrameworkElement;
+                                if (c == null) continue;
+                                if (c.Opacity != 0.5) c.Opacity = 0.5;
+                                var st = c.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                if (st != null && (st.ScaleX != 0.85 || st.ScaleY != 0.85))
+                                {
+                                    st.ScaleX = 0.85;
+                                    st.ScaleY = 0.85;
+                                }
+                            }
+
                             // Animate OLD lyric
                             if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                             {
@@ -1752,6 +1767,9 @@ namespace YTMusicWP
             }
         }
 
+        private FrameworkElement _lastOutContainer;
+        private Windows.UI.Xaml.Media.ScaleTransform _lastOutScale;
+
         private void AnimateLyricOut(FrameworkElement container, Windows.UI.Xaml.Media.ScaleTransform scale)
         {
             if (_lyricOutSb == null)
@@ -1770,7 +1788,19 @@ namespace YTMusicWP
                 _lyricOutSb.Children.Add(_lyricOutOpAnim);
                 _lyricOutSb.Children.Add(_lyricOutSxAnim);
                 _lyricOutSb.Children.Add(_lyricOutSyAnim);
+                _lyricOutSb.Completed += (s, e) =>
+                {
+                    if (_lastOutScale != null) { _lastOutScale.ScaleX = 0.85; _lastOutScale.ScaleY = 0.85; }
+                    if (_lastOutContainer != null) { _lastOutContainer.Opacity = 0.5; }
+                };
             }
+
+            if (_lastOutScale != null) { _lastOutScale.ScaleX = 0.85; _lastOutScale.ScaleY = 0.85; }
+            if (_lastOutContainer != null) { _lastOutContainer.Opacity = 0.5; }
+
+            _lastOutContainer = container;
+            _lastOutScale = scale;
+
             _lyricOutSb.Stop();
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricOutOpAnim, container);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricOutSxAnim, scale);
@@ -1782,6 +1812,8 @@ namespace YTMusicWP
         private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricInOpAnim;
         private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricInSxAnim;
         private Windows.UI.Xaml.Media.Animation.DoubleAnimation _lyricInSyAnim;
+        private FrameworkElement _lastInContainer;
+        private Windows.UI.Xaml.Media.ScaleTransform _lastInScale;
 
         private void AnimateLyricIn(FrameworkElement container, Windows.UI.Xaml.Media.ScaleTransform scale)
         {
@@ -1801,7 +1833,19 @@ namespace YTMusicWP
                 _lyricInSb.Children.Add(_lyricInOpAnim);
                 _lyricInSb.Children.Add(_lyricInSxAnim);
                 _lyricInSb.Children.Add(_lyricInSyAnim);
+                _lyricInSb.Completed += (s, e) =>
+                {
+                    if (_lastInScale != null) { _lastInScale.ScaleX = 1.0; _lastInScale.ScaleY = 1.0; }
+                    if (_lastInContainer != null) { _lastInContainer.Opacity = 1.0; }
+                };
             }
+
+            if (_lastInScale != null) { _lastInScale.ScaleX = 1.0; _lastInScale.ScaleY = 1.0; }
+            if (_lastInContainer != null) { _lastInContainer.Opacity = 1.0; }
+
+            _lastInContainer = container;
+            _lastInScale = scale;
+
             _lyricInSb.Stop();
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricInOpAnim, container);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(_lyricInSxAnim, scale);
