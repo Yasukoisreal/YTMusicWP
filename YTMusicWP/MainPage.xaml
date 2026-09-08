@@ -2460,7 +2460,38 @@
                             <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="15,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding Opacity}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,8" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left"/>
+                                        <Grid Margin="10,8" HorizontalAlignment="Left">
+                                            <!-- Far-field blur taps (outer ring: radius 3.8px) -->
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+
+                                            <!-- Near-field blur taps (inner ring: radius 2.0px) -->
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="-2.0" Y="0"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="2.0" Y="0"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="-2.0"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="2.0"/></TextBlock.RenderTransform>
+                                            </TextBlock>
+
+                                            <!-- Core Sharp Text layer -->
+                                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding Opacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False"/>
+                                        </Grid>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>
@@ -2756,7 +2787,38 @@
                 <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding Opacity}" TextWrapping="Wrap" TextAlignment="Center" Margin="5,12" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center"/>
+                            <Grid Margin="5,12" HorizontalAlignment="Center">
+                                <!-- Far-field blur taps (outer ring: radius 3.8px) -->
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                </TextBlock>
+
+                                <!-- Near-field blur taps (inner ring: radius 2.0px) -->
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="-2.0" Y="0"/></TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="2.0" Y="0"/></TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="-2.0"/></TextBlock.RenderTransform>
+                                </TextBlock>
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
+                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="2.0"/></TextBlock.RenderTransform>
+                                </TextBlock>
+
+                                <!-- Core Sharp Text layer -->
+                                <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding Opacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False"/>
+                            </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                     <ListView.ItemContainerStyle>

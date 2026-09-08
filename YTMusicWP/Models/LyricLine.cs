@@ -23,6 +23,12 @@ namespace YTMusicWP
         private double _opacity = 0.5;
         public double Opacity { get { return _opacity; } set { _opacity = value; OnPropertyChanged("Opacity"); } }
 
+        private double _blurOpacity = 0.0;
+        public double BlurOpacity { get { return _blurOpacity; } set { _blurOpacity = value; OnPropertyChanged("BlurOpacity"); } }
+
+        private double _farBlurOpacity = 0.0;
+        public double FarBlurOpacity { get { return _farBlurOpacity; } set { _farBlurOpacity = value; OnPropertyChanged("FarBlurOpacity"); } }
+
         private Windows.UI.Text.FontWeight _fontWeight = Windows.UI.Text.FontWeights.Normal;
         public Windows.UI.Text.FontWeight FontWeight { get { return _fontWeight; } set { _fontWeight = value; OnPropertyChanged("FontWeight"); } }
 

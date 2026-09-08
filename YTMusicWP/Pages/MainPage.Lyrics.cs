@@ -567,30 +567,61 @@ namespace YTMusicWP
                     if (currentLyricIndex < 0)
                     {
                         currentLyrics[i].Opacity = 0.50;
+                        currentLyrics[i].BlurOpacity = 0.0;
+                        currentLyrics[i].FarBlurOpacity = 0.0;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
                     }
                     else if (i == currentLyricIndex)
                     {
                         currentLyrics[i].Opacity = 1.0;
+                        currentLyrics[i].BlurOpacity = 0.0;
+                        currentLyrics[i].FarBlurOpacity = 0.0;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
                     }
                     else
                     {
                         int dist = Math.Abs(i - currentLyricIndex);
-                        if (i < currentLyricIndex) dist += 1; // past lines fade more
+                        bool isPast = i < currentLyricIndex;
 
-                        // Apple Music distance-based opacity falloff:
-                        // dist = 1: 0.55 (future) / 0.35 (past)
-                        // dist = 2: 0.35 (future) / 0.20 (past)
-                        // dist = 3: 0.20 (future) / 0.15 (past)
-                        // dist >= 4: 0.15
-                        double op;
-                        if (dist == 1) op = 0.55;
-                        else if (dist == 2) op = 0.35;
-                        else if (dist == 3) op = 0.20;
-                        else op = 0.15;
+                        double coreOp;
+                        double nearBlur;
+                        double farBlur;
 
-                        currentLyrics[i].Opacity = op;
+                        if (dist == 1)
+                        {
+                            if (!isPast)
+                            {
+                                // Next line: gentle softness, near blur
+                                coreOp = 0.35;
+                                nearBlur = 0.22;
+                                farBlur = 0.06;
+                            }
+                            else
+                            {
+                                // Just-sung line: slightly more blur
+                                coreOp = 0.18;
+                                nearBlur = 0.22;
+                                farBlur = 0.12;
+                            }
+                        }
+                        else if (dist == 2)
+                        {
+                            // 2 lines away: pronounced defocus blur
+                            coreOp = 0.06;
+                            nearBlur = 0.20;
+                            farBlur = 0.16;
+                        }
+                        else
+                        {
+                            // 3+ lines away: heavy blur, sharp edge disappears completely
+                            coreOp = 0.0;
+                            nearBlur = 0.12;
+                            farBlur = 0.12;
+                        }
+
+                        currentLyrics[i].Opacity = coreOp;
+                        currentLyrics[i].BlurOpacity = nearBlur;
+                        currentLyrics[i].FarBlurOpacity = farBlur;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
                     }
                 }
@@ -599,6 +630,8 @@ namespace YTMusicWP
             {
                 for (int i = 0; i < currentLyrics.Count; i++)
                 {
+                    currentLyrics[i].BlurOpacity = 0.0;
+                    currentLyrics[i].FarBlurOpacity = 0.0;
                     if (i == currentLyricIndex)
                     {
                         currentLyrics[i].Opacity = 1.0;
