@@ -103,48 +103,39 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
   - Full-bleed album artwork with gentle bottom cosine alpha dissolve into the backdrop.
   - Marquee scrolling text animation for long song titles.
   - Elegant compact header bar for Lyrics and Queue views showing track thumbnail and metadata.
-- 🎤 **Apple Music Synced Lyrics:**
-  - Optical defocus blur simulation for distant lines.
-  - Distance-based progressive opacity falloff.
+- 🎤 **Apple Music Synced Lyrics & Mini Lyric:**
+  - Added optical defocus blur simulation for distant lines with distance-based progressive opacity falloff.
   - Official Apple Music quote-bubble icon and circular vertical floating quick controls.
-- 🎛️ **Now Playing Dock & Audio Routing:**
-  - Quick-access dock buttons for Lyrics and Queue views.
-  - Integrated one-tap Audio Endpoint / Bluetooth output device selector.
-- ⚡ **Stream Engine & Playback Reliability:**
-  - Fixed YouTube audio stream resolution using `VISIONOS` poToken & `itag 140` fallback.
-  - Completely eliminated audio-title race condition when skipping songs rapidly.
-  - Preserved signed YouTube URLs and prevented seeking failures on expired remote streams.
-  - Optimized memory consumption and background audio task communication limits for 512MB RAM devices.
-- 🛠️ **UI & Quality-of-Life Polish:**
-  - Fixed volume slider touch lock bug.
-  - Replaced missing Windows 10 MDL2 glyph E946 with vector SVG Info icon.
-  - Fixed lyrics recycling and back navigation stacks.
-  - Removed BETA tag — officially promoted to stable release.
-
-### v2.1.4
+  - Live Mini Lyric line on Now Playing screen with smooth fade and infinite marquee animation.
+  - Expanded lyrics support with LRCLIB and TTML `InvariantCulture` timestamp parsing.
 - 🔐 **Cookie Auth & Account Sync:**
   - Support for Google Cookie-based login (`SAPISIDHASH` via WebView) to bypass BotGuard.
   - Full Liked Music sync (`VLLM`), subscribed artists sync, and direct creation/editing of cloud YouTube playlists.
-- 🛡️ **YouTube BotGuard Bypass & Remote poToken:**
-  - Integrated remote poToken service with multi-client fallback chain (`ANDROID`, `IOS`, `VISIONOS`, `ANDROID_VR`) to resolve HTTP 400 errors and bandwidth throttling.
-- 🏠 **Dynamic Home Feed (SimpMusic Layout):**
-  - Revamped Home feed to dynamically load all YouTube Music carousels (Quick Picks 4-item list, Moods & Genres, 16:9 thumbnails).
+- 🏠 **Dynamic Home Feed & Top Charts:**
+  - Revamped Home feed matching SimpMusic layout to dynamically load all YouTube Music carousels (Quick Picks 4-item list, Moods & Genres, 16:9 thumbnails).
   - Incremental section continuation loading and detached-UI rendering for lag-free scrolling.
-- 📈 **Explore & Top Charts:**
-  - Added dedicated Top Charts and Moods/Genres exploration directly within the Search and Home tabs.
-- 💬 **Mini Lyric & Lyrics Engine:**
-  - Added Mini Lyric bar directly on Now Playing with smooth fade and infinite marquee animation.
-  - Expanded lyrics support with LRCLIB, TTML InvariantCulture timestamp parsing, and provider watermarks.
-- ⏭️ **SponsorBlock Integration:**
-  - Automatically skips sponsor segments, intros, music video non-music interludes, and outros.
-- 📂 **Playlist Management & Offline Tools:**
-  - Added playlist search filter bar and local M3U playlist export/import.
-  - Create and manage local offline playlists without requiring an account.
-- 🎚️ **Playback Gestures & Controls:**
+  - Dedicated Top Charts and Moods/Genres exploration directly within the Search and Home tabs.
+- 🛡️ **YouTube BotGuard Bypass & Stream Reliability:**
+  - Integrated remote poToken service with multi-client fallback chain (`ANDROID`, `IOS`, `VISIONOS`, `ANDROID_VR`) to resolve HTTP 400 errors and bandwidth throttling.
+  - Fixed YouTube audio stream resolution using `VISIONOS` poToken & `itag 140` fallback.
+  - Completely eliminated audio-title race condition when skipping songs rapidly.
+  - Preserved signed YouTube URLs and prevented seeking failures on expired remote streams.
+- 🎛️ **Controls, Dock & Offline Tools:**
+  - Quick-access dock buttons for Lyrics, Queue, and one-tap Audio Endpoint / Bluetooth output device selector.
   - Mini player horizontal swipe gestures to skip songs or dismiss.
-  - Playback speed control (0.5x – 2.0x) and song credits dialog.
-  - Dynamic ambient background gradient synchronized with album art.
-  - End-of-queue infinite radio autoplay.
+  - Playback speed control (0.5x – 2.0x), song credits dialog, and end-of-queue infinite radio autoplay.
+  - Playlist search filter bar and local M3U playlist export/import.
+- 🛠️ **Quality of Life & Fixes:**
+  - Fixed volume slider touch lock bug.
+  - Replaced missing Windows 10 MDL2 glyph E946 with vector SVG Info icon.
+  - Fixed lyrics recycling, back navigation stacks, and memory optimization for 512MB RAM devices.
+  - Removed BETA tag — officially promoted to stable release.
+
+### v2.1.4
+- ⏭️ **SponsorBlock Integration:** Automatically skip sponsor segments, intros, music video interludes, and outros.
+- 🔄 **Playlist Sync:** Added playlist synchronization and performance improvements for library loading.
+- 🎤 **Lyrics Providers:** Added Apple Music lyrics provider support and attribution watermark.
+- ⚡ **Performance & Audit:** Resolved HTTP client socket reuse, JSON memory consumption, and UI lag when batch-inserting items on 512MB devices.
 
 ### v2.1.3.1 BETA
 - 🛠️ **Hotfix:** Fixed an issue where the "Liked Songs" playlist would not sync or was missing information (titles, covers).
