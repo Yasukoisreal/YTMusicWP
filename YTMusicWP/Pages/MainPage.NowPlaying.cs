@@ -981,6 +981,7 @@ namespace YTMusicWP
             UpdateDockActiveState(NowPlayingPivot != null ? (NowPlayingPivot.SelectedIndex == 0 ? -1 : NowPlayingPivot.SelectedIndex) : -1);
             UpdateLyricsFadeColors(_currentGradientColor);
             UpdateLyricsVisualState();
+            RefreshRegularLyricsContainers();
         }
 
         private void DockLyrics_Tapped(object sender, TappedRoutedEventArgs e)

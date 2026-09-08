@@ -489,66 +489,52 @@ namespace YTMusicWP
                             // Target ListView = fullscreen or regular
                         var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
 
-                        if (_isAppleMusicStyle && !isFullscreen)
-                        {
-                            UpdateLyricsVisualState();
-                        }
-                        else
+                        UpdateLyricsVisualState();
+
+                        if (!_isAppleMusicStyle && !isFullscreen)
                         {
                             // Animate OLD lyric
                             if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                             {
-                                currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
-
-                                if (!isFullscreen)
+                                var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                                if (oldContainer != null)
                                 {
-                                    var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
-                                    if (oldContainer != null)
+                                    var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                    if (oldScale == null)
                                     {
-                                        var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                        if (oldScale == null)
-                                        {
-                                            oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
-                                            oldContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                            oldContainer.RenderTransform = oldScale;
-                                        }
-                                        // [OPT-1] Reuse cached easing + single storyboard
-                                        AnimateLyricOut(oldContainer, oldScale);
+                                        oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
+                                        oldContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                        oldContainer.RenderTransform = oldScale;
                                     }
-                                    else { currentLyrics[oldIndex].Opacity = 0.5; }
-                                }
-                                else
-                                {
-                                    var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
-                                    if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
+                                    // [OPT-1] Reuse cached easing + single storyboard
+                                    AnimateLyricOut(oldContainer, oldScale);
                                 }
                             }
 
                             // Animate NEW lyric
-                            currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
-
-                            if (isFullscreen)
+                            var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                            if (newContainer != null)
                             {
-                                var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                                if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
-                            }
-                            else
-                            {
-                                var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                                if (newContainer != null)
+                                var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                                if (scaleTransform == null)
                                 {
-                                    var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                    if (scaleTransform == null)
-                                    {
-                                        scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                                        newContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                        newContainer.RenderTransform = scaleTransform;
-                                    }
-                                    // [OPT-1] Reuse cached easing + single storyboard
-                                    AnimateLyricIn(newContainer, scaleTransform);
+                                    scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                                    newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                    newContainer.RenderTransform = scaleTransform;
                                 }
-                                else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+                                // [OPT-1] Reuse cached easing + single storyboard
+                                AnimateLyricIn(newContainer, scaleTransform);
                             }
+                        }
+                        else if (isFullscreen)
+                        {
+                            if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
+                            {
+                                var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                                if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
+                            }
+                            var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                            if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
                         }
 
                         // Smooth center-scroll (replaces abrupt ScrollIntoView)
@@ -1605,35 +1591,57 @@ namespace YTMusicWP
             {
                 var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
                 
-                if (_isAppleMusicStyle && !isFullscreen)
+                UpdateLyricsVisualState();
+                
+                if (!_isAppleMusicStyle && !isFullscreen)
                 {
-                    UpdateLyricsVisualState();
-                }
-                else
-                {
-                    currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
-                    
-                    if (isFullscreen)
+                    for (int i = 0; i < currentLyrics.Count; i++)
                     {
-                        var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                        if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
-                    }
-                    else
-                    {
-                        var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                        if (newContainer != null)
+                        var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
+                        if (container == null) continue;
+                        if (i == currentLyricIndex)
                         {
-                            var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                            if (scaleTransform == null)
+                            container.Opacity = 1.0;
+                            var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                            if (st == null)
                             {
-                                scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                                newContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                newContainer.RenderTransform = scaleTransform;
+                                st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1.0, ScaleY = 1.0 };
+                                container.RenderTransformOrigin = new Point(0, 0.5);
+                                container.RenderTransform = st;
                             }
-                            AnimateLyricIn(newContainer, scaleTransform);
+                            else { st.ScaleX = 1.0; st.ScaleY = 1.0; }
                         }
-                        else { currentLyrics[currentLyricIndex].Opacity = 1.0; }
+                        else
+                        {
+                            container.Opacity = 0.5;
+                            var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                            if (st == null)
+                            {
+                                st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                                container.RenderTransformOrigin = new Point(0, 0.5);
+                                container.RenderTransform = st;
+                            }
+                            else { st.ScaleX = 0.85; st.ScaleY = 0.85; }
+                        }
                     }
+
+                    var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                    if (newContainer != null)
+                    {
+                        var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                        if (scaleTransform == null)
+                        {
+                            scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                            newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                            newContainer.RenderTransform = scaleTransform;
+                        }
+                        AnimateLyricIn(newContainer, scaleTransform);
+                    }
+                }
+                else if (isFullscreen)
+                {
+                    var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                    if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
                 }
                 
                 ScrollViewer scrollViewer = null;

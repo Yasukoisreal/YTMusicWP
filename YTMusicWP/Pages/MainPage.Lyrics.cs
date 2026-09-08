@@ -632,14 +632,13 @@ namespace YTMusicWP
                 {
                     currentLyrics[i].BlurOpacity = 0.0;
                     currentLyrics[i].FarBlurOpacity = 0.0;
+                    currentLyrics[i].Opacity = 1.0;
                     if (i == currentLyricIndex)
                     {
-                        currentLyrics[i].Opacity = 1.0;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
                     }
                     else
                     {
-                        currentLyrics[i].Opacity = 0.50;
                         currentLyrics[i].ColorBrush = _lyricInactiveBrush;
                     }
                 }
@@ -660,13 +659,31 @@ namespace YTMusicWP
                     {
                         container.Opacity = 1.0;
                         var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (st != null) { st.ScaleX = 1.0; st.ScaleY = 1.0; }
+                        if (st == null)
+                        {
+                            st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1.0, ScaleY = 1.0 };
+                            container.RenderTransformOrigin = new Point(0, 0.5);
+                            container.RenderTransform = st;
+                        }
+                        else
+                        {
+                            st.ScaleX = 1.0; st.ScaleY = 1.0;
+                        }
                     }
                     else
                     {
                         container.Opacity = 0.5;
                         var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (st != null) { st.ScaleX = 0.85; st.ScaleY = 0.85; }
+                        if (st == null)
+                        {
+                            st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                            container.RenderTransformOrigin = new Point(0, 0.5);
+                            container.RenderTransform = st;
+                        }
+                        else
+                        {
+                            st.ScaleX = 0.85; st.ScaleY = 0.85;
+                        }
                     }
                 }
             }
