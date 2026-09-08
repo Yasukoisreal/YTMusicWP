@@ -2460,7 +2460,7 @@
                             <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="15,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="10,8" HorizontalAlignment="Left">
+                                        <Grid Margin="10,13" HorizontalAlignment="Left">
                                             <!-- Far-field blur taps (soft outer feather: radius ~1.7px) -->
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
                                                 <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="-1.0"/></TextBlock.RenderTransform>
@@ -2793,7 +2793,7 @@
                 <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Margin="5,12" HorizontalAlignment="Center">
+                            <Grid Margin="5,16" HorizontalAlignment="Center">
                                 <!-- Far-field blur taps (soft outer feather: radius ~1.7px) -->
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
                                     <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="-1.0"/></TextBlock.RenderTransform>

@@ -591,48 +591,49 @@ namespace YTMusicWP
                         {
                             if (!isPast)
                             {
-                                // Next line: subtle softness, solid core
-                                coreOp = 0.50;
-                                nearBlur = 0.16;
-                                farBlur = 0.05;
+                                // Next line: soft feathering (~0.40 total visual weight)
+                                coreOp = 0.28;
+                                nearBlur = 0.025;
+                                farBlur = 0.010;
                             }
                             else
                             {
-                                // Just-sung line: slightly softer
-                                coreOp = 0.35;
-                                nearBlur = 0.16;
-                                farBlur = 0.08;
+                                // Just-sung line (~0.28 total visual weight)
+                                coreOp = 0.20;
+                                nearBlur = 0.020;
+                                farBlur = 0.010;
                             }
                         }
                         else if (dist == 2)
                         {
                             if (!isPast)
                             {
-                                coreOp = 0.30;
-                                nearBlur = 0.16;
-                                farBlur = 0.10;
+                                // 2 lines away: soft background depth (~0.20 total visual weight)
+                                coreOp = 0.12;
+                                nearBlur = 0.018;
+                                farBlur = 0.008;
                             }
                             else
                             {
-                                coreOp = 0.22;
-                                nearBlur = 0.15;
-                                farBlur = 0.09;
+                                coreOp = 0.09;
+                                nearBlur = 0.014;
+                                farBlur = 0.006;
                             }
                         }
                         else
                         {
-                            // 3+ lines away: deep smooth defocus with solid anchor (no hollow center, no grain)
+                            // 3+ lines away: deep fade melting into background (~0.08 total visual weight)
                             if (!isPast)
                             {
-                                coreOp = 0.20;
-                                nearBlur = 0.14;
-                                farBlur = 0.10;
+                                coreOp = 0.050;
+                                nearBlur = 0.010;
+                                farBlur = 0.005;
                             }
                             else
                             {
-                                coreOp = 0.14;
-                                nearBlur = 0.12;
-                                farBlur = 0.08;
+                                coreOp = 0.035;
+                                nearBlur = 0.008;
+                                farBlur = 0.004;
                             }
                         }
 
