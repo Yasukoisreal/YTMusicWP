@@ -2605,7 +2605,9 @@
                                 <!-- Apple Music: queue action pills -->
                                 <StackPanel x:Name="AppleMusicQueuePills" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="1,4,1,10">
                                     <Border Background="#3DFFFFFF" CornerRadius="20" Width="40" Height="40" Margin="0,0,8,0" HorizontalAlignment="Stretch" Tapped="QueueInfoPill_Tapped">
-                                        <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE946;" Foreground="White" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Path Data="M11,17H13V11H11V17M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M11,9H13V7H11V9Z" Fill="White"/>
+                                        </Viewbox>
                                     </Border>
                                     <Border Background="#3DFFFFFF" CornerRadius="20" Width="40" Height="40" Margin="0,0,8,0" HorizontalAlignment="Stretch" Tapped="QueueAddPill_Tapped">
                                         <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE109;" Foreground="White" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
