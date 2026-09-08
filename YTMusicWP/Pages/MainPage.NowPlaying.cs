@@ -1016,6 +1016,22 @@ namespace YTMusicWP
             }
         }
 
+        private async void DockCast_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            try
+            {
+                await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings-bluetooth:"));
+            }
+            catch
+            {
+                try
+                {
+                    await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:bluetooth"));
+                }
+                catch { }
+            }
+        }
+
         private void UpdateDockActiveState(int viewIndex)
         {
             if (!_isAppleMusicStyle) return;
@@ -1031,6 +1047,11 @@ namespace YTMusicWP
             {
                 DockLyricsBtn.Background = viewIndex == 1 ? activeBg : inactiveBg;
                 if (DockLyricsPath != null) DockLyricsPath.Fill = viewIndex == 1 ? activeIcon : inactiveIcon;
+            }
+            if (DockCastBtn != null)
+            {
+                DockCastBtn.Background = inactiveBg;
+                if (DockCastPath != null) DockCastPath.Fill = inactiveIcon;
             }
             if (DockQueueBtn != null)
             {
