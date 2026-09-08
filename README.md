@@ -21,20 +21,23 @@
 
 ## Features ✨️    
 - Play music from YouTube Music for free, without ads and in the background
-- High-quality streaming directly from YouTube without delays
+- High-quality streaming directly from YouTube with multi-client fallback engine
+- Customizable Now Playing Experience: Switch between classic Spotify dark aesthetic and modern Apple Music style with hardware-accelerated blurred backdrop (Lumia Imaging SDK 2.0), edge-to-edge transparent UI, and spring elasticity animations
 - Control your music using volume buttons, from the lock screen, or with your headset
-- Smooth crossfade transitions between songs (1s – 10s)
-- Smart Queue with shuffle, repeat, and automatic infinite song recommendations
-- Real-time synchronized scrolling lyrics with adjustable text size and colors
-- Huge lyrics database to automatically find the best lyrics for your songs
+- Smart Queue with shuffle, repeat, and automatic infinite song radio recommendations
+- Real-time synchronized scrolling lyrics with Apple Music defocus blur effect, distance falloff, adjustable text size, and multi-source fallback (YouTube, LRCLIB, TTML)
+- Mini Lyric on Now Playing with smooth fade and infinite marquee animation
+- SponsorBlock integration: Automatically skip sponsor segments, intros, music video interludes, and outros
+- Dynamic Home Tab: Live YouTube carousels (Quick Picks, Moods & Genres, 16:9 videos) with smooth incremental loading
+- Top Charts & Music Exploration: Explore trending songs, top charts, and curated genres directly in Search and Home
+- Multi-Method Google Login: Easy QR Code device scan or direct Cookie-based authentication (SAPISIDHASH)
+- Full Cloud & Local Library: Sync Liked Music, create/edit cloud YouTube playlists, follow artists, plus local M3U playlist import/export
+- Mini Player Gestures: Swipe horizontally to skip tracks or swipe to dismiss
+- Playback Speed Control (0.5x – 2.0x) and detailed song credits dialog
+- Offline support: Download songs directly to your phone to enjoy music without internet
 - Iconic Metro Live Tiles (Now Playing Flip Tile, People Hub Style Mosaic)
 - Pin your favorite artists, albums, or playlists directly to your Start Screen
-- Easy and secure login by simply scanning a QR Code with your phone
-- Full library sync including Liked Music, custom YouTube playlists, and subscribed artists
-- Offline support: Download songs directly to your phone to enjoy music without internet
-- Manage local downloads, create custom local playlists, and track playback history
-- Customizable Now Playing Experience: Switch between classic Spotify dark aesthetic and modern Apple Music style with hardware-accelerated real-time blurred backdrop (Lumia Imaging SDK 2.0), edge-to-edge transparent UI, and spring elasticity animations
-- Highly optimized to run perfectly without crashing, even on older phones with just 512MB RAM like the Nokia Lumia 520
+- Highly optimized for low-end hardware: runs smoothly even on older phones with just 512MB RAM like the Nokia Lumia 520
 
 ## Screenshots    
 <p align="center">          
@@ -93,11 +96,55 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 ## Changelog
 
 ### v2.2.0 (Latest)
-- 🍎 **Apple Music Now Playing UI:** Added full Apple Music style with hardware-accelerated blurred backdrop (powered by Lumia Imaging SDK 2.0), edge-to-edge transparent StatusBar, dynamic controls with spring-elastic animations, and marquee scrolling for long titles.
-- 🎤 **Apple Music Lyrics Experience:** Added distance opacity falloff, optical defocus blur effect, official quote bubble icon, and floating vertical quick controls.
-- 🎛️ **Dock & Audio Routing:** Quick-access dock for Lyrics and Queue, plus one-tap Bluetooth/Audio endpoint selector.
-- ⚡ **Stream & Playback Engine:** Fixed YouTube audio stream issues with VISIONOS poToken & itag 140; completely eliminated audio-title race condition when skipping tracks.
-- 🛠️ **Quality of Life & Fixes:** Fixed volume slider touch lock, improved queue navigation with vector icons, optimized memory consumption on 512MB devices, and dropped the BETA tag for official release.
+- 🍎 **Apple Music Now Playing UI:**
+  - Full Apple Music visual overhaul with real-time hardware-accelerated blurred backdrop powered by **Lumia Imaging SDK 2.0** (dual-pass blur, custom downsampling, and deep color wash).
+  - True edge-to-edge transparent StatusBar integration (`ApplicationViewBoundsMode.UseCoreWindow`) with top scrim protection.
+  - Interactive tactile controls: press-to-swell button feedback (1.28x), spring elasticity physics (`ElasticEase` & `BackEase`), and slider expand-on-touch animation.
+  - Full-bleed album artwork with gentle bottom cosine alpha dissolve into the backdrop.
+  - Marquee scrolling text animation for long song titles.
+  - Elegant compact header bar for Lyrics and Queue views showing track thumbnail and metadata.
+- 🎤 **Apple Music Synced Lyrics:**
+  - Optical defocus blur simulation for distant lines.
+  - Distance-based progressive opacity falloff.
+  - Official Apple Music quote-bubble icon and circular vertical floating quick controls.
+- 🎛️ **Now Playing Dock & Audio Routing:**
+  - Quick-access dock buttons for Lyrics and Queue views.
+  - Integrated one-tap Audio Endpoint / Bluetooth output device selector.
+- ⚡ **Stream Engine & Playback Reliability:**
+  - Fixed YouTube audio stream resolution using `VISIONOS` poToken & `itag 140` fallback.
+  - Completely eliminated audio-title race condition when skipping songs rapidly.
+  - Preserved signed YouTube URLs and prevented seeking failures on expired remote streams.
+  - Optimized memory consumption and background audio task communication limits for 512MB RAM devices.
+- 🛠️ **UI & Quality-of-Life Polish:**
+  - Fixed volume slider touch lock bug.
+  - Replaced missing Windows 10 MDL2 glyph E946 with vector SVG Info icon.
+  - Fixed lyrics recycling and back navigation stacks.
+  - Removed BETA tag — officially promoted to stable release.
+
+### v2.1.4
+- 🔐 **Cookie Auth & Account Sync:**
+  - Support for Google Cookie-based login (`SAPISIDHASH` via WebView) to bypass BotGuard.
+  - Full Liked Music sync (`VLLM`), subscribed artists sync, and direct creation/editing of cloud YouTube playlists.
+- 🛡️ **YouTube BotGuard Bypass & Remote poToken:**
+  - Integrated remote poToken service with multi-client fallback chain (`ANDROID`, `IOS`, `VISIONOS`, `ANDROID_VR`) to resolve HTTP 400 errors and bandwidth throttling.
+- 🏠 **Dynamic Home Feed (SimpMusic Layout):**
+  - Revamped Home feed to dynamically load all YouTube Music carousels (Quick Picks 4-item list, Moods & Genres, 16:9 thumbnails).
+  - Incremental section continuation loading and detached-UI rendering for lag-free scrolling.
+- 📈 **Explore & Top Charts:**
+  - Added dedicated Top Charts and Moods/Genres exploration directly within the Search and Home tabs.
+- 💬 **Mini Lyric & Lyrics Engine:**
+  - Added Mini Lyric bar directly on Now Playing with smooth fade and infinite marquee animation.
+  - Expanded lyrics support with LRCLIB, TTML InvariantCulture timestamp parsing, and provider watermarks.
+- ⏭️ **SponsorBlock Integration:**
+  - Automatically skips sponsor segments, intros, music video non-music interludes, and outros.
+- 📂 **Playlist Management & Offline Tools:**
+  - Added playlist search filter bar and local M3U playlist export/import.
+  - Create and manage local offline playlists without requiring an account.
+- 🎚️ **Playback Gestures & Controls:**
+  - Mini player horizontal swipe gestures to skip songs or dismiss.
+  - Playback speed control (0.5x – 2.0x) and song credits dialog.
+  - Dynamic ambient background gradient synchronized with album art.
+  - End-of-queue infinite radio autoplay.
 
 ### v2.1.3.1 BETA
 - 🛠️ **Hotfix:** Fixed an issue where the "Liked Songs" playlist would not sync or was missing information (titles, covers).
