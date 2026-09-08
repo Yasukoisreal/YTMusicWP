@@ -2653,7 +2653,13 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0">
-                            <TextBlock x:Name="AppleMusicMainTitle" Text="" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                            <Canvas x:Name="AppleMusicTitleMarqueeCanvas" Height="28" HorizontalAlignment="Stretch" SizeChanged="AppleMusicTitleMarqueeCanvas_SizeChanged">
+                                <TextBlock x:Name="AppleMusicMainTitle" Text="" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextWrapping="NoWrap" Canvas.Top="0">
+                                    <TextBlock.RenderTransform>
+                                        <TranslateTransform x:Name="AppleMusicTitleTranslate" X="0"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Canvas>
                             <TextBlock x:Name="AppleMusicMainArtist" Text="" FontSize="13" Foreground="#B3FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

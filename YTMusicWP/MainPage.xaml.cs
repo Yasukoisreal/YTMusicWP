@@ -53,10 +53,30 @@ namespace YTMusicWP
         private void StartTitleMarquee()
         {
             StopTitleMarquee();
-            BigTitle.UpdateLayout();
-            double textWidth = BigTitle.ActualWidth;
-            double canvasWidth = TitleMarqueeCanvas.ActualWidth;
-            if (canvasWidth <= 0) canvasWidth = TitleMarqueeCanvas.Width;
+
+            TextBlock targetTitle;
+            Canvas targetCanvas;
+            TranslateTransform targetTranslate;
+
+            if (_isAppleMusicStyle)
+            {
+                targetTitle = AppleMusicMainTitle;
+                targetCanvas = AppleMusicTitleMarqueeCanvas;
+                targetTranslate = AppleMusicTitleTranslate;
+            }
+            else
+            {
+                targetTitle = BigTitle;
+                targetCanvas = TitleMarqueeCanvas;
+                targetTranslate = TitleTranslate;
+            }
+
+            if (targetTitle == null || targetCanvas == null || targetTranslate == null) return;
+
+            targetTitle.UpdateLayout();
+            double textWidth = targetTitle.ActualWidth;
+            double canvasWidth = targetCanvas.ActualWidth;
+            if (canvasWidth <= 0) canvasWidth = targetCanvas.Width;
             if (textWidth <= canvasWidth || textWidth <= 0) return;
 
             double overflow = textWidth - canvasWidth;
@@ -71,7 +91,7 @@ namespace YTMusicWP
             anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = -overflow, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration)) });
             anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = 0, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration * 2)) });
             anim.RepeatBehavior = new Anim.RepeatBehavior(1000); // repeat many times
-            Anim.Storyboard.SetTarget(anim, TitleTranslate);
+            Anim.Storyboard.SetTarget(anim, targetTranslate);
             Anim.Storyboard.SetTargetProperty(anim, "X");
             _marqueeStoryboard.Children.Add(anim);
             _marqueeStoryboard.Begin();
@@ -84,12 +104,21 @@ namespace YTMusicWP
                 _marqueeStoryboard.Stop();
                 _marqueeStoryboard = null;
             }
-            TitleTranslate.X = 0;
+            if (TitleTranslate != null) TitleTranslate.X = 0;
+            if (AppleMusicTitleTranslate != null) AppleMusicTitleTranslate.X = 0;
         }
 
         private void TitleMarqueeCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             TitleMarqueeCanvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
+        }
+
+        private void AppleMusicTitleMarqueeCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (AppleMusicTitleMarqueeCanvas != null)
+            {
+                AppleMusicTitleMarqueeCanvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
+            }
         }
         private void MiniLyricCanvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {

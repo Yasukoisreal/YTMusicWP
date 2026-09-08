@@ -309,6 +309,15 @@ namespace YTMusicWP
                     AppleMusicArtworkGrid.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
             }
 
+            if (idx == 0 && NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
+            {
+                var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
+            }
+            else if (idx != 0 && _isAppleMusicStyle)
+            {
+                StopTitleMarquee();
+            }
+
             if (idx == 2)
             {
                 UpdateQueueActiveState();
@@ -982,6 +991,12 @@ namespace YTMusicWP
             UpdateLyricsFadeColors(_currentGradientColor);
             UpdateLyricsVisualState();
             RefreshRegularLyricsContainers();
+
+            if (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
+            {
+                StopTitleMarquee();
+                var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
+            }
         }
 
         private void DockLyrics_Tapped(object sender, TappedRoutedEventArgs e)
@@ -1087,6 +1102,11 @@ namespace YTMusicWP
             if (AppleMusicLyricsArtist != null) AppleMusicLyricsArtist.Text = artist;
             if (AppleMusicQueueTitle != null) AppleMusicQueueTitle.Text = title;
             if (AppleMusicQueueArtist != null) AppleMusicQueueArtist.Text = artist;
+
+            if (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible && NowPlayingPivot != null && NowPlayingPivot.SelectedIndex == 0)
+            {
+                var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
+            }
 
             if (BigCoverImage != null && BigCoverImage.ImageSource != null)
             {
