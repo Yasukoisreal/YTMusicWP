@@ -3364,7 +3364,7 @@
               Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
               Tapped="SplashOverlay_Tapped">
             <Image x:Name="SplashAnimatedImage"
-                   Width="320" Height="320"
+                   Width="560" Height="560"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    gif:AnimationBehavior.SourceUri="ms-appx:///Assets/Hero_logo_animation_001.gif"
                    gif:AnimationBehavior.RepeatBehavior="1"
