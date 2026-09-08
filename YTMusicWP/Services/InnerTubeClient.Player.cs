@@ -385,13 +385,10 @@ namespace YTMusicWP
         }
 
         /// <summary>
-        /// Chuẩn bị URL stream: thêm ratebypass=yes và range=0- để tránh throttle/cut
+        /// Chuẩn bị URL stream: giữ nguyên URL signed từ YouTube để tránh 403 Forbidden
         /// </summary>
         private static string PrepareStreamUrl(string url)
         {
-            if (string.IsNullOrEmpty(url)) return url;
-            if (!url.Contains("ratebypass="))
-                url += "&ratebypass=yes";
             return url;
         }
 

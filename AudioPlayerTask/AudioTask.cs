@@ -114,6 +114,7 @@ namespace AudioPlayerTask
                 bool hasFastUrl = _innerTubeAttempted; // set true bởi FastUrl ở trên
                 ResetRetryState();
                 if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
+                _currentLoadedVidId = "";
                 StartPlaybackAsync();
             }
             else if (e.Data.ContainsKey("UpdateQueueOnly"))
@@ -645,18 +646,16 @@ namespace AudioPlayerTask
 
             string vidId = _videoIdList[_currentTrackIndex];
 
-            // Offline track ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ phÃƒÆ’Ã‚Â¡t trÃƒÂ¡Ã‚Â»Ã‚Â±c tiÃƒÂ¡Ã‚ÂºÃ‚Â¿p
+            // Offline track: phát trực tiếp (nếu bài cũ vẫn mở thì tua về 0)
             if (vidId.StartsWith("LOCAL:"))
             {
+                if (vidId == _currentLoadedVidId && _mediaPlayer.CurrentState != MediaPlayerState.Closed && _retryCount == 0)
+                {
+                    try { _mediaPlayer.Position = TimeSpan.Zero; _mediaPlayer.Play(); _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing; UpdateSystemMediaControls(); }
+                    catch { }
+                    return;
+                }
                 PlayUrl(_trackList[_currentTrackIndex], vidId);
-                return;
-            }
-
-            // Skip nÃƒÂ¡Ã‚ÂºÃ‚Â¿u bÃƒÆ’Ã‚Â i cÃƒâ€¦Ã‚Â© vÃƒÂ¡Ã‚ÂºÃ‚Â«n Ãƒâ€žÃ¢â‚¬Ëœang phÃƒÆ’Ã‚Â¡t (khÃƒÆ’Ã‚Â´ng retry)
-            if (vidId == _currentLoadedVidId && _mediaPlayer.CurrentState != MediaPlayerState.Closed && _retryCount == 0)
-            {
-                try { _mediaPlayer.Position = TimeSpan.Zero; _mediaPlayer.Play(); _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing; UpdateSystemMediaControls(); }
-                catch { }
                 return;
             }
 
@@ -712,16 +711,10 @@ namespace AudioPlayerTask
         }
 
         /// <summary>
-        /// ThÃƒÆ’Ã‚Âªm params chÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng throttle vÃƒÆ’Ã‚Â o googlevideo URL:
-        /// - ratebypass=yes: bÃƒÂ¡Ã‚Â»Ã‚Â giÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi hÃƒÂ¡Ã‚ÂºÃ‚Â¡n tÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœc Ãƒâ€žÃ¢â‚¬ËœÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢
-        /// - range=0-: ÃƒÆ’Ã‚Â©p server gÃƒÂ¡Ã‚Â»Ã‚Â­i toÃƒÆ’Ã‚Â n bÃƒÂ¡Ã‚Â»Ã¢â€žÂ¢ audio trong 1 response (full buffer)
+        /// Chuẩn bị URL stream: giữ nguyên URL signed từ YouTube để tránh 403 Forbidden
         /// </summary>
         private string PrepareStreamUrl(string url)
         {
-            if (string.IsNullOrEmpty(url) || !url.Contains("googlevideo"))
-                return url;
-            if (!url.Contains("ratebypass"))
-                url += "&ratebypass=yes";
             return url;
         }
 
@@ -755,13 +748,13 @@ namespace AudioPlayerTask
         }
 
         // ==========================================
-        // RETRY FLOW ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â InnerTube only
-        // Retry 1-2: LÃƒÂ¡Ã‚ÂºÃ‚Â¥y URL InnerTube mÃƒÂ¡Ã‚Â»Ã¢â‚¬Âºi (URL cÃƒâ€¦Ã‚Â© hÃƒÂ¡Ã‚ÂºÃ‚Â¿t hÃƒÂ¡Ã‚ÂºÃ‚Â¡n)
-        // Retry 3-4: DÃƒÆ’Ã‚Â¹ng URL tÃƒÂ¡Ã‚Â»Ã‚Â« MainPage
+        // RETRY FLOW – InnerTube only
+        // Retry 1-2: Lấy URL InnerTube mới (URL cũ hết hạn)
+        // Retry 3-4: Dùng URL từ MainPage hoặc resolve lại nếu chưa có
         // ==========================================
         private async void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
-            // [FIX-SOF] Guard against re-entrancy ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â prevents StackOverflowException
+            // [FIX-SOF] Guard against re-entrancy – prevents StackOverflowException
             if (_isRetrying) return;
             _isRetrying = true;
 
@@ -787,7 +780,7 @@ namespace AudioPlayerTask
                 return;
             }
 
-            // Retry 1-2: LÃƒÂ¡Ã‚ÂºÃ‚Â¥y URL InnerTube MÃƒÂ¡Ã‚Â»Ã…Â¡I
+            // Retry 1-2: Lấy URL InnerTube MỚI
             if (_retryCount <= 2)
             {
                 await Task.Delay(800);
@@ -804,11 +797,18 @@ namespace AudioPlayerTask
                 }
             }
 
-            // Retry 3-4: DÃƒÆ’Ã‚Â¹ng URL tÃƒÂ¡Ã‚Â»Ã‚Â« MainPage
+            // Retry 3-4: Dùng URL từ MainPage hoặc resolve lại nếu chưa có
             await Task.Delay(800);
             _isRetrying = false; // Allow next failure to re-enter
-            _innerTubeAttempted = true;
             _resolvedUrl = null;
+            if (_trackList != null && _currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count && !string.IsNullOrEmpty(_trackList[_currentTrackIndex]))
+            {
+                _innerTubeAttempted = true;
+            }
+            else
+            {
+                _innerTubeAttempted = false;
+            }
             StartPlaybackAsync();
         }
 
@@ -1056,7 +1056,7 @@ namespace AudioPlayerTask
             bool shuffle = ls.ContainsKey("ShuffleMode") ? (bool)ls["ShuffleMode"] : false;
             int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;
             bool autoplay = ls.ContainsKey("Autoplay") ? (bool)ls["Autoplay"] : true;
-            if (repeat == 2) { ResetRetryState(); StartPlaybackAsync(); return; }
+            if (repeat == 2) { ResetRetryState(); _currentLoadedVidId = ""; StartPlaybackAsync(); return; }
             ResetRetryState();
 
             // Use pre-resolved URL if available (gapless)
