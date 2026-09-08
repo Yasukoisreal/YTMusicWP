@@ -33,7 +33,7 @@
 - Full library sync including Liked Music, custom YouTube playlists, and subscribed artists
 - Offline support: Download songs directly to your phone to enjoy music without internet
 - Manage local downloads, create custom local playlists, and track playback history
-- Shorts Music Discovery: Vertical swipe feed for trending music snippets
+- Customizable Now Playing Experience: Switch between classic Spotify dark aesthetic and modern Apple Music style with hardware-accelerated real-time blurred backdrop (Lumia Imaging SDK 2.0), edge-to-edge transparent UI, and spring elasticity animations
 - Highly optimized to run perfectly without crashing, even on older phones with just 512MB RAM like the Nokia Lumia 520
 
 ## Screenshots    
@@ -74,9 +74,10 @@ The easiest way to install and update YTMusicWP is directly from the Live Store.
 
 ### Method 2: Manual Sideloading
 **Windows Phone 8.1:**
-1. Download the latest `.appx` and `.cer` files from [Releases](https://github.com/Yasukoisreal/YTMusicWP/releases).
+1. Download the latest `.appx`, `.cer`, and `Dependencies` from [Releases](https://github.com/Yasukoisreal/YTMusicWP/releases).
 2. Install the `.cer` certificate on your Lumia device first (open via email or file manager).
-3. Install the `.appx` app file using **Windows Phone Application Deployment (WPAD)**, **WPV Xap Deployer**, or **Windows Phone Power Tools**.
+3. If installing on a fresh device or prompted for missing dependencies, install `Microsoft.VCLibs.ARM.12.00.Phone.appx` (from the `Dependencies/ARM` folder).
+4. Install the `.appx` app file using **Windows Phone Application Deployment (WPAD)**, **WPV Xap Deployer**, or **Windows Phone Power Tools**.
 
 **Windows 10 Mobile:**
 1. Navigate to **Settings** > **Update & Security** > **For developers** and enable **Developer mode**.
@@ -91,7 +92,14 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 
 ## Changelog
 
-### v2.1.3.1 BETA (Latest)
+### v2.2.0 (Latest)
+- 🍎 **Apple Music Now Playing UI:** Added full Apple Music style with hardware-accelerated blurred backdrop (powered by Lumia Imaging SDK 2.0), edge-to-edge transparent StatusBar, dynamic controls with spring-elastic animations, and marquee scrolling for long titles.
+- 🎤 **Apple Music Lyrics Experience:** Added distance opacity falloff, optical defocus blur effect, official quote bubble icon, and floating vertical quick controls.
+- 🎛️ **Dock & Audio Routing:** Quick-access dock for Lyrics and Queue, plus one-tap Bluetooth/Audio endpoint selector.
+- ⚡ **Stream & Playback Engine:** Fixed YouTube audio stream issues with VISIONOS poToken & itag 140; completely eliminated audio-title race condition when skipping tracks.
+- 🛠️ **Quality of Life & Fixes:** Fixed volume slider touch lock, improved queue navigation with vector icons, optimized memory consumption on 512MB devices, and dropped the BETA tag for official release.
+
+### v2.1.3.1 BETA
 - 🛠️ **Hotfix:** Fixed an issue where the "Liked Songs" playlist would not sync or was missing information (titles, covers).
 - 🛠️ **Hotfix:** Fixed an issue where the app would crash when loading the Library tab.
 
