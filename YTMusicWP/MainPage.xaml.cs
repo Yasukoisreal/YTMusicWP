@@ -227,8 +227,6 @@ namespace YTMusicWP
             LoadSettings();
             SetupTimer();
             UpdateGreetingText();
-            var ignored = CleanTempStreamsInternalAsync();
-            var ignoredDl = CleanStaleDownloadsAsync();
 
             BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
             HardwareButtons.BackPressed += HardwareButtons_BackPressed;
@@ -241,6 +239,7 @@ namespace YTMusicWP
         }
 
         #region Startup Splash Animation
+        private static readonly TaskCompletionSource<bool> _splashReadyTcs = new TaskCompletionSource<bool>();
         private DispatcherTimer _splashTimeoutTimer;
         private bool _splashDismissed = false;
 
@@ -253,6 +252,7 @@ namespace YTMusicWP
 
                 if (!enableSplash)
                 {
+                    _splashReadyTcs.TrySetResult(true);
                     DismissSplash(animate: false);
                     return;
                 }
@@ -271,6 +271,7 @@ namespace YTMusicWP
             }
             catch
             {
+                _splashReadyTcs.TrySetResult(true);
                 DismissSplash(animate: false);
             }
         }
@@ -300,6 +301,8 @@ namespace YTMusicWP
         {
             if (_splashDismissed) return;
             _splashDismissed = true;
+
+            _splashReadyTcs.TrySetResult(true);
 
             if (_splashTimeoutTimer != null)
             {
@@ -519,6 +522,16 @@ namespace YTMusicWP
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
+
+            // Wait for startup splash animation to finish or user tap to skip
+            // Ensures 100% smooth 30fps animation without CPU/Disk/Network contention
+            if (_splashReadyTcs != null)
+            {
+                await _splashReadyTcs.Task;
+            }
+
+            var ignoredClean = CleanTempStreamsInternalAsync();
+            var ignoredDl = CleanStaleDownloadsAsync();
 
             await YTMusicWP.Services.DatabaseHelper.InitializeAsync();
 
