@@ -2426,8 +2426,12 @@
                     <!-- Lyrics page -->
                     <PivotItem>
                         <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
                             <!-- Apple Music: compact header -->
-                            <Grid x:Name="AppleMusicLyricsHeader" Visibility="Collapsed" Height="70" Margin="15,10,15,0" VerticalAlignment="Top">
+                            <Grid x:Name="AppleMusicLyricsHeader" Grid.Row="0" Visibility="Collapsed" Height="70" Margin="15,10,15,0" VerticalAlignment="Top">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="55"/>
                                     <ColumnDefinition Width="*"/>
@@ -2449,11 +2453,11 @@
                                     </Button>
                                 </StackPanel>
                             </Grid>
-                            <ProgressBar x:Name="LyricsLoadingBar" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="White"/>
-                            <ScrollViewer x:Name="LyricsFallbackScrollViewer" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+                            <ProgressBar x:Name="LyricsLoadingBar" Grid.Row="0" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="White"/>
+                            <ScrollViewer x:Name="LyricsFallbackScrollViewer" Grid.Row="1" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
                                 <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#B3B3B3" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
                             </ScrollViewer>
-                            <ListView x:Name="LyricsListView" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="15,0" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
+                            <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="15,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" TextWrapping="Wrap" TextAlignment="Left" Margin="10,8" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left"/>
@@ -2463,7 +2467,7 @@
                                     <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
-                            <Rectangle Height="70" VerticalAlignment="Bottom" Margin="0,0,0,-1" IsHitTestVisible="False">
+                            <Rectangle Grid.Row="1" Height="70" VerticalAlignment="Bottom" Margin="0,0,0,-1" IsHitTestVisible="False">
                                 <Rectangle.Fill>
                                     <LinearGradientBrush StartPoint="0,1" EndPoint="0,0">
                                         <GradientStop x:Name="LyricsFadeBottomStop0" Color="#121212" Offset="0"/>
@@ -2471,7 +2475,7 @@
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
                             </Rectangle>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,15" Canvas.ZIndex="10">
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,15" Canvas.ZIndex="10">
                                 <Button Content="A-" Click="DecreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0" Margin="0,0,10,0"/>
                                 <Button Content="A+" Click="IncreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0" Margin="0,0,10,0"/>
                                 <Button Content="⛶" Click="ToggleFullscreenLyrics_Click" FontSize="16" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0"/>

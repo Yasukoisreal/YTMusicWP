@@ -1117,6 +1117,7 @@ namespace YTMusicWP
                 var midFade = LerpColor(seedColor, black, 0.45);
                 AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
             }
+            UpdateLyricsFadeColors(seedColor);
 
             var cached = Services.LumiaBlurHelper.GetCached(thumbnailUrl);
             var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(thumbnailUrl);
@@ -1289,6 +1290,29 @@ namespace YTMusicWP
             return Windows.UI.Color.FromArgb(0, fadeColor.R, fadeColor.G, fadeColor.B);
         }
 
+        private void UpdateLyricsFadeColors(Windows.UI.Color seedColor)
+        {
+            if (LyricsFadeBottomStop0 == null) return;
+
+            if (_isAppleMusicStyle)
+            {
+                // In Apple Music style, the lyrics bottom sits at ~70% screen height.
+                // AppleMusicWash gradient at 70% is halfway between AppleMusicGradMid (0.32 black) and AppleMusicGradBot (0.78 black).
+                // Lerp at 0.50 perfectly matches the background wash at the bottom of the lyrics view.
+                var fadeColor = LerpColor(seedColor, Windows.UI.Colors.Black, 0.50);
+                LyricsFadeBottomStop0.Color = fadeColor;
+                if (LyricsFadeBottomStop1 != null)
+                    LyricsFadeBottomStop1.Color = Windows.UI.Color.FromArgb(0, fadeColor.R, fadeColor.G, fadeColor.B);
+            }
+            else
+            {
+                var fadeColor = CalculateLyricsBottomFadeColor(seedColor);
+                LyricsFadeBottomStop0.Color = fadeColor;
+                if (LyricsFadeBottomStop1 != null)
+                    LyricsFadeBottomStop1.Color = CalculateLyricsBottomFadeTransparent(fadeColor);
+            }
+        }
+
         // [PERF] Instant direct assignment — eliminates CPU-bound dependent ColorAnimation lag on WP8.1
         private void AnimateGradientTo(Windows.UI.Color targetColor)
         {
@@ -1306,10 +1330,7 @@ namespace YTMusicWP
                     AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
                 }
 
-                var fadeColor = LerpColor(targetColor, black, 0.78);
-                if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = fadeColor;
-                if (LyricsFadeBottomStop1 != null)
-                    LyricsFadeBottomStop1.Color = Windows.UI.Color.FromArgb(0, fadeColor.R, fadeColor.G, fadeColor.B);
+                UpdateLyricsFadeColors(targetColor);
 
                 UpdateDockActiveState(NowPlayingPivot != null && NowPlayingPivot.SelectedIndex > 0 ? NowPlayingPivot.SelectedIndex : -1);
 
@@ -1327,13 +1348,9 @@ namespace YTMusicWP
                 (byte)(targetColor.G * 0.35),
                 (byte)(targetColor.B * 0.35));
 
-            var lyricsFadeColor = CalculateLyricsBottomFadeColor(targetColor);
-            var lyricsFadeTransparent = CalculateLyricsBottomFadeTransparent(lyricsFadeColor);
-
             if (NowPlayingGradientTop != null) NowPlayingGradientTop.Color = targetColor;
             if (NowPlayingGradientMid != null) NowPlayingGradientMid.Color = midColor;
-            if (LyricsFadeBottomStop0 != null) LyricsFadeBottomStop0.Color = lyricsFadeColor;
-            if (LyricsFadeBottomStop1 != null) LyricsFadeBottomStop1.Color = lyricsFadeTransparent;
+            UpdateLyricsFadeColors(targetColor);
             if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
             if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;
 

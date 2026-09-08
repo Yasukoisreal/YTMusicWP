@@ -147,7 +147,7 @@ namespace YTMusicWP
                 UpdateAppleMusicCompactHeaders();
             }
             UpdateStatusBarColor(true, animate: true, durationMs: 350);
-            if (NowPlayingGradientTop != null)
+            if (!_isAppleMusicStyle && NowPlayingGradientTop != null)
             {
                 NowPlayingGradientTop.Color = _currentGradientColor;
                 if (NowPlayingGradientMid != null)
@@ -159,13 +159,7 @@ namespace YTMusicWP
                         (byte)(_currentGradientColor.B * 0.35));
                 }
             }
-            if (LyricsFadeBottomStop0 != null)
-            {
-                var fadeColor = CalculateLyricsBottomFadeColor(_currentGradientColor);
-                LyricsFadeBottomStop0.Color = fadeColor;
-                if (LyricsFadeBottomStop1 != null)
-                    LyricsFadeBottomStop1.Color = CalculateLyricsBottomFadeTransparent(fadeColor);
-            }
+            UpdateLyricsFadeColors(_currentGradientColor);
             if (this.Resources.ContainsKey("SlideUpStoryboard"))
             {
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideUpStoryboard"];
@@ -984,6 +978,7 @@ namespace YTMusicWP
             }
 
             UpdateDockActiveState(NowPlayingPivot != null ? (NowPlayingPivot.SelectedIndex == 0 ? -1 : NowPlayingPivot.SelectedIndex) : -1);
+            UpdateLyricsFadeColors(_currentGradientColor);
         }
 
         private void DockLyrics_Tapped(object sender, TappedRoutedEventArgs e)
