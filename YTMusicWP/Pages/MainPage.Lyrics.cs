@@ -591,32 +591,49 @@ namespace YTMusicWP
                         {
                             if (!isPast)
                             {
-                                // Next line: gentle softness, near blur
-                                coreOp = 0.35;
-                                nearBlur = 0.22;
-                                farBlur = 0.06;
+                                // Next line: subtle softness, solid core
+                                coreOp = 0.50;
+                                nearBlur = 0.16;
+                                farBlur = 0.05;
                             }
                             else
                             {
-                                // Just-sung line: slightly more blur
-                                coreOp = 0.18;
-                                nearBlur = 0.22;
-                                farBlur = 0.12;
+                                // Just-sung line: slightly softer
+                                coreOp = 0.35;
+                                nearBlur = 0.16;
+                                farBlur = 0.08;
                             }
                         }
                         else if (dist == 2)
                         {
-                            // 2 lines away: pronounced defocus blur
-                            coreOp = 0.06;
-                            nearBlur = 0.20;
-                            farBlur = 0.16;
+                            if (!isPast)
+                            {
+                                coreOp = 0.30;
+                                nearBlur = 0.16;
+                                farBlur = 0.10;
+                            }
+                            else
+                            {
+                                coreOp = 0.22;
+                                nearBlur = 0.15;
+                                farBlur = 0.09;
+                            }
                         }
                         else
                         {
-                            // 3+ lines away: heavy blur, sharp edge disappears completely
-                            coreOp = 0.0;
-                            nearBlur = 0.12;
-                            farBlur = 0.12;
+                            // 3+ lines away: deep smooth defocus with solid anchor (no hollow center, no grain)
+                            if (!isPast)
+                            {
+                                coreOp = 0.20;
+                                nearBlur = 0.14;
+                                farBlur = 0.10;
+                            }
+                            else
+                            {
+                                coreOp = 0.14;
+                                nearBlur = 0.12;
+                                farBlur = 0.08;
+                            }
                         }
 
                         currentLyrics[i].Opacity = coreOp;

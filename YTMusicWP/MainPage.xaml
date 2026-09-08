@@ -2461,32 +2461,32 @@
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="10,8" HorizontalAlignment="Left">
-                                            <!-- Far-field blur taps (outer ring: radius 3.8px) -->
+                                            <!-- Far-field blur taps (soft outer feather: radius ~1.7px) -->
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="-1.0"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="-1.0"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="1.0"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="1.0"/></TextBlock.RenderTransform>
                                             </TextBlock>
 
-                                            <!-- Near-field blur taps (inner ring: radius 2.0px) -->
+                                            <!-- Near-field blur taps (inner feather: radius ~1.0px) -->
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="-2.0" Y="0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="-1.0" Y="0"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="2.0" Y="0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="1.0" Y="0"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="-2.0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="-0.8"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="2.0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="0.8"/></TextBlock.RenderTransform>
                                             </TextBlock>
 
                                             <!-- Core Sharp Text layer -->
@@ -2794,32 +2794,32 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="5,12" HorizontalAlignment="Center">
-                                <!-- Far-field blur taps (outer ring: radius 3.8px) -->
+                                <!-- Far-field blur taps (soft outer feather: radius ~1.7px) -->
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="-1.0"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="-2.7"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="-1.0"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="-2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="1.0"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="2.7" Y="2.7"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="1.0"/></TextBlock.RenderTransform>
                                 </TextBlock>
 
-                                <!-- Near-field blur taps (inner ring: radius 2.0px) -->
+                                <!-- Near-field blur taps (inner feather: radius ~1.0px) -->
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="-2.0" Y="0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="-1.0" Y="0"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="2.0" Y="0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="1.0" Y="0"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="-2.0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="-0.8"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="2.0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="0.8"/></TextBlock.RenderTransform>
                                 </TextBlock>
 
                                 <!-- Core Sharp Text layer -->
