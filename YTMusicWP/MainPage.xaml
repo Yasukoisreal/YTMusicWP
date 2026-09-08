@@ -2403,13 +2403,6 @@
                         <Style TargetType="PivotItem">
                             <Setter Property="Margin" Value="0"/>
                             <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="PivotItem">
-                                        <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0"/>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
                         </Style>
                     </Pivot.ItemContainerStyle>
                     <!-- Player page -->
@@ -2438,7 +2431,7 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <!-- Apple Music: compact header -->
-                            <Grid x:Name="AppleMusicLyricsHeader" Grid.Row="0" Visibility="Collapsed" Height="56" Margin="20,10,20,6" VerticalAlignment="Top">
+                            <Grid x:Name="AppleMusicLyricsHeader" Grid.Row="0" Visibility="Collapsed" Height="56" Margin="1,10,1,6" VerticalAlignment="Top">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="50"/>
                                     <ColumnDefinition Width="*"/>
@@ -2461,10 +2454,10 @@
                                 </StackPanel>
                             </Grid>
                             <ProgressBar x:Name="LyricsLoadingBar" Grid.Row="0" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="White"/>
-                            <ScrollViewer x:Name="LyricsFallbackScrollViewer" Grid.Row="1" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+                            <ScrollViewer x:Name="LyricsFallbackScrollViewer" Grid.Row="1" Visibility="Collapsed" Margin="1,20,1,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
                                 <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#B3B3B3" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
                             </ScrollViewer>
-                            <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="20,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
+                            <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="1,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="0,14" HorizontalAlignment="Stretch" UseLayoutRounding="True">
@@ -2533,7 +2526,7 @@
                             </Grid.RowDefinitions>
                             <StackPanel Grid.Row="0">
                                 <!-- Apple Music: compact header -->
-                                <Grid x:Name="AppleMusicQueueHeader" Visibility="Collapsed" Height="56" Margin="20,10,20,6" VerticalAlignment="Top">
+                                <Grid x:Name="AppleMusicQueueHeader" Visibility="Collapsed" Height="56" Margin="1,10,1,6" VerticalAlignment="Top">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="50"/>
                                         <ColumnDefinition Width="*"/>
@@ -2556,7 +2549,7 @@
                                     </StackPanel>
                                 </Grid>
                                 <!-- Apple Music: queue action pills -->
-                                <StackPanel x:Name="AppleMusicQueuePills" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="20,4,20,10">
+                                <StackPanel x:Name="AppleMusicQueuePills" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="1,4,1,10">
                                     <Border Background="#3DFFFFFF" CornerRadius="20" Width="40" Height="40" Margin="0,0,8,0" HorizontalAlignment="Stretch" Tapped="QueueInfoPill_Tapped">
                                         <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE946;" Foreground="White" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
@@ -2570,7 +2563,7 @@
                                         <FontIcon x:Name="AppleMusicRepeatIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE1CD;" Foreground="White" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </StackPanel>
-                                <Grid Margin="20,10,20,10">
+                                <Grid Margin="1,10,1,10">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="UP NEXT" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="50"/>
                                         <TextBlock x:Name="QueueCountText" Text="" FontSize="12" Foreground="#888888" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -2578,7 +2571,7 @@
                                     <Button Content="Clear" Click="QueueClear_Click" Foreground="#888888" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Padding="8,4" MinWidth="0" MinHeight="0"/>
                                 </Grid>
                             </StackPanel>
-                            <ListView Grid.Row="1" x:Name="QueueListView" Margin="20,0,20,10" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
+                            <ListView Grid.Row="1" x:Name="QueueListView" Margin="1,0,1,10" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
                         </Grid>
                     </PivotItem>
                 </Pivot>
