@@ -89,6 +89,13 @@ namespace YTMusicWP
             }
             catch { }
 
+            if (string.IsNullOrEmpty(_cachedVisitorData))
+            {
+                const string DEFAULT_VISITOR_DATA = "CgtaRHNGQkVnZlZXcyie1_3UBjIKCgJVUxIEGgAgaA%3D%3D";
+                _cachedVisitorData = DEFAULT_VISITOR_DATA;
+                _vdCacheTime = DateTime.Now;
+            }
+
             return _cachedVisitorData;
         }
 

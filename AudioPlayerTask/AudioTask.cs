@@ -17,8 +17,17 @@ namespace AudioPlayerTask
         private SystemMediaTransportControls _systemControls;
         private MediaPlayer _mediaPlayer;
 
-        // [OPT] Shared HttpClient ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â avoids socket leaks from creating new instances per resolve call
-        private Windows.Web.Http.HttpClient _httpClient = new Windows.Web.Http.HttpClient();
+        private static Windows.Web.Http.Filters.HttpBaseProtocolFilter CreateHttpFilter()
+        {
+            var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+            filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
+            filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
+            filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
+            return filter;
+        }
+
+        // [OPT] Shared HttpClient with SSL filter — avoids socket leaks & certificate errors on WP8.1
+        private Windows.Web.Http.HttpClient _httpClient = new Windows.Web.Http.HttpClient(CreateHttpFilter());
 
         private List<string> _trackList = new List<string>();
         private List<string> _titleList = new List<string>();
@@ -200,7 +209,10 @@ namespace AudioPlayerTask
                 return vd;
             }
 
-            return null;
+            // Guaranteed fallback: valid base visitorData to prevent null and Google Workspace blocks
+            const string DEFAULT_VISITOR_DATA = "CgtaRHNGQkVnZlZXcyie1_3UBjIKCgJVUxIEGgAgaA%3D%3D";
+            _cachedVisitorData = DEFAULT_VISITOR_DATA;
+            return DEFAULT_VISITOR_DATA;
         }
 
         private async Task<string> FetchVisitorDataFromSwJs()
@@ -349,9 +361,7 @@ namespace AudioPlayerTask
                 string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
                 string body = "{}";
                 
-                var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
-                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
-                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
+                var filter = CreateHttpFilter();
                 
                 using (var httpClient = new Windows.Web.Http.HttpClient(filter))
                 {
@@ -417,7 +427,8 @@ namespace AudioPlayerTask
 
         private async Task<string> ResolveViaInnerTubeDirectAsync(string videoId)
         {
-            _innerTubeDebug = "vd:" + (!string.IsNullOrEmpty(_cachedVisitorData) ? "OK" : "NULL");
+            string initVd = await GetVisitorDataAsync(videoId);
+            _innerTubeDebug = "vd:" + (!string.IsNullOrEmpty(initVd) ? "OK" : "NULL");
             
             // 0. InnerTube ANDROID v20.49.37 (Ưu tiên số 1 - không bị bóp băng thông/throttling, lấy itag 18)
             string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
@@ -476,12 +487,6 @@ namespace AudioPlayerTask
                     if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                     {
                         poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
-                        // CRITICAL: Only use remote visitorData if device has no local visitorData
-                        // Overwriting local visitorData with datacenter visitorData triggers Google Workspace restriction!
-                        if (string.IsNullOrEmpty(visitorData) && !string.IsNullOrEmpty(tokenInfo.VisitorData))
-                        {
-                            visitorData = tokenInfo.VisitorData;
-                        }
                     }
                 }
 

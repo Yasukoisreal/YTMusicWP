@@ -78,6 +78,7 @@ namespace YTMusicWP
                 var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
                 filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
                 filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
+                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
                 
                 using (var httpClient = new Windows.Web.Http.HttpClient(filter))
                 {
@@ -235,13 +236,6 @@ namespace YTMusicWP
                         if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                         {
                             poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
-                            // CRITICAL: Only use remote visitorData if device has no local visitorData
-                            // Overwriting local visitorData with datacenter visitorData triggers Google Workspace restriction!
-                            if (string.IsNullOrEmpty(vd) && !string.IsNullOrEmpty(tokenInfo.VisitorData))
-                            {
-                                vd = tokenInfo.VisitorData;
-                                vdField = ",\"visitorData\":\"" + vd + "\"";
-                            }
                         }
                     }
 
