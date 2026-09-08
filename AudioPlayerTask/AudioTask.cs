@@ -307,19 +307,45 @@ namespace AudioPlayerTask
             return null;
         }
 
-        private static string _cachedPoTokenVideoId = null;
         private static RemotePoTokenResult _cachedPoTokenResult = null;
+        private static DateTime _poTokenExpiry = DateTime.MinValue;
 
         private async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
-            if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
+            if (_cachedPoTokenResult != null && DateTime.UtcNow < _poTokenExpiry)
             {
                 return _cachedPoTokenResult;
             }
 
+            // Check LocalSettings in case MainPage already fetched it
             try
             {
-                // Let Render server generate its own matching pair of visitorData and poToken
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (ls.ContainsKey("CachedPoToken") && ls.ContainsKey("CachedPoTokenExpiry"))
+                {
+                    long expiryTicks;
+                    if (long.TryParse(ls["CachedPoTokenExpiry"]?.ToString(), out expiryTicks))
+                    {
+                        var expiry = new DateTime(expiryTicks, DateTimeKind.Utc);
+                        if (DateTime.UtcNow < expiry)
+                        {
+                            string token = ls["CachedPoToken"]?.ToString();
+                            string tokenVd = ls.ContainsKey("CachedPoTokenVd") ? ls["CachedPoTokenVd"]?.ToString() : null;
+                            if (!string.IsNullOrEmpty(token))
+                            {
+                                _cachedPoTokenResult = new RemotePoTokenResult { PoToken = token, VisitorData = tokenVd };
+                                _poTokenExpiry = expiry;
+                                return _cachedPoTokenResult;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                // Let Cloudflare Worker generate its matching poToken
                 string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
                 string body = "{}";
                 
@@ -356,8 +382,17 @@ namespace AudioPlayerTask
 
                         if (!string.IsNullOrEmpty(result.PoToken))
                         {
-                            _cachedPoTokenVideoId = videoId;
                             _cachedPoTokenResult = result;
+                            _poTokenExpiry = DateTime.UtcNow.AddMinutes(50);
+                            try
+                            {
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                ls["CachedPoToken"] = result.PoToken;
+                                ls["CachedPoTokenExpiry"] = _poTokenExpiry.Ticks.ToString();
+                                if (!string.IsNullOrEmpty(result.VisitorData))
+                                    ls["CachedPoTokenVd"] = result.VisitorData;
+                            }
+                            catch { }
                             return result;
                         }
                         return null;
@@ -382,7 +417,7 @@ namespace AudioPlayerTask
 
         private async Task<string> ResolveViaInnerTubeDirectAsync(string videoId)
         {
-            _innerTubeDebug = "";
+            _innerTubeDebug = "vd:" + (!string.IsNullOrEmpty(_cachedVisitorData) ? "OK" : "NULL");
             
             // 0. InnerTube ANDROID v20.49.37 (Ưu tiên số 1 - không bị bóp băng thông/throttling, lấy itag 18)
             string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
@@ -441,8 +476,9 @@ namespace AudioPlayerTask
                     if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                     {
                         poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
-                        // CRITICAL: Synchronize visitorData with the matching token from Render
-                        if (!string.IsNullOrEmpty(tokenInfo.VisitorData))
+                        // CRITICAL: Only use remote visitorData if device has no local visitorData
+                        // Overwriting local visitorData with datacenter visitorData triggers Google Workspace restriction!
+                        if (string.IsNullOrEmpty(visitorData) && !string.IsNullOrEmpty(tokenInfo.VisitorData))
                         {
                             visitorData = tokenInfo.VisitorData;
                         }
@@ -486,7 +522,7 @@ namespace AudioPlayerTask
                     "application/json"
                 );
 
-                string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI");
+                string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" || clientName == "VISIONOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI");
                 // [FIX] Use per-request headers instead of DefaultRequestHeaders to avoid race condition
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
                     new Uri("https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData"));
@@ -507,7 +543,7 @@ namespace AudioPlayerTask
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        _innerTubeDebug = clientName + ":HTTP" + (int)response.StatusCode;
+                        _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":H" + (int)response.StatusCode + "]";
                         return null;
                     }
                     json = await response.Content.ReadAsStringAsync();
@@ -526,7 +562,7 @@ namespace AudioPlayerTask
 
                     if (status != "OK")
                     {
-                        _innerTubeDebug = clientName + ":" + status;
+                        _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":" + status + "]";
                         return null;
                     }
 
@@ -535,7 +571,7 @@ namespace AudioPlayerTask
                     if (data.ContainsKey("streamingData"))
                     {
                         var streamingData = data.GetNamedObject("streamingData");
-                        // 1. Ãƒâ€ Ã‚Â¯u tiÃƒÆ’Ã‚Âªn itag 18 tÃƒÂ¡Ã‚Â»Ã‚Â« formats (khÃƒÆ’Ã‚Â´ng bÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ bÃƒÆ’Ã‚Â³p bÃƒâ€žÃ†â€™ng thÃƒÆ’Ã‚Â´ng)
+                        // 1. Ưu tiên itag 18 từ formats (không bị bóp băng thông)
                         if (streamingData.ContainsKey("formats"))
                         {
                             var formats = streamingData.GetNamedArray("formats");
@@ -549,7 +585,7 @@ namespace AudioPlayerTask
                                         int itag = (int)fmt.GetNamedNumber("itag");
                                         if (itag == 18 && fmt.ContainsKey("url"))
                                         {
-                                            _innerTubeDebug = clientName + ":OK(i18)";
+                                            _innerTubeDebug += " [" + clientName + ":i18:OK]";
                                             return fmt.GetNamedString("url");
                                         }
                                     }
@@ -557,7 +593,7 @@ namespace AudioPlayerTask
                             }
                         }
 
-                        // 2. Fallback xuÃƒÂ¡Ã‚Â»Ã¢â‚¬Ëœng adaptiveFormats (ÃƒÆ’Ã‚Â¢m thanh chuyÃƒÆ’Ã‚Âªn dÃƒÂ¡Ã‚Â»Ã‚Â¥ng, dÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¦ bÃƒÂ¡Ã‚Â»Ã¢â‚¬Â¹ bÃƒÆ’Ã‚Â³p/403)
+                        // 2. Fallback xuống adaptiveFormats (âm thanh chuyên dụng)
                         if (streamingData.ContainsKey("adaptiveFormats"))
                         {
                             var formats = streamingData.GetNamedArray("adaptiveFormats");
@@ -573,7 +609,7 @@ namespace AudioPlayerTask
                                             int itag = (int)fmt.GetNamedNumber("itag");
                                             if (itag == targetItag && fmt.ContainsKey("url"))
                                             {
-                                                _innerTubeDebug = clientName + ":OK";
+                                                _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":i" + targetItag + ":OK]";
                                                 return fmt.GetNamedString("url");
                                             }
                                         }
@@ -584,16 +620,12 @@ namespace AudioPlayerTask
                     }
                 }
 
-                _innerTubeDebug = clientName + ":NO_URL";
-                _cachedVisitorData = null;
-                try { Windows.Storage.ApplicationData.Current.LocalSettings.Values.Remove("CachedVisitorData"); } catch { }
+                _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":NO_URL]";
                 return null;
             }
             catch (Exception ex)
             {
-                _innerTubeDebug = clientName + ":EX:" + ex.Message.Substring(0, Math.Min(30, ex.Message.Length));
-                _cachedVisitorData = null;
-                try { Windows.Storage.ApplicationData.Current.LocalSettings.Values.Remove("CachedVisitorData"); } catch { }
+                _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":EX:" + ex.Message.Substring(0, Math.Min(20, ex.Message.Length)) + "]";
                 return null;
             }
         }

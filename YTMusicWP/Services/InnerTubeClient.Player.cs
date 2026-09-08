@@ -33,19 +33,45 @@ namespace YTMusicWP
             return null;
         }
 
-        private static string _cachedPoTokenVideoId = null;
         private static RemotePoTokenResult _cachedPoTokenResult = null;
+        private static DateTime _poTokenExpiry = DateTime.MinValue;
 
         private static async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
-            if (_cachedPoTokenVideoId == videoId && _cachedPoTokenResult != null)
+            if (_cachedPoTokenResult != null && DateTime.UtcNow < _poTokenExpiry)
             {
                 return _cachedPoTokenResult;
             }
 
+            // Check LocalSettings in case AudioTask already fetched it
             try
             {
-                // Let Render server generate its own matching pair of visitorData and poToken
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (ls.ContainsKey("CachedPoToken") && ls.ContainsKey("CachedPoTokenExpiry"))
+                {
+                    long expiryTicks;
+                    if (long.TryParse(ls["CachedPoTokenExpiry"]?.ToString(), out expiryTicks))
+                    {
+                        var expiry = new DateTime(expiryTicks, DateTimeKind.Utc);
+                        if (DateTime.UtcNow < expiry)
+                        {
+                            string token = ls["CachedPoToken"]?.ToString();
+                            string tokenVd = ls.ContainsKey("CachedPoTokenVd") ? ls["CachedPoTokenVd"]?.ToString() : null;
+                            if (!string.IsNullOrEmpty(token))
+                            {
+                                _cachedPoTokenResult = new RemotePoTokenResult { PoToken = token, VisitorData = tokenVd };
+                                _poTokenExpiry = expiry;
+                                return _cachedPoTokenResult;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                // Let Cloudflare Worker generate its matching poToken
                 string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
                 string body = "{}";
                 
@@ -76,8 +102,17 @@ namespace YTMusicWP
 
                         if (!string.IsNullOrEmpty(result.PoToken))
                         {
-                            _cachedPoTokenVideoId = videoId;
                             _cachedPoTokenResult = result;
+                            _poTokenExpiry = DateTime.UtcNow.AddMinutes(50);
+                            try
+                            {
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                ls["CachedPoToken"] = result.PoToken;
+                                ls["CachedPoTokenExpiry"] = _poTokenExpiry.Ticks.ToString();
+                                if (!string.IsNullOrEmpty(result.VisitorData))
+                                    ls["CachedPoTokenVd"] = result.VisitorData;
+                            }
+                            catch { }
                             return result;
                         }
                         return null;
@@ -191,7 +226,7 @@ namespace YTMusicWP
 
                 try
                 {
-                    LastResolveDebug += " [" + client.ClientName + "]";
+                    LastResolveDebug += " [" + client.ClientName + (client.SupportsPoToken ? "+po" : "") + "]";
 
                     string poTokenField = "";
                     if (client.SupportsPoToken)
@@ -200,8 +235,9 @@ namespace YTMusicWP
                         if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                         {
                             poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
-                            // CRITICAL: Synchronize visitorData with the matching token from Render
-                            if (!string.IsNullOrEmpty(tokenInfo.VisitorData))
+                            // CRITICAL: Only use remote visitorData if device has no local visitorData
+                            // Overwriting local visitorData with datacenter visitorData triggers Google Workspace restriction!
+                            if (string.IsNullOrEmpty(vd) && !string.IsNullOrEmpty(tokenInfo.VisitorData))
                             {
                                 vd = tokenInfo.VisitorData;
                                 vdField = ",\"visitorData\":\"" + vd + "\"";
