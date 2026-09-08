@@ -591,17 +591,17 @@ namespace YTMusicWP
                         {
                             if (!isPast)
                             {
-                                // Next line: soft feathering (~0.40 total visual weight)
-                                coreOp = 0.28;
+                                // Next line: clean typography with smooth 1px Gaussian halo (~0.47 total visual weight)
+                                coreOp = 0.32;
                                 nearBlur = 0.025;
-                                farBlur = 0.010;
+                                farBlur = 0.012;
                             }
                             else
                             {
-                                // Just-sung line (~0.28 total visual weight)
+                                // Just-sung line (~0.30 total visual weight)
                                 coreOp = 0.20;
-                                nearBlur = 0.020;
-                                farBlur = 0.010;
+                                nearBlur = 0.018;
+                                farBlur = 0.008;
                             }
                         }
                         else if (dist == 2)
@@ -610,31 +610,22 @@ namespace YTMusicWP
                             {
                                 // 2 lines away: soft background depth (~0.20 total visual weight)
                                 coreOp = 0.12;
-                                nearBlur = 0.018;
-                                farBlur = 0.008;
+                                nearBlur = 0.015;
+                                farBlur = 0.006;
                             }
                             else
                             {
-                                coreOp = 0.09;
-                                nearBlur = 0.014;
-                                farBlur = 0.006;
+                                coreOp = 0.08;
+                                nearBlur = 0.010;
+                                farBlur = 0.004;
                             }
                         }
                         else
                         {
-                            // 3+ lines away: deep fade melting into background (~0.08 total visual weight)
-                            if (!isPast)
-                            {
-                                coreOp = 0.050;
-                                nearBlur = 0.010;
-                                farBlur = 0.005;
-                            }
-                            else
-                            {
-                                coreOp = 0.035;
-                                nearBlur = 0.008;
-                                farBlur = 0.004;
-                            }
+                            // 3+ lines away: pure smooth faint text melting into background (zero blur taps = zero graininess)
+                            coreOp = isPast ? 0.035 : 0.050;
+                            nearBlur = 0.0;
+                            farBlur = 0.0;
                         }
 
                         currentLyrics[i].Opacity = coreOp;

@@ -2431,13 +2431,13 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <!-- Apple Music: compact header -->
-                            <Grid x:Name="AppleMusicLyricsHeader" Grid.Row="0" Visibility="Collapsed" Height="70" Margin="15,10,15,0" VerticalAlignment="Top">
+                            <Grid x:Name="AppleMusicLyricsHeader" Grid.Row="0" Visibility="Collapsed" Height="58" Margin="20,-52,20,6" VerticalAlignment="Top">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="55"/>
+                                    <ColumnDefinition Width="50"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <Rectangle Grid.Column="0" Width="55" Height="55" RadiusX="4" RadiusY="4">
+                                <Rectangle Grid.Column="0" Width="50" Height="50" RadiusX="6" RadiusY="6" HorizontalAlignment="Left" VerticalAlignment="Center">
                                     <Rectangle.Fill>
                                         <ImageBrush x:Name="AppleMusicLyricsThumb" Stretch="UniformToFill"/>
                                     </Rectangle.Fill>
@@ -2457,36 +2457,36 @@
                             <ScrollViewer x:Name="LyricsFallbackScrollViewer" Grid.Row="1" Visibility="Collapsed" Margin="15,20,15,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
                                 <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#B3B3B3" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
                             </ScrollViewer>
-                            <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="15,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
+                            <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="20,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Margin="10,13" HorizontalAlignment="Left">
-                                            <!-- Far-field blur taps (soft outer feather: radius ~1.7px) -->
+                                        <Grid Margin="0,14" HorizontalAlignment="Stretch" UseLayoutRounding="True">
+                                            <!-- Diagonal blur taps (radius ~1.4px) -->
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="-1.0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="-1" Y="-1"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="-1.0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="1" Y="-1"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="1.0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="-1" Y="1"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="1.0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="1" Y="1"/></TextBlock.RenderTransform>
                                             </TextBlock>
 
-                                            <!-- Near-field blur taps (inner feather: radius ~1.0px) -->
+                                            <!-- Cardinal blur taps (radius 1.0px) -->
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="-1.0" Y="0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="-1" Y="0"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="1.0" Y="0"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="1" Y="0"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="-0.8"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="-1"/></TextBlock.RenderTransform>
                                             </TextBlock>
                                             <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Left" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="0.8"/></TextBlock.RenderTransform>
+                                                <TextBlock.RenderTransform><TranslateTransform X="0" Y="1"/></TextBlock.RenderTransform>
                                             </TextBlock>
 
                                             <!-- Core Sharp Text layer -->
@@ -2495,7 +2495,11 @@
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Margin" Value="0"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                    </Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
                             <Rectangle x:Name="LyricsBottomFadeRect" Grid.Row="1" Height="70" VerticalAlignment="Bottom" Margin="0,0,0,-1" IsHitTestVisible="False">
@@ -2522,13 +2526,13 @@
                             </Grid.RowDefinitions>
                             <StackPanel Grid.Row="0">
                                 <!-- Apple Music: compact header -->
-                                <Grid x:Name="AppleMusicQueueHeader" Visibility="Collapsed" Height="70" Margin="15,10,15,0" VerticalAlignment="Top">
+                                <Grid x:Name="AppleMusicQueueHeader" Visibility="Collapsed" Height="58" Margin="20,-52,20,6" VerticalAlignment="Top">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="55"/>
+                                        <ColumnDefinition Width="50"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Rectangle Grid.Column="0" Width="55" Height="55" RadiusX="4" RadiusY="4">
+                                    <Rectangle Grid.Column="0" Width="50" Height="50" RadiusX="6" RadiusY="6" HorizontalAlignment="Left" VerticalAlignment="Center">
                                         <Rectangle.Fill>
                                             <ImageBrush x:Name="AppleMusicQueueThumb" Stretch="UniformToFill"/>
                                         </Rectangle.Fill>
@@ -2545,7 +2549,7 @@
                                     </StackPanel>
                                 </Grid>
                                 <!-- Apple Music: queue action pills -->
-                                <StackPanel x:Name="AppleMusicQueuePills" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="15,4,15,10">
+                                <StackPanel x:Name="AppleMusicQueuePills" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="20,4,20,10">
                                     <Border Background="#3DFFFFFF" CornerRadius="20" Width="40" Height="40" Margin="0,0,8,0" HorizontalAlignment="Stretch" Tapped="QueueInfoPill_Tapped">
                                         <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE946;" Foreground="White" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
@@ -2559,7 +2563,7 @@
                                         <FontIcon x:Name="AppleMusicRepeatIcon" FontFamily="Segoe UI Symbol" Glyph="&#xE1CD;" Foreground="White" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </StackPanel>
-                                <Grid Margin="15,15,15,10">
+                                <Grid Margin="20,10,20,10">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="UP NEXT" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="50"/>
                                         <TextBlock x:Name="QueueCountText" Text="" FontSize="12" Foreground="#888888" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -2567,7 +2571,7 @@
                                     <Button Content="Clear" Click="QueueClear_Click" Foreground="#888888" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Padding="8,4" MinWidth="0" MinHeight="0"/>
                                 </Grid>
                             </StackPanel>
-                            <ListView Grid.Row="1" x:Name="QueueListView" Margin="15,0,15,10" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
+                            <ListView Grid.Row="1" x:Name="QueueListView" Margin="20,0,20,10" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
                         </Grid>
                     </PivotItem>
                 </Pivot>
@@ -2793,33 +2797,33 @@
                 <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Margin="5,16" HorizontalAlignment="Center">
-                                <!-- Far-field blur taps (soft outer feather: radius ~1.7px) -->
+                            <Grid Margin="5,16" HorizontalAlignment="Center" UseLayoutRounding="True">
+                                <!-- Diagonal blur taps (radius ~1.4px) -->
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="-1.0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="-1" Y="-1"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="-1.0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="1" Y="-1"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="-1.4" Y="1.0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="-1" Y="1"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding FarBlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="1.4" Y="1.0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="1" Y="1"/></TextBlock.RenderTransform>
                                 </TextBlock>
 
-                                <!-- Near-field blur taps (inner feather: radius ~1.0px) -->
+                                <!-- Cardinal blur taps (radius 1.0px) -->
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="-1.0" Y="0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="-1" Y="0"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="1.0" Y="0"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="1" Y="0"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="-0.8"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="-1"/></TextBlock.RenderTransform>
                                 </TextBlock>
                                 <TextBlock Text="{Binding Text}" FontSize="{Binding FontSize}" Foreground="{Binding ColorBrush}" Opacity="{Binding BlurOpacity}" TextWrapping="Wrap" TextAlignment="Center" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" HorizontalAlignment="Center" IsHitTestVisible="False">
-                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="0.8"/></TextBlock.RenderTransform>
+                                    <TextBlock.RenderTransform><TranslateTransform X="0" Y="1"/></TextBlock.RenderTransform>
                                 </TextBlock>
 
                                 <!-- Core Sharp Text layer -->
