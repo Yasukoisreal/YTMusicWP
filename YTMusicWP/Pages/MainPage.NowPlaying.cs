@@ -1244,7 +1244,10 @@ namespace YTMusicWP
 
         private void AppleMusicSlider_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
-            _isSliderManipulating = true;
+            if (sender == AppleMusicSlider)
+            {
+                _isSliderManipulating = true;
+            }
             AnimateSliderInflate(sender as Slider, true);
         }
 

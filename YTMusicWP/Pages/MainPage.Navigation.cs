@@ -58,7 +58,14 @@ namespace YTMusicWP
             else if (NowPlayingView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
-                CloseNowPlaying_Click(null, null);
+                if (NowPlayingPivot != null && NowPlayingPivot.SelectedIndex != 0)
+                {
+                    NowPlayingPivot.SelectedIndex = 0;
+                }
+                else
+                {
+                    CloseNowPlaying_Click(null, null);
+                }
             }
             else if (CreateBottomSheet.Visibility == Visibility.Visible)
             {

@@ -1295,7 +1295,7 @@
             </Grid>
 
             <!-- Unified Library List -->
-            <ListView x:Name="LibraryUnifiedList" Grid.Row="3" IsItemClickEnabled="True" ItemClick="LibraryUnified_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}" Margin="15,0,15,0">
+            <ListView x:Name="LibraryUnifiedList" Grid.Row="3" IsItemClickEnabled="True" ItemClick="LibraryUnified_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" Margin="15,0,15,0">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,5,0,5" Background="Transparent">
@@ -2505,7 +2505,7 @@
                             <ScrollViewer x:Name="LyricsFallbackScrollViewer" Grid.Row="1" Visibility="Collapsed" Margin="1,20,1,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
                                 <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="#B3B3B3" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
                             </ScrollViewer>
-                            <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="1,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging">
+                            <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="1,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging" VirtualizingStackPanel.VirtualizationMode="Recycling">
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="0,14" HorizontalAlignment="Stretch" UseLayoutRounding="True">
@@ -2850,7 +2850,7 @@
                     <TextBlock x:Name="FullscreenLyricsArtist" Text="" FontSize="14" Foreground="#B3B3B3" TextAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
                 <!-- Lyrics content -->
-                <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging">
+                <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging" VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="5,16" HorizontalAlignment="Center" UseLayoutRounding="True">
