@@ -148,6 +148,54 @@
             </Setter>
         </Style>
 
+        <Style x:Key="RoundFloatingButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Background" Value="#3DFFFFFF"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="ButtonScale" ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleX" To="0.85" Duration="0:0:0.05"/>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonScale" Storyboard.TargetProperty="ScaleY" To="0.85" Duration="0:0:0.05"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="CircleBorder" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0"/>
+                                        </Storyboard>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                            <Border x:Name="CircleBorder" Background="{TemplateBinding Background}" CornerRadius="20" Width="40" Height="40">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="CategoryButtonStyle" TargetType="Button">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -2510,10 +2558,16 @@
                                     </LinearGradientBrush>
                                 </Rectangle.Fill>
                             </Rectangle>
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,15" Canvas.ZIndex="10">
-                                <Button Content="A-" Click="DecreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0" Margin="0,0,10,0"/>
-                                <Button Content="A+" Click="IncreaseLyricsSize_Click" FontSize="14" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0" Margin="0,0,10,0"/>
-                                <Button Content="⛶" Click="ToggleFullscreenLyrics_Click" FontSize="16" FontWeight="Bold" Foreground="White" Background="#33FFFFFF" BorderThickness="0" BorderBrush="Transparent" MinHeight="35" MinWidth="50" Padding="0"/>
+                            <StackPanel Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,1,25" Canvas.ZIndex="10">
+                                <Button Style="{StaticResource RoundFloatingButtonStyle}" Click="IncreaseLyricsSize_Click" Margin="0,0,0,10">
+                                    <TextBlock Text="A+" FontSize="13" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Style="{StaticResource RoundFloatingButtonStyle}" Click="DecreaseLyricsSize_Click" Margin="0,0,0,10">
+                                    <TextBlock Text="A-" FontSize="13" FontWeight="Bold" FontFamily="{StaticResource MontserratBold}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
+                                <Button Style="{StaticResource RoundFloatingButtonStyle}" Click="ToggleFullscreenLyrics_Click">
+                                    <FontIcon FontFamily="Segoe UI Symbol" Glyph="&#xE1D9;" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Button>
                             </StackPanel>
                         </Grid>
                     </PivotItem>
