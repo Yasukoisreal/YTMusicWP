@@ -166,6 +166,80 @@ PHẦN 2: CÁC THƯ VIỆN TIỀM NĂNG CHƯA CÀI ĐẶT (KÈM HƯỚNG DẪN &
 * Lệnh cài đặt:
   & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install ZXing.Net -Version 0.16.5 -OutputDirectory packages
 
+--------------------------------------------------------------------------------
+9. ANGLE for Windows Store (ANGLE.WindowsStore)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Dịch toàn bộ các tập lệnh đồ họa OpenGL ES 2.0 / 3.0 sang DirectX 11 thời
+    gian thực trực tiếp trên Windows Phone 8.1.
+  - Cho phép "bê nguyên xi" các bộ mã nguồn Visualizer âm thanh, bộ lọc màu,
+    hoặc Shader đồ họa viết bằng OpenGL của Android/Linux sang chạy trên Lumia
+    mà không cần viết lại toàn bộ bằng HLSL DirectX.
+* Mức cấu hình yêu cầu & Cảnh báo:
+  - CẤU HÌNH TRUNG ĐẾN CAO CẤP:
+    + Yêu cầu RAM tối thiểu 1GB (Lumia 640, 730, 830).
+    + Khuyên dùng RAM 2GB, GPU Adreno 330 (Lumia 930, 1520).
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install ANGLE.WindowsStore -OutputDirectory packages
+
+--------------------------------------------------------------------------------
+10. WinPR (Windows Phone Root Tools / Native Win32 Component)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Phá vỡ hoàn toàn "bức tường" Sandbox bảo mật của Microsoft trên các thiết bị
+    Lumia đã được mở khóa hệ thống (Interop Unlock / Bootloader Unlock).
+  - Can thiệp trực tiếp vào nhân hệ điều hành:
+    + Đọc/ghi sâu vào Registry hệ thống (HKLM, HKCU).
+    + Truy cập trực tiếp vào phân vùng hệ điều hành (C:\).
+    + Đọc nhiệt độ CPU thực tế, xung nhịp chip Qualcomm.
+    + Điều khiển nhấp nháy đèn phím cứng cảm ứng (Windows Key LED) theo nhạc.
+* Mức cấu hình yêu cầu:
+  - TẤT CẢ THIẾT BỊ (Yêu cầu máy điện thoại đã Interop Unlock).
+
+--------------------------------------------------------------------------------
+11. Flurl.Http / RestSharp (Bản Portable PCL)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Tái cấu trúc pipeline mạng HTTP cấp cao: xử lý stream phân đoạn (chunked),
+    nén dữ liệu ngầm và cơ chế tự động tải lại (auto-retry) thông minh.
+  - Xử lý việc tải đệm trước bài hát tiếp theo ngầm dưới nền (Gapless Playback
+    Pre-buffering), loại bỏ hoàn toàn khoảng lặng (1-2 giây gián đoạn) khi chuyển bài.
+* Mức cấu hình yêu cầu:
+  - TẤT CẢ THIẾT BỊ (RAM 512MB).
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install Flurl.Http -Version 1.2.0 -OutputDirectory packages
+
+--------------------------------------------------------------------------------
+12. WebSocket4Net / SuperSocket.ClientEngine
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Cung cấp kết nối Socket hai chiều thời gian thực (Full-duplex WebSocket)
+    hoạt động bền bỉ trên Windows Phone 8.1.
+  - Mở khóa các tính năng kết nối mạng hiện đại:
+    + Hiển thị bài hát đang nghe lên Discord (Discord Rich Presence) cho Lumia.
+    + Phòng nghe nhạc trực tuyến (Party Room / Listen Along): Nhiều người dùng
+      Lumia cùng nghe chung một bài hát đồng bộ thời gian thực theo mili-giây.
+    + Nhận lời bài hát Karaoke trực tiếp dạng Stream từ server cộng đồng.
+* Mức cấu hình yêu cầu:
+  - TẤT CẢ THIẾT BỊ (RAM 512MB).
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install WebSocket4Net -Version 0.14.1 -OutputDirectory packages
+
+--------------------------------------------------------------------------------
+13. PCLCrypto / BouncyCastle
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Bộ thư viện mã hóa và mật mã học nâng cao (RSA, HMAC-SHA256, Elliptic Curve,
+    PBKDF2) bù đắp những thuật toán bảo mật mà API gốc `Windows.Security` của
+    WP8.1 bị Microsoft cắt giảm.
+  - Hỗ trợ tạo các loại token băm phức tạp phục vụ xác thực tài khoản Google/YouTube
+    hoặc giải mã chữ ký bảo mật cấp cao.
+* Mức cấu hình yêu cầu:
+  - TẤT CẢ THIẾT BỊ (RAM 512MB).
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install PCLCrypto -Version 1.0.86 -OutputDirectory packages
+
 ================================================================================
                                HẾT TÀI LIỆU
 ================================================================================
+
