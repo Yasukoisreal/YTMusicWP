@@ -1,0 +1,171 @@
+================================================================================
+          DANH SÁCH THƯ VIỆN TIỀM NĂNG CHO WINDOWS PHONE 8.1 (WPA81)
+                     Dự án: YTMusicWP (Visual Studio 2015)
+================================================================================
+
+Tài liệu này lưu trữ toàn bộ các thư viện NuGet và WinRT Component tiềm năng
+có thể mở khóa những tính năng cao cấp ("làm được điều không tưởng") cho
+dự án YTMusicWP trên nền tảng Windows Phone 8.1 khi cần phát triển trong tương lai.
+
+LƯU Ý QUAN TRỌNG:
+- Đường dẫn công cụ NuGet trong dự án:
+  "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe"
+- TargetFramework chuẩn của dự án: "wpa81" (Windows Phone App 8.1 - WinRT)
+- Luôn kiểm tra biên dịch (MSBuild) cho cả 2 kiến trúc ARM và x86 sau khi thêm.
+
+
+================================================================================
+PHẦN 1: CÁC THƯ VIỆN ĐÃ ĐƯỢC TÍCH HỢP SẴN TRONG DỰ ÁN (HIỆN TẠI)
+================================================================================
+1. LumiaImagingSDK (v2.0.208): 
+   - Xử lý hiệu ứng đồ họa mờ (blur) phần cứng qua DSP C++ của Nokia Lumia.
+   - Đang dùng cho: Nền mờ Apple Music Now Playing.
+2. XamlAnimatedGif (v1.2.3): 
+   - Giải mã và phát ảnh GIF động trực tiếp trên XAML.
+   - Đang dùng cho: Splash screen hoạt họa logo YouTube khi khởi động.
+3. Win2D.win81 (v1.21.0): 
+   - Direct2D tăng tốc GPU Adreno chạy ở 60 FPS.
+   - Dành cho: Avee Player Visualizer, sóng nhạc tròn, hạt phát sáng (Particles).
+4. WriteableBitmapEx (v1.5.0): 
+   - Thao tác mảng điểm ảnh (pixel blitting) tốc độ cao trên RAM.
+   - Dành cho: Cắt tròn avatar, vẽ biểu đồ âm thanh, xử lý ảnh siêu nhẹ.
+5. WinRTXamlToolkit.WindowsPhone (v1.8.1): 
+   - Kho điều khiển UI nâng cao cho WP8.1 XAML.
+6. QKit (v0.4.1): 
+   - Cung cấp Kéo để làm mới (Pull-to-Refresh) và JumpList A-Z chuẩn WP8.1.
+7. sqlite-net-pcl & SQLitePCLRaw (v1.1.11 / 1.5.231): 
+   - Cơ sở dữ liệu quan hệ SQLite native C++ quản lý dữ liệu offline.
+8. Newtonsoft.Json & HtmlAgilityPack: 
+   - Phân tích dữ liệu JSON và bóc tách HTML từ YouTube.
+
+
+================================================================================
+PHẦN 2: CÁC THƯ VIỆN TIỀM NĂNG CHƯA CÀI ĐẶT (KÈM HƯỚNG DẪN & CẤU HÌNH)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. TagLib# (TagLib.Portable / TagLibSharp)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Tự đọc và ghi đè nhị phân các thẻ ID3v2, Vorbis Comments của file nhạc.
+  - Cho phép NHÚNG TRỰC TIẾP ảnh bìa Album HD (Cover Art) và Lời bài hát đồng bộ
+    (Synced Karaoke Lyrics / định dạng LRC) vào thẳng bên trong file nhạc tải về
+    (.mp3, .m4a, .flac). Khi chép nhạc sang máy tính hay máy nghe nhạc khác,
+    bài hát vẫn hiện nguyên vẹn bìa và lời chạy theo nhạc.
+* Mức cấu hình yêu cầu:
+  - TẤT CẢ THIẾT BỊ (Bao gồm cả máy RAM 512MB như Lumia 520, 525, 530, 630).
+  - Tốn cực ít RAM và CPU.
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install TagLib.Portable -Version 1.3.1 -OutputDirectory packages
+* Tích hợp vào YTMusicWP.csproj:
+  <Reference Include="TagLib.Portable">
+    <HintPath>..\packages\TagLib.Portable.1.3.1\lib\portable-net45+win+wpa81+wp8+MonoAndroid10+xamarinios10+MonoTouch10\TagLib.Portable.dll</HintPath>
+    <Private>True</Private>
+  </Reference>
+
+--------------------------------------------------------------------------------
+2. Chakra JavaScript Runtime (JsRT / jscript9.dll / chakra.dll)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Chạy trực tiếp engine JavaScript tích hợp sẵn trong ROM của Windows Phone 8.1
+    bằng lời gọi P/Invoke (native Win32 API) mà KHÔNG CẦN mở thẻ WebView.
+  - Cho phép app tự chạy đoạn mã JavaScript giải mã chữ ký YouTube (n-sig decipher)
+    ngay trên điện thoại khi YouTube đổi thuật toán, tránh tình trạng bị bóp băng
+    thông (throttling) mà không cần phụ thuộc vào bất kỳ server proxy bên ngoài nào.
+* Mức cấu hình yêu cầu:
+  - RAM 512MB chạy mượt mà vì sử dụng trực tiếp DLL có sẵn trong hệ điều hành.
+* Cách tích hợp:
+  - Không cần NuGet. Khai báo P/Invoke tới `jscript9.dll` hoặc dùng wrapper C++/CX.
+
+--------------------------------------------------------------------------------
+3. FFmpegInterop (microsoft/FFmpegInterop for Windows Phone 8.1)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Đưa nhân C++ giải mã đa phương tiện của FFmpeg vào Windows Media Foundation.
+  - Phát được mọi định dạng âm thanh mà WP8.1 không hỗ trợ gốc:
+    + Luồng âm thanh Opus / WebM từ YouTube (itag 251 bitrate cao).
+    + Nhạc Lossless FLAC, OGG Vorbis, ALAC, AC3 lưu trên thẻ nhớ SD.
+  - Trích xuất mảng mẫu âm thanh PCM thô để tính toán tần số âm thanh thật (Real FFT).
+* Mức cấu hình yêu cầu & Cảnh báo:
+  - CẢNH BÁO NẶNG ĐÔ: Giải mã phần mềm (Software Decoding) ngốn CPU và RAM.
+  - Tiến trình nền (Background Task) trên WP8.1 bị giới hạn trần RAM chỉ ~20MB;
+    nếu dùng FFmpeg ở tiến trình nền rất dễ bị hệ điều hành tắt nhạc khi khóa màn hình.
+  - Cấu hình tối thiểu: RAM 1GB (Lumia 640, 730, 830).
+  - Cấu hình khuyến nghị: RAM 2GB, Chip Snapdragon 800 (Lumia 930, 1520, Icon).
+* Cách tích hợp:
+  - Biên dịch hoặc tải component WinRT C++: `FFmpegInterop.winmd` và các DLL:
+    `avcodec-56.dll`, `avformat-56.dll`, `avutil-54.dll`, `swresample-1.dll`.
+
+--------------------------------------------------------------------------------
+4. SharpDX (SharpDX.Direct3D11 / SharpDX.XAudio2)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Cung cấp quyền truy cập cấp thấp vào DirectX 11 và engine âm thanh chuyên nghiệp
+    XAudio2 của Microsoft.
+  - XAudio2 DSP: Cho phép tạo bộ Equalizer chuyên nghiệp với các hiệu ứng âm thanh
+    thời gian thực: Tăng âm trầm (Bass Boost), Hiệu ứng vang vòm phòng (Reverb),
+    Chỉnh tốc độ/cao độ (Pitch/Tempo Shift) độc lập như bàn DJ.
+  - Direct3D11: Viết HLSL Custom Shader để dựng hình 3D sóng nước, quả cầu âm thanh.
+* Mức cấu hình yêu cầu:
+  - Cấu hình tối thiểu: RAM 1GB (Snapdragon 400 trở lên).
+  - Cấu hình lý tưởng: RAM 2GB (Lumia 930, 1520).
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install SharpDX.XAudio2 -Version 2.6.3 -OutputDirectory packages
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install SharpDX.Direct3D11 -Version 2.6.3 -OutputDirectory packages
+
+--------------------------------------------------------------------------------
+5. CSCore (CSCore - .NET Audio Engine)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Thư viện toán học xử lý tín hiệu âm thanh kỹ thuật số (.NET DSP).
+  - Cung cấp thuật toán Fast Fourier Transform (FFT) chuẩn xác, phân tích các
+    dải tần số Sub-bass, Bass, Mid, High-mid, Treble.
+  - Nhận diện nhịp gõ trống (Beat / BPM Detection) tự động để đồng bộ hiệu ứng nhấp
+    nháy đèn hoặc rung giao diện theo nhịp bài hát.
+* Mức cấu hình yêu cầu:
+  - RAM 1GB nếu phân tích luồng liên tục.
+  - RAM 512MB nếu chỉ phân tích theo từng chu kỳ ngắt quãng.
+
+--------------------------------------------------------------------------------
+6. Cimbalino Windows Phone Toolkit (Cimbalino.Toolkit)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Cung cấp quyền can thiệp vào các phần cứng đặc thù của điện thoại Lumia:
+    + Rung phản hồi xúc giác (Haptic Feedback) theo nhịp phách bài hát
+      bằng `VibrationService` (tạo chuỗi rung ngắt quãng).
+    + Đọc trạng thái tiết kiệm pin (Power Saving Mode), phần trăm pin chính xác.
+    + Đọc trạng thái khóa máy và cảm biến ánh sáng.
+* Mức cấu hình yêu cầu:
+  - TẤT CẢ THIẾT BỊ (RAM 512MB chạy cực tốt).
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install Cimbalino.Toolkit -Version 2.0.0 -OutputDirectory packages
+
+--------------------------------------------------------------------------------
+7. SvgForWinRT / SharpVectors
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Mở khóa khả năng đọc và hiển thị trực tiếp đồ họa vector SVG trên WP8.1
+    (vốn dĩ WP8.1 chỉ hỗ trợ PNG/JPG và không xem được SVG).
+  - Tự động biên dịch mã XML của file SVG thành các đối tượng hình học XAML
+    (`PathGeometry`), giúp toàn bộ icon sắc nét tuyệt đối trên mọi độ phân giải
+    màn hình (từ 480p đến 1080p) mà không cần xuất nhiều file ảnh PNG tốn dung lượng.
+* Mức cấu hình yêu cầu:
+  - TẤT CẢ THIẾT BỊ (RAM 512MB).
+
+--------------------------------------------------------------------------------
+8. ZXing.Net (Zebra Crossing Mobile Barcode)
+--------------------------------------------------------------------------------
+* Khả năng đặc biệt:
+  - Sử dụng Camera của Lumia để quét mã QR / Barcode theo thời gian thực.
+  - Cho phép 2 máy Lumia chia sẻ bài hát hoặc danh sách phát cho nhau cực nhanh:
+    Máy 1 bấm "Chia sẻ" -> hiện mã QR trên màn hình.
+    Máy 2 mở tính năng quét -> nhận link bài hát tức thì.
+  - (Lưu ý: Để tạo mã QR tĩnh, dự án đã có sẵn file thuần nhẹ `QrCodeGenerator.cs`).
+* Mức cấu hình yêu cầu:
+  - Mọi máy có camera (Lumia 520, 630, 720...), RAM 512MB.
+* Lệnh cài đặt:
+  & "D:\Documents\Visual Studio 2015\Projects\YTMusicWP\nuget.exe" install ZXing.Net -Version 0.16.5 -OutputDirectory packages
+
+================================================================================
+                               HẾT TÀI LIỆU
+================================================================================
