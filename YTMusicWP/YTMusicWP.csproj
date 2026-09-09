@@ -214,7 +214,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="WriteableBitmapEx.WinRT">
-      <HintPath>..\packages\WriteableBitmapEx.1.5.0.0\lib\wpa81\WriteableBitmapEx.WinRT.dll</HintPath>
+      <HintPath>..\packages\WriteableBitmapEx.1.6.8\lib\wpa81\WriteableBitmapEx.WinRT.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="WinRTXamlToolkit">
