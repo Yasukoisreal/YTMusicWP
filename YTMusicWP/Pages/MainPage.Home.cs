@@ -668,7 +668,10 @@ namespace YTMusicWP
                     HomePullText.Foreground = _chipActiveBrush;
                 }
 
-                // 2. Fetch fresh data concurrently
+                // 2. Clear Home caches to force fresh recommendations from YouTube
+                InnerTubeClient.ClearHomeCache();
+
+                // 3. Fetch fresh data concurrently
                 var loadRecsTask = LoadHomeRecommendations();
                 RefreshHomeHistorySections();
                 await loadRecsTask;
