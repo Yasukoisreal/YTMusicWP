@@ -734,7 +734,24 @@
                 <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10" Margin="0,115,0,0"/>
                 <!-- Music content -->
                 <ScrollViewer x:Name="HomeMusicPanel" VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
-                    <StackPanel Margin="0,115,0,30">
+                    <Grid x:Name="HomeMusicContentGrid">
+                        <!-- Pull To Refresh Visual Indicator -->
+                        <Border x:Name="HomePullIndicator" Height="60" VerticalAlignment="Top" Margin="0,55,0,0" Opacity="0" IsHitTestVisible="False">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Grid Width="22" Height="22" Margin="0,0,8,0">
+                                    <Viewbox x:Name="HomePullArrowBox" Width="18" Height="18" RenderTransformOrigin="0.5,0.5">
+                                        <Viewbox.RenderTransform>
+                                            <RotateTransform x:Name="HomePullArrowRotate" Angle="0"/>
+                                        </Viewbox.RenderTransform>
+                                        <Path x:Name="HomePullArrowPath" Data="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" Fill="#888888"/>
+                                    </Viewbox>
+                                    <ProgressRing x:Name="HomePullSpinner" IsActive="False" Visibility="Collapsed" Width="18" Height="18" Foreground="#1DB954"/>
+                                </Grid>
+                                <TextBlock x:Name="HomePullText" Text="Pull to refresh" FontSize="13" FontFamily="{StaticResource MontserratMedium}" Foreground="#888888" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Margin="0,115,0,30">
                         <!-- Quick shortcuts grid -->
                         <GridView x:Name="HomeQuickGrid" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
                             <GridView.ItemsPanel>
@@ -866,7 +883,8 @@
                         <!-- ═══════ FOOTER CREDIT ═══════ -->
                         <TextBlock Text="@2026 YTMusicWP v2.2.0 Yasukoisreal" FontSize="11" Foreground="#555555" HorizontalAlignment="Center" Margin="0,30,0,10"/>
                     </StackPanel>
-                </ScrollViewer>
+                </Grid>
+            </ScrollViewer>
 
                 <!-- Podcasts content -->
                 <Grid x:Name="HomePodcastPanel" Visibility="Collapsed">

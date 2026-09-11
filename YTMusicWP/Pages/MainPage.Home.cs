@@ -514,5 +514,195 @@ namespace YTMusicWP
             catch { }
             AudiobookLoading.Visibility = Visibility.Collapsed;
         }
+
+        #region Pull to Refresh
+        private DispatcherTimer _pullTimer;
+        private bool _isPullReady = false;
+        private bool _isRefreshingHome = false;
+        private int _pullIdleTicks = 0;
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _pullMutedBrush =
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 136, 136, 136));
+
+        private void InitializeHomePullToRefresh()
+        {
+            if (HomeMusicPanel == null) return;
+
+            HomeMusicPanel.ViewChanging += HomeMusicPanel_ViewChanging;
+            HomeMusicPanel.ViewChanged += HomeMusicPanel_ViewChanged;
+
+            _pullTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(25) };
+            _pullTimer.Tick += PullTimer_Tick;
+        }
+
+        private void HomeMusicPanel_ViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
+        {
+            if (e.NextView.VerticalOffset == 0)
+            {
+                if (_pullTimer != null && !_pullTimer.IsEnabled && !_isRefreshingHome)
+                {
+                    _pullIdleTicks = 0;
+                    _pullTimer.Start();
+                }
+            }
+            else
+            {
+                if (_pullTimer != null && _pullTimer.IsEnabled)
+                {
+                    _pullTimer.Stop();
+                }
+                if (!_isRefreshingHome)
+                {
+                    _isPullReady = false;
+                    if (HomePullIndicator != null)
+                        HomePullIndicator.Opacity = 0;
+                }
+            }
+        }
+
+        private void PullTimer_Tick(object sender, object e)
+        {
+            if (HomePullIndicator == null || HomePanel == null) return;
+
+            try
+            {
+                var transform = HomePullIndicator.TransformToVisual(HomePanel);
+                var bounds = transform.TransformBounds(new Windows.Foundation.Rect(0, 0, HomePullIndicator.ActualWidth, HomePullIndicator.ActualHeight));
+
+                // Sticky header covers Y = 0..115. HomePullIndicator resting bottom is at Y = 115.
+                double pullDistance = bounds.Bottom - 115;
+
+                if (pullDistance <= 0)
+                {
+                    _pullIdleTicks++;
+                    if (_pullIdleTicks > 8 && !_isPullReady)
+                    {
+                        // Stop timer after idling at rest to prevent CPU usage
+                        _pullTimer.Stop();
+                    }
+
+                    if (!_isRefreshingHome)
+                    {
+                        HomePullIndicator.Opacity = 0;
+                        if (_isPullReady)
+                        {
+                            // Released after pulling past threshold -> trigger refresh!
+                            _isPullReady = false;
+                            _pullTimer.Stop();
+                            var ignored = RefreshHomeFeedAsync();
+                        }
+                    }
+                    return;
+                }
+
+                _pullIdleTicks = 0;
+
+                if (_isRefreshingHome)
+                {
+                    // Already refreshing: keep spinner and updating text visible if pulled
+                    HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 40.0);
+                    return;
+                }
+
+                // Smoothly fade in indicator as user pulls
+                HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 40.0);
+
+                if (pullDistance >= 65)
+                {
+                    // Threshold passed: Ready to refresh
+                    _isPullReady = true;
+                    HomePullArrowRotate.Angle = 180;
+                    HomePullArrowPath.Fill = _chipActiveBrush;
+                    HomePullText.Text = "Release to refresh";
+                    HomePullText.Foreground = _chipActiveBrush;
+                }
+                else
+                {
+                    // Below threshold: dragging down or returning before release
+                    _isPullReady = false;
+                    HomePullArrowRotate.Angle = 0;
+                    HomePullArrowPath.Fill = _pullMutedBrush;
+                    HomePullText.Text = "Pull to refresh";
+                    HomePullText.Foreground = _pullMutedBrush;
+                }
+            }
+            catch
+            {
+                // Visual tree transition safety
+            }
+        }
+
+        private void HomeMusicPanel_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+        {
+            if (!e.IsIntermediate && _isPullReady && !_isRefreshingHome)
+            {
+                _isPullReady = false;
+                if (_pullTimer != null && _pullTimer.IsEnabled)
+                {
+                    _pullTimer.Stop();
+                }
+                var ignored = RefreshHomeFeedAsync();
+            }
+        }
+
+        private async Task RefreshHomeFeedAsync()
+        {
+            if (_isRefreshingHome) return;
+            _isRefreshingHome = true;
+
+            try
+            {
+                // 1. Show UI progress indicators
+                if (HomeLoading != null)
+                    HomeLoading.Visibility = Visibility.Visible;
+
+                if (HomePullSpinner != null)
+                {
+                    HomePullSpinner.Visibility = Visibility.Visible;
+                    HomePullSpinner.IsActive = true;
+                }
+                if (HomePullArrowBox != null)
+                    HomePullArrowBox.Visibility = Visibility.Collapsed;
+                if (HomePullText != null)
+                {
+                    HomePullText.Text = "Updating...";
+                    HomePullText.Foreground = _chipActiveBrush;
+                }
+
+                // 2. Fetch fresh data concurrently
+                var loadRecsTask = LoadHomeRecommendations();
+                RefreshHomeHistorySections();
+                await loadRecsTask;
+            }
+            catch { }
+            finally
+            {
+                // 3. Reset UI states smoothly
+                if (HomeLoading != null)
+                    HomeLoading.Visibility = Visibility.Collapsed;
+
+                if (HomePullSpinner != null)
+                {
+                    HomePullSpinner.IsActive = false;
+                    HomePullSpinner.Visibility = Visibility.Collapsed;
+                }
+                if (HomePullArrowBox != null)
+                    HomePullArrowBox.Visibility = Visibility.Visible;
+                if (HomePullArrowRotate != null)
+                    HomePullArrowRotate.Angle = 0;
+                if (HomePullArrowPath != null)
+                    HomePullArrowPath.Fill = _pullMutedBrush;
+                if (HomePullText != null)
+                {
+                    HomePullText.Text = "Pull to refresh";
+                    HomePullText.Foreground = _pullMutedBrush;
+                }
+                if (HomePullIndicator != null)
+                    HomePullIndicator.Opacity = 0;
+
+                _isPullReady = false;
+                _isRefreshingHome = false;
+            }
+        }
+        #endregion
     }
 }

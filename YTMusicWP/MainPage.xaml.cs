@@ -236,6 +236,7 @@ namespace YTMusicWP
             Application.Current.Resuming += Current_Resuming;
             UpdateStatusBarColor(false, animate: false);
             InitializeStartupSplash();
+            InitializeHomePullToRefresh();
         }
 
         #region Startup Splash Animation
