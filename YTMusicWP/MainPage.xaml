@@ -734,9 +734,9 @@
                 <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10" Margin="0,115,0,0"/>
                 <!-- Music content -->
                 <ScrollViewer x:Name="HomeMusicPanel" VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
-                    <Grid x:Name="HomeMusicContentGrid">
+                    <Grid x:Name="HomeMusicContentGrid" MinHeight="2000">
                         <!-- Pull To Refresh Visual Indicator -->
-                        <Border x:Name="HomePullIndicator" Height="60" VerticalAlignment="Top" Margin="0,55,0,0" Opacity="0" IsHitTestVisible="False" Canvas.ZIndex="10">
+                        <Border x:Name="HomePullIndicator" Height="60" VerticalAlignment="Top" Margin="0,115,0,0" Opacity="0" IsHitTestVisible="False" Canvas.ZIndex="10">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Grid Width="22" Height="22" Margin="0,0,8,0">
                                     <Viewbox x:Name="HomePullArrowBox" Width="18" Height="18" RenderTransformOrigin="0.5,0.5">
@@ -751,7 +751,7 @@
                             </StackPanel>
                         </Border>
 
-                        <StackPanel Margin="0,115,0,30">
+                        <StackPanel Margin="0,175,0,30">
                         <!-- Quick shortcuts grid -->
                         <GridView x:Name="HomeQuickGrid" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
                             <GridView.ItemsPanel>

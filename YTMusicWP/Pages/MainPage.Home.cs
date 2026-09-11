@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 
 namespace YTMusicWP
 {
@@ -520,10 +521,12 @@ namespace YTMusicWP
         }
 
         #region Pull to Refresh
-        private DispatcherTimer _pullTimer;
+        private const double PULL_RESTING_OFFSET = 60.0;
+        private const double PULL_TRIGGER_THRESHOLD = 15.0;
+
         private bool _isPullReady = false;
         private bool _isRefreshingHome = false;
-        private double _pullRestingY = -1;
+        private bool _isPointerTouching = false;
         private static readonly Windows.UI.Xaml.Media.SolidColorBrush _pullMutedBrush =
             new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 136, 136, 136));
 
@@ -534,120 +537,120 @@ namespace YTMusicWP
             HomeMusicPanel.ViewChanging += HomeMusicPanel_ViewChanging;
             HomeMusicPanel.ViewChanged += HomeMusicPanel_ViewChanged;
 
-            _pullTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _pullTimer.Tick += PullTimer_Tick;
-            _pullTimer.Start();
+            // Track touch events reliably even when DirectManipulation handles pointer panning
+            HomeMusicPanel.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(HomeMusicPanel_PointerPressed), true);
+            HomeMusicPanel.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(HomeMusicPanel_PointerReleased), true);
+            HomeMusicPanel.AddHandler(UIElement.PointerCaptureLostEvent, new PointerEventHandler(HomeMusicPanel_PointerCaptureLost), true);
+            HomeMusicPanel.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler(HomeMusicPanel_PointerCanceled), true);
+
+            HomeMusicPanel.Loaded += HomeMusicPanel_Loaded;
+        }
+
+        private async void HomeMusicPanel_Loaded(object sender, RoutedEventArgs e)
+        {
+            ResetHomeScrollToRest(immediate: true);
+            await Task.Delay(50);
+            ResetHomeScrollToRest(immediate: true);
+        }
+
+        private void HomeMusicPanel_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            _isPointerTouching = true;
+        }
+
+        private void HomeMusicPanel_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            OnPointerUp();
+        }
+
+        private void HomeMusicPanel_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+        {
+            OnPointerUp();
+        }
+
+        private void HomeMusicPanel_PointerCanceled(object sender, PointerRoutedEventArgs e)
+        {
+            OnPointerUp();
+        }
+
+        private void OnPointerUp()
+        {
+            _isPointerTouching = false;
+            CheckPullTriggerOrSnap();
+        }
+
+        private void CheckPullTriggerOrSnap()
+        {
+            if (_isRefreshingHome) return;
+            if (HomeMusicPanel == null) return;
+
+            if (_isPullReady)
+            {
+                _isPullReady = false;
+                var ignored = RefreshHomeFeedAsync();
+            }
+            else if (HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET)
+            {
+                ResetHomeScrollToRest(immediate: false);
+            }
+        }
+
+        internal void ResetHomeScrollToRest(bool immediate = false)
+        {
+            if (HomeMusicPanel == null) return;
+            try
+            {
+                HomeMusicPanel.ChangeView(null, PULL_RESTING_OFFSET, null, disableAnimation: immediate);
+            }
+            catch { }
         }
 
         internal void EnsureHomePullTimer()
         {
-            if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset == 0 && HomeMusicPanel.Visibility == Visibility.Visible)
+            if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET && HomeMusicPanel.Visibility == Visibility.Visible)
             {
-                if (_pullTimer != null && !_pullTimer.IsEnabled)
-                {
-                    _pullTimer.Start();
-                }
+                ResetHomeScrollToRest(immediate: true);
             }
         }
 
         private void HomeMusicPanel_ViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
         {
-            if (e.NextView.VerticalOffset == 0)
+            if (HomeMusicPanel == null || HomePullIndicator == null) return;
+
+            double offset = e.NextView.VerticalOffset;
+
+            // Normal scroll down into feed
+            if (offset >= PULL_RESTING_OFFSET)
             {
-                if (_pullTimer != null && !_pullTimer.IsEnabled)
-                {
-                    _pullTimer.Start();
-                }
-            }
-            else
-            {
-                if (_pullTimer != null && _pullTimer.IsEnabled)
-                {
-                    _pullTimer.Stop();
-                }
                 if (!_isRefreshingHome)
                 {
                     _isPullReady = false;
-                    if (HomePullIndicator != null)
-                        HomePullIndicator.Opacity = 0;
-                }
-            }
-        }
-
-        private void PullTimer_Tick(object sender, object e)
-        {
-            if (HomePullIndicator == null || HomePanel == null || HomeMusicPanel == null) return;
-            if (HomePanel.Visibility != Visibility.Visible || HomeMusicPanel.Visibility != Visibility.Visible) return;
-
-            // Stop timer and reset state if user scrolled down into feed
-            if (HomeMusicPanel.VerticalOffset > 0)
-            {
-                if (_pullTimer != null && _pullTimer.IsEnabled)
-                    _pullTimer.Stop();
-                if (HomePullIndicator.Opacity > 0)
                     HomePullIndicator.Opacity = 0;
-                _isPullReady = false;
+                }
                 return;
             }
 
-            try
+            // Pulling down (offset < 60.0)
+            double pullDistance = PULL_RESTING_OFFSET - offset;
+            HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 30.0);
+
+            if (_isRefreshingHome) return;
+
+            if (offset <= PULL_TRIGGER_THRESHOLD)
             {
-                // Wait until element has valid layout
-                if (HomePullIndicator.ActualHeight <= 0) return;
-
-                var transform = HomePullIndicator.TransformToVisual(HomePanel);
-                var point = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
-
-                // Initialize resting baseline when at rest at offset 0
-                if (_pullRestingY < 0 && point.Y > 0)
+                if (!_isPullReady)
                 {
-                    _pullRestingY = point.Y;
-                }
-
-                double baseline = _pullRestingY > 0 ? _pullRestingY : 55.0;
-                double pullDistance = point.Y - baseline;
-
-                if (pullDistance <= 0)
-                {
-                    if (_isPullReady && !_isRefreshingHome)
-                    {
-                        // Released after pulling past threshold -> trigger refresh!
-                        _isPullReady = false;
-                        var ignored = RefreshHomeFeedAsync();
-                    }
-                    else if (!_isRefreshingHome && HomePullIndicator.Opacity > 0)
-                    {
-                        HomePullIndicator.Opacity = 0;
-                        HomePullArrowRotate.Angle = 0;
-                        HomePullArrowPath.Fill = _pullMutedBrush;
-                        HomePullText.Text = "Pull to refresh";
-                        HomePullText.Foreground = _pullMutedBrush;
-                    }
-                    return;
-                }
-
-                if (_isRefreshingHome)
-                {
-                    // Already refreshing: keep spinner and updating text visible if pulled
-                    HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 25.0);
-                    return;
-                }
-
-                // Smoothly fade in indicator as user pulls
-                HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 25.0);
-
-                if (pullDistance >= 40)
-                {
-                    // Threshold passed: Ready to refresh
                     _isPullReady = true;
                     HomePullArrowRotate.Angle = 180;
                     HomePullArrowPath.Fill = _chipActiveBrush;
                     HomePullText.Text = "Release to refresh";
                     HomePullText.Foreground = _chipActiveBrush;
                 }
-                else
+            }
+            else
+            {
+                if (_isPullReady)
                 {
-                    // Below threshold: dragging down or returning before release
                     _isPullReady = false;
                     HomePullArrowRotate.Angle = 0;
                     HomePullArrowPath.Fill = _pullMutedBrush;
@@ -655,26 +658,21 @@ namespace YTMusicWP
                     HomePullText.Foreground = _pullMutedBrush;
                 }
             }
-            catch
-            {
-                // Visual tree transition safety
-            }
         }
 
         private void HomeMusicPanel_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
-            if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset == 0)
+            if (!e.IsIntermediate && !_isRefreshingHome)
             {
-                if (_pullTimer != null && !_pullTimer.IsEnabled)
+                if (_isPullReady && !_isPointerTouching)
                 {
-                    _pullTimer.Start();
+                    _isPullReady = false;
+                    var ignored = RefreshHomeFeedAsync();
                 }
-            }
-
-            if (!e.IsIntermediate && _isPullReady && !_isRefreshingHome)
-            {
-                _isPullReady = false;
-                var ignored = RefreshHomeFeedAsync();
+                else if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET && !_isPointerTouching)
+                {
+                    ResetHomeScrollToRest(immediate: false);
+                }
             }
         }
 
@@ -685,10 +683,32 @@ namespace YTMusicWP
 
             try
             {
-                // 1. Show UI progress indicators
+                // 1. Visually clear current items so user sees home page disappear and reload
+                if (HomeDynamicSections != null)
+                    HomeDynamicSections.ItemsSource = null;
+                if (HomeQuickGrid != null)
+                    HomeQuickGrid.ItemsSource = null;
+                if (HomeHistoryCarousel != null)
+                    HomeHistoryCarousel.ItemsSource = null;
+                if (HomeArtistsCarousel != null)
+                    HomeArtistsCarousel.ItemsSource = null;
+                if (HomeHistorySection != null)
+                    HomeHistorySection.Visibility = Visibility.Collapsed;
+                if (HomeArtistsSection != null)
+                    HomeArtistsSection.Visibility = Visibility.Collapsed;
+                if (MoodsGenresListView != null)
+                    MoodsGenresListView.ItemsSource = null;
+                if (HomeChartsCarousel != null)
+                    HomeChartsCarousel.ItemsSource = null;
+                if (HomeChartsTitle != null)
+                    HomeChartsTitle.Visibility = Visibility.Collapsed;
+
+                // 2. Show UI progress indicators
                 if (HomeLoading != null)
                     HomeLoading.Visibility = Visibility.Visible;
 
+                if (HomePullIndicator != null)
+                    HomePullIndicator.Opacity = 1.0;
                 if (HomePullSpinner != null)
                 {
                     HomePullSpinner.Visibility = Visibility.Visible;
@@ -702,10 +722,10 @@ namespace YTMusicWP
                     HomePullText.Foreground = _chipActiveBrush;
                 }
 
-                // 2. Clear Home caches to force fresh recommendations from YouTube
+                // 3. Clear Home caches to force fresh recommendations from YouTube
                 InnerTubeClient.ClearHomeCache();
 
-                // 3. Fetch fresh data concurrently
+                // 4. Fetch fresh data concurrently
                 var loadRecsTask = LoadHomeRecommendations();
                 RefreshHomeHistorySections();
                 await loadRecsTask;
@@ -713,7 +733,7 @@ namespace YTMusicWP
             catch { }
             finally
             {
-                // 3. Reset UI states smoothly
+                // 5. Reset UI states smoothly
                 if (HomeLoading != null)
                     HomeLoading.Visibility = Visibility.Collapsed;
 
@@ -738,6 +758,12 @@ namespace YTMusicWP
 
                 _isPullReady = false;
                 _isRefreshingHome = false;
+
+                // 6. Smoothly snap back to resting position if still at top
+                if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET)
+                {
+                    ResetHomeScrollToRest(immediate: false);
+                }
             }
         }
         #endregion
