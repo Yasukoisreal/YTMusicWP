@@ -159,7 +159,8 @@ namespace YTMusicWP
 
                 if (SplashAnimationToggle != null)
                 {
-                    SplashAnimationToggle.IsOn = SafeGetBool(settings, "EnableSplashAnimation", true);
+                    bool defaultSplash = !Services.MemoryHelper.IsLowMemoryDevice;
+                    SplashAnimationToggle.IsOn = SafeGetBool(settings, "EnableSplashAnimation", defaultSplash);
                     SplashAnimationToggle.Toggled += SplashAnimationToggle_Toggled;
                 }
 

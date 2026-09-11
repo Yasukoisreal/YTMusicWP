@@ -13,6 +13,12 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        private ObservableCollection<YTMusicWP.InnerTubeClient.HomeSection> _homeDynamicSections;
+        private string _homeContinuationToken;
+        private bool _isLoadingMoreHomeSections;
+        private bool _hasMoreHomeSections;
+        private int _homeLoadedPagesCount;
+
         private void RefreshHomeHistorySections()
         {
             if (historyTracks.Count > 0)
@@ -141,6 +147,7 @@ namespace YTMusicWP
                     }
 
                     if (uncachedArtists.Count == 0) return;
+                    if (YTMusicWP.Services.MemoryHelper.IsLowMemoryDevice) return;
                     if ((DateTime.Now - _lastArtistFetchTime).TotalSeconds < 15) return;
                     _lastArtistFetchTime = DateTime.Now;
 
@@ -239,47 +246,36 @@ namespace YTMusicWP
         {
             HomeLoading.Visibility = Visibility.Visible;
 
+            // Reset pagination
+            _homeContinuationToken = null;
+            _hasMoreHomeSections = false;
+            _homeLoadedPagesCount = 0;
+            _isLoadingMoreHomeSections = false;
+
             // ═══════════════════════════════════════════════════
             // PRIMARY: YouTube Music Home (FE_music_home) + Charts in parallel
             // ═══════════════════════════════════════════════════
             try
             {
-                var dynamicSections = new ObservableCollection<YTMusicWP.InnerTubeClient.HomeSection>();
-                bool firstPage = true;
-
-                Action<System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>> onPageLoaded = (sections) =>
+                if (_homeDynamicSections == null)
                 {
-                    var _ = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                    {
-                        if (sections != null)
-                        {
-                            if (firstPage)
-                            {
-                                HomeDynamicSections.ItemsSource = dynamicSections;
-                                firstPage = false;
-                            }
-                            
-                            // Add only new sections
-                            for (int i = dynamicSections.Count; i < sections.Count; i++)
-                            {
-                                dynamicSections.Add(sections[i]);
-                            }
-                            
-                            HomeLoading.Visibility = Visibility.Collapsed;
-                        }
-                    });
-                };
+                    _homeDynamicSections = new ObservableCollection<YTMusicWP.InnerTubeClient.HomeSection>();
+                }
+                else
+                {
+                    _homeDynamicSections.Clear();
+                }
+                HomeDynamicSections.ItemsSource = _homeDynamicSections;
 
-                var homeTask = InnerTubeClient.BrowseHomeAsync(null, onPageLoaded);
+                var homeFirstPageTask = InnerTubeClient.BrowseHomeFirstPageAsync(null);
                 var chartsTask = InnerTubeClient.BrowseChartsAsync();
                 var moodsTask = InnerTubeClient.BrowseMoodsAndGenresAsync();
                 
+                var homeResult = default(InnerTubeClient.HomeBrowseResult);
                 var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
                 var moodsData = default(System.Collections.Generic.List<YTMusicWP.MoodCategory>);
 
-                // Wait for the full fetch to complete
-                var homeSections = default(System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>);
-                try { homeSections = await homeTask; } catch { }
+                try { homeResult = await homeFirstPageTask; } catch { }
                 try { chartsData = await chartsTask; } catch { }
                 try { moodsData = await moodsTask; } catch { }
 
@@ -302,11 +298,20 @@ namespace YTMusicWP
                     HomeChartsCarousel.ItemsSource = chartsData;
                 }
 
-                // Dynamic home sections final pass
-                if (homeSections != null && homeSections.Count > 0)
+                // Dynamic home sections (Page 1)
+                if (homeResult != null && homeResult.Sections != null && homeResult.Sections.Count > 0)
                 {
-                    _currentHomeQuery = homeSections[0].Title;
-                    var topTracks = homeSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
+                    foreach (var sec in homeResult.Sections)
+                    {
+                        _homeDynamicSections.Add(sec);
+                    }
+
+                    _homeContinuationToken = homeResult.ContinuationToken;
+                    _hasMoreHomeSections = !string.IsNullOrEmpty(_homeContinuationToken);
+                    _homeLoadedPagesCount = 1;
+
+                    _currentHomeQuery = homeResult.Sections[0].Title;
+                    var topTracks = homeResult.Sections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
                     YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
 
                     HomeLoading.Visibility = Visibility.Collapsed;
@@ -384,6 +389,51 @@ namespace YTMusicWP
                 YTMusicWP.Services.TileService.UpdateRecommendations(topTracks2, favoriteTracks, historyTracks);
             }
             HomeLoading.Visibility = Visibility.Collapsed;
+        }
+
+        private async Task LoadNextHomeContinuationAsync()
+        {
+            if (_isLoadingMoreHomeSections || !_hasMoreHomeSections || string.IsNullOrEmpty(_homeContinuationToken))
+                return;
+
+            // Strict 512MB RAM cap: max 4 pages of home sections to prevent unbounded memory growth
+            if (YTMusicWP.Services.MemoryHelper.IsLowMemoryDevice && _homeLoadedPagesCount >= 4)
+            {
+                _hasMoreHomeSections = false;
+                return;
+            }
+
+            _isLoadingMoreHomeSections = true;
+
+            try
+            {
+                var nextResult = await InnerTubeClient.BrowseHomeContinuationAsync(_homeContinuationToken);
+                if (nextResult != null && nextResult.Sections != null && nextResult.Sections.Count > 0)
+                {
+                    foreach (var sec in nextResult.Sections)
+                    {
+                        if (_homeDynamicSections != null)
+                        {
+                            _homeDynamicSections.Add(sec);
+                        }
+                    }
+                    _homeContinuationToken = nextResult.ContinuationToken;
+                    _hasMoreHomeSections = !string.IsNullOrEmpty(_homeContinuationToken);
+                    _homeLoadedPagesCount++;
+                }
+                else
+                {
+                    _hasMoreHomeSections = false;
+                }
+            }
+            catch
+            {
+                // Transient network errors should not crash or permanently disable
+            }
+            finally
+            {
+                _isLoadingMoreHomeSections = false;
+            }
         }
 
         private static bool IsMusicTrack(YouTubeTrack t)
@@ -627,6 +677,15 @@ namespace YTMusicWP
                     _isPullReady = false;
                     HomePullIndicator.Opacity = 0;
                 }
+
+                // Check for lazy loading near bottom (SimpMusic style)
+                if (HomeMusicPanel.ScrollableHeight > 0 && offset >= HomeMusicPanel.ScrollableHeight - 600)
+                {
+                    if (!_isLoadingMoreHomeSections && _hasMoreHomeSections && !string.IsNullOrEmpty(_homeContinuationToken))
+                    {
+                        var _ = LoadNextHomeContinuationAsync();
+                    }
+                }
                 return;
             }
 
@@ -664,6 +723,15 @@ namespace YTMusicWP
         {
             if (!e.IsIntermediate && !_isRefreshingHome)
             {
+                // Check lazy loading on inertia stop
+                if (HomeMusicPanel != null && HomeMusicPanel.ScrollableHeight > 0 && HomeMusicPanel.VerticalOffset >= HomeMusicPanel.ScrollableHeight - 600)
+                {
+                    if (!_isLoadingMoreHomeSections && _hasMoreHomeSections && !string.IsNullOrEmpty(_homeContinuationToken))
+                    {
+                        var _ = LoadNextHomeContinuationAsync();
+                    }
+                }
+
                 if (_isPullReady && !_isPointerTouching)
                 {
                     _isPullReady = false;
@@ -684,6 +752,12 @@ namespace YTMusicWP
             try
             {
                 // 1. Visually clear current items so user sees home page disappear and reload
+                _homeContinuationToken = null;
+                _hasMoreHomeSections = false;
+                _homeLoadedPagesCount = 0;
+                _isLoadingMoreHomeSections = false;
+                if (_homeDynamicSections != null)
+                    _homeDynamicSections.Clear();
                 if (HomeDynamicSections != null)
                     HomeDynamicSections.ItemsSource = null;
                 if (HomeQuickGrid != null)

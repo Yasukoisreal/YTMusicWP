@@ -15,6 +15,7 @@ namespace YTMusicWP
         public App()
         {
             this.InitializeComponent();
+            Services.MemoryHelper.Initialize();
             this.Suspending += this.OnSuspending;
             this.UnhandledException += App_UnhandledException;
         }

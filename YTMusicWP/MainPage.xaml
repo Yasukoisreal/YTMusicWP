@@ -323,7 +323,7 @@
                         <Rectangle.Fill>
                             <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                                 <ImageBrush.ImageSource>
-                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="260"/>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="160"/>
                                 </ImageBrush.ImageSource>
                             </ImageBrush>
                         </Rectangle.Fill>
@@ -381,7 +381,7 @@
                         <Rectangle.Fill>
                             <ImageBrush Stretch="UniformToFill">
                                 <ImageBrush.ImageSource>
-                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="260"/>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="200"/>
                                 </ImageBrush.ImageSource>
                             </ImageBrush>
                         </Rectangle.Fill>
@@ -425,7 +425,7 @@
                         <Rectangle.Fill>
                             <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
                                 <ImageBrush.ImageSource>
-                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="250"/>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="160"/>
                                 </ImageBrush.ImageSource>
                             </ImageBrush>
                         </Rectangle.Fill>
@@ -789,7 +789,7 @@
                                                     <Ellipse.Fill>
                                                         <ImageBrush Stretch="UniformToFill">
                                                             <ImageBrush.ImageSource>
-                                                                <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="176"/>
+                                                                <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="96"/>
                                                             </ImageBrush.ImageSource>
                                                         </ImageBrush>
                                                     </Ellipse.Fill>
@@ -861,7 +861,7 @@
                                         <Border.Background>
                                             <ImageBrush Stretch="UniformToFill">
                                                 <ImageBrush.ImageSource>
-                                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
+                                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="140"/>
                                                 </ImageBrush.ImageSource>
                                             </ImageBrush>
                                         </Border.Background>
@@ -978,7 +978,7 @@
                                         <Border.Background>
                                             <ImageBrush Stretch="UniformToFill">
                                                 <ImageBrush.ImageSource>
-                                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="180"/>
+                                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="140"/>
                                                 </ImageBrush.ImageSource>
                                             </ImageBrush>
                                         </Border.Background>

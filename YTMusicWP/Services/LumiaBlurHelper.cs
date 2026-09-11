@@ -10,6 +10,8 @@ namespace YTMusicWP.Services
 {
     internal static class LumiaBlurHelper
     {
+        private static int MaxCacheSize => MemoryHelper.IsLowMemoryDevice ? 2 : 6;
+
         // LRU cache: max 6 entries keyed by canonical URL
         private static readonly string[] _cacheKeys = new string[6];
         private static readonly WriteableBitmap[] _cacheValues = new WriteableBitmap[6];
@@ -19,6 +21,16 @@ namespace YTMusicWP.Services
         private static readonly string[] _fadedCacheKeys = new string[6];
         private static readonly WriteableBitmap[] _fadedCacheValues = new WriteableBitmap[6];
         private static int _fadedCacheIndex;
+
+        public static void ClearCache()
+        {
+            Array.Clear(_cacheKeys, 0, _cacheKeys.Length);
+            Array.Clear(_cacheValues, 0, _cacheValues.Length);
+            Array.Clear(_fadedCacheKeys, 0, _fadedCacheKeys.Length);
+            Array.Clear(_fadedCacheValues, 0, _fadedCacheValues.Length);
+            _cacheIndex = 0;
+            _fadedCacheIndex = 0;
+        }
 
         private static string NormalizeKey(string key)
         {
@@ -36,7 +48,8 @@ namespace YTMusicWP.Services
         public static WriteableBitmap GetCached(string key)
         {
             string normKey = NormalizeKey(key);
-            for (int i = 0; i < _cacheKeys.Length; i++)
+            int max = MaxCacheSize;
+            for (int i = 0; i < max; i++)
             {
                 if (_cacheKeys[i] == normKey && _cacheValues[i] != null)
                     return _cacheValues[i];
@@ -46,15 +59,18 @@ namespace YTMusicWP.Services
 
         public static void PutCache(string key, WriteableBitmap bitmap)
         {
+            int max = MaxCacheSize;
+            _cacheIndex = _cacheIndex % max;
             _cacheKeys[_cacheIndex] = NormalizeKey(key);
             _cacheValues[_cacheIndex] = bitmap;
-            _cacheIndex = (_cacheIndex + 1) % _cacheKeys.Length;
+            _cacheIndex = (_cacheIndex + 1) % max;
         }
 
         public static WriteableBitmap GetCachedFaded(string key)
         {
             string normKey = NormalizeKey(key);
-            for (int i = 0; i < _fadedCacheKeys.Length; i++)
+            int max = MaxCacheSize;
+            for (int i = 0; i < max; i++)
             {
                 if (_fadedCacheKeys[i] == normKey && _fadedCacheValues[i] != null)
                     return _fadedCacheValues[i];
@@ -64,9 +80,11 @@ namespace YTMusicWP.Services
 
         public static void PutCachedFaded(string key, WriteableBitmap bitmap)
         {
+            int max = MaxCacheSize;
+            _fadedCacheIndex = _fadedCacheIndex % max;
             _fadedCacheKeys[_fadedCacheIndex] = NormalizeKey(key);
             _fadedCacheValues[_fadedCacheIndex] = bitmap;
-            _fadedCacheIndex = (_fadedCacheIndex + 1) % _fadedCacheKeys.Length;
+            _fadedCacheIndex = (_fadedCacheIndex + 1) % max;
         }
 
         /// <summary>

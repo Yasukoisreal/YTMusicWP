@@ -249,7 +249,8 @@ namespace YTMusicWP
             try
             {
                 var settings = ApplicationData.Current.LocalSettings.Values;
-                bool enableSplash = SafeGetBool(settings, "EnableSplashAnimation", true);
+                bool defaultSplash = !Services.MemoryHelper.IsLowMemoryDevice;
+                bool enableSplash = SafeGetBool(settings, "EnableSplashAnimation", defaultSplash);
 
                 if (!enableSplash)
                 {

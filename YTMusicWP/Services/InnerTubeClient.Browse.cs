@@ -845,47 +845,190 @@ namespace YTMusicWP
             _cachedVisitorData = null;
         }
 
-        public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null, Action<List<HomeSection>> onPageLoaded = null)
+        public class HomeBrowseResult
         {
-            var sections = new List<HomeSection>();
+            public List<HomeSection> Sections { get; set; }
+            public string ContinuationToken { get; set; }
+            public HomeBrowseResult() { Sections = new List<HomeSection>(); }
+        }
+
+        private static void ParseHomeSectionList(JToken secs, List<HomeSection> targetList)
+        {
+            if (secs == null) return;
+
+            foreach (var sec in secs)
+            {
+                // musicCarouselShelfRenderer = horizontal carousel (most common)
+                var carousel = sec["musicCarouselShelfRenderer"];
+                if (carousel != null)
+                {
+                    string sectionTitle = "";
+                    var hdr = carousel["header"]?["musicCarouselShelfBasicHeaderRenderer"];
+                    if (hdr != null)
+                    {
+                        sectionTitle = hdr["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                    }
+
+                    if (string.IsNullOrEmpty(sectionTitle)) continue;
+
+                    var homeSection = new HomeSection { Title = sectionTitle };
+                    string lowerTitle = sectionTitle.ToLowerInvariant();
+                    if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("quick") || lowerTitle.Contains("start radio") || lowerTitle.Contains("bắt đầu một đài phát"))
+                        homeSection.Layout = HomeSectionLayout.QuickPicks;
+                    else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn"))
+                        homeSection.Layout = HomeSectionLayout.Video;
+
+                    var cItems = carousel["contents"];
+                    if (cItems != null)
+                    {
+                        foreach (var cItem in cItems)
+                        {
+                            if (homeSection.Tracks.Count >= 20) break;
+                            try
+                            {
+                                var twoRow = cItem["musicTwoRowItemRenderer"];
+                                if (twoRow != null)
+                                {
+                                    string title = twoRow["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                    string subtitle = twoRow["subtitle"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                                    var subRuns = twoRow["subtitle"]?["runs"];
+                                    if (subRuns != null)
+                                    {
+                                        subtitle = ExtractArtistFromRuns(subRuns);
+                                    }
+
+                                    string thumbUrl = "";
+                                    double coverWidth = 140; // Default 1:1
+                                    var thumbs = twoRow["thumbnailRenderer"]?["musicThumbnailRenderer"]
+                                        ?["thumbnail"]?["thumbnails"];
+                                    if (thumbs != null && thumbs.HasValues)
+                                    {
+                                        var lastThumb = thumbs.Last;
+                                        thumbUrl = lastThumb?["url"]?.ToString() ?? "";
+                                        
+                                        // Check aspect ratio to automatically display 16:9 thumbnails properly
+                                        int w = 0, h = 0;
+                                        int.TryParse(lastThumb?["width"]?.ToString(), out w);
+                                        int.TryParse(lastThumb?["height"]?.ToString(), out h);
+                                        if (w > 0 && h > 0)
+                                        {
+                                            double ratio = (double)w / h;
+                                            if (ratio > 1.3) // 16:9 is 1.77, anything > 1.3 is widescreen
+                                            {
+                                                coverWidth = 260; // Wide width matching VideoItemTemplate
+                                            }
+                                        }
+                                    }
+
+                                    string videoId = twoRow["navigationEndpoint"]?["watchEndpoint"]?["videoId"]?.ToString();
+                                    string browseId = twoRow["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                                    string playlistId = twoRow["navigationEndpoint"]?["watchEndpoint"]?["playlistId"]?.ToString();
+
+                                    string finalId = videoId;
+                                    if (string.IsNullOrEmpty(finalId))
+                                    {
+                                        if (!string.IsNullOrEmpty(browseId))
+                                        {
+                                            if (browseId.StartsWith("VLPL") || browseId.StartsWith("VL"))
+                                                finalId = "PLAYLIST:" + browseId.Substring(2);
+                                            else if (browseId.StartsWith("MPRE") || browseId.StartsWith("FEmusic_library"))
+                                                finalId = "PLAYLIST:" + browseId;
+                                            else if (browseId.StartsWith("UC") || browseId.StartsWith("FEmusic_artist"))
+                                                finalId = "CHANNEL:" + browseId;
+                                            else
+                                                finalId = "PLAYLIST:" + browseId;
+                                        }
+                                        else if (!string.IsNullOrEmpty(playlistId))
+                                        {
+                                            finalId = "PLAYLIST:" + playlistId;
+                                        }
+                                    }
+
+                                    if (string.IsNullOrEmpty(finalId)) continue;
+
+                                    homeSection.Tracks.Add(new YouTubeTrack
+                                    {
+                                        VideoId = finalId,
+                                        Title = title,
+                                        ChannelName = CleanChannelName(subtitle),
+                                        ThumbnailUrl = thumbUrl,
+                                        CoverWidth = coverWidth
+                                    });
+                                    continue;
+                                }
+
+                                // musicResponsiveListItemRenderer (individual songs)
+                                var track = ParseMusicListItem(cItem);
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    homeSection.Tracks.Add(track);
+                            }
+                            catch { continue; }
+                        }
+                    }
+
+                    if (homeSection.Tracks.Count > 0)
+                        targetList.Add(homeSection);
+                    continue;
+                }
+
+                // musicShelfRenderer = vertical list of songs
+                var shelf = sec["musicShelfRenderer"];
+                if (shelf != null)
+                {
+                    string shelfTitle = shelf["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                    if (string.IsNullOrEmpty(shelfTitle)) continue;
+
+                    var homeSection2 = new HomeSection { Title = shelfTitle };
+                    var sItems = shelf["contents"];
+                    if (sItems != null)
+                    {
+                        foreach (var sItem in sItems)
+                        {
+                            if (homeSection2.Tracks.Count >= 20) break;
+                            try
+                            {
+                                var track = ParseMusicListItem(sItem);
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    homeSection2.Tracks.Add(track);
+                            }
+                            catch { continue; }
+                        }
+                    }
+                    if (homeSection2.Tracks.Count > 0)
+                        targetList.Add(homeSection2);
+                }
+            }
+        }
+
+        public static async Task<HomeBrowseResult> BrowseHomeFirstPageAsync(string accessToken = null)
+        {
+            var result = new HomeBrowseResult();
             try
             {
                 string vd = await GetVisitorDataAsync();
-                
-                string continuation = null;
-                int maxPages = HasCookieAuth ? 8 : 4; // Fetch more pages if logged in
+                JObject data = null;
 
-                for (int page = 0; page < maxPages; page++)
+                if (HasCookieAuth)
                 {
-                    JObject data = null;
-                    if (HasCookieAuth)
+                    var extraParams = new JObject
                     {
-                        // Priority 1: Cookie-based auth (SAPISIDHASH) — works perfectly with WEB_REMIX
-                        var extraParams = new JObject();
-                        if (continuation == null)
-                            extraParams["browseId"] = "FEmusic_home";
-                        else
-                            extraParams["continuation"] = continuation;
-                            
-                        data = await CookieInnerTubePostAsync("browse", extraParams);
-                    }
-                    else
+                        ["browseId"] = "FEmusic_home"
+                    };
+                    data = await CookieInnerTubePostAsync("browse", extraParams);
+                }
+                else
+                {
+                    var body = new JObject
                     {
-                        var body = new JObject
-                        {
-                            ["context"] = BuildMusicContext(vd)
-                        };
-                        if (continuation == null)
-                            body["browseId"] = "FEmusic_home";
-                        else
-                            body["continuation"] = continuation;
-                        
-                        string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
-                        data = await PostInnerTubeAsync(url, body, true);
-                    }
+                        ["context"] = BuildMusicContext(vd),
+                        ["browseId"] = "FEmusic_home"
+                    };
+                    string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                    data = await PostInnerTubeAsync(url, body, true);
+                }
 
-                    if (data == null) break;
-
+                if (data != null)
+                {
                     if (string.IsNullOrEmpty(vd))
                     {
                         var returnedVd = data["responseContext"]?["visitorData"]?.ToString();
@@ -898,186 +1041,78 @@ namespace YTMusicWP
                         }
                     }
 
-                    JToken secs = null;
-                    JToken continuations = null;
-
-                    if (continuation == null)
+                    var tabs = data["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
+                    if (tabs != null && tabs.HasValues)
                     {
-                        var tabs = data["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
-                        if (tabs == null || !tabs.HasValues) break;
                         var sectionList = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"];
-                        secs = sectionList?["contents"];
-                        continuations = sectionList?["continuations"];
-                    }
-                    else
-                    {
-                        var sectionList = data["continuationContents"]?["sectionListContinuation"];
-                        secs = sectionList?["contents"];
-                        continuations = sectionList?["continuations"];
-                    }
+                        var secs = sectionList?["contents"];
+                        var continuations = sectionList?["continuations"];
 
-                    if (secs == null) break;
+                        ParseHomeSectionList(secs, result.Sections);
 
-                    foreach (var sec in secs)
-                    {
-                        // musicCarouselShelfRenderer = horizontal carousel (most common)
-                        var carousel = sec["musicCarouselShelfRenderer"];
-                    if (carousel != null)
-                    {
-                        string sectionTitle = "";
-                        var hdr = carousel["header"]?["musicCarouselShelfBasicHeaderRenderer"];
-                        if (hdr != null)
+                        if (continuations != null && continuations.HasValues)
                         {
-                            sectionTitle = hdr["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                            result.ContinuationToken = continuations[0]?["nextContinuationData"]?["continuation"]?.ToString();
                         }
-
-                        if (string.IsNullOrEmpty(sectionTitle)) continue;
-
-                        var homeSection = new HomeSection { Title = sectionTitle };
-                        string lowerTitle = sectionTitle.ToLowerInvariant();
-                        if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("quick") || lowerTitle.Contains("start radio") || lowerTitle.Contains("bắt đầu một đài phát"))
-                            homeSection.Layout = HomeSectionLayout.QuickPicks;
-                        else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn"))
-                            homeSection.Layout = HomeSectionLayout.Video;
-
-                        var cItems = carousel["contents"];
-                        if (cItems != null)
-                        {
-                            foreach (var cItem in cItems)
-                            {
-                                if (homeSection.Tracks.Count >= 20) break;
-                                try
-                                {
-                                    // musicTwoRowItemRenderer (albums, playlists, singles)
-                                    var twoRow = cItem["musicTwoRowItemRenderer"];
-                                    if (twoRow != null)
-                                    {
-                                        string title = twoRow["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                                        if (string.IsNullOrEmpty(title)) continue;
-
-                                        string subtitle = "";
-                                        var subRuns = twoRow["subtitle"]?["runs"];
-                                        if (subRuns != null)
-                                        {
-                                            subtitle = ExtractArtistFromRuns(subRuns);
-                                        }
-
-                                        string thumbUrl = "";
-                                        double coverWidth = 140; // Default 1:1
-                                        var thumbs = twoRow["thumbnailRenderer"]?["musicThumbnailRenderer"]
-                                            ?["thumbnail"]?["thumbnails"];
-                                        if (thumbs != null && thumbs.HasValues)
-                                        {
-                                            var lastThumb = thumbs.Last;
-                                            thumbUrl = lastThumb?["url"]?.ToString() ?? "";
-                                            
-                                            // Check aspect ratio to automatically display 16:9 thumbnails properly
-                                            int w = 0, h = 0;
-                                            int.TryParse(lastThumb?["width"]?.ToString(), out w);
-                                            int.TryParse(lastThumb?["height"]?.ToString(), out h);
-                                            if (w > 0 && h > 0)
-                                            {
-                                                double ratio = (double)w / h;
-                                                if (ratio > 1.3) // 16:9 is 1.77, anything > 1.3 is widescreen
-                                                {
-                                                    coverWidth = 260; // Wide width matching VideoItemTemplate
-                                                }
-                                            }
-                                        }
-
-                                        // Get videoId or browseId
-                                        string videoId = twoRow["navigationEndpoint"]
-                                            ?["watchEndpoint"]?["videoId"]?.ToString();
-                                        string browseId = twoRow["navigationEndpoint"]
-                                            ?["browseEndpoint"]?["browseId"]?.ToString();
-                                        string watchPlaylistId = twoRow["navigationEndpoint"]
-                                            ?["watchPlaylistEndpoint"]?["playlistId"]?.ToString();
-
-                                        string finalId = videoId ?? "";
-                                        if (string.IsNullOrEmpty(finalId))
-                                        {
-                                            if (!string.IsNullOrEmpty(watchPlaylistId))
-                                                finalId = "PLAYLIST:" + watchPlaylistId;
-                                            else if (!string.IsNullOrEmpty(browseId))
-                                            {
-                                                if (browseId.StartsWith("MPREb_") || browseId.StartsWith("OLAK5"))
-                                                    finalId = "PLAYLIST:" + browseId;
-                                                else if (browseId.StartsWith("UC"))
-                                                    finalId = "CHANNEL:" + browseId;
-                                                else if (browseId.StartsWith("VL"))
-                                                    finalId = "PLAYLIST:" + browseId.Substring(2);
-                                            }
-                                        }
-                                        if (string.IsNullOrEmpty(finalId)) continue;
-
-                                        homeSection.Tracks.Add(new YouTubeTrack
-                                        {
-                                            VideoId = finalId,
-                                            Title = title,
-                                            ChannelName = CleanChannelName(subtitle),
-                                            ThumbnailUrl = thumbUrl,
-                                            CoverWidth = coverWidth
-                                        });
-                                        continue;
-                                    }
-
-                                    // musicResponsiveListItemRenderer (individual songs)
-                                    var track = ParseMusicListItem(cItem);
-                                    if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                        homeSection.Tracks.Add(track);
-                                }
-                                catch { continue; }
-                            }
-                        }
-
-                        if (homeSection.Tracks.Count > 0)
-                            sections.Add(homeSection);
-                        continue;
                     }
+                }
+            }
+            catch { }
+            return result;
+        }
 
-                    // musicShelfRenderer = vertical list of songs
-                    var shelf = sec["musicShelfRenderer"];
-                    if (shelf != null)
+        public static async Task<HomeBrowseResult> BrowseHomeContinuationAsync(string continuationToken, string accessToken = null)
+        {
+            var result = new HomeBrowseResult();
+            if (string.IsNullOrEmpty(continuationToken)) return result;
+
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                JObject data = null;
+
+                if (HasCookieAuth)
+                {
+                    var extraParams = new JObject
                     {
-                        string shelfTitle = shelf["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                        if (string.IsNullOrEmpty(shelfTitle)) continue;
+                        ["continuation"] = continuationToken
+                    };
+                    data = await CookieInnerTubePostAsync("browse", extraParams);
+                }
+                else
+                {
+                    var body = new JObject
+                    {
+                        ["context"] = BuildMusicContext(vd),
+                        ["continuation"] = continuationToken
+                    };
+                    string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                    data = await PostInnerTubeAsync(url, body, true);
+                }
 
-                        var homeSection2 = new HomeSection { Title = shelfTitle };
-                        var sItems = shelf["contents"];
-                        if (sItems != null)
-                        {
-                            foreach (var sItem in sItems)
-                            {
-                                if (homeSection2.Tracks.Count >= 20) break;
-                                try
-                                {
-                                    var track = ParseMusicListItem(sItem);
-                                    if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                        homeSection2.Tracks.Add(track);
-                                }
-                                catch { continue; }
-                            }
-                        }
-                        if (homeSection2.Tracks.Count > 0)
-                            sections.Add(homeSection2);
-                    }
-                } // end foreach (sec)
+                if (data != null)
+                {
+                    var sectionList = data["continuationContents"]?["sectionListContinuation"];
+                    var secs = sectionList?["contents"];
+                    var continuations = sectionList?["continuations"];
 
-                    onPageLoaded?.Invoke(new List<HomeSection>(sections));
+                    ParseHomeSectionList(secs, result.Sections);
 
                     if (continuations != null && continuations.HasValues)
                     {
-                        continuation = continuations[0]?["nextContinuationData"]?["continuation"]?.ToString();
-                        if (string.IsNullOrEmpty(continuation)) break;
+                        result.ContinuationToken = continuations[0]?["nextContinuationData"]?["continuation"]?.ToString();
                     }
-                    else
-                    {
-                        break;
-                    }
-                } // end for (page)
+                }
             }
             catch { }
-            return sections;
+            return result;
+        }
+
+        public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null, Action<List<HomeSection>> onPageLoaded = null)
+        {
+            var firstPage = await BrowseHomeFirstPageAsync(accessToken);
+            onPageLoaded?.Invoke(new List<HomeSection>(firstPage.Sections));
+            return firstPage.Sections;
         }
     }
 }

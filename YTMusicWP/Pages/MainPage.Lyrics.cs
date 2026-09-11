@@ -57,6 +57,16 @@ namespace YTMusicWP
         private static readonly List<string> _lyricsCacheOrder = new List<string>();
         private const int MAX_LYRICS_CACHE = 20;
 
+        internal static void ClearLyricsCache()
+        {
+            try
+            {
+                _lyricsCache.Clear();
+                _lyricsCacheOrder.Clear();
+            }
+            catch { }
+        }
+
         private async Task UpdateLyricsAsync(string title, string artist)
         {
             var oldLyricsCts = _lyricsCts;

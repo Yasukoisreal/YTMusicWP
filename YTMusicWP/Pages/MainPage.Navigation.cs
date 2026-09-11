@@ -200,6 +200,11 @@ namespace YTMusicWP
             NavLibraryIcon.Fill = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
             NavLibraryText.Foreground = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
             NavLibraryText.FontWeight = (tab == 2) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
+
+            if (Services.MemoryHelper.IsLowMemoryDevice)
+            {
+                GC.Collect();
+            }
         }
 
         private async void OpenSettings_Click(object sender, RoutedEventArgs e)

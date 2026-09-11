@@ -54,7 +54,7 @@ namespace YTMusicWP
             {
                 // [OPT-M3] Dùng chung 1 BitmapImage cho BigCover + MenuCover (cùng src, cùng DecodePixelWidth)
                 var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetNowPlayingThumbnail(track.ThumbnailUrl), UriKind.Absolute));
-                bigBmp.DecodePixelWidth = 480;
+                bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
                 BigCoverImage.ImageSource  = bigBmp;
                 AlbumArtEntranceStoryboard.Begin();
                 MenuCoverImage.ImageSource = bigBmp;
@@ -721,7 +721,7 @@ namespace YTMusicWP
                             }
 
                             var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            bigBmp.DecodePixelWidth = isWide ? 540 : 480;
+                            bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? (isWide ? 360 : 320) : (isWide ? 540 : 480);
                             bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
                             if (AppleMusicArtwork != null)
@@ -741,7 +741,7 @@ namespace YTMusicWP
                                     }
                                     else
                                     {
-                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
+                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480 };
                                         AppleMusicArtwork.Source = amBmp;
                                         if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                                     }
@@ -1146,8 +1146,10 @@ namespace YTMusicWP
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
 
-                        // Render true alpha-faded artwork with deep dissolve (260px) into the heavily blurred backdrop
-                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 260);
+                        // Render true alpha-faded artwork with deep dissolve into the heavily blurred backdrop
+                        int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                        int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 175 : 260;
+                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, targetFadeSize, targetFadeSize, fadeHeight);
                         if (currentSeq != _appleMusicBackdropSeq) return;
 
                         Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
@@ -1169,6 +1171,7 @@ namespace YTMusicWP
 
         private void PrecacheNextTrackArtwork()
         {
+            if (Services.MemoryHelper.IsLowMemoryDevice) return; // Skip precaching on 512MB RAM to conserve memory and network
             if (!_isAppleMusicStyle || currentTrack == null || currentQueueTracks == null || currentQueueTracks.Count == 0) return;
             try
             {
