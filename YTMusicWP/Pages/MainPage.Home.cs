@@ -417,6 +417,10 @@ namespace YTMusicWP
             HomeMusicPanel.Visibility = panel == "music" ? Visibility.Visible : Visibility.Collapsed;
             HomePodcastPanel.Visibility = panel == "podcasts" ? Visibility.Visible : Visibility.Collapsed;
             HomeAudiobookPanel.Visibility = panel == "audiobooks" ? Visibility.Visible : Visibility.Collapsed;
+            if (panel == "music")
+            {
+                EnsureHomePullTimer();
+            }
         }
 
         private void HomeChipAll_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
@@ -519,7 +523,7 @@ namespace YTMusicWP
         private DispatcherTimer _pullTimer;
         private bool _isPullReady = false;
         private bool _isRefreshingHome = false;
-        private int _pullIdleTicks = 0;
+        private double _pullRestingY = -1;
         private static readonly Windows.UI.Xaml.Media.SolidColorBrush _pullMutedBrush =
             new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 136, 136, 136));
 
@@ -530,17 +534,28 @@ namespace YTMusicWP
             HomeMusicPanel.ViewChanging += HomeMusicPanel_ViewChanging;
             HomeMusicPanel.ViewChanged += HomeMusicPanel_ViewChanged;
 
-            _pullTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(25) };
+            _pullTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
             _pullTimer.Tick += PullTimer_Tick;
+            _pullTimer.Start();
+        }
+
+        internal void EnsureHomePullTimer()
+        {
+            if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset == 0 && HomeMusicPanel.Visibility == Visibility.Visible)
+            {
+                if (_pullTimer != null && !_pullTimer.IsEnabled)
+                {
+                    _pullTimer.Start();
+                }
+            }
         }
 
         private void HomeMusicPanel_ViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
         {
             if (e.NextView.VerticalOffset == 0)
             {
-                if (_pullTimer != null && !_pullTimer.IsEnabled && !_isRefreshingHome)
+                if (_pullTimer != null && !_pullTimer.IsEnabled)
                 {
-                    _pullIdleTicks = 0;
                     _pullTimer.Start();
                 }
             }
@@ -561,52 +576,67 @@ namespace YTMusicWP
 
         private void PullTimer_Tick(object sender, object e)
         {
-            if (HomePullIndicator == null || HomePanel == null) return;
+            if (HomePullIndicator == null || HomePanel == null || HomeMusicPanel == null) return;
+            if (HomePanel.Visibility != Visibility.Visible || HomeMusicPanel.Visibility != Visibility.Visible) return;
+
+            // Stop timer and reset state if user scrolled down into feed
+            if (HomeMusicPanel.VerticalOffset > 0)
+            {
+                if (_pullTimer != null && _pullTimer.IsEnabled)
+                    _pullTimer.Stop();
+                if (HomePullIndicator.Opacity > 0)
+                    HomePullIndicator.Opacity = 0;
+                _isPullReady = false;
+                return;
+            }
 
             try
             {
-                var transform = HomePullIndicator.TransformToVisual(HomePanel);
-                var bounds = transform.TransformBounds(new Windows.Foundation.Rect(0, 0, HomePullIndicator.ActualWidth, HomePullIndicator.ActualHeight));
+                // Wait until element has valid layout
+                if (HomePullIndicator.ActualHeight <= 0) return;
 
-                // Sticky header covers Y = 0..115. HomePullIndicator resting bottom is at Y = 115.
-                double pullDistance = bounds.Bottom - 115;
+                var transform = HomePullIndicator.TransformToVisual(HomePanel);
+                var point = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
+
+                // Initialize resting baseline when at rest at offset 0
+                if (_pullRestingY < 0 && point.Y > 0)
+                {
+                    _pullRestingY = point.Y;
+                }
+
+                double baseline = _pullRestingY > 0 ? _pullRestingY : 55.0;
+                double pullDistance = point.Y - baseline;
 
                 if (pullDistance <= 0)
                 {
-                    _pullIdleTicks++;
-                    if (_pullIdleTicks > 8 && !_isPullReady)
+                    if (_isPullReady && !_isRefreshingHome)
                     {
-                        // Stop timer after idling at rest to prevent CPU usage
-                        _pullTimer.Stop();
+                        // Released after pulling past threshold -> trigger refresh!
+                        _isPullReady = false;
+                        var ignored = RefreshHomeFeedAsync();
                     }
-
-                    if (!_isRefreshingHome)
+                    else if (!_isRefreshingHome && HomePullIndicator.Opacity > 0)
                     {
                         HomePullIndicator.Opacity = 0;
-                        if (_isPullReady)
-                        {
-                            // Released after pulling past threshold -> trigger refresh!
-                            _isPullReady = false;
-                            _pullTimer.Stop();
-                            var ignored = RefreshHomeFeedAsync();
-                        }
+                        HomePullArrowRotate.Angle = 0;
+                        HomePullArrowPath.Fill = _pullMutedBrush;
+                        HomePullText.Text = "Pull to refresh";
+                        HomePullText.Foreground = _pullMutedBrush;
                     }
                     return;
                 }
-
-                _pullIdleTicks = 0;
 
                 if (_isRefreshingHome)
                 {
                     // Already refreshing: keep spinner and updating text visible if pulled
-                    HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 40.0);
+                    HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 25.0);
                     return;
                 }
 
                 // Smoothly fade in indicator as user pulls
-                HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 40.0);
+                HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 25.0);
 
-                if (pullDistance >= 65)
+                if (pullDistance >= 40)
                 {
                     // Threshold passed: Ready to refresh
                     _isPullReady = true;
@@ -633,13 +663,17 @@ namespace YTMusicWP
 
         private void HomeMusicPanel_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
+            if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset == 0)
+            {
+                if (_pullTimer != null && !_pullTimer.IsEnabled)
+                {
+                    _pullTimer.Start();
+                }
+            }
+
             if (!e.IsIntermediate && _isPullReady && !_isRefreshingHome)
             {
                 _isPullReady = false;
-                if (_pullTimer != null && _pullTimer.IsEnabled)
-                {
-                    _pullTimer.Stop();
-                }
                 var ignored = RefreshHomeFeedAsync();
             }
         }

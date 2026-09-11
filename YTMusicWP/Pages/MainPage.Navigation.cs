@@ -178,6 +178,10 @@ namespace YTMusicWP
                     Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
                     fadeIn.Children.Add(anim);
                     fadeIn.Begin();
+                    if (tab == 0)
+                    {
+                        EnsureHomePullTimer();
+                    }
                 }
                 else
                 {
