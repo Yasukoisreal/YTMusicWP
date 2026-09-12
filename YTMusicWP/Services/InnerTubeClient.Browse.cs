@@ -845,11 +845,37 @@ namespace YTMusicWP
             _cachedVisitorData = null;
         }
 
+        public class HomeChipItem
+        {
+            public string Title { get; set; }
+            public string Params { get; set; }
+            public bool IsSelected { get; set; }
+        }
+
+        public static readonly List<HomeChipItem> DefaultMoodChips = new List<HomeChipItem>
+        {
+            new HomeChipItem { Title = "Energize", Params = "ggM8SgQICRADSgQICBABSgQIBxABSgQIDhABSgQIBBABSgQIAxABSgQIDRABSgQIChABSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Feel good", Params = "ggM8SgQICRABSgQICBADSgQIBxABSgQIDhABSgQIBBABSgQIAxABSgQIDRABSgQIChABSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Relax", Params = "ggM8SgQICRABSgQICBABSgQIBxADSgQIDhABSgQIBBABSgQIAxABSgQIDRABSgQIChABSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Party", Params = "ggM8SgQICRABSgQICBABSgQIBxABSgQIDhADSgQIBBABSgQIAxABSgQIDRABSgQIChABSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Workout", Params = "ggM8SgQICRABSgQICBABSgQIBxABSgQIDhABSgQIBBADSgQIAxABSgQIDRABSgQIChABSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Commute", Params = "ggM8SgQICRABSgQICBABSgQIBxABSgQIDhABSgQIBBABSgQIAxADSgQIDRABSgQIChABSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Romance", Params = "ggM8SgQICRABSgQICBABSgQIBxABSgQIDhABSgQIBBABSgQIAxABSgQIDRADSgQIChABSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Sad", Params = "ggM8SgQICRABSgQICBABSgQIBxABSgQIDhABSgQIBBABSgQIAxABSgQIDRABSgQIChADSgQIBhABSgQIBRAB" },
+            new HomeChipItem { Title = "Focus", Params = "ggM8SgQICRABSgQICBABSgQIBxABSgQIDhABSgQIBBABSgQIAxABSgQIDRABSgQIChABSgQIBhADSgQIBRAB" },
+            new HomeChipItem { Title = "Sleep", Params = "ggM8SgQICRABSgQICBABSgQIBxABSgQIDhABSgQIBBABSgQIAxABSgQIDRABSgQIChABSgQIBhABSgQIBRAD" }
+        };
+
         public class HomeBrowseResult
         {
             public List<HomeSection> Sections { get; set; }
             public string ContinuationToken { get; set; }
-            public HomeBrowseResult() { Sections = new List<HomeSection>(); }
+            public List<HomeChipItem> Chips { get; set; }
+            public HomeBrowseResult()
+            {
+                Sections = new List<HomeSection>();
+                Chips = new List<HomeChipItem>();
+            }
         }
 
         private static void ParseHomeSectionList(JToken secs, List<HomeSection> targetList)
@@ -1000,7 +1026,7 @@ namespace YTMusicWP
             }
         }
 
-        public static async Task<HomeBrowseResult> BrowseHomeFirstPageAsync(string accessToken = null)
+        public static async Task<HomeBrowseResult> BrowseHomeFirstPageAsync(string filterParams = null, string accessToken = null)
         {
             var result = new HomeBrowseResult();
             try
@@ -1014,6 +1040,10 @@ namespace YTMusicWP
                     {
                         ["browseId"] = "FEmusic_home"
                     };
+                    if (!string.IsNullOrEmpty(filterParams))
+                    {
+                        extraParams["params"] = filterParams;
+                    }
                     data = await CookieInnerTubePostAsync("browse", extraParams);
                 }
                 else
@@ -1023,6 +1053,10 @@ namespace YTMusicWP
                         ["context"] = BuildMusicContext(vd),
                         ["browseId"] = "FEmusic_home"
                     };
+                    if (!string.IsNullOrEmpty(filterParams))
+                    {
+                        body["params"] = filterParams;
+                    }
                     string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
                     data = await PostInnerTubeAsync(url, body, true);
                 }
@@ -1053,6 +1087,28 @@ namespace YTMusicWP
                         if (continuations != null && continuations.HasValues)
                         {
                             result.ContinuationToken = continuations[0]?["nextContinuationData"]?["continuation"]?.ToString();
+                        }
+
+                        var chipCloud = sectionList?["header"]?["chipCloudRenderer"]?["chips"];
+                        if (chipCloud != null && chipCloud.HasValues)
+                        {
+                            foreach (var c in chipCloud)
+                            {
+                                var r = c?["chipCloudChipRenderer"];
+                                if (r == null) continue;
+                                string title = r["text"]?["runs"]?[0]?["text"]?.ToString();
+                                string p = r["navigationEndpoint"]?["browseEndpoint"]?["params"]?.ToString();
+                                bool isSelected = r["isSelected"] != null && (bool)r["isSelected"];
+                                if (!string.IsNullOrEmpty(title) && !string.IsNullOrEmpty(p))
+                                {
+                                    result.Chips.Add(new HomeChipItem
+                                    {
+                                        Title = title,
+                                        Params = p,
+                                        IsSelected = isSelected
+                                    });
+                                }
+                            }
                         }
                     }
                 }

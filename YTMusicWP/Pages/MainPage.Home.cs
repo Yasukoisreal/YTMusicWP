@@ -19,6 +19,18 @@ namespace YTMusicWP
         private bool _hasMoreHomeSections;
         private int _homeLoadedPagesCount;
         private bool _isLoadingHomeEndSections;
+        private Border _activeHomeChipBorder;
+        private string _currentHomeFilterParams;
+        private string _currentFilterChipTitle;
+
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _ytmChipInactiveBgBrush =
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 38, 38, 38));
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _ytmChipInactiveFgBrush =
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _ytmChipActiveBgBrush =
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _ytmChipActiveFgBrush =
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 15, 15, 15));
 
         private void RefreshHomeHistorySections()
         {
@@ -243,7 +255,7 @@ namespace YTMusicWP
             OpenArtistProfile(track.ChannelId, track.Title, true);
         }
 
-        private async Task LoadHomeRecommendations()
+        private async Task LoadHomeRecommendations(string filterParams = null)
         {
             HomeLoading.Visibility = Visibility.Visible;
 
@@ -253,8 +265,19 @@ namespace YTMusicWP
             _homeLoadedPagesCount = 0;
             _isLoadingMoreHomeSections = false;
 
+            // When a filter is selected, hide personal history and artists shelves since filter feeds only contain mood/activity content
+            if (!string.IsNullOrEmpty(filterParams))
+            {
+                if (HomeHistorySection != null) HomeHistorySection.Visibility = Visibility.Collapsed;
+                if (HomeArtistsSection != null) HomeArtistsSection.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                RefreshHomeHistorySections();
+            }
+
             // ═══════════════════════════════════════════════════
-            // PRIMARY: YouTube Music Home (FE_music_home) + Charts in parallel
+            // PRIMARY: YouTube Music Home (FE_music_home) + filterParams
             // ═══════════════════════════════════════════════════
             try
             {
@@ -268,7 +291,7 @@ namespace YTMusicWP
                 }
                 HomeDynamicSections.ItemsSource = _homeDynamicSections;
 
-                var homeFirstPageTask = InnerTubeClient.BrowseHomeFirstPageAsync(null);
+                var homeFirstPageTask = InnerTubeClient.BrowseHomeFirstPageAsync(filterParams);
                 var homeResult = default(InnerTubeClient.HomeBrowseResult);
 
                 try { homeResult = await homeFirstPageTask; } catch { }
@@ -285,6 +308,12 @@ namespace YTMusicWP
                 {
                     HomeChartsCarousel.Visibility = Visibility.Collapsed;
                     HomeChartsCarousel.ItemsSource = null;
+                }
+
+                // Update chips with localized/returned chip cloud if present
+                if (homeResult != null && homeResult.Chips != null && homeResult.Chips.Count > 0)
+                {
+                    UpdateHomeChips(homeResult.Chips);
                 }
 
                 // Dynamic home sections (Page 1)
@@ -323,44 +352,56 @@ namespace YTMusicWP
             string[] queries;
             string[] fallbackTitles;
 
-            switch (region)
+            if (!string.IsNullOrEmpty(filterParams) && !string.IsNullOrEmpty(_currentFilterChipTitle))
             {
-                case "VN":
-                    queries = new[] {
-                        "nhạc Việt hot " + year,
-                        "nhạc trẻ hay nhất " + year,
-                        "bolero trữ tình chọn lọc",
-                        "rap Việt " + year
-                    };
-                    fallbackTitles = new[] { "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt" };
-                    break;
-                case "KR":
-                    queries = new[] {
-                        "K-pop trending " + year,
-                        "K-pop girl group hits",
-                        "K-drama OST " + year,
-                        "K-pop boy group hits"
-                    };
-                    fallbackTitles = new[] { "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits" };
-                    break;
-                case "JP":
-                    queries = new[] {
-                        "J-pop trending " + year,
-                        "Anime OST " + year,
-                        "J-pop chill vibes",
-                        "J-rock hits"
-                    };
-                    fallbackTitles = new[] { "Made for you", "Anime OST", "Chill vibes", "J-Rock" };
-                    break;
-                default:
-                    queries = new[] {
-                        "top hits " + year,
-                        "pop hits " + year,
-                        "lofi chill beats relax",
-                        "workout gym motivation music"
-                    };
-                    fallbackTitles = new[] { "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation" };
-                    break;
+                queries = new[] {
+                    _currentFilterChipTitle + " music " + year,
+                    _currentFilterChipTitle + " hits",
+                    _currentFilterChipTitle + " songs"
+                };
+                fallbackTitles = new[] { _currentFilterChipTitle, "Popular " + _currentFilterChipTitle, "Recommended" };
+            }
+            else
+            {
+                switch (region)
+                {
+                    case "VN":
+                        queries = new[] {
+                            "nhạc Việt hot " + year,
+                            "nhạc trẻ hay nhất " + year,
+                            "bolero trữ tình chọn lọc",
+                            "rap Việt " + year
+                        };
+                        fallbackTitles = new[] { "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt" };
+                        break;
+                    case "KR":
+                        queries = new[] {
+                            "K-pop trending " + year,
+                            "K-pop girl group hits",
+                            "K-drama OST " + year,
+                            "K-pop boy group hits"
+                        };
+                        fallbackTitles = new[] { "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits" };
+                        break;
+                    case "JP":
+                        queries = new[] {
+                            "J-pop trending " + year,
+                            "Anime OST " + year,
+                            "J-pop chill vibes",
+                            "J-rock hits"
+                        };
+                        fallbackTitles = new[] { "Made for you", "Anime OST", "Chill vibes", "J-Rock" };
+                        break;
+                    default:
+                        queries = new[] {
+                            "top hits " + year,
+                            "pop hits " + year,
+                            "lofi chill beats relax",
+                            "workout gym motivation music"
+                        };
+                        fallbackTitles = new[] { "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation" };
+                        break;
+                }
             }
 
             _currentHomeQuery = queries[0];
@@ -500,13 +541,111 @@ namespace YTMusicWP
         private static readonly Windows.UI.Xaml.Media.SolidColorBrush _chipActiveBrush =
             new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84));
 
-        private void SetHomeChipActive(Border active)
+        private void SetChipVisualState(Border border, bool isSelected)
         {
-            HomeChipAll.Background = _chipInactiveBrush;
-            HomeChipMusic.Background = _chipInactiveBrush;
-            HomeChipPodcasts.Background = _chipInactiveBrush;
-            HomeChipAudiobooks.Background = _chipInactiveBrush;
-            active.Background = _chipActiveBrush;
+            if (border == null) return;
+            border.Background = isSelected ? _ytmChipActiveBgBrush : _ytmChipInactiveBgBrush;
+            var tb = border.Child as TextBlock;
+            if (tb != null)
+            {
+                tb.Foreground = isSelected ? _ytmChipActiveFgBrush : _ytmChipInactiveFgBrush;
+            }
+        }
+
+        private void HomeChip_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            var border = sender as Border;
+            if (border == null) return;
+            var chipParams = border.Tag as string;
+            var tb = border.Child as TextBlock;
+            string chipTitle = tb != null ? tb.Text : "";
+
+            if (_activeHomeChipBorder == border)
+            {
+                // Toggle OFF (deselect active chip)
+                SetChipVisualState(border, false);
+                _activeHomeChipBorder = null;
+                _currentHomeFilterParams = null;
+                _currentFilterChipTitle = null;
+                if (HomeMusicPanel != null)
+                    HomeMusicPanel.ChangeView(0, 0, 1.0f, true);
+                var ignored = LoadHomeRecommendations(null);
+            }
+            else
+            {
+                // Select new chip
+                if (_activeHomeChipBorder != null)
+                {
+                    SetChipVisualState(_activeHomeChipBorder, false);
+                }
+                _activeHomeChipBorder = border;
+                _currentHomeFilterParams = chipParams;
+                _currentFilterChipTitle = chipTitle;
+                SetChipVisualState(border, true);
+                if (HomeMusicPanel != null)
+                    HomeMusicPanel.ChangeView(0, 0, 1.0f, true);
+                var ignored = LoadHomeRecommendations(_currentHomeFilterParams);
+            }
+        }
+
+        private void UpdateHomeChips(System.Collections.Generic.List<InnerTubeClient.HomeChipItem> chips)
+        {
+            if (chips == null || chips.Count == 0 || HomeChipsPanel == null) return;
+
+            if (HomeChipsPanel.Children.Count == chips.Count)
+            {
+                for (int i = 0; i < chips.Count; i++)
+                {
+                    var border = HomeChipsPanel.Children[i] as Border;
+                    if (border != null)
+                    {
+                        border.Tag = chips[i].Params;
+                        var tb = border.Child as TextBlock;
+                        if (tb != null)
+                        {
+                            tb.Text = chips[i].Title;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                HomeChipsPanel.Children.Clear();
+                _activeHomeChipBorder = null;
+                for (int i = 0; i < chips.Count; i++)
+                {
+                    var chip = chips[i];
+                    var border = new Border
+                    {
+                        Background = _ytmChipInactiveBgBrush,
+                        CornerRadius = new CornerRadius(8),
+                        Padding = new Thickness(14, 6, 14, 6),
+                        Margin = new Thickness(0, 0, (i == chips.Count - 1) ? 16 : 8, 0),
+                        Tag = chip.Params
+                    };
+                    var tb = new TextBlock
+                    {
+                        Text = chip.Title,
+                        Foreground = _ytmChipInactiveFgBrush,
+                        FontSize = 13,
+                        FontWeight = Windows.UI.Text.FontWeights.SemiBold
+                    };
+                    try
+                    {
+                        if (Resources.ContainsKey("MontserratSemiBold"))
+                            tb.FontFamily = (Windows.UI.Xaml.Media.FontFamily)Resources["MontserratSemiBold"];
+                    }
+                    catch { }
+                    border.Child = tb;
+                    border.Tapped += HomeChip_Tapped;
+                    if (!string.IsNullOrEmpty(_currentHomeFilterParams) && chip.Params == _currentHomeFilterParams)
+                    {
+                        _activeHomeChipBorder = border;
+                        SetChipVisualState(border, true);
+                    }
+                    HomeChipsPanel.Children.Add(border);
+                }
+            }
         }
 
         private void ShowHomePanel(string panel)
@@ -517,38 +656,6 @@ namespace YTMusicWP
             if (panel == "music")
             {
                 EnsureHomePullTimer();
-            }
-        }
-
-        private void HomeChipAll_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SetHomeChipActive(HomeChipAll);
-            ShowHomePanel("music");
-        }
-
-        private void HomeChipMusic_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SetHomeChipActive(HomeChipMusic);
-            ShowHomePanel("music");
-        }
-
-        private void HomeChipPodcasts_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SetHomeChipActive(HomeChipPodcasts);
-            ShowHomePanel("podcasts");
-            if (podcastTracks.Count == 0)
-            {
-                var ignored = LoadPodcasts();
-            }
-        }
-
-        private void HomeChipAudiobooks_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
-        {
-            SetHomeChipActive(HomeChipAudiobooks);
-            ShowHomePanel("audiobooks");
-            if (audiobookTracks.Count == 0)
-            {
-                var ignored = LoadAudiobooks();
             }
         }
 
@@ -839,9 +946,11 @@ namespace YTMusicWP
                 // 3. Clear Home caches to force fresh recommendations from YouTube
                 InnerTubeClient.ClearHomeCache();
 
-                // 4. Fetch fresh data concurrently
-                var loadRecsTask = LoadHomeRecommendations();
-                RefreshHomeHistorySections();
+                var loadRecsTask = LoadHomeRecommendations(_currentHomeFilterParams);
+                if (string.IsNullOrEmpty(_currentHomeFilterParams))
+                {
+                    RefreshHomeHistorySections();
+                }
                 await loadRecsTask;
             }
             catch { }
