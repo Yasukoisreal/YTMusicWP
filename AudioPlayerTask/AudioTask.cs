@@ -57,7 +57,8 @@ namespace AudioPlayerTask
         private Task<bool> _nextLiveBufferTask = null;
         private CancellationTokenSource _liveCts = null;
         private int _liveReconnectCount = 0;
-        private const int LIVE_SEGMENT_COUNT = 5;
+        private const int LIVE_INITIAL_SEGMENTS = 6;  // 30s quick start
+        private const int LIVE_DEEP_SEGMENTS = 24;    // 120s (2 minutes) deep continuous buffer
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -908,12 +909,12 @@ namespace AudioPlayerTask
                         long targetSeq = startSeq + i;
                         byte[] segBytes = null;
 
-                        for (int attempt = 0; attempt < 3; attempt++)
+                        for (int attempt = 0; attempt < 4; attempt++)
                         {
                             if (ct.IsCancellationRequested) return false;
                             segBytes = await DownloadLiveSegmentAsync(baseUrl, targetSeq, ct);
                             if (segBytes != null && segBytes.Length > 0) break;
-                            await Task.Delay(400, ct);
+                            await Task.Delay(500, ct);
                         }
 
                         if (segBytes == null || segBytes.Length == 0)
@@ -954,7 +955,7 @@ namespace AudioPlayerTask
             }
         }
 
-        private void PreBufferNextLiveChunkAsync()
+        private void PreBufferNextLiveChunkAsync(int count = LIVE_DEEP_SEGMENTS)
         {
             if (!_isCurrentTrackLive || string.IsNullOrEmpty(_currentLiveBaseUrl) || _nextLiveStartSeq <= 0) return;
             if (_liveCts == null || _liveCts.IsCancellationRequested) return;
@@ -967,11 +968,11 @@ namespace AudioPlayerTask
             _isNextLiveBufferReady = false;
             _nextLiveBufferTask = Task.Run(async () =>
             {
-                bool ok = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_SEGMENT_COUNT, nextFile, ct);
+                bool ok = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, count, nextFile, ct);
                 if (ok && !ct.IsCancellationRequested)
                 {
                     _isNextLiveBufferReady = true;
-                    _nextLiveStartSeq = startSeq + LIVE_SEGMENT_COUNT;
+                    _nextLiveStartSeq = startSeq + count;
                     return true;
                 }
                 return false;
@@ -1031,12 +1032,15 @@ namespace AudioPlayerTask
                 catch { }
             }
 
-            long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - (LIVE_SEGMENT_COUNT + 1)) : -1;
+            // Start safely in DVR window (~2.8 minutes behind live edge)
+            // This guarantees all initial and deep-buffer segments are 100% cached on Google's CDN
+            long safetyOffset = LIVE_INITIAL_SEGMENTS + LIVE_DEEP_SEGMENTS + 4;
+            long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
             string buf0File = "temp_live_buf_0.mp4";
             bool success = false;
             if (startSeq > 0)
             {
-                success = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_SEGMENT_COUNT, buf0File, ct);
+                success = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_INITIAL_SEGMENTS, buf0File, ct);
             }
 
             if (!success || ct.IsCancellationRequested)
@@ -1051,7 +1055,7 @@ namespace AudioPlayerTask
                 return;
             }
 
-            _nextLiveStartSeq = startSeq + LIVE_SEGMENT_COUNT;
+            _nextLiveStartSeq = startSeq + LIVE_INITIAL_SEGMENTS;
             _currentLoadedVidId = vidId;
 
             string localUri = "ms-appdata:///local/" + buf0File;
@@ -1060,7 +1064,8 @@ namespace AudioPlayerTask
             _mediaPlayer.Play();
             _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
 
-            PreBufferNextLiveChunkAsync();
+            // Start deep pre-buffering (24 segments = 120s) for Buffer 1
+            PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
         }
 
         private async void CleanupLiveTempFiles()
@@ -1530,12 +1535,12 @@ namespace AudioPlayerTask
                 int nextIndex = 1 - _currentLiveBufferIndex;
                 string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
 
-                // Wait up to 3 seconds if next buffer is still downloading
+                // Wait up to 6 seconds if next buffer is still downloading
                 if (!_isNextLiveBufferReady && _nextLiveBufferTask != null)
                 {
                     try
                     {
-                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(3000));
+                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(6000));
                     }
                     catch { }
                 }
