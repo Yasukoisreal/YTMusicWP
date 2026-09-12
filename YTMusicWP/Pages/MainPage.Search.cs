@@ -230,70 +230,135 @@ namespace YTMusicWP
         {
             try
             {
-                // Use YouTube Music suggestion API for music-relevant results
-                string vd = await InnerTubeClient.GetVisitorDataAsync();
-                var body = new JObject
-                {
-                    ["context"] = InnerTubeClient.BuildMusicContext(vd),
-                    ["input"] = query
-                };
+                var list = await InnerTubeClient.GetSearchSuggestionsAsync(query);
 
-                var data = await InnerTubeClient.PostInnerTubeAsync(
-                    "https://music.youtube.com/youtubei/v1/music/get_search_suggestions?prettyPrint=false", body, true);
+                // If user changed the search query while request was in-flight, discard old results
+                if (SearchBox.Text.Trim() != query) return;
 
                 searchSuggestions.Clear();
 
-                var contents = data?["contents"];
-                if (contents != null && contents.HasValues)
+                if (list != null && list.Count > 0)
                 {
-                    foreach (var section in contents)
+                    foreach (var item in list)
                     {
-                        var items = section["searchSuggestionsSectionRenderer"]?["contents"];
-                        if (items == null) continue;
-                        foreach (var item in items)
-                        {
-                            // historySuggestionRenderer or searchSuggestionRenderer
-                            var renderer = item["searchSuggestionRenderer"] ?? item["historySuggestionRenderer"];
-                            if (renderer == null) continue;
-                            var runs = renderer["suggestion"]?["runs"];
-                            if (runs == null) continue;
-                            string text = "";
-                            foreach (var r in runs) text += r["text"]?.ToString();
-                            if (!string.IsNullOrEmpty(text) && searchSuggestions.Count < 7)
-                                searchSuggestions.Add(text);
-                        }
+                        searchSuggestions.Add(item);
                     }
                 }
 
                 // Fallback: if YouTube Music API returns nothing, use Google Suggest
                 if (searchSuggestions.Count == 0)
                 {
-                    string url = "https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=" + Uri.EscapeDataString(query);
-                    var response = await _apiClient.GetStringAsync(url);
-                    var jsonArray = JArray.Parse(response);
-                    if (jsonArray.Count > 1)
+                    try
                     {
-                        var suggestions = jsonArray[1] as JArray;
-                        if (suggestions != null)
+                        string url = "https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=" + Uri.EscapeDataString(query);
+                        var response = await _apiClient.GetStringAsync(url);
+                        var jsonArray = JArray.Parse(response);
+                        if (jsonArray.Count > 1)
                         {
-                            foreach (var item in suggestions.Take(5)) searchSuggestions.Add(item.ToString());
+                            var suggestions = jsonArray[1] as JArray;
+                            if (suggestions != null)
+                            {
+                                foreach (var item in suggestions.Take(6))
+                                {
+                                    searchSuggestions.Add(new SearchSuggestionItem
+                                    {
+                                        Type = SearchSuggestionType.Query,
+                                        Query = item.ToString(),
+                                        Title = item.ToString()
+                                    });
+                                }
+                            }
                         }
                     }
+                    catch { }
                 }
 
-                SuggestionPopup.Visibility = searchSuggestions.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                if (SearchBox.Text.Trim() == query)
+                {
+                    SuggestionPopup.Visibility = searchSuggestions.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                }
             }
             catch { SuggestionPopup.Visibility = Visibility.Collapsed; }
         }
 
         private void SuggestionList_ItemClick(object sender, ItemClickEventArgs e)
         {
+            var item = e.ClickedItem as SearchSuggestionItem;
+            if (item == null) return;
+
             _typingTimer.Stop();
-            SearchBox.TextChanged -= SearchBox_TextChanged;
-            SearchBox.Text = e.ClickedItem.ToString();
-            SearchBox.TextChanged += SearchBox_TextChanged;
             SuggestionPopup.Visibility = Visibility.Collapsed;
-            SearchButton_Click(null, null);
+            this.Focus(FocusState.Programmatic);
+
+            if (item.Type == SearchSuggestionType.Query)
+            {
+                SearchBox.TextChanged -= SearchBox_TextChanged;
+                SearchBox.Text = item.Query;
+                SearchBox.TextChanged += SearchBox_TextChanged;
+                SearchButton_Click(null, null);
+            }
+            else if (item.Type == SearchSuggestionType.Song)
+            {
+                if (!string.IsNullOrEmpty(item.VideoId))
+                {
+                    PlayTrack(new YouTubeTrack
+                    {
+                        VideoId = item.VideoId,
+                        Title = item.Title,
+                        ChannelName = item.Subtitle,
+                        ThumbnailUrl = item.ThumbnailUrl
+                    });
+                }
+                else
+                {
+                    SearchBox.TextChanged -= SearchBox_TextChanged;
+                    SearchBox.Text = item.Title;
+                    SearchBox.TextChanged += SearchBox_TextChanged;
+                    SearchButton_Click(null, null);
+                }
+            }
+            else if (item.Type == SearchSuggestionType.Artist)
+            {
+                if (!string.IsNullOrEmpty(item.BrowseId))
+                {
+                    OpenArtistProfile(item.BrowseId, item.Title, true);
+                }
+                else
+                {
+                    SearchBox.TextChanged -= SearchBox_TextChanged;
+                    SearchBox.Text = item.Title;
+                    SearchBox.TextChanged += SearchBox_TextChanged;
+                    SearchButton_Click(null, null);
+                }
+            }
+            else if (item.Type == SearchSuggestionType.Playlist || item.Type == SearchSuggestionType.Album)
+            {
+                if (!string.IsNullOrEmpty(item.BrowseId))
+                {
+                    string pid = item.BrowseId.StartsWith("VL") ? item.BrowseId.Substring(2) : item.BrowseId;
+                    OpenYouTubePlaylist(pid, item.Title, item.ThumbnailUrl);
+                }
+                else
+                {
+                    SearchBox.TextChanged -= SearchBox_TextChanged;
+                    SearchBox.Text = item.Title;
+                    SearchBox.TextChanged += SearchBox_TextChanged;
+                    SearchButton_Click(null, null);
+                }
+            }
+        }
+
+        private void SearchResultsArea_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            if (SuggestionPopup.Visibility == Visibility.Visible)
+            {
+                SuggestionPopup.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void SuggestionPopup_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
         }
 
         private void ResetFilters()

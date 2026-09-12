@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Windows.UI.Xaml;
 
 namespace YTMusicWP
 {
@@ -444,8 +445,213 @@ namespace YTMusicWP
         }
 
         // ==========================================
-        // BROWSE PLAYLIST
+        // SEARCH SUGGESTIONS (YouTube Music)
         // ==========================================
+        public static async Task<List<SearchSuggestionItem>> GetSearchSuggestionsAsync(string query)
+        {
+            var list = new List<SearchSuggestionItem>();
+            if (string.IsNullOrWhiteSpace(query)) return list;
+
+            try
+            {
+                JObject data = null;
+                if (HasCookieAuth)
+                {
+                    var extra = new JObject { ["input"] = query };
+                    data = await CookieInnerTubePostAsync("music/get_search_suggestions", extra, "WEB_REMIX", "1.20260304.03.00");
+                }
+                else
+                {
+                    string vd = await GetVisitorDataAsync();
+                    var body = new JObject
+                    {
+                        ["context"] = BuildMusicContext(vd),
+                        ["input"] = query
+                    };
+                    data = await PostInnerTubeAsync(
+                        "https://music.youtube.com/youtubei/v1/music/get_search_suggestions?prettyPrint=false", body, true);
+                }
+
+                if (data == null) return list;
+
+                var contents = data["contents"];
+                if (contents == null || !contents.HasValues) return list;
+
+                int queryCount = 0;
+                int entityCount = 0;
+
+                foreach (var section in contents)
+                {
+                    var items = section["searchSuggestionsSectionRenderer"]?["contents"];
+                    if (items == null || !items.HasValues) continue;
+
+                    foreach (var item in items)
+                    {
+                        // 1. Query suggestion
+                        var queryRenderer = item["searchSuggestionRenderer"] ?? item["historySuggestionRenderer"];
+                        if (queryRenderer != null)
+                        {
+                            if (queryCount >= 7) continue;
+                            var runs = queryRenderer["suggestion"]?["runs"];
+                            if (runs != null && runs.HasValues)
+                            {
+                                string qText = "";
+                                foreach (var r in runs)
+                                {
+                                    var t = r["text"]?.ToString();
+                                    if (!string.IsNullOrEmpty(t)) qText += t;
+                                }
+                                if (!string.IsNullOrWhiteSpace(qText))
+                                {
+                                    list.Add(new SearchSuggestionItem
+                                    {
+                                        Type = SearchSuggestionType.Query,
+                                        Query = qText.Trim(),
+                                        Title = qText.Trim()
+                                    });
+                                    queryCount++;
+                                }
+                            }
+                            continue;
+                        }
+
+                        // 2. Rich Entity suggestion (Artist, Song, Playlist, Album)
+                        var entityRenderer = item["musicResponsiveListItemRenderer"];
+                        if (entityRenderer != null)
+                        {
+                            if (entityCount >= 6) continue;
+
+                            var flexCols = entityRenderer["flexColumns"];
+                            if (flexCols == null || !flexCols.HasValues) continue;
+
+                            string title = "";
+                            var titleRuns = flexCols[0]?["musicResponsiveListItemFlexColumnRenderer"]?["text"]?["runs"];
+                            if (titleRuns != null && titleRuns.HasValues)
+                            {
+                                foreach (var r in titleRuns)
+                                {
+                                    var t = r["text"]?.ToString();
+                                    if (!string.IsNullOrEmpty(t)) title += t;
+                                }
+                            }
+                            if (string.IsNullOrWhiteSpace(title)) continue;
+
+                            string subtitle = "";
+                            if (flexCols.Count() > 1)
+                            {
+                                var subRuns = flexCols[1]?["musicResponsiveListItemFlexColumnRenderer"]?["text"]?["runs"];
+                                if (subRuns != null && subRuns.HasValues)
+                                {
+                                    foreach (var r in subRuns)
+                                    {
+                                        var t = r["text"]?.ToString();
+                                        if (!string.IsNullOrEmpty(t)) subtitle += t;
+                                    }
+                                }
+                            }
+
+                            string thumbUrl = null;
+                            var thumbs = entityRenderer["thumbnail"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
+                            if (thumbs != null && thumbs.HasValues)
+                            {
+                                thumbUrl = thumbs.Last?["url"]?.ToString();
+                            }
+
+                            var nav = entityRenderer["navigationEndpoint"];
+                            string videoId = nav?["watchEndpoint"]?["videoId"]?.ToString();
+                            string browseId = nav?["browseEndpoint"]?["browseId"]?.ToString();
+                            string pageType = nav?["browseEndpoint"]?["browseEndpointContextSupportedConfigs"]?["browseEndpointContextMusicConfig"]?["pageType"]?.ToString();
+
+                            var itemType = SearchSuggestionType.Song;
+                            if (!string.IsNullOrEmpty(pageType))
+                            {
+                                if (pageType == "MUSIC_PAGE_TYPE_ARTIST") itemType = SearchSuggestionType.Artist;
+                                else if (pageType == "MUSIC_PAGE_TYPE_PLAYLIST") itemType = SearchSuggestionType.Playlist;
+                                else if (pageType == "MUSIC_PAGE_TYPE_ALBUM") itemType = SearchSuggestionType.Album;
+                            }
+                            else if (!string.IsNullOrEmpty(browseId))
+                            {
+                                if (browseId.StartsWith("UC")) itemType = SearchSuggestionType.Artist;
+                                else if (browseId.StartsWith("VL") || browseId.StartsWith("PL")) itemType = SearchSuggestionType.Playlist;
+                                else if (browseId.StartsWith("MPREb")) itemType = SearchSuggestionType.Album;
+                            }
+
+                            list.Add(new SearchSuggestionItem
+                            {
+                                Type = itemType,
+                                Title = title.Trim(),
+                                Subtitle = subtitle.Trim(),
+                                ThumbnailUrl = thumbUrl,
+                                VideoId = videoId,
+                                BrowseId = browseId,
+                                PageType = pageType,
+                                Query = title.Trim()
+                            });
+                            entityCount++;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[InnerTube] GetSearchSuggestionsAsync error: " + ex.Message);
+            }
+
+            return list;
+        }
+    }
+
+    public enum SearchSuggestionType
+    {
+        Query,
+        Artist,
+        Playlist,
+        Album,
+        Song
+    }
+
+    public class SearchSuggestionItem
+    {
+        public SearchSuggestionType Type { get; set; }
+        public string Query { get; set; }
+        public string Title { get; set; }
+        public string Subtitle { get; set; }
+        public string ThumbnailUrl { get; set; }
+        public string BrowseId { get; set; }
+        public string VideoId { get; set; }
+        public string PageType { get; set; }
+
+        public Uri ThumbnailBitmapUri
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ThumbnailUrl)) return null;
+                Uri uri;
+                if (Uri.TryCreate(ThumbnailUrl, UriKind.Absolute, out uri))
+                    return uri;
+                return null;
+            }
+        }
+
+        public Visibility QueryVisibility
+        {
+            get { return Type == SearchSuggestionType.Query ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility EntityVisibility
+        {
+            get { return Type != SearchSuggestionType.Query ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility ArtistThumbVisibility
+        {
+            get { return Type == SearchSuggestionType.Artist ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility SquareThumbVisibility
+        {
+            get { return (Type != SearchSuggestionType.Query && Type != SearchSuggestionType.Artist) ? Visibility.Visible : Visibility.Collapsed; }
+        }
     }
 }
 

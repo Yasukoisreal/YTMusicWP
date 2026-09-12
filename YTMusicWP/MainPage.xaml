@@ -971,7 +971,7 @@
             </ScrollViewer>
 
             <!-- Search results area -->
-            <Grid Grid.Row="3">
+            <Grid Grid.Row="3" Background="Transparent" Tapped="SearchResultsArea_Tapped">
                 <ProgressBar x:Name="SearchLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954"/>
 
                 <ScrollViewer x:Name="DefaultSearchUI" VerticalScrollBarVisibility="Auto">
@@ -1261,11 +1261,66 @@
 
                 <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="10,0,0,0"/>
 
-                <Border x:Name="SuggestionPopup" Visibility="Collapsed" Background="#1E1E1E" VerticalAlignment="Top" CornerRadius="8" Margin="10,0,15,0">
-                    <ListView x:Name="SuggestionList" IsItemClickEnabled="True" ItemClick="SuggestionList_ItemClick" MaxHeight="250" SelectionMode="None">
+                <Border x:Name="SuggestionPopup" Visibility="Collapsed" Background="#0F0F0F" BorderBrush="#262626" BorderThickness="1" VerticalAlignment="Top" CornerRadius="8" Margin="10,0,15,0" Canvas.ZIndex="100" Tapped="SuggestionPopup_Tapped">
+                    <ListView x:Name="SuggestionList" IsItemClickEnabled="True" ItemClick="SuggestionList_ItemClick" MaxHeight="450" SelectionMode="None" ShowsScrollingPlaceholders="False">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="12,6"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="MinHeight" Value="44"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}" FontSize="16" Foreground="White" Padding="15,12" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                <Grid Background="Transparent">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Column 0: Icon or Thumbnail -->
+                                    <Grid Grid.Column="0" Width="40" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,12,0">
+                                        <!-- Search icon for Query items -->
+                                        <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding QueryVisibility}">
+                                            <Path Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.49L20.49,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14Z" Fill="#8E8E93"/>
+                                        </Viewbox>
+
+                                        <!-- Circular thumbnail for Artist -->
+                                        <Ellipse Width="40" Height="40" Visibility="{Binding ArtistThumbVisibility}">
+                                            <Ellipse.Fill>
+                                                <ImageBrush Stretch="UniformToFill">
+                                                    <ImageBrush.ImageSource>
+                                                        <BitmapImage UriSource="{Binding ThumbnailBitmapUri}" DecodePixelWidth="80"/>
+                                                    </ImageBrush.ImageSource>
+                                                </ImageBrush>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+
+                                        <!-- Rounded square thumbnail for Song / Playlist / Album -->
+                                        <Rectangle Width="40" Height="40" RadiusX="4" RadiusY="4" Visibility="{Binding SquareThumbVisibility}">
+                                            <Rectangle.Fill>
+                                                <ImageBrush Stretch="UniformToFill">
+                                                    <ImageBrush.ImageSource>
+                                                        <BitmapImage UriSource="{Binding ThumbnailBitmapUri}" DecodePixelWidth="80"/>
+                                                    </ImageBrush.ImageSource>
+                                                </ImageBrush>
+                                            </Rectangle.Fill>
+                                        </Rectangle>
+                                    </Grid>
+
+                                    <!-- Column 1: Text content -->
+                                    <Grid Grid.Column="1" VerticalAlignment="Center">
+                                        <!-- Query Text -->
+                                        <TextBlock Text="{Binding Query}" FontSize="15" Foreground="#E0E0E0" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Visibility="{Binding QueryVisibility}"/>
+
+                                        <!-- Entity Title & Subtitle -->
+                                        <StackPanel VerticalAlignment="Center" Visibility="{Binding EntityVisibility}">
+                                            <TextBlock Text="{Binding Title}" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Subtitle}" FontSize="12" Foreground="#8E8E93" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>

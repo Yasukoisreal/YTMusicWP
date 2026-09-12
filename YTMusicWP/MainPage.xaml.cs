@@ -141,7 +141,7 @@ namespace YTMusicWP
         private ObservableCollection<YouTubeTrack> favoriteTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> downloadedTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> historyTracks = new ObservableCollection<YouTubeTrack>();
-        private ObservableCollection<string> searchSuggestions = new ObservableCollection<string>();
+        private ObservableCollection<SearchSuggestionItem> searchSuggestions = new ObservableCollection<SearchSuggestionItem>();
 
         private ObservableCollection<YouTubeTrack> historyQuickGridTracks = new ObservableCollection<YouTubeTrack>();
         private ObservableCollection<YouTubeTrack> homeHistoryCarouselTracks = new ObservableCollection<YouTubeTrack>();
