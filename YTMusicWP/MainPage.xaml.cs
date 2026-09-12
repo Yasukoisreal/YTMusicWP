@@ -237,6 +237,24 @@ namespace YTMusicWP
             UpdateStatusBarColor(false, animate: false);
             InitializeStartupSplash();
             InitializeHomePullToRefresh();
+            CleanupTempLiveFiles();
+        }
+
+        private async void CleanupTempLiveFiles()
+        {
+            try
+            {
+                var localFolder = ApplicationData.Current.LocalFolder;
+                var files = await localFolder.GetFilesAsync();
+                foreach (var file in files)
+                {
+                    if (file.Name.StartsWith("temp_live_buf_") && file.Name.EndsWith(".mp4"))
+                    {
+                        try { await file.DeleteAsync(StorageDeleteOption.PermanentDelete); } catch { }
+                    }
+                }
+            }
+            catch { }
         }
 
         #region Startup Splash Animation

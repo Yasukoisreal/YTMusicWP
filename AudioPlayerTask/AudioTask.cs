@@ -8,6 +8,8 @@ using Windows.UI.Notifications;
 using Windows.Data.Xml.Dom;
 using System.Threading.Tasks;
 using System.Threading;
+using System.IO;
+using Windows.Storage;
 
 namespace AudioPlayerTask
 {
@@ -48,7 +50,14 @@ namespace AudioPlayerTask
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
         private bool _isCurrentTrackLive = false;
         private string _currentLiveBaseUrl = null;
+        private long _currentLiveSeq = -1;
+        private long _nextLiveStartSeq = -1;
+        private int _currentLiveBufferIndex = 0;
+        private bool _isNextLiveBufferReady = false;
+        private Task<bool> _nextLiveBufferTask = null;
+        private CancellationTokenSource _liveCts = null;
         private int _liveReconnectCount = 0;
+        private const int LIVE_SEGMENT_COUNT = 5;
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -86,6 +95,12 @@ namespace AudioPlayerTask
                 BackgroundMediaPlayer.MessageReceivedFromForeground -= BackgroundMediaPlayer_MessageReceivedFromForeground;
                 BackgroundMediaPlayer.Shutdown();
                 StopPlaybackMonitor();
+                if (_liveCts != null)
+                {
+                    try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
+                    _liveCts = null;
+                }
+                CleanupLiveTempFiles();
                 _httpClient?.Dispose();
             }
             catch { }
@@ -169,9 +184,28 @@ namespace AudioPlayerTask
             _isRetrying = false;
             _resolvedUrl = null;
             _innerTubeAttempted = false;
+            if (_isCurrentTrackLive)
+            {
+                if (_liveCts != null)
+                {
+                    try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
+                    _liveCts = null;
+                }
+                CleanupLiveTempFiles();
+            }
             _isCurrentTrackLive = false;
             _currentLiveBaseUrl = null;
+            _currentLiveSeq = -1;
+            _nextLiveStartSeq = -1;
+            _currentLiveBufferIndex = 0;
+            _isNextLiveBufferReady = false;
+            _nextLiveBufferTask = null;
             _liveReconnectCount = 0;
+            try
+            {
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = false;
+            }
+            catch { }
             ClearPreResolvedState();
         }
 
@@ -645,9 +679,13 @@ namespace AudioPlayerTask
                                         {
                                             string xml = await dashResp.Content.ReadAsStringAsync();
                                             string dashBaseUrl = ExtractDashAudioBaseUrl(xml);
+                                            long latestSeq = ExtractDashLatestSeq(xml);
                                             if (!string.IsNullOrEmpty(dashBaseUrl))
                                             {
-                                                _innerTubeDebug += " [" + clientName + ":DASH:OK]";
+                                                _currentLiveBaseUrl = dashBaseUrl;
+                                                _currentLiveSeq = latestSeq;
+                                                _isCurrentTrackLive = true;
+                                                _innerTubeDebug += " [" + clientName + ":DASH:s" + latestSeq + ":OK]";
                                                 return dashBaseUrl;
                                             }
                                         }
@@ -798,6 +836,254 @@ namespace AudioPlayerTask
             return null;
         }
 
+        private static long ExtractDashLatestSeq(string xml)
+        {
+            if (string.IsNullOrEmpty(xml)) return -1;
+            int lastSq = xml.LastIndexOf("sq/", StringComparison.OrdinalIgnoreCase);
+            if (lastSq < 0) return -1;
+            int numStart = lastSq + 3;
+            int numEnd = xml.IndexOfAny(new[] { '/', '"', '<', '?', ' ' }, numStart);
+            if (numEnd > numStart)
+            {
+                string numStr = xml.Substring(numStart, numEnd - numStart);
+                long seq;
+                if (long.TryParse(numStr, out seq))
+                {
+                    return seq;
+                }
+            }
+            return -1;
+        }
+
+        private static int FindMoofOffset(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length < 8) return -1;
+            int limit = Math.Min(bytes.Length - 4, 2048);
+            for (int i = 4; i < limit; i++)
+            {
+                if (bytes[i] == (byte)'m' && bytes[i + 1] == (byte)'o' && bytes[i + 2] == (byte)'o' && bytes[i + 3] == (byte)'f')
+                {
+                    return i - 4;
+                }
+            }
+            return -1;
+        }
+
+        private async Task<byte[]> DownloadLiveSegmentAsync(string baseUrl, long seq, CancellationToken ct)
+        {
+            string segUrl = baseUrl + (baseUrl.EndsWith("/") ? "" : "/") + "sq/" + seq;
+            try
+            {
+                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl));
+                using (var response = await _httpClient.SendRequestAsync(request).AsTask(ct))
+                {
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var buffer = await response.Content.ReadAsBufferAsync().AsTask(ct);
+                        byte[] bytes = new byte[buffer.Length];
+                        using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
+                        {
+                            reader.ReadBytes(bytes);
+                        }
+                        return bytes;
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private async Task<bool> AssembleLiveBufferAsync(string baseUrl, long startSeq, int count, string fileName, CancellationToken ct)
+        {
+            try
+            {
+                var localFolder = ApplicationData.Current.LocalFolder;
+                var file = await localFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
+                using (var stream = await file.OpenStreamForWriteAsync())
+                {
+                    int downloaded = 0;
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (ct.IsCancellationRequested) return false;
+                        long targetSeq = startSeq + i;
+                        byte[] segBytes = null;
+
+                        for (int attempt = 0; attempt < 3; attempt++)
+                        {
+                            if (ct.IsCancellationRequested) return false;
+                            segBytes = await DownloadLiveSegmentAsync(baseUrl, targetSeq, ct);
+                            if (segBytes != null && segBytes.Length > 0) break;
+                            await Task.Delay(400, ct);
+                        }
+
+                        if (segBytes == null || segBytes.Length == 0)
+                        {
+                            if (downloaded > 0) break;
+                            return false;
+                        }
+
+                        if (downloaded == 0)
+                        {
+                            await stream.WriteAsync(segBytes, 0, segBytes.Length, ct);
+                        }
+                        else
+                        {
+                            int moofOffset = FindMoofOffset(segBytes);
+                            if (moofOffset >= 0 && moofOffset < segBytes.Length)
+                            {
+                                await stream.WriteAsync(segBytes, moofOffset, segBytes.Length - moofOffset, ct);
+                            }
+                            else
+                            {
+                                await stream.WriteAsync(segBytes, 0, segBytes.Length, ct);
+                            }
+                        }
+                        downloaded++;
+                    }
+                    await stream.FlushAsync();
+                    return downloaded > 0;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private void PreBufferNextLiveChunkAsync()
+        {
+            if (!_isCurrentTrackLive || string.IsNullOrEmpty(_currentLiveBaseUrl) || _nextLiveStartSeq <= 0) return;
+            if (_liveCts == null || _liveCts.IsCancellationRequested) return;
+
+            int nextIndex = 1 - _currentLiveBufferIndex;
+            string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
+            long startSeq = _nextLiveStartSeq;
+            var ct = _liveCts.Token;
+
+            _isNextLiveBufferReady = false;
+            _nextLiveBufferTask = Task.Run(async () =>
+            {
+                bool ok = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_SEGMENT_COUNT, nextFile, ct);
+                if (ok && !ct.IsCancellationRequested)
+                {
+                    _isNextLiveBufferReady = true;
+                    _nextLiveStartSeq = startSeq + LIVE_SEGMENT_COUNT;
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        private async void PlayLiveBufferedTrackAsync(string vidId)
+        {
+            if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count) return;
+            if (_videoIdList[_currentTrackIndex] != vidId) return;
+
+            if (_liveCts != null)
+            {
+                try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
+                _liveCts = null;
+            }
+            _liveCts = new CancellationTokenSource();
+            var ct = _liveCts.Token;
+
+            _isCurrentTrackLive = true;
+            _currentLiveBufferIndex = 0;
+            _isNextLiveBufferReady = false;
+            _nextLiveBufferTask = null;
+
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = true;
+            }
+            catch { }
+
+            var ls = ApplicationData.Current.LocalSettings.Values;
+            bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
+            _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
+            UpdateSystemMediaControls();
+
+            // If sequence number wasn't already in manifest, query HEAD to discover it
+            if (_currentLiveSeq <= 0 && !string.IsNullOrEmpty(_currentLiveBaseUrl))
+            {
+                try
+                {
+                    var headReq = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Head, new Uri(_currentLiveBaseUrl));
+                    using (var headResp = await _httpClient.SendRequestAsync(headReq).AsTask(ct))
+                    {
+                        string seqHeader = null;
+                        if (headResp.Headers.ContainsKey("X-Sequence-Num"))
+                            seqHeader = headResp.Headers["X-Sequence-Num"];
+                        else if (headResp.Headers.ContainsKey("X-Head-Seqnum"))
+                            seqHeader = headResp.Headers["X-Head-Seqnum"];
+
+                        long parsedSeq;
+                        if (!string.IsNullOrEmpty(seqHeader) && long.TryParse(seqHeader, out parsedSeq))
+                        {
+                            _currentLiveSeq = parsedSeq;
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - (LIVE_SEGMENT_COUNT + 1)) : -1;
+            string buf0File = "temp_live_buf_0.mp4";
+            bool success = false;
+            if (startSeq > 0)
+            {
+                success = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_SEGMENT_COUNT, buf0File, ct);
+            }
+
+            if (!success || ct.IsCancellationRequested)
+            {
+                if (!ct.IsCancellationRequested && !string.IsNullOrEmpty(_currentLiveBaseUrl))
+                {
+                    _mediaPlayer.SetUriSource(new Uri(_currentLiveBaseUrl));
+                    _currentLoadedVidId = vidId;
+                    _mediaPlayer.Play();
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                }
+                return;
+            }
+
+            _nextLiveStartSeq = startSeq + LIVE_SEGMENT_COUNT;
+            _currentLoadedVidId = vidId;
+
+            string localUri = "ms-appdata:///local/" + buf0File;
+            _mediaPlayer.SetUriSource(new Uri(localUri));
+            try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
+            _mediaPlayer.Play();
+            _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+
+            PreBufferNextLiveChunkAsync();
+        }
+
+        private async void CleanupLiveTempFiles()
+        {
+            try
+            {
+                var localFolder = ApplicationData.Current.LocalFolder;
+                try
+                {
+                    var f0 = await localFolder.GetFileAsync("temp_live_buf_0.mp4");
+                    if (f0 != null) await f0.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                }
+                catch { }
+                try
+                {
+                    var f1 = await localFolder.GetFileAsync("temp_live_buf_1.mp4");
+                    if (f1 != null) await f1.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                }
+                catch { }
+            }
+            catch { }
+        }
+
         private bool IsLiveStreamUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return false;
@@ -823,6 +1109,11 @@ namespace AudioPlayerTask
                 _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
                 if (_currentLoadedVidId != vidId) _liveReconnectCount = 0;
 
+                if (_isCurrentTrackLive && !string.IsNullOrEmpty(_currentLiveBaseUrl))
+                {
+                    PlayLiveBufferedTrackAsync(vidId);
+                    return;
+                }
 
                 // Normalize Volume: set consistent volume level
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -1232,11 +1523,39 @@ namespace AudioPlayerTask
             StartPlaybackAsync();
         }
 
-        private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
+        private async void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
         {
             if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
             {
-                // Luồng phát trực tiếp: buffer chunk (~5s) kết thúc, tiếp tục phát chunk tiếp theo từ live base URL
+                int nextIndex = 1 - _currentLiveBufferIndex;
+                string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
+
+                // Wait up to 3 seconds if next buffer is still downloading
+                if (!_isNextLiveBufferReady && _nextLiveBufferTask != null)
+                {
+                    try
+                    {
+                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(3000));
+                    }
+                    catch { }
+                }
+
+                if (_isNextLiveBufferReady)
+                {
+                    _currentLiveBufferIndex = nextIndex;
+                    _isNextLiveBufferReady = false;
+                    try
+                    {
+                        _mediaPlayer.SetUriSource(new Uri("ms-appdata:///local/" + nextFile));
+                        _mediaPlayer.Play();
+
+                        PreBufferNextLiveChunkAsync();
+                        return;
+                    }
+                    catch { }
+                }
+
+                // Fallback: direct play if buffer swap was not ready
                 if (!string.IsNullOrEmpty(_currentLiveBaseUrl))
                 {
                     try
@@ -1248,14 +1567,13 @@ namespace AudioPlayerTask
                     catch { }
                 }
 
-                if (_liveReconnectCount < 3)
+                if (_liveReconnectCount < 5)
                 {
                     _liveReconnectCount++;
                     StartPlaybackAsync();
                 }
                 else
                 {
-                    // Live broadcast stopped or network disconnected
                     StopPlaybackMonitor();
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                 }

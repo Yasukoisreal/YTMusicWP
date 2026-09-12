@@ -438,7 +438,15 @@ namespace YTMusicWP
 
             TimeSpan pos, dur;
             try { pos = session.Position; dur = session.NaturalDuration; } catch { return; }
-            if (dur.TotalSeconds <= 0)
+            bool isCurrentLive = false;
+            try
+            {
+                var ls = ApplicationData.Current.LocalSettings.Values;
+                if (ls.ContainsKey("IsCurrentLive") && (bool)ls["IsCurrentLive"]) isCurrentLive = true;
+            }
+            catch { }
+
+            if (dur.TotalSeconds <= 0 || isCurrentLive)
             {
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
                 {
