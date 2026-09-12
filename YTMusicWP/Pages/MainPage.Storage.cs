@@ -67,7 +67,7 @@ namespace YTMusicWP
                         stats.ImageCacheBytes += size;
                         stats.ImageCacheCount++;
                     }
-                    else if (nameLower.StartsWith("temp_play_") || nameLower.EndsWith(".tmp"))
+                    else if (nameLower.StartsWith("temp_play_") || nameLower.StartsWith("temp_live_buf_") || nameLower.EndsWith(".tmp"))
                     {
                         stats.TempStreamBytes += size;
                         stats.TempStreamCount++;
@@ -178,7 +178,7 @@ namespace YTMusicWP
                 foreach (var file in files)
                 {
                     string name = file.Name.ToLowerInvariant();
-                    if (name.StartsWith("temp_play_") || name.EndsWith(".tmp"))
+                    if (name.StartsWith("temp_play_") || name.StartsWith("temp_live_buf_") || name.EndsWith(".tmp"))
                     {
                         try { await file.DeleteAsync(); count++; } catch { }
                     }

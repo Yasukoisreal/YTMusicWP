@@ -61,8 +61,9 @@ namespace AudioPlayerTask
         private double _nextLiveDurationSec = 0;
         private bool _isLiveSwapping = false;
         private System.Diagnostics.Stopwatch _liveBufferStopwatch = new System.Diagnostics.Stopwatch();
+        private static readonly System.Threading.SemaphoreSlim _liveDownloadSemaphore = new System.Threading.SemaphoreSlim(3, 3);
         private const int LIVE_INITIAL_SEGMENTS = 4;  // 20s instant start (320KB, parallel download ready in ~1s)
-        private const int LIVE_DEEP_SEGMENTS = 12;    // 60s rolling buffer (960KB, parallel download ready in ~2.5s)
+        private const int LIVE_DEEP_SEGMENTS = 8;     // 40s rolling buffer (640KB, 3 parallel downloads ready in ~2s)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -936,20 +937,48 @@ namespace AudioPlayerTask
 
         private async Task<byte[]> DownloadLiveSegmentWithRetryAsync(string baseUrl, long seq, CancellationToken ct)
         {
-            for (int attempt = 0; attempt < 3; attempt++)
+            try
             {
-                if (ct.IsCancellationRequested) return null;
-                var bytes = await DownloadLiveSegmentAsync(baseUrl, seq, ct);
-                if (bytes != null && bytes.Length > 0) return bytes;
-                try { await Task.Delay(200, ct); } catch { return null; }
+                await _liveDownloadSemaphore.WaitAsync(ct);
             }
-            return null;
+            catch
+            {
+                return null;
+            }
+
+            try
+            {
+                for (int attempt = 0; attempt < 3; attempt++)
+                {
+                    if (ct.IsCancellationRequested) return null;
+                    var bytes = await DownloadLiveSegmentAsync(baseUrl, seq, ct);
+                    if (bytes != null && bytes.Length > 0) return bytes;
+                    try { await Task.Delay(200, ct); } catch { return null; }
+                }
+                return null;
+            }
+            finally
+            {
+                _liveDownloadSemaphore.Release();
+            }
         }
 
         private async Task<int> AssembleLiveBufferAsync(string baseUrl, long startSeq, int count, string fileName, CancellationToken ct)
         {
             try
             {
+                // Download all segments in parallel using Task.WhenAll with semaphore throttling (max 3 concurrent)
+                var downloadTasks = new Task<byte[]>[count];
+                for (int i = 0; i < count; i++)
+                {
+                    long targetSeq = startSeq + i;
+                    downloadTasks[i] = DownloadLiveSegmentWithRetryAsync(baseUrl, targetSeq, ct);
+                }
+
+                byte[][] segments = await Task.WhenAll(downloadTasks);
+                if (ct.IsCancellationRequested) return 0;
+                if (segments == null || segments.Length == 0 || segments[0] == null || segments[0].Length == 0) return 0;
+
                 var localFolder = ApplicationData.Current.LocalFolder;
                 StorageFile file = null;
                 for (int attempt = 0; attempt < 5; attempt++)
@@ -965,16 +994,6 @@ namespace AudioPlayerTask
                     }
                 }
                 if (file == null) return 0;
-
-                // Download all segments in parallel using Task.WhenAll (fastest, ready in ~1.5s)
-                var downloadTasks = new Task<byte[]>[count];
-                for (int i = 0; i < count; i++)
-                {
-                    long targetSeq = startSeq + i;
-                    downloadTasks[i] = DownloadLiveSegmentWithRetryAsync(baseUrl, targetSeq, ct);
-                }
-
-                byte[][] segments = await Task.WhenAll(downloadTasks);
 
                 using (var stream = await file.OpenStreamForWriteAsync())
                 {
@@ -1447,7 +1466,6 @@ namespace AudioPlayerTask
             try
             {
                 if (_mediaPlayer == null || _trackList.Count == 0) return;
-                if (_mediaPlayer.CurrentState != MediaPlayerState.Playing) return;
 
                 // Sleep Timer Check (functions even when phone is locked or screen is off)
                 if (DateTime.UtcNow >= _sleepTimerExpiry)
@@ -1460,16 +1478,24 @@ namespace AudioPlayerTask
 
                 if (_isCurrentTrackLive)
                 {
-                    if (_mediaPlayer.CurrentState == MediaPlayerState.Playing)
+                    double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
+                    // Swap 1.5 seconds before buffer ends, OR if player stalled/paused unexpectedly after at least 3 seconds of playback
+                    bool nearEnd = (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 1.5));
+                    bool finishedBuffer = (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 0.5) && _mediaPlayer.CurrentState != MediaPlayerState.Playing);
+
+                    if ((nearEnd || finishedBuffer) && !_isLiveSwapping)
                     {
-                        double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
-                        if (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 0.8) && !_isLiveSwapping)
-                        {
-                            SwapToNextLiveBuffer();
-                        }
+                        SwapToNextLiveBuffer();
+                    }
+                    else if (!_isNextLiveBufferReady && (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && elapsed < (_liveBufferDurationSec - 5.0))
+                    {
+                        // Retry pre-buffering if previous attempt completed without being ready, and we have > 5s left
+                        PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     return;
                 }
+
+                if (_mediaPlayer.CurrentState != MediaPlayerState.Playing) return;
 
                 var pos = _mediaPlayer.Position;
                 var naturalDuration = _mediaPlayer.NaturalDuration;
@@ -1635,14 +1661,21 @@ namespace AudioPlayerTask
                 int nextIndex = 1 - _currentLiveBufferIndex;
                 string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
 
-                // Wait up to 10 seconds if next buffer is still downloading
-                if (!_isNextLiveBufferReady && _nextLiveBufferTask != null)
+                // If next buffer is not yet ready, wait briefly for current download task
+                if (!_isNextLiveBufferReady)
                 {
-                    try
+                    if (_nextLiveBufferTask == null)
                     {
-                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(10000));
+                        PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
-                    catch { }
+                    if (_nextLiveBufferTask != null)
+                    {
+                        try
+                        {
+                            await Task.WhenAny(_nextLiveBufferTask, Task.Delay(8000));
+                        }
+                        catch { }
+                    }
                 }
 
                 if (_isNextLiveBufferReady)
@@ -1671,18 +1704,7 @@ namespace AudioPlayerTask
                     }
                 }
 
-                // Fallback: direct play if buffer swap was not ready
-                if (!string.IsNullOrEmpty(_currentLiveBaseUrl))
-                {
-                    try
-                    {
-                        _mediaPlayer.SetUriSource(new Uri(_currentLiveBaseUrl));
-                        _mediaPlayer.Play();
-                        return;
-                    }
-                    catch { }
-                }
-
+                // If buffer swap failed, reconnect cleanly via fresh buffer
                 if (_liveReconnectCount < 5)
                 {
                     _liveReconnectCount++;
