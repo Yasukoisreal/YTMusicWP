@@ -1325,14 +1325,14 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SearchSongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SearchResultItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="10,0,0,0">
+                <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SearchSongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SearchResultItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="10,0,0,0" Padding="0,0,10,120">
                     <ListView.Header>
-                        <StackPanel x:Name="SearchHeaderPanel" Margin="0,0,10,12">
+                        <StackPanel x:Name="SearchHeaderPanel" Margin="0,0,0,12">
                             <!-- YouTube Music Top Result Card -->
-                            <Border x:Name="TopResultCard" Visibility="Collapsed" Background="#181818" CornerRadius="10" Padding="14" Margin="0,0,0,10" Tapped="TopResultCard_Tapped">
+                            <Border x:Name="TopResultCard" Visibility="Collapsed" Background="#1A1A1D" BorderBrush="#2A2A2E" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,14" Tapped="TopResultCard_Tapped">
                                 <StackPanel>
                                     <!-- Hero row: Thumbnail, Title, Subtitle, Chevron -->
-                                    <Grid Margin="0,0,0,12">
+                                    <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
@@ -1340,13 +1340,13 @@
                                         </Grid.ColumnDefinitions>
 
                                         <!-- Thumbnail: Artist Circle or Non-artist Rounded Rectangle -->
-                                        <Grid Grid.Column="0" Width="64" Height="64" Margin="0,0,12,0" VerticalAlignment="Center">
-                                            <Ellipse x:Name="TopCardArtistThumb" Width="64" Height="64" Visibility="Collapsed">
+                                        <Grid Grid.Column="0" Width="56" Height="56" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <Ellipse x:Name="TopCardArtistThumb" Width="56" Height="56" Visibility="Collapsed">
                                                 <Ellipse.Fill>
                                                     <ImageBrush x:Name="TopCardArtistThumbBrush" Stretch="UniformToFill"/>
                                                 </Ellipse.Fill>
                                             </Ellipse>
-                                            <Rectangle x:Name="TopCardSquareThumb" Width="64" Height="64" RadiusX="6" RadiusY="6" Visibility="Collapsed">
+                                            <Rectangle x:Name="TopCardSquareThumb" Width="56" Height="56" RadiusX="6" RadiusY="6" Visibility="Collapsed">
                                                 <Rectangle.Fill>
                                                     <ImageBrush x:Name="TopCardSquareThumbBrush" Stretch="UniformToFill"/>
                                                 </Rectangle.Fill>
@@ -1355,16 +1355,18 @@
 
                                         <!-- Title & Subtitle -->
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock x:Name="TopCardTitle" Text="" FontSize="17" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock x:Name="TopCardSubtitle" Text="" FontSize="13" Foreground="#AAAAAA" Margin="0,4,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="TopCardTitle" Text="" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="TopCardSubtitle" Text="" FontSize="12" Foreground="#8E8E93" Margin="0,4,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
 
-                                        <!-- Chevron to open profile/details -->
-                                        <Button Grid.Column="2" x:Name="TopCardChevronBtn" Content="&#xE00F;" FontFamily="Segoe UI Symbol" FontSize="18" Foreground="#888888" Background="Transparent" VerticalAlignment="Center" Click="TopCardChevron_Click" Margin="4,0,0,0"/>
+                                        <!-- Chevron to open profile/details (borderless icon) -->
+                                        <Border Grid.Column="2" x:Name="TopCardChevronBtn" Background="Transparent" Width="36" Height="36" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="4,0,0,0" Tapped="TopCardChevron_Tapped">
+                                            <TextBlock Text="&#xE00F;" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="#8E8E93" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
                                     </Grid>
 
                                     <!-- Action Buttons: Shuffle and Mix (or Play) -->
-                                    <StackPanel x:Name="TopCardActionRow" Orientation="Horizontal" Margin="0,0,0,6">
+                                    <StackPanel x:Name="TopCardActionRow" Orientation="Horizontal" Margin="0,0,0,6" Visibility="Collapsed">
                                         <!-- Shuffle Button -->
                                         <Border x:Name="TopCardShuffleBtn" Background="#262626" CornerRadius="16" Padding="14,6" Margin="0,0,10,0" Tapped="TopResultShuffle_Tapped">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -1382,8 +1384,8 @@
                                     </StackPanel>
 
                                     <!-- Top Songs Sub-list (up to 3 tracks) -->
-                                    <StackPanel x:Name="TopCardSongsPanel" Visibility="Collapsed" Margin="0,4,0,0">
-                                        <Border Height="1" Background="#262626" Margin="0,0,0,8"/>
+                                    <StackPanel x:Name="TopCardSongsPanel" Visibility="Collapsed" Margin="0,2,0,0">
+                                        <Border Height="1" Background="#2A2A2E" Margin="0,0,0,8"/>
                                         
                                         <!-- Song 1 -->
                                         <Grid x:Name="TopCardSong1" Visibility="Collapsed" Margin="0,4,0,4" Background="Transparent" Tapped="TopCardSong1_Tapped">
@@ -1392,16 +1394,16 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <Rectangle Grid.Column="0" Width="40" Height="40" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
+                                            <Rectangle Grid.Column="0" Width="36" Height="36" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
                                                 <Rectangle.Fill>
                                                     <ImageBrush x:Name="TopCardSong1Thumb" Stretch="UniformToFill"/>
                                                 </Rectangle.Fill>
                                             </Rectangle>
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock x:Name="TopCardSong1Title" Text="" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
-                                                <TextBlock x:Name="TopCardSong1Sub" Text="" FontSize="12" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock x:Name="TopCardSong1Title" Text="" FontSize="13" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="TopCardSong1Sub" Text="" FontSize="11" Foreground="#8E8E93" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2" Text="▶" Foreground="#888888" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                            <TextBlock Grid.Column="2" Text="&#xE102;" FontFamily="Segoe UI Symbol" Foreground="#8E8E93" FontSize="13" VerticalAlignment="Center" Margin="8,0,4,0"/>
                                         </Grid>
 
                                         <!-- Song 2 -->
@@ -1411,16 +1413,16 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <Rectangle Grid.Column="0" Width="40" Height="40" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
+                                            <Rectangle Grid.Column="0" Width="36" Height="36" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
                                                 <Rectangle.Fill>
                                                     <ImageBrush x:Name="TopCardSong2Thumb" Stretch="UniformToFill"/>
                                                 </Rectangle.Fill>
                                             </Rectangle>
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock x:Name="TopCardSong2Title" Text="" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
-                                                <TextBlock x:Name="TopCardSong2Sub" Text="" FontSize="12" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock x:Name="TopCardSong2Title" Text="" FontSize="13" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="TopCardSong2Sub" Text="" FontSize="11" Foreground="#8E8E93" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2" Text="▶" Foreground="#888888" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                            <TextBlock Grid.Column="2" Text="&#xE102;" FontFamily="Segoe UI Symbol" Foreground="#8E8E93" FontSize="13" VerticalAlignment="Center" Margin="8,0,4,0"/>
                                         </Grid>
 
                                         <!-- Song 3 -->
@@ -1430,16 +1432,16 @@
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <Rectangle Grid.Column="0" Width="40" Height="40" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
+                                            <Rectangle Grid.Column="0" Width="36" Height="36" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
                                                 <Rectangle.Fill>
                                                     <ImageBrush x:Name="TopCardSong3Thumb" Stretch="UniformToFill"/>
                                                 </Rectangle.Fill>
                                             </Rectangle>
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                <TextBlock x:Name="TopCardSong3Title" Text="" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
-                                                <TextBlock x:Name="TopCardSong3Sub" Text="" FontSize="12" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock x:Name="TopCardSong3Title" Text="" FontSize="13" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="TopCardSong3Sub" Text="" FontSize="11" Foreground="#8E8E93" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2" Text="▶" Foreground="#888888" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                            <TextBlock Grid.Column="2" Text="&#xE102;" FontFamily="Segoe UI Symbol" Foreground="#8E8E93" FontSize="13" VerticalAlignment="Center" Margin="8,0,4,0"/>
                                         </Grid>
                                     </StackPanel>
                                 </StackPanel>

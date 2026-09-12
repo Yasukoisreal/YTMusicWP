@@ -388,6 +388,8 @@ namespace YTMusicWP
             // Action buttons
             TopCardShuffleBtn.Visibility = card.ShuffleButtonVisibility;
             TopCardMixBtn.Visibility = card.MixButtonVisibility;
+            TopCardActionRow.Visibility = (card.ShuffleButtonVisibility == Visibility.Visible || card.MixButtonVisibility == Visibility.Visible)
+                ? Visibility.Visible : Visibility.Collapsed;
 
             // Top Songs
             if (card.TopSongs != null && card.TopSongs.Count > 0)
@@ -559,6 +561,12 @@ namespace YTMusicWP
                     ThumbnailUrl = _lastSearchCard.ThumbnailUrl
                 });
             }
+        }
+
+        private void TopCardChevron_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            if (e != null) e.Handled = true;
+            TopResultCard_Tapped(sender, e);
         }
 
         private void TopCardChevron_Click(object sender, RoutedEventArgs e)
