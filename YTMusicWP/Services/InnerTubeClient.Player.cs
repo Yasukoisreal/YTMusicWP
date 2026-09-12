@@ -340,12 +340,30 @@ namespace YTMusicWP
                         }
                     }
 
-                    // 3. Fallback for live streams: hlsManifestUrl
-                    string hlsUrl = data["streamingData"]?["hlsManifestUrl"]?.ToString();
-                    if (!string.IsNullOrEmpty(hlsUrl))
+                    // 3. Fallback for live streams: extract direct audio BaseURL from dashManifestUrl (MP4 AAC itag 140/139)
+                    string dashUrl = data["streamingData"]?["dashManifestUrl"]?.ToString();
+                    if (!string.IsNullOrEmpty(dashUrl))
                     {
-                        LastResolveDebug += " HLS:OK";
-                        return hlsUrl;
+                        try
+                        {
+                            using (var dashResp = await _client.GetAsync(dashUrl))
+                            {
+                                if (dashResp.IsSuccessStatusCode)
+                                {
+                                    string xml = await dashResp.Content.ReadAsStringAsync();
+                                    string dashBaseUrl = ExtractDashAudioBaseUrl(xml);
+                                    if (!string.IsNullOrEmpty(dashBaseUrl))
+                                    {
+                                        LastResolveDebug += " DASH:OK";
+                                        return PrepareStreamUrl(dashBaseUrl);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            LastResolveDebug += " DASH_EX:" + ex.Message.Substring(0, Math.Min(15, ex.Message.Length));
+                        }
                     }
 
                     LastResolveDebug += " NOURL";
@@ -398,6 +416,34 @@ namespace YTMusicWP
         private static string PrepareStreamUrl(string url)
         {
             return url;
+        }
+
+        internal static string ExtractDashAudioBaseUrl(string xml)
+        {
+            if (string.IsNullOrEmpty(xml)) return null;
+            // Ưu tiên itag 140 (AAC 128kbps/144kbps), fallback itag 139 (AAC 48kbps)
+            string[] audioItags = new[] { "140", "139" };
+            foreach (string itag in audioItags)
+            {
+                string tag = "id=\"" + itag + "\"";
+                int idx = xml.IndexOf(tag, StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                {
+                    int bStart = xml.IndexOf("<BaseURL>", idx, StringComparison.OrdinalIgnoreCase);
+                    if (bStart >= 0)
+                    {
+                        bStart += 9;
+                        int bEnd = xml.IndexOf("</BaseURL>", bStart, StringComparison.OrdinalIgnoreCase);
+                        if (bEnd > bStart)
+                        {
+                            string url = xml.Substring(bStart, bEnd - bStart).Trim();
+                            url = url.Replace("&amp;", "&");
+                            if (!string.IsNullOrEmpty(url)) return url;
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         // ==========================================

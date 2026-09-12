@@ -47,6 +47,7 @@ namespace AudioPlayerTask
         private double _playbackRate = 1.0;
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
         private bool _isCurrentTrackLive = false;
+        private string _currentLiveBaseUrl = null;
         private int _liveReconnectCount = 0;
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
@@ -169,6 +170,7 @@ namespace AudioPlayerTask
             _resolvedUrl = null;
             _innerTubeAttempted = false;
             _isCurrentTrackLive = false;
+            _currentLiveBaseUrl = null;
             _liveReconnectCount = 0;
             ClearPreResolvedState();
         }
@@ -629,14 +631,32 @@ namespace AudioPlayerTask
                             }
                         }
 
-                        // 3. Fallback cho Live stream: hlsManifestUrl
-                        if (streamingData.ContainsKey("hlsManifestUrl"))
+                        // 3. Fallback cho Live stream: trích xuất direct audio BaseURL từ dashManifestUrl (MP4 AAC itag 140/139)
+                        if (streamingData.ContainsKey("dashManifestUrl"))
                         {
-                            string hls = streamingData.GetNamedString("hlsManifestUrl");
-                            if (!string.IsNullOrEmpty(hls))
+                            string dashUrl = streamingData.GetNamedString("dashManifestUrl");
+                            if (!string.IsNullOrEmpty(dashUrl))
                             {
-                                _innerTubeDebug += " [" + clientName + ":HLS:OK]";
-                                return hls;
+                                try
+                                {
+                                    using (var dashResp = await _httpClient.GetAsync(new Uri(dashUrl)))
+                                    {
+                                        if (dashResp.IsSuccessStatusCode)
+                                        {
+                                            string xml = await dashResp.Content.ReadAsStringAsync();
+                                            string dashBaseUrl = ExtractDashAudioBaseUrl(xml);
+                                            if (!string.IsNullOrEmpty(dashBaseUrl))
+                                            {
+                                                _innerTubeDebug += " [" + clientName + ":DASH:OK]";
+                                                return dashBaseUrl;
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    _innerTubeDebug += " [DASH_EX:" + ex.Message.Substring(0, Math.Min(15, ex.Message.Length)) + "]";
+                                }
                             }
                         }
                     }
@@ -750,6 +770,34 @@ namespace AudioPlayerTask
             return url;
         }
 
+        private static string ExtractDashAudioBaseUrl(string xml)
+        {
+            if (string.IsNullOrEmpty(xml)) return null;
+            // Ưu tiên itag 140 (AAC 128kbps/144kbps), fallback itag 139 (AAC 48kbps)
+            string[] audioItags = new[] { "140", "139" };
+            foreach (string itag in audioItags)
+            {
+                string tag = "id=\"" + itag + "\"";
+                int idx = xml.IndexOf(tag, StringComparison.OrdinalIgnoreCase);
+                if (idx >= 0)
+                {
+                    int bStart = xml.IndexOf("<BaseURL>", idx, StringComparison.OrdinalIgnoreCase);
+                    if (bStart >= 0)
+                    {
+                        bStart += 9;
+                        int bEnd = xml.IndexOf("</BaseURL>", bStart, StringComparison.OrdinalIgnoreCase);
+                        if (bEnd > bStart)
+                        {
+                            string url = xml.Substring(bStart, bEnd - bStart).Trim();
+                            url = url.Replace("&amp;", "&");
+                            if (!string.IsNullOrEmpty(url)) return url;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         private bool IsLiveStreamUrl(string url)
         {
             if (string.IsNullOrEmpty(url)) return false;
@@ -772,6 +820,7 @@ namespace AudioPlayerTask
                 StopPlaybackMonitor();
 
                 _isCurrentTrackLive = IsLiveStreamUrl(trackUrl);
+                _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
                 if (_currentLoadedVidId != vidId) _liveReconnectCount = 0;
 
 
@@ -1187,29 +1236,26 @@ namespace AudioPlayerTask
         {
             if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
             {
-                // For live streams, stream interruptions or buffer boundaries should attempt to resume rather than skipping tracks
+                // Luồng phát trực tiếp: buffer chunk (~5s) kết thúc, tiếp tục phát chunk tiếp theo từ live base URL
+                if (!string.IsNullOrEmpty(_currentLiveBaseUrl))
+                {
+                    try
+                    {
+                        _mediaPlayer.SetUriSource(new Uri(_currentLiveBaseUrl));
+                        _mediaPlayer.Play();
+                        return;
+                    }
+                    catch { }
+                }
+
                 if (_liveReconnectCount < 3)
                 {
                     _liveReconnectCount++;
-                    try
-                    {
-                        if (_mediaPlayer.CurrentState == MediaPlayerState.Closed)
-                        {
-                            StartPlaybackAsync();
-                        }
-                        else
-                        {
-                            _mediaPlayer.Play();
-                        }
-                    }
-                    catch
-                    {
-                        StartPlaybackAsync();
-                    }
+                    StartPlaybackAsync();
                 }
                 else
                 {
-                    // Live broadcast stopped or network permanently disconnected
+                    // Live broadcast stopped or network disconnected
                     StopPlaybackMonitor();
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                 }
