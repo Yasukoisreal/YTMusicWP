@@ -18,6 +18,8 @@ namespace YTMusicWP
         private bool _isLoadingMoreHomeSections;
         private bool _hasMoreHomeSections;
         private int _homeLoadedPagesCount;
+        private System.Collections.Generic.List<YTMusicWP.MoodCategory> _cachedMoodsData;
+        private System.Collections.Generic.List<DiscoverItem> _cachedChartsData;
 
         private void RefreshHomeHistorySections()
         {
@@ -272,30 +274,25 @@ namespace YTMusicWP
                 var moodsTask = InnerTubeClient.BrowseMoodsAndGenresAsync();
                 
                 var homeResult = default(InnerTubeClient.HomeBrowseResult);
-                var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
-                var moodsData = default(System.Collections.Generic.List<YTMusicWP.MoodCategory>);
+                _cachedMoodsData = null;
+                _cachedChartsData = null;
 
                 try { homeResult = await homeFirstPageTask; } catch { }
-                try { chartsData = await chartsTask; } catch { }
-                try { moodsData = await moodsTask; } catch { }
+                try { _cachedChartsData = await chartsTask; } catch { }
+                try { _cachedMoodsData = await moodsTask; } catch { }
 
-                // Moods
-                if (moodsData != null && moodsData.Count > 0)
-                {
-                    MoodsGenresListView.Visibility = Visibility.Visible;
-                    MoodsGenresListView.ItemsSource = moodsData;
-                }
-                else
+                // Moods & Charts are kept Collapsed until all home sections/continuation pages have loaded
+                if (MoodsGenresListView != null)
                 {
                     MoodsGenresListView.Visibility = Visibility.Collapsed;
+                    MoodsGenresListView.ItemsSource = null;
                 }
-
-                // Charts
-                if (chartsData != null && chartsData.Count > 0)
+                if (HomeChartsTitle != null)
+                    HomeChartsTitle.Visibility = Visibility.Collapsed;
+                if (HomeChartsCarousel != null)
                 {
-                    HomeChartsTitle.Visibility = Visibility.Visible;
-                    HomeChartsCarousel.Visibility = Visibility.Visible;
-                    HomeChartsCarousel.ItemsSource = chartsData;
+                    HomeChartsCarousel.Visibility = Visibility.Collapsed;
+                    HomeChartsCarousel.ItemsSource = null;
                 }
 
                 // Dynamic home sections (Page 1)
@@ -313,6 +310,11 @@ namespace YTMusicWP
                     _currentHomeQuery = homeResult.Sections[0].Title;
                     var topTracks = homeResult.Sections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
                     YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
+
+                    if (!_hasMoreHomeSections)
+                    {
+                        ShowHomeEndSections();
+                    }
 
                     HomeLoading.Visibility = Visibility.Collapsed;
                     return;
@@ -388,6 +390,8 @@ namespace YTMusicWP
                 var topTracks2 = fallbackSections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
                 YTMusicWP.Services.TileService.UpdateRecommendations(topTracks2, favoriteTracks, historyTracks);
             }
+            _hasMoreHomeSections = false;
+            ShowHomeEndSections();
             HomeLoading.Visibility = Visibility.Collapsed;
         }
 
@@ -400,6 +404,7 @@ namespace YTMusicWP
             if (YTMusicWP.Services.MemoryHelper.IsLowMemoryDevice && _homeLoadedPagesCount >= 4)
             {
                 _hasMoreHomeSections = false;
+                ShowHomeEndSections();
                 return;
             }
 
@@ -420,6 +425,11 @@ namespace YTMusicWP
                     _homeContinuationToken = nextResult.ContinuationToken;
                     _hasMoreHomeSections = !string.IsNullOrEmpty(_homeContinuationToken);
                     _homeLoadedPagesCount++;
+
+                    if (YTMusicWP.Services.MemoryHelper.IsLowMemoryDevice && _homeLoadedPagesCount >= 4)
+                    {
+                        _hasMoreHomeSections = false;
+                    }
                 }
                 else
                 {
@@ -433,7 +443,44 @@ namespace YTMusicWP
             finally
             {
                 _isLoadingMoreHomeSections = false;
+                if (!_hasMoreHomeSections)
+                {
+                    ShowHomeEndSections();
+                }
             }
+        }
+
+        private async void ShowHomeEndSections()
+        {
+            try
+            {
+                if (_cachedMoodsData == null)
+                {
+                    try { _cachedMoodsData = await InnerTubeClient.BrowseMoodsAndGenresAsync(); } catch { }
+                }
+                if (_cachedChartsData == null)
+                {
+                    try { _cachedChartsData = await InnerTubeClient.BrowseChartsAsync(); } catch { }
+                }
+
+                if (_cachedMoodsData != null && _cachedMoodsData.Count > 0 && MoodsGenresListView != null)
+                {
+                    MoodsGenresListView.ItemsSource = _cachedMoodsData;
+                    MoodsGenresListView.Visibility = Visibility.Visible;
+                }
+
+                if (_cachedChartsData != null && _cachedChartsData.Count > 0)
+                {
+                    if (HomeChartsTitle != null)
+                        HomeChartsTitle.Visibility = Visibility.Visible;
+                    if (HomeChartsCarousel != null)
+                    {
+                        HomeChartsCarousel.ItemsSource = _cachedChartsData;
+                        HomeChartsCarousel.Visibility = Visibility.Visible;
+                    }
+                }
+            }
+            catch { }
         }
 
         private static bool IsMusicTrack(YouTubeTrack t)
@@ -743,6 +790,8 @@ namespace YTMusicWP
                 _hasMoreHomeSections = false;
                 _homeLoadedPagesCount = 0;
                 _isLoadingMoreHomeSections = false;
+                _cachedMoodsData = null;
+                _cachedChartsData = null;
                 if (_homeDynamicSections != null)
                     _homeDynamicSections.Clear();
                 if (HomeDynamicSections != null)
@@ -758,9 +807,15 @@ namespace YTMusicWP
                 if (HomeArtistsSection != null)
                     HomeArtistsSection.Visibility = Visibility.Collapsed;
                 if (MoodsGenresListView != null)
+                {
                     MoodsGenresListView.ItemsSource = null;
+                    MoodsGenresListView.Visibility = Visibility.Collapsed;
+                }
                 if (HomeChartsCarousel != null)
+                {
                     HomeChartsCarousel.ItemsSource = null;
+                    HomeChartsCarousel.Visibility = Visibility.Collapsed;
+                }
                 if (HomeChartsTitle != null)
                     HomeChartsTitle.Visibility = Visibility.Collapsed;
 

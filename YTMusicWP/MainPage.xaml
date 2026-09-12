@@ -814,7 +814,7 @@
                         </ListView>
 
                         <!-- ═══════ MOODS & GENRES ═══════ -->
-                        <ListView x:Name="MoodsGenresListView" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="10,20,0,30">
+                        <ListView x:Name="MoodsGenresListView" Visibility="Collapsed" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="10,20,0,30">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Padding" Value="0"/>
