@@ -1196,9 +1196,9 @@ namespace YTMusicWP
             int currentSeq = ++_appleMusicBackdropSeq;
 
             var black = Windows.UI.Colors.Black;
-            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.05);
-            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.32);
-            if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.78);
+            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.20);
+            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.55);
+            if (AppleMusicGradBot != null) AppleMusicGradBot.Color = Windows.UI.Color.FromArgb(255, 13, 13, 13);
             if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.45);
             if (AppleMusicArtFadeMid != null)
             {
@@ -1248,9 +1248,9 @@ namespace YTMusicWP
 
                 if (bytes != null && bytes.Length > 0)
                 {
-                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
-                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
-                    int blurKernel = 120;
+                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 60 : 80;
+                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 135;
+                    int blurKernel = 45;
                     WriteableBitmap blurred = cached;
                     if (blurred == null)
                     {
@@ -1345,9 +1345,9 @@ namespace YTMusicWP
                         try
                         {
                             if (Services.LumiaBlurHelper.GetCachedFaded(thumbUrl) != null) return;
-                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
-                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
-                            int blurKernel = 120;
+                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 60 : 80;
+                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 135;
+                            int blurKernel = 45;
                             using (var blurStream = new System.IO.MemoryStream(bytes))
                             {
                                 var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(blurStream, blurW, blurH, blurKernel);
@@ -1450,9 +1450,9 @@ namespace YTMusicWP
             {
                 _currentGradientColor = targetColor;
                 var black = Windows.UI.Colors.Black;
-                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.05);
-                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.32);
-                if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(targetColor, black, 0.78);
+                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.20);
+                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.55);
+                if (AppleMusicGradBot != null) AppleMusicGradBot.Color = Windows.UI.Color.FromArgb(255, 13, 13, 13);
                 if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.45);
                 if (AppleMusicArtFadeMid != null)
                 {
