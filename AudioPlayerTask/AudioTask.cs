@@ -61,8 +61,8 @@ namespace AudioPlayerTask
         private double _nextLiveDurationSec = 0;
         private bool _isLiveSwapping = false;
         private System.Diagnostics.Stopwatch _liveBufferStopwatch = new System.Diagnostics.Stopwatch();
-        private const int LIVE_INITIAL_SEGMENTS = 3;  // 15s instant start (240KB, ready in < 1s)
-        private const int LIVE_DEEP_SEGMENTS = 6;     // 30s rolling buffer (490KB, ready in ~1.5s)
+        private const int LIVE_INITIAL_SEGMENTS = 4;  // 20s instant start (320KB, parallel download ready in ~1s)
+        private const int LIVE_DEEP_SEGMENTS = 12;    // 60s rolling buffer (960KB, parallel download ready in ~2.5s)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -889,7 +889,7 @@ namespace AudioPlayerTask
                 req.Method = "GET";
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(4000);
+                    timeoutCts.CancelAfter(6000);
                     using (timeoutCts.Token.Register(() => { try { req.Abort(); } catch { } }))
                     using (var resp = (System.Net.HttpWebResponse)await req.GetResponseAsync())
                     {
@@ -913,7 +913,7 @@ namespace AudioPlayerTask
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl));
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(4000);
+                    timeoutCts.CancelAfter(6000);
                     using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                     {
                         if (response.IsSuccessStatusCode)
@@ -934,13 +934,25 @@ namespace AudioPlayerTask
             return null;
         }
 
+        private async Task<byte[]> DownloadLiveSegmentWithRetryAsync(string baseUrl, long seq, CancellationToken ct)
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                if (ct.IsCancellationRequested) return null;
+                var bytes = await DownloadLiveSegmentAsync(baseUrl, seq, ct);
+                if (bytes != null && bytes.Length > 0) return bytes;
+                try { await Task.Delay(200, ct); } catch { return null; }
+            }
+            return null;
+        }
+
         private async Task<int> AssembleLiveBufferAsync(string baseUrl, long startSeq, int count, string fileName, CancellationToken ct)
         {
             try
             {
                 var localFolder = ApplicationData.Current.LocalFolder;
                 StorageFile file = null;
-                for (int attempt = 0; attempt < 3; attempt++)
+                for (int attempt = 0; attempt < 5; attempt++)
                 {
                     try
                     {
@@ -949,32 +961,31 @@ namespace AudioPlayerTask
                     }
                     catch
                     {
-                        await Task.Delay(200, ct);
+                        await Task.Delay(150, ct);
                     }
                 }
                 if (file == null) return 0;
 
+                // Download all segments in parallel using Task.WhenAll (fastest, ready in ~1.5s)
+                var downloadTasks = new Task<byte[]>[count];
+                for (int i = 0; i < count; i++)
+                {
+                    long targetSeq = startSeq + i;
+                    downloadTasks[i] = DownloadLiveSegmentWithRetryAsync(baseUrl, targetSeq, ct);
+                }
+
+                byte[][] segments = await Task.WhenAll(downloadTasks);
+
                 using (var stream = await file.OpenStreamForWriteAsync())
                 {
                     int downloaded = 0;
-                    for (int i = 0; i < count; i++)
+                    for (int i = 0; i < segments.Length; i++)
                     {
-                        if (ct.IsCancellationRequested) return downloaded;
-                        long targetSeq = startSeq + i;
-                        byte[] segBytes = null;
-
-                        for (int attempt = 0; attempt < 3; attempt++)
-                        {
-                            if (ct.IsCancellationRequested) return downloaded;
-                            segBytes = await DownloadLiveSegmentAsync(baseUrl, targetSeq, ct);
-                            if (segBytes != null && segBytes.Length > 0) break;
-                            await Task.Delay(300, ct);
-                        }
-
+                        var segBytes = segments[i];
                         if (segBytes == null || segBytes.Length == 0)
                         {
-                            if (downloaded > 0) break;
-                            return 0;
+                            if (downloaded == 0) return 0;
+                            break;
                         }
 
                         if (downloaded == 0)
@@ -1624,12 +1635,12 @@ namespace AudioPlayerTask
                 int nextIndex = 1 - _currentLiveBufferIndex;
                 string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
 
-                // Wait up to 5 seconds if next buffer is still downloading
+                // Wait up to 10 seconds if next buffer is still downloading
                 if (!_isNextLiveBufferReady && _nextLiveBufferTask != null)
                 {
                     try
                     {
-                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(5000));
+                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(10000));
                     }
                     catch { }
                 }
@@ -1640,18 +1651,24 @@ namespace AudioPlayerTask
                     _isNextLiveBufferReady = false;
                     _liveBufferDurationSec = _nextLiveDurationSec > 0 ? _nextLiveDurationSec : (LIVE_DEEP_SEGMENTS * 5.0);
 
-                    try
+                    for (int setAttempt = 0; setAttempt < 3; setAttempt++)
                     {
-                        _mediaPlayer.SetUriSource(new Uri("ms-appdata:///local/" + nextFile));
-                        try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
-                        _mediaPlayer.Play();
-                        try { _liveBufferStopwatch.Restart(); } catch { }
+                        try
+                        {
+                            _mediaPlayer.SetUriSource(new Uri("ms-appdata:///local/" + nextFile));
+                            try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
+                            _mediaPlayer.Play();
+                            try { _liveBufferStopwatch.Restart(); } catch { }
 
-                        // Start pre-buffering next chunk into the inactive buffer
-                        PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
-                        return;
+                            // Start pre-buffering next chunk into the inactive buffer
+                            PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
+                            return;
+                        }
+                        catch
+                        {
+                            await Task.Delay(150);
+                        }
                     }
-                    catch { }
                 }
 
                 // Fallback: direct play if buffer swap was not ready
