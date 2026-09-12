@@ -352,9 +352,14 @@ namespace YTMusicWP
                                 {
                                     string xml = await dashResp.Content.ReadAsStringAsync();
                                     string dashBaseUrl = ExtractDashAudioBaseUrl(xml);
+                                    long latestSeq = ExtractDashLatestSeq(xml);
                                     if (!string.IsNullOrEmpty(dashBaseUrl))
                                     {
-                                        LastResolveDebug += " DASH:OK";
+                                        LastResolveDebug += " DASH:s" + latestSeq + ":OK";
+                                        if (latestSeq > 0)
+                                        {
+                                            dashBaseUrl += "#sq=" + latestSeq;
+                                        }
                                         return PrepareStreamUrl(dashBaseUrl);
                                     }
                                 }
@@ -444,6 +449,25 @@ namespace YTMusicWP
                 }
             }
             return null;
+        }
+
+        internal static long ExtractDashLatestSeq(string xml)
+        {
+            if (string.IsNullOrEmpty(xml)) return -1;
+            int lastSq = xml.LastIndexOf("sq/", StringComparison.OrdinalIgnoreCase);
+            if (lastSq < 0) return -1;
+            int numStart = lastSq + 3;
+            int numEnd = xml.IndexOfAny(new[] { '/', '"', '<', '?', ' ' }, numStart);
+            if (numEnd > numStart)
+            {
+                string numStr = xml.Substring(numStart, numEnd - numStart);
+                long seq;
+                if (long.TryParse(numStr, out seq))
+                {
+                    return seq;
+                }
+            }
+            return -1;
         }
 
         // ==========================================

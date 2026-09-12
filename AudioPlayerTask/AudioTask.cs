@@ -891,6 +891,28 @@ namespace AudioPlayerTask
                 }
             }
             catch { }
+
+            // Fallback via HttpWebRequest if WinRT HttpClient fails
+            try
+            {
+                var req = System.Net.WebRequest.CreateHttp(segUrl);
+                req.Method = "GET";
+                using (ct.Register(() => { try { req.Abort(); } catch { } }))
+                using (var resp = (System.Net.HttpWebResponse)await req.GetResponseAsync())
+                {
+                    if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        using (var respStream = resp.GetResponseStream())
+                        using (var ms = new MemoryStream())
+                        {
+                            await respStream.CopyToAsync(ms);
+                            return ms.ToArray();
+                        }
+                    }
+                }
+            }
+            catch { }
+
             return null;
         }
 
@@ -899,7 +921,21 @@ namespace AudioPlayerTask
             try
             {
                 var localFolder = ApplicationData.Current.LocalFolder;
-                var file = await localFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
+                StorageFile file = null;
+                for (int attempt = 0; attempt < 3; attempt++)
+                {
+                    try
+                    {
+                        file = await localFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
+                        if (file != null) break;
+                    }
+                    catch
+                    {
+                        await Task.Delay(200, ct);
+                    }
+                }
+                if (file == null) return false;
+
                 using (var stream = await file.OpenStreamForWriteAsync())
                 {
                     int downloaded = 0;
@@ -1008,20 +1044,17 @@ namespace AudioPlayerTask
             _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
             UpdateSystemMediaControls();
 
-            // If sequence number wasn't already in manifest, query HEAD to discover it
+            // If sequence number wasn't already discovered, query HEAD via HttpWebRequest
             if (_currentLiveSeq <= 0 && !string.IsNullOrEmpty(_currentLiveBaseUrl))
             {
                 try
                 {
-                    var headReq = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Head, new Uri(_currentLiveBaseUrl));
-                    using (var headResp = await _httpClient.SendRequestAsync(headReq).AsTask(ct))
+                    var headReq = System.Net.WebRequest.CreateHttp(_currentLiveBaseUrl);
+                    headReq.Method = "HEAD";
+                    using (ct.Register(() => { try { headReq.Abort(); } catch { } }))
+                    using (var headResp = (System.Net.HttpWebResponse)await headReq.GetResponseAsync())
                     {
-                        string seqHeader = null;
-                        if (headResp.Headers.ContainsKey("X-Sequence-Num"))
-                            seqHeader = headResp.Headers["X-Sequence-Num"];
-                        else if (headResp.Headers.ContainsKey("X-Head-Seqnum"))
-                            seqHeader = headResp.Headers["X-Head-Seqnum"];
-
+                        string seqHeader = headResp.Headers["X-Sequence-Num"] ?? headResp.Headers["X-Head-Seqnum"];
                         long parsedSeq;
                         if (!string.IsNullOrEmpty(seqHeader) && long.TryParse(seqHeader, out parsedSeq))
                         {
@@ -1110,8 +1143,25 @@ namespace AudioPlayerTask
             {
                 StopPlaybackMonitor();
 
+                int sqIdx = trackUrl.IndexOf("#sq=");
+                if (sqIdx >= 0)
+                {
+                    string sqStr = trackUrl.Substring(sqIdx + 4);
+                    long parsedSq;
+                    if (long.TryParse(sqStr, out parsedSq) && parsedSq > 0)
+                    {
+                        _currentLiveSeq = parsedSq;
+                    }
+                    trackUrl = trackUrl.Substring(0, sqIdx);
+                }
+
                 _isCurrentTrackLive = IsLiveStreamUrl(trackUrl);
                 _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
+                if (!_isCurrentTrackLive && _liveCts != null)
+                {
+                    try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
+                    _liveCts = null;
+                }
                 if (_currentLoadedVidId != vidId) _liveReconnectCount = 0;
 
                 if (_isCurrentTrackLive && !string.IsNullOrEmpty(_currentLiveBaseUrl))
