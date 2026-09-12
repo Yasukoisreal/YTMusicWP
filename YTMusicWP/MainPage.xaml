@@ -3449,9 +3449,9 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Live Stream Logs" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#00E5FF" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Click="SaveLiveDebugLogs_Click" Content="Save" Style="{StaticResource ModernActionButtonStyle}" Background="#282828" Foreground="White" Height="32" Padding="8,0" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                            <Button Grid.Column="2" Click="ShareLiveDebugLogs_Click" Content="Share" Style="{StaticResource ModernActionButtonStyle}" Background="#282828" Foreground="White" Height="32" Padding="8,0" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                            <Button Grid.Column="3" Click="SelectAllLiveDebugLogs_Click" Content="Select All" Style="{StaticResource ModernActionButtonStyle}" Background="#00E5FF" Foreground="Black" FontWeight="Bold" Height="32" Padding="8,0" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Click="SaveLiveDebugLogs_Click" Content="Save" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Click="ShareLiveDebugLogs_Click" Content="Share" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <Button Grid.Column="3" Click="SelectAllLiveDebugLogs_Click" Content="Select All" Style="{StaticResource ChipButtonStyle}" Background="#00E5FF" Foreground="Black" FontWeight="Bold" FontSize="12" Padding="10,6" VerticalAlignment="Center"/>
                         </Grid>
                         <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
                     </StackPanel>
