@@ -46,6 +46,8 @@ namespace AudioPlayerTask
         private bool _innerTubeAttempted = false;
         private double _playbackRate = 1.0;
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
+        private bool _isCurrentTrackLive = false;
+        private int _liveReconnectCount = 0;
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -166,6 +168,8 @@ namespace AudioPlayerTask
             _isRetrying = false;
             _resolvedUrl = null;
             _innerTubeAttempted = false;
+            _isCurrentTrackLive = false;
+            _liveReconnectCount = 0;
             ClearPreResolvedState();
         }
 
@@ -624,6 +628,17 @@ namespace AudioPlayerTask
                                 }
                             }
                         }
+
+                        // 3. Fallback cho Live stream: hlsManifestUrl
+                        if (streamingData.ContainsKey("hlsManifestUrl"))
+                        {
+                            string hls = streamingData.GetNamedString("hlsManifestUrl");
+                            if (!string.IsNullOrEmpty(hls))
+                            {
+                                _innerTubeDebug += " [" + clientName + ":HLS:OK]";
+                                return hls;
+                            }
+                        }
                     }
                 }
 
@@ -735,6 +750,17 @@ namespace AudioPlayerTask
             return url;
         }
 
+        private bool IsLiveStreamUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return false;
+            return url.IndexOf("hls_variant", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("hls_playlist", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("yt_live_broadcast", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf(".m3u8", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("live/1", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("live=1", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private void PlayUrl(string trackUrl, string vidId)
         {
             if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count) return;
@@ -744,6 +770,9 @@ namespace AudioPlayerTask
             try
             {
                 StopPlaybackMonitor();
+
+                _isCurrentTrackLive = IsLiveStreamUrl(trackUrl);
+                if (_currentLoadedVidId != vidId) _liveReconnectCount = 0;
 
 
                 // Normalize Volume: set consistent volume level
@@ -997,6 +1026,8 @@ namespace AudioPlayerTask
                     return;
                 }
 
+                if (_isCurrentTrackLive) return;
+
                 var pos = _mediaPlayer.Position;
                 var naturalDuration = _mediaPlayer.NaturalDuration;
                 if (naturalDuration == TimeSpan.Zero || naturalDuration.TotalSeconds < 10) return;
@@ -1154,7 +1185,36 @@ namespace AudioPlayerTask
 
         private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
         {
-            
+            if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
+            {
+                // For live streams, stream interruptions or buffer boundaries should attempt to resume rather than skipping tracks
+                if (_liveReconnectCount < 3)
+                {
+                    _liveReconnectCount++;
+                    try
+                    {
+                        if (_mediaPlayer.CurrentState == MediaPlayerState.Closed)
+                        {
+                            StartPlaybackAsync();
+                        }
+                        else
+                        {
+                            _mediaPlayer.Play();
+                        }
+                    }
+                    catch
+                    {
+                        StartPlaybackAsync();
+                    }
+                }
+                else
+                {
+                    // Live broadcast stopped or network permanently disconnected
+                    StopPlaybackMonitor();
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
+                }
+                return;
+            }
 
             StopPlaybackMonitor();
             MoveNext();

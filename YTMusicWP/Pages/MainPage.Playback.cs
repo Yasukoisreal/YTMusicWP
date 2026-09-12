@@ -438,7 +438,34 @@ namespace YTMusicWP
 
             TimeSpan pos, dur;
             try { pos = session.Position; dur = session.NaturalDuration; } catch { return; }
-            if (dur.TotalSeconds <= 0) return;
+            if (dur.TotalSeconds <= 0)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
+                {
+                    try
+                    {
+                        MusicSlider.Maximum = 100;
+                        MusicSlider.Value = 100;
+                        CurrentTimeText.Text = pos.ToString(@"m\:ss");
+                        TotalTimeText.Text = "LIVE";
+                        MiniProgressBar.Maximum = 100;
+                        MiniProgressBar.Value = 100;
+
+                        if (_isAppleMusicStyle)
+                        {
+                            if (AppleMusicSlider != null)
+                            {
+                                AppleMusicSlider.Maximum = 100;
+                                AppleMusicSlider.Value = 100;
+                            }
+                            if (AppleMusicCurrentTime != null) AppleMusicCurrentTime.Text = pos.ToString(@"m\:ss");
+                            if (AppleMusicRemainingTime != null) AppleMusicRemainingTime.Text = "LIVE";
+                        }
+                    }
+                    catch { }
+                });
+                return;
+            }
 
             try
             {
@@ -609,10 +636,14 @@ namespace YTMusicWP
             {
                 if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                 {
-                    // FIX #7: Clamp giá trị seek để không bị âm với clip ngắn
-                    var slider = (sender as Slider) ?? MusicSlider;
-                    _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(slider.Value, Math.Max(0, _appMediaPlayer.NaturalDuration.TotalSeconds - 2)));
-                    if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                    double totalSec = 0;
+                    try { totalSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
+                    if (totalSec > 0)
+                    {
+                        var slider = (sender as Slider) ?? MusicSlider;
+                        _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(slider.Value, Math.Max(0, totalSec - 2)));
+                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                    }
                 }
             }
             catch { }

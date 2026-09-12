@@ -340,6 +340,14 @@ namespace YTMusicWP
                         }
                     }
 
+                    // 3. Fallback for live streams: hlsManifestUrl
+                    string hlsUrl = data["streamingData"]?["hlsManifestUrl"]?.ToString();
+                    if (!string.IsNullOrEmpty(hlsUrl))
+                    {
+                        LastResolveDebug += " HLS:OK";
+                        return hlsUrl;
+                    }
+
                     LastResolveDebug += " NOURL";
                 }
                 catch (Exception ex)

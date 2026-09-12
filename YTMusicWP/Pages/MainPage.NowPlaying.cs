@@ -1263,8 +1263,13 @@ namespace YTMusicWP
                 {
                     if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                     {
-                        _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(AppleMusicSlider.Value, Math.Max(0, _appMediaPlayer.NaturalDuration.TotalSeconds - 2)));
-                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                        double totalSec = 0;
+                        try { totalSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
+                        if (totalSec > 0)
+                        {
+                            _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(AppleMusicSlider.Value, Math.Max(0, totalSec - 2)));
+                            if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                        }
                     }
                 }
                 catch { }
