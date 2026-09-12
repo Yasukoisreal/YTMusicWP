@@ -1004,85 +1004,14 @@ namespace YTMusicWP
                     byte[] pixels = pixelData.DetachPixelData();
                     if (pixels == null || pixels.Length < 4) return null;
 
-                    // Analyze pixels to find dominant vibrant color
-                    double bestScore = -1.0;
-                    byte bestR = 30, bestG = 50, bestB = 70;
-                    long totalR = 0, totalG = 0, totalB = 0;
-                    int validCount = 0;
-                    long allTotalR = 0, allTotalG = 0, allTotalB = 0;
-                    int allOpaqueCount = 0;
-
-                    for (int i = 0; i < pixels.Length; i += 4)
+                    var rawColor = ExtractDominantColorFromPixels(pixels, 4);
+                    var resultColor = AdjustAmbientColor(rawColor);
+                    lock (_dominantColorCache)
                     {
-                        byte b = pixels[i];
-                        byte g = pixels[i + 1];
-                        byte r = pixels[i + 2];
-                        byte a = pixels[i + 3];
-
-                        if (a < 128) continue;
-
-                        allTotalR += r;
-                        allTotalG += g;
-                        allTotalB += b;
-                        allOpaqueCount++;
-
-                        // Perceived luminance: allow cream/pastel tones [15, 248]
-                        double lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                        if (lum < 15 || lum > 248) continue;
-
-                        totalR += r;
-                        totalG += g;
-                        totalB += b;
-                        validCount++;
-
-                        double max = Math.Max(r, Math.Max(g, b));
-                        double min = Math.Min(r, Math.Min(g, b));
-                        double delta = max - min;
-                        double sat = max == 0 ? 0 : delta / max;
-
-                        if (sat < 0.10) continue; // Skip grayish pixels
-
-                        // Score: favors higher saturation, and luminance close to 110
-                        double lumDist = Math.Abs(lum - 110.0) / 110.0;
-                        double score = (sat * 2.5) + (1.0 - lumDist);
-
-                        if (score > bestScore)
-                        {
-                            bestScore = score;
-                            bestR = r;
-                            bestG = g;
-                            bestB = b;
-                        }
+                        if (_dominantColorCache.Count > 60) _dominantColorCache.Clear();
+                        _dominantColorCache[thumbUrl] = resultColor;
                     }
-
-                    if (bestScore <= 0 && validCount > 0)
-                    {
-                        // Fallback: average color if saturation was low (e.g. monochrome artwork)
-                        bestR = (byte)(totalR / validCount);
-                        bestG = (byte)(totalG / validCount);
-                        bestB = (byte)(totalB / validCount);
-                        bestScore = 1.0;
-                    }
-                    else if (bestScore <= 0 && allOpaqueCount > 0)
-                    {
-                        // Ultimate fallback: average of all opaque pixels
-                        bestR = (byte)(allTotalR / allOpaqueCount);
-                        bestG = (byte)(allTotalG / allOpaqueCount);
-                        bestB = (byte)(allTotalB / allOpaqueCount);
-                        bestScore = 0.5;
-                    }
-
-                    if (bestScore > 0)
-                    {
-                        var rawColor = Windows.UI.Color.FromArgb(255, bestR, bestG, bestB);
-                        var resultColor = AdjustAmbientColor(rawColor);
-                        lock (_dominantColorCache)
-                        {
-                            if (_dominantColorCache.Count > 60) _dominantColorCache.Clear();
-                            _dominantColorCache[thumbUrl] = resultColor;
-                        }
-                        return resultColor;
-                    }
+                    return resultColor;
                 }
             }
             catch { }
@@ -1096,6 +1025,109 @@ namespace YTMusicWP
                 (byte)(from.R + (to.R - from.R) * t),
                 (byte)(from.G + (to.G - from.G) * t),
                 (byte)(from.B + (to.B - from.B) * t));
+        }
+
+        private static Windows.UI.Color ExtractDominantColorFromPixels(byte[] pixels, int step)
+        {
+            if (pixels == null || pixels.Length < 4) return Windows.UI.Color.FromArgb(255, 30, 50, 70);
+
+            int[] binCount = new int[12];
+            long[] binR = new long[12];
+            long[] binG = new long[12];
+            long[] binB = new long[12];
+            double[] binSat = new double[12];
+            double[] binLum = new double[12];
+
+            long allTotalR = 0, allTotalG = 0, allTotalB = 0;
+            int allOpaqueCount = 0;
+
+            for (int i = 0; i < pixels.Length; i += step)
+            {
+                byte b = pixels[i];
+                byte g = pixels[i + 1];
+                byte r = pixels[i + 2];
+                byte a = pixels[i + 3];
+
+                if (a < 128) continue;
+
+                allTotalR += r;
+                allTotalG += g;
+                allTotalB += b;
+                allOpaqueCount++;
+
+                // Perceived luminance [15, 245]
+                double lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                if (lum < 15 || lum > 245) continue;
+
+                double max = Math.Max(r, Math.Max(g, b));
+                double min = Math.Min(r, Math.Min(g, b));
+                double delta = max - min;
+                double sat = (max == 0) ? 0 : delta / max;
+
+                if (sat < 0.15) continue; // Skip grayish / low-saturation pixels
+
+                // Fast Hue calculation: 0..360 mapped to 12 bins (30 deg each)
+                double hue = 0.0;
+                if (delta > 0)
+                {
+                    if (max == r)
+                    {
+                        hue = (double)(g - b) / delta;
+                        if (hue < 0) hue += 6.0;
+                    }
+                    else if (max == g)
+                    {
+                        hue = ((double)(b - r) / delta) + 2.0;
+                    }
+                    else
+                    {
+                        hue = ((double)(r - g) / delta) + 4.0;
+                    }
+                    hue *= 60.0;
+                }
+
+                int bin = ((int)(hue / 30.0)) % 12;
+                binCount[bin]++;
+                binR[bin] += r;
+                binG[bin] += g;
+                binB[bin] += b;
+                binSat[bin] += sat;
+                binLum[bin] += lum;
+            }
+
+            double bestScore = -1.0;
+            byte bestR = 30, bestG = 50, bestB = 70;
+
+            for (int i = 0; i < 12; i++)
+            {
+                if (binCount[i] > 0)
+                {
+                    double avgSat = binSat[i] / binCount[i];
+                    double avgLum = binLum[i] / binCount[i];
+                    double lumDist = Math.Abs(avgLum - 110.0) / 110.0;
+
+                    // Score: Math.Sqrt(binCount) balances cluster population with color vibrancy
+                    // preventing tiny 1-2 pixel accent anomalies from hijacking the dominant palette.
+                    double score = Math.Sqrt(binCount[i]) * ((avgSat * 2.0) + (1.0 - lumDist));
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestR = (byte)(binR[i] / binCount[i]);
+                        bestG = (byte)(binG[i] / binCount[i]);
+                        bestB = (byte)(binB[i] / binCount[i]);
+                    }
+                }
+            }
+
+            if (bestScore <= 0 && allOpaqueCount > 0)
+            {
+                // Fallback: average color of all opaque pixels (e.g. monochrome / black & white artwork)
+                bestR = (byte)(allTotalR / allOpaqueCount);
+                bestG = (byte)(allTotalG / allOpaqueCount);
+                bestB = (byte)(allTotalB / allOpaqueCount);
+            }
+
+            return Windows.UI.Color.FromArgb(255, bestR, bestG, bestB);
         }
 
         private static Windows.UI.Color ExtractDominantColorFromBitmap(Windows.UI.Xaml.Media.Imaging.WriteableBitmap bitmap)
@@ -1113,74 +1145,7 @@ namespace YTMusicWP
                     stream.Read(pixels, 0, len);
                 }
 
-                double bestScore = -1.0;
-                byte bestR = 30, bestG = 50, bestB = 70;
-                long totalR = 0, totalG = 0, totalB = 0;
-                int validCount = 0;
-                long allTotalR = 0, allTotalG = 0, allTotalB = 0;
-                int allOpaqueCount = 0;
-
-                // Sample every 2nd pixel for speed
-                for (int i = 0; i < len; i += 8)
-                {
-                    byte b = pixels[i];
-                    byte g = pixels[i + 1];
-                    byte r = pixels[i + 2];
-                    byte a = pixels[i + 3];
-
-                    if (a < 128) continue;
-
-                    allTotalR += r;
-                    allTotalG += g;
-                    allTotalB += b;
-                    allOpaqueCount++;
-
-                    double lum = 0.299 * r + 0.587 * g + 0.114 * b;
-                    if (lum < 15 || lum > 248) continue;
-
-                    totalR += r;
-                    totalG += g;
-                    totalB += b;
-                    validCount++;
-
-                    double max = Math.Max(r, Math.Max(g, b));
-                    double min = Math.Min(r, Math.Min(g, b));
-                    double delta = max - min;
-                    double sat = max == 0 ? 0 : delta / max;
-
-                    if (sat < 0.10) continue;
-
-                    double lumDist = Math.Abs(lum - 110.0) / 110.0;
-                    double score = (sat * 2.5) + (1.0 - lumDist);
-
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                        bestR = r;
-                        bestG = g;
-                        bestB = b;
-                    }
-                }
-
-                if (bestScore <= 0 && validCount > 0)
-                {
-                    bestR = (byte)(totalR / validCount);
-                    bestG = (byte)(totalG / validCount);
-                    bestB = (byte)(totalB / validCount);
-                    bestScore = 1.0;
-                }
-                else if (bestScore <= 0 && allOpaqueCount > 0)
-                {
-                    bestR = (byte)(allTotalR / allOpaqueCount);
-                    bestG = (byte)(allTotalG / allOpaqueCount);
-                    bestB = (byte)(allTotalB / allOpaqueCount);
-                    bestScore = 0.5;
-                }
-
-                if (bestScore > 0)
-                {
-                    return Windows.UI.Color.FromArgb(255, bestR, bestG, bestB);
-                }
+                return ExtractDominantColorFromPixels(pixels, 8); // sample every 2nd pixel for speed
             }
             catch { }
 
@@ -1196,13 +1161,13 @@ namespace YTMusicWP
             int currentSeq = ++_appleMusicBackdropSeq;
 
             var black = Windows.UI.Colors.Black;
-            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.20);
-            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.55);
+            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.15);
+            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.50);
             if (AppleMusicGradBot != null) AppleMusicGradBot.Color = Windows.UI.Color.FromArgb(255, 13, 13, 13);
-            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.45);
+            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.50);
             if (AppleMusicArtFadeMid != null)
             {
-                var midFade = LerpColor(seedColor, black, 0.45);
+                var midFade = LerpColor(seedColor, black, 0.50);
                 AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
             }
             UpdateLyricsFadeColors(seedColor);
@@ -1248,9 +1213,9 @@ namespace YTMusicWP
 
                 if (bytes != null && bytes.Length > 0)
                 {
-                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 60 : 80;
-                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 135;
-                    int blurKernel = 45;
+                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
+                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
+                    int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 120;
                     WriteableBitmap blurred = cached;
                     if (blurred == null)
                     {
@@ -1345,9 +1310,9 @@ namespace YTMusicWP
                         try
                         {
                             if (Services.LumiaBlurHelper.GetCachedFaded(thumbUrl) != null) return;
-                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 60 : 80;
-                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 135;
-                            int blurKernel = 45;
+                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
+                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
+                            int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 120;
                             using (var blurStream = new System.IO.MemoryStream(bytes))
                             {
                                 var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(blurStream, blurW, blurH, blurKernel);
@@ -1450,13 +1415,13 @@ namespace YTMusicWP
             {
                 _currentGradientColor = targetColor;
                 var black = Windows.UI.Colors.Black;
-                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.20);
-                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.55);
+                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.15);
+                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.50);
                 if (AppleMusicGradBot != null) AppleMusicGradBot.Color = Windows.UI.Color.FromArgb(255, 13, 13, 13);
-                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.45);
+                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.50);
                 if (AppleMusicArtFadeMid != null)
                 {
-                    var midFade = LerpColor(targetColor, black, 0.45);
+                    var midFade = LerpColor(targetColor, black, 0.50);
                     AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
                 }
 
