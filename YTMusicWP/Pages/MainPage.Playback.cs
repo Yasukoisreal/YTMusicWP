@@ -1213,9 +1213,9 @@ namespace YTMusicWP
 
                 if (bytes != null && bytes.Length > 0)
                 {
-                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
-                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
-                    int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 120;
+                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 24 : 32;
+                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 40 : 54;
+                    int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 100;
                     WriteableBitmap blurred = cached;
                     if (blurred == null)
                     {
@@ -1242,7 +1242,7 @@ namespace YTMusicWP
                     if (faded == null)
                     {
                         int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
-                        int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 65 : 85;
+                        int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 135 : 180;
                         using (var fadeStream = new System.IO.MemoryStream(bytes))
                         {
                             faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight);
@@ -1310,9 +1310,9 @@ namespace YTMusicWP
                         try
                         {
                             if (Services.LumiaBlurHelper.GetCachedFaded(thumbUrl) != null) return;
-                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
-                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
-                            int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 100 : 120;
+                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 24 : 32;
+                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 40 : 54;
+                            int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 100;
                             using (var blurStream = new System.IO.MemoryStream(bytes))
                             {
                                 var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(blurStream, blurW, blurH, blurKernel);
@@ -1320,7 +1320,7 @@ namespace YTMusicWP
                             }
 
                             int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
-                            int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 65 : 85;
+                            int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 135 : 180;
                             using (var fadeStream = new System.IO.MemoryStream(bytes))
                             {
                                 var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight);
