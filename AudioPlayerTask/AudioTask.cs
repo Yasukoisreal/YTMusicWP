@@ -57,8 +57,12 @@ namespace AudioPlayerTask
         private Task<bool> _nextLiveBufferTask = null;
         private CancellationTokenSource _liveCts = null;
         private int _liveReconnectCount = 0;
-        private const int LIVE_INITIAL_SEGMENTS = 2;  // 10s instant start (only 160KB, ready in < 1s)
-        private const int LIVE_DEEP_SEGMENTS = 6;     // 30s rolling buffer (490KB, ready in ~3s while audio is playing)
+        private double _liveBufferDurationSec = 0;
+        private double _nextLiveDurationSec = 0;
+        private bool _isLiveSwapping = false;
+        private System.Diagnostics.Stopwatch _liveBufferStopwatch = new System.Diagnostics.Stopwatch();
+        private const int LIVE_INITIAL_SEGMENTS = 3;  // 15s instant start (240KB, ready in < 1s)
+        private const int LIVE_DEEP_SEGMENTS = 6;     // 30s rolling buffer (490KB, ready in ~1.5s)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -202,6 +206,10 @@ namespace AudioPlayerTask
             _isNextLiveBufferReady = false;
             _nextLiveBufferTask = null;
             _liveReconnectCount = 0;
+            _liveBufferDurationSec = 0;
+            _nextLiveDurationSec = 0;
+            _isLiveSwapping = false;
+            try { _liveBufferStopwatch.Reset(); } catch { }
             try
             {
                 Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = false;
@@ -1017,6 +1025,7 @@ namespace AudioPlayerTask
                 int downloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, count, nextFile, ct);
                 if (downloaded > 0 && !ct.IsCancellationRequested)
                 {
+                    _nextLiveDurationSec = downloaded * 5.0;
                     _isNextLiveBufferReady = true;
                     _nextLiveStartSeq = startSeq + downloaded;
                     return true;
@@ -1101,11 +1110,18 @@ namespace AudioPlayerTask
             _nextLiveStartSeq = startSeq + initialDownloaded;
             _currentLoadedVidId = vidId;
 
+            _liveBufferDurationSec = initialDownloaded * 5.0;
+            _isLiveSwapping = false;
+            try { _liveBufferStopwatch.Restart(); } catch { }
+
             string localUri = "ms-appdata:///local/" + buf0File;
             _mediaPlayer.SetUriSource(new Uri(localUri));
             try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
             _mediaPlayer.Play();
             _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+
+            // CRITICAL: Start playback monitor timer so buffer swapping ticks!
+            StartPlaybackMonitor();
 
             // Start rolling pre-buffering (6 segments = 30s) for Buffer 1
             PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
@@ -1431,7 +1447,18 @@ namespace AudioPlayerTask
                     return;
                 }
 
-                if (_isCurrentTrackLive) return;
+                if (_isCurrentTrackLive)
+                {
+                    if (_mediaPlayer.CurrentState == MediaPlayerState.Playing)
+                    {
+                        double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
+                        if (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 0.8) && !_isLiveSwapping)
+                        {
+                            SwapToNextLiveBuffer();
+                        }
+                    }
+                    return;
+                }
 
                 var pos = _mediaPlayer.Position;
                 var naturalDuration = _mediaPlayer.NaturalDuration;
@@ -1588,19 +1615,21 @@ namespace AudioPlayerTask
             StartPlaybackAsync();
         }
 
-        private async void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
+        private async void SwapToNextLiveBuffer()
         {
-            if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
+            if (!_isCurrentTrackLive || _isLiveSwapping) return;
+            _isLiveSwapping = true;
+            try
             {
                 int nextIndex = 1 - _currentLiveBufferIndex;
                 string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
 
-                // Wait up to 10 seconds if next buffer is still downloading
+                // Wait up to 5 seconds if next buffer is still downloading
                 if (!_isNextLiveBufferReady && _nextLiveBufferTask != null)
                 {
                     try
                     {
-                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(10000));
+                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(5000));
                     }
                     catch { }
                 }
@@ -1609,12 +1638,17 @@ namespace AudioPlayerTask
                 {
                     _currentLiveBufferIndex = nextIndex;
                     _isNextLiveBufferReady = false;
+                    _liveBufferDurationSec = _nextLiveDurationSec > 0 ? _nextLiveDurationSec : (LIVE_DEEP_SEGMENTS * 5.0);
+
                     try
                     {
                         _mediaPlayer.SetUriSource(new Uri("ms-appdata:///local/" + nextFile));
+                        try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                         _mediaPlayer.Play();
+                        try { _liveBufferStopwatch.Restart(); } catch { }
 
-                        PreBufferNextLiveChunkAsync();
+                        // Start pre-buffering next chunk into the inactive buffer
+                        PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                         return;
                     }
                     catch { }
@@ -1639,9 +1673,22 @@ namespace AudioPlayerTask
                 }
                 else
                 {
+                    _liveReconnectCount = 0;
                     StopPlaybackMonitor();
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                 }
+            }
+            finally
+            {
+                _isLiveSwapping = false;
+            }
+        }
+
+        private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
+        {
+            if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
+            {
+                SwapToNextLiveBuffer();
                 return;
             }
 
@@ -1655,9 +1702,14 @@ namespace AudioPlayerTask
             {
                 if (sender.CurrentState == MediaPlayerState.Playing)
                 {
+                    if (_isCurrentTrackLive)
+                    {
+                        try { _liveBufferStopwatch.Start(); } catch { }
+                    }
+
                     // [FIX-SOF] Only reset retryCount if NOT in a retry cycle
                     // Without this guard, player briefly entering Playing before failing
-                    // would reset _retryCount ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ infinite retry ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ StackOverflow
+                    // would reset _retryCount → infinite retry → StackOverflow
                     if (!_isRetrying) _retryCount = 0;
                     _isRetrying = false;
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
@@ -1671,6 +1723,11 @@ namespace AudioPlayerTask
                 }
                 else if (sender.CurrentState == MediaPlayerState.Paused)
                 {
+                    if (_isCurrentTrackLive)
+                    {
+                        try { _liveBufferStopwatch.Stop(); } catch { }
+                    }
+
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                     try
                     {
