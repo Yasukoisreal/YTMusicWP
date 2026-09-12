@@ -81,8 +81,10 @@ namespace AudioPlayerTask
             _systemControls.IsPreviousEnabled = true;
 
             _mediaPlayer = BackgroundMediaPlayer.Current;
+            _mediaPlayer.AutoPlay = true;
             _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
             _mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
+            _mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
             _mediaPlayer.CurrentStateChanged += MediaPlayer_CurrentStateChanged;
 
             BackgroundMediaPlayer.MessageReceivedFromForeground += BackgroundMediaPlayer_MessageReceivedFromForeground;
@@ -97,6 +99,7 @@ namespace AudioPlayerTask
                 _systemControls.IsEnabled = false;
                 _mediaPlayer.MediaEnded -= MediaPlayer_MediaEnded;
                 _mediaPlayer.MediaFailed -= MediaPlayer_MediaFailed;
+                _mediaPlayer.MediaOpened -= MediaPlayer_MediaOpened;
                 _mediaPlayer.CurrentStateChanged -= MediaPlayer_CurrentStateChanged;
                 BackgroundMediaPlayer.MessageReceivedFromForeground -= BackgroundMediaPlayer_MessageReceivedFromForeground;
                 BackgroundMediaPlayer.Shutdown();
@@ -1058,8 +1061,10 @@ namespace AudioPlayerTask
                     _nextLiveDurationSec = downloaded * 5.0;
                     _isNextLiveBufferReady = true;
                     _nextLiveStartSeq = startSeq + downloaded;
+                    SendToast("[Live] Đã nạp Buffer " + nextIndex + ": " + downloaded + " chunk (" + _nextLiveDurationSec.ToString("F0") + "s)");
                     return true;
                 }
+                SendToast("[Live Lỗi] Tải Buffer " + nextIndex + " thất bại (" + downloaded + "/" + count + " chunk)");
                 return false;
             });
         }
@@ -1144,16 +1149,18 @@ namespace AudioPlayerTask
             _isLiveSwapping = false;
             try { _liveBufferStopwatch.Restart(); } catch { }
 
+            _mediaPlayer.AutoPlay = true;
             string localUri = "ms-appdata:///local/" + buf0File;
             _mediaPlayer.SetUriSource(new Uri(localUri));
             try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
             _mediaPlayer.Play();
             _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+            SendToast("[Live] Phát Buffer 0: " + initialDownloaded + " chunk (" + _liveBufferDurationSec.ToString("F0") + "s)");
 
             // CRITICAL: Start playback monitor timer so buffer swapping ticks!
             StartPlaybackMonitor();
 
-            // Start rolling pre-buffering (6 segments = 30s) for Buffer 1
+            // Start rolling pre-buffering (8 segments = 40s) for Buffer 1
             PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
         }
 
@@ -1194,7 +1201,7 @@ namespace AudioPlayerTask
             if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count) return;
             if (_videoIdList[_currentTrackIndex] != vidId) return;
 
-            _mediaPlayer.AutoPlay = false;
+            _mediaPlayer.AutoPlay = true;
             try
             {
                 StopPlaybackMonitor();
@@ -1254,6 +1261,12 @@ namespace AudioPlayerTask
         // ==========================================
         private async void MediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
         {
+            if (_isCurrentTrackLive)
+            {
+                string hr = args.ExtendedErrorCode != null ? args.ExtendedErrorCode.HResult.ToString("X") : "unknown";
+                SendToast("[Live Lỗi MediaFailed] 0x" + hr);
+            }
+
             // [FIX-SOF] Guard against re-entrancy – prevents StackOverflowException
             if (_isRetrying) return;
             _isRetrying = true;
@@ -1481,10 +1494,17 @@ namespace AudioPlayerTask
                     double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
                     // Swap 1.5 seconds before buffer ends, OR if player stalled/paused unexpectedly after at least 3 seconds of playback
                     bool nearEnd = (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 1.5));
-                    bool finishedBuffer = (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 0.5) && _mediaPlayer.CurrentState != MediaPlayerState.Playing);
+                    bool finishedBuffer = (_liveBufferDurationSec > 1.0 && elapsed >= 3.0 && (_mediaPlayer.CurrentState == MediaPlayerState.Paused || _mediaPlayer.CurrentState == MediaPlayerState.Stopped));
+
+                    // Auto-kickstart if player got stuck in Paused right after buffer swap (< 3s)
+                    if (_mediaPlayer.CurrentState == MediaPlayerState.Paused && elapsed < 3.0 && !_isLiveSwapping)
+                    {
+                        try { _mediaPlayer.Play(); } catch { }
+                    }
 
                     if ((nearEnd || finishedBuffer) && !_isLiveSwapping)
                     {
+                        SendToast("[Live] Đổi sang Buffer " + (1 - _currentLiveBufferIndex) + " (đã phát " + elapsed.ToString("F1") + "s, ready=" + _isNextLiveBufferReady + ")");
                         SwapToNextLiveBuffer();
                     }
                     else if (!_isNextLiveBufferReady && (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && elapsed < (_liveBufferDurationSec - 5.0))
@@ -1688,6 +1708,7 @@ namespace AudioPlayerTask
                     {
                         try
                         {
+                            _mediaPlayer.AutoPlay = true;
                             _mediaPlayer.SetUriSource(new Uri("ms-appdata:///local/" + nextFile));
                             try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                             _mediaPlayer.Play();
@@ -1697,14 +1718,16 @@ namespace AudioPlayerTask
                             PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                             return;
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            SendToast("[Live Lỗi Swap] " + ex.Message);
                             await Task.Delay(150);
                         }
                     }
                 }
 
                 // If buffer swap failed, reconnect cleanly via fresh buffer
+                SendToast("[Live] Buffer swap thất bại, kết nối lại...");
                 if (_liveReconnectCount < 5)
                 {
                     _liveReconnectCount++;
@@ -1784,6 +1807,25 @@ namespace AudioPlayerTask
                         BadgeUpdateManager.CreateBadgeUpdaterForApplication().Clear();
                     }
                     catch { }
+                }
+            }
+            catch { }
+        }
+
+        private void MediaPlayer_MediaOpened(MediaPlayer sender, object args)
+        {
+            try
+            {
+                if (sender.AutoPlay || sender.CurrentState != MediaPlayerState.Playing)
+                {
+                    sender.Play();
+                }
+
+                if (_isCurrentTrackLive)
+                {
+                    try { _liveBufferStopwatch.Restart(); } catch { }
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                    SendToast("[Live] Đang phát Buffer " + _currentLiveBufferIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s)");
                 }
             }
             catch { }
