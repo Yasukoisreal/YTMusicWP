@@ -1196,13 +1196,13 @@ namespace YTMusicWP
             int currentSeq = ++_appleMusicBackdropSeq;
 
             var black = Windows.UI.Colors.Black;
-            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.10);
-            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.35);
-            if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.58);
-            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.32);
+            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.05);
+            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.32);
+            if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.78);
+            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.45);
             if (AppleMusicArtFadeMid != null)
             {
-                var midFade = LerpColor(seedColor, black, 0.32);
+                var midFade = LerpColor(seedColor, black, 0.45);
                 AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
             }
             UpdateLyricsFadeColors(seedColor);
@@ -1248,9 +1248,9 @@ namespace YTMusicWP
 
                 if (bytes != null && bytes.Length > 0)
                 {
-                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 72;
-                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 120;
-                    int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 25 : 35;
+                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
+                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
+                    int blurKernel = 120;
                     WriteableBitmap blurred = cached;
                     if (blurred == null)
                     {
@@ -1345,9 +1345,9 @@ namespace YTMusicWP
                         try
                         {
                             if (Services.LumiaBlurHelper.GetCachedFaded(thumbUrl) != null) return;
-                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 72;
-                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 120;
-                            int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 25 : 35;
+                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 64;
+                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 108;
+                            int blurKernel = 120;
                             using (var blurStream = new System.IO.MemoryStream(bytes))
                             {
                                 var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(blurStream, blurW, blurH, blurKernel);
@@ -1450,13 +1450,13 @@ namespace YTMusicWP
             {
                 _currentGradientColor = targetColor;
                 var black = Windows.UI.Colors.Black;
-                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.10);
-                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.35);
-                if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(targetColor, black, 0.58);
-                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.32);
+                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.05);
+                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.32);
+                if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(targetColor, black, 0.78);
+                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.45);
                 if (AppleMusicArtFadeMid != null)
                 {
-                    var midFade = LerpColor(targetColor, black, 0.32);
+                    var midFade = LerpColor(targetColor, black, 0.45);
                     AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
                 }
 

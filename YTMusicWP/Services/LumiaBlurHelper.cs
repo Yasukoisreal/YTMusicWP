@@ -102,6 +102,7 @@ namespace YTMusicWP.Services
             {
                 filterEffect.Filters = new IFilter[]
                 {
+                    new BlurFilter(kernelSize),
                     new BlurFilter(kernelSize)
                 };
                 using (var renderer = new WriteableBitmapRenderer(filterEffect, bitmap, OutputOption.Stretch))
