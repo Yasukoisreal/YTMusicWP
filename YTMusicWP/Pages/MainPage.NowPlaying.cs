@@ -890,6 +890,92 @@ namespace YTMusicWP
             SongCreditsDialog.Visibility = Visibility.Collapsed;
         }
 
+        private void MenuLiveDebug_Click(object sender, RoutedEventArgs e)
+        {
+            CloseNowPlayingMenu_Click(null, null);
+            RefreshLiveDebugLogs();
+            LiveDebugDialog.Visibility = Visibility.Visible;
+        }
+
+        private void CloseLiveDebugDialog_Click(object sender, RoutedEventArgs e)
+        {
+            if (LiveDebugTextBox != null) LiveDebugTextBox.IsReadOnly = true;
+            LiveDebugDialog.Visibility = Visibility.Collapsed;
+        }
+
+        private void ClearLiveDebugLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                ls["LiveDebugLog"] = "";
+                LiveDebugTextBox.Text = "Chưa có log livestream nào được ghi nhận.";
+                ShowToast("Đã xóa log livestream.");
+            }
+            catch { }
+        }
+
+        private void RefreshLiveDebugLogs_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshLiveDebugLogs();
+        }
+
+        private void RefreshLiveDebugLogs()
+        {
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                string log = ls.ContainsKey("LiveDebugLog") ? ls["LiveDebugLog"]?.ToString() : null;
+                LiveDebugTextBox.Text = !string.IsNullOrEmpty(log) ? log : "Chưa có log livestream nào được ghi nhận.";
+            }
+            catch (Exception ex)
+            {
+                LiveDebugTextBox.Text = "Lỗi đọc log: " + ex.Message;
+            }
+        }
+
+        private void SelectAllLiveDebugLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                LiveDebugTextBox.IsReadOnly = false;
+                LiveDebugTextBox.Focus(FocusState.Programmatic);
+                LiveDebugTextBox.SelectAll();
+                ShowToast("Đã chọn toàn bộ log. Nhấn biểu tượng Copy trên bàn phím!");
+            }
+            catch { }
+        }
+
+        private async void SaveLiveDebugLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string text = LiveDebugTextBox.Text;
+                if (!string.IsNullOrEmpty(text))
+                {
+                    var file = await Windows.Storage.KnownFolders.MusicLibrary.CreateFileAsync("LiveStream_Debug.txt", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+                    await Windows.Storage.FileIO.WriteTextAsync(file, text);
+                    ShowToast("Đã lưu LiveStream_Debug.txt vào thư mục Music của máy!");
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Lỗi lưu file: " + ex.Message);
+            }
+        }
+
+        private void ShareLiveDebugLogs_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Windows.ApplicationModel.DataTransfer.DataTransferManager.ShowShareUI();
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Lỗi Share: " + ex.Message);
+            }
+        }
+
         #region Apple Music NowPlaying Logic (Task 5)
         private void ApplyNowPlayingStyle()
         {

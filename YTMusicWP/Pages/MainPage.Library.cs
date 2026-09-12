@@ -617,6 +617,13 @@ namespace YTMusicWP
 
         private void MainPage_DataRequested(DataTransferManager sender, DataRequestedEventArgs args)
         {
+            if (LiveDebugDialog != null && LiveDebugDialog.Visibility == Visibility.Visible)
+            {
+                args.Request.Data.Properties.Title = "Live Stream Logs - YTMusicWP";
+                args.Request.Data.SetText(LiveDebugTextBox != null ? (LiveDebugTextBox.Text ?? "") : "");
+                return;
+            }
+
             if (_trackToShare != null)
             {
                 if (_trackToShare.VideoId.StartsWith("LOCAL:"))

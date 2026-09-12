@@ -3307,6 +3307,13 @@
                                     <TextBlock Grid.Column="1" Text="Watch Later" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                                 </Grid>
                             </Button>
+                            <Button Click="MenuLiveDebug_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
+                                <Grid Margin="20,0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.49,5 12,5C11.51,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8M16,15A4,4 0 0,1 12,19A4,4 0 0,1 8,15V11A4,4 0 0,1 12,7A4,4 0 0,1 16,11V15M14,10V12H10V10H14M10,14H14V16H10V14Z" Fill="#00E5FF"/></Viewbox>
+                                    <TextBlock Grid.Column="1" Text="Live Stream Logs" FontSize="16" Foreground="#00E5FF" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                </Grid>
+                            </Button>
                         </StackPanel>
                     </ScrollViewer>
                     <!-- Close button - always visible, outside scroll -->
@@ -3412,6 +3419,63 @@
                     <Button Grid.Row="2" Click="CloseSongCreditsDialog_Click" Style="{StaticResource IconButtonStyle}" Height="46" Margin="0,8,0,0" Background="#2A2A2A">
                         <TextBlock Text="Done" FontSize="15" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════════════════════════════ LIVE DEBUG DIALOG ═══════════════════════════════════ -->
+        <Grid x:Name="LiveDebugDialog" Visibility="Collapsed" Canvas.ZIndex="270" Background="#A0000000" Grid.RowSpan="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Button Grid.Row="0" Click="CloseLiveDebugDialog_Click" Style="{StaticResource IconButtonStyle}" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            <Border Grid.Row="1" Background="#1E1E1E" CornerRadius="20,20,0,0" Padding="20,15,20,15" MaxHeight="540">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <StackPanel Grid.Row="0">
+                        <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,0,0,10" HorizontalAlignment="Center"/>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Live Stream Logs" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#00E5FF" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Click="SaveLiveDebugLogs_Click" Content="Save" Style="{StaticResource ModernActionButtonStyle}" Background="#282828" Foreground="White" Height="32" Padding="8,0" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Click="ShareLiveDebugLogs_Click" Content="Share" Style="{StaticResource ModernActionButtonStyle}" Background="#282828" Foreground="White" Height="32" Padding="8,0" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                            <Button Grid.Column="3" Click="SelectAllLiveDebugLogs_Click" Content="Select All" Style="{StaticResource ModernActionButtonStyle}" Background="#00E5FF" Foreground="Black" FontWeight="Bold" Height="32" Padding="8,0" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
+                    </StackPanel>
+
+                    <!-- Log text area -->
+                    <TextBox x:Name="LiveDebugTextBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" Background="#121212" Foreground="#00E5FF" FontFamily="Consolas" FontSize="11" BorderBrush="#333333" BorderThickness="1" MinHeight="220" MaxHeight="320" Margin="0,0,0,10" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+
+                    <!-- Footer buttons -->
+                    <Grid Grid.Row="2" Margin="0,5,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Click="ClearLiveDebugLogs_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="0,0,4,0" Background="#282828">
+                            <TextBlock Text="Clear" FontSize="14" Foreground="#FF6666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button Grid.Column="1" Click="RefreshLiveDebugLogs_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,4,0" Background="#282828">
+                            <TextBlock Text="Refresh" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button Grid.Column="2" Click="CloseLiveDebugDialog_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,0,0" Background="#282828">
+                            <TextBlock Text="Close" FontSize="14" Foreground="#B3B3B3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>

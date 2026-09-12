@@ -1034,10 +1034,12 @@ namespace AudioPlayerTask
             }
             catch (OperationCanceledException)
             {
+                LogLive("[Live Assemble Hủy] " + fileName);
                 return 0;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                LogLive("[Live Assemble Lỗi] " + fileName + ": " + ex.Message);
                 return 0;
             }
         }
@@ -1052,19 +1054,22 @@ namespace AudioPlayerTask
             long startSeq = _nextLiveStartSeq;
             var ct = _liveCts.Token;
 
+            LogLive("[Live PreBuf Bắt đầu] buf=" + nextIndex + " seq=" + startSeq + " cnt=" + count);
             _isNextLiveBufferReady = false;
             _nextLiveBufferTask = Task.Run(async () =>
             {
+                var dlSw = System.Diagnostics.Stopwatch.StartNew();
                 int downloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, count, nextFile, ct);
+                dlSw.Stop();
                 if (downloaded > 0 && !ct.IsCancellationRequested)
                 {
                     _nextLiveDurationSec = downloaded * 5.0;
                     _isNextLiveBufferReady = true;
                     _nextLiveStartSeq = startSeq + downloaded;
-                    SendToast("[Live] Đã nạp Buffer " + nextIndex + ": " + downloaded + " chunk (" + _nextLiveDurationSec.ToString("F0") + "s)");
+                    LogLive("[Live PreBuf Xong] buf=" + nextIndex + ": " + downloaded + "/" + count + " in " + dlSw.ElapsedMilliseconds + "ms (" + _nextLiveDurationSec.ToString("F0") + "s) next=" + _nextLiveStartSeq);
                     return true;
                 }
-                SendToast("[Live Lỗi] Tải Buffer " + nextIndex + " thất bại (" + downloaded + "/" + count + " chunk)");
+                LogLive("[Live PreBuf Lỗi] buf=" + nextIndex + ": " + downloaded + "/" + count + " in " + dlSw.ElapsedMilliseconds + "ms");
                 return false;
             });
         }
@@ -1113,10 +1118,14 @@ namespace AudioPlayerTask
                         if (!string.IsNullOrEmpty(seqHeader) && long.TryParse(seqHeader, out parsedSeq))
                         {
                             _currentLiveSeq = parsedSeq;
+                            LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    LogLive("[Live HEAD Lỗi] " + ex.Message);
+                }
             }
 
             // Start safely in DVR window (~65 seconds behind live edge)
@@ -1125,13 +1134,18 @@ namespace AudioPlayerTask
             long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
             string buf0File = "temp_live_buf_0.mp4";
             int initialDownloaded = 0;
+            LogLive("[Live InitBuf0 Bắt đầu] startSeq=" + startSeq + " (currSeq=" + _currentLiveSeq + ", offset=" + safetyOffset + ")");
+            var dlSw0 = System.Diagnostics.Stopwatch.StartNew();
             if (startSeq > 0)
             {
                 initialDownloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_INITIAL_SEGMENTS, buf0File, ct);
             }
+            dlSw0.Stop();
+            LogLive("[Live InitBuf0 Xong] " + initialDownloaded + "/" + LIVE_INITIAL_SEGMENTS + " chunks in " + dlSw0.ElapsedMilliseconds + "ms");
 
             if (initialDownloaded <= 0 || ct.IsCancellationRequested)
             {
+                LogLive("[Live Fallback] dl=0 hoặc cancelled, phát trực tiếp url");
                 if (!ct.IsCancellationRequested && !string.IsNullOrEmpty(_currentLiveBaseUrl))
                 {
                     _mediaPlayer.SetUriSource(new Uri(_currentLiveBaseUrl));
@@ -1155,7 +1169,7 @@ namespace AudioPlayerTask
             try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
             _mediaPlayer.Play();
             _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
-            SendToast("[Live] Phát Buffer 0: " + initialDownloaded + " chunk (" + _liveBufferDurationSec.ToString("F0") + "s)");
+            LogLive("[Live Phát Buffer 0] " + initialDownloaded + " chunk (" + _liveBufferDurationSec.ToString("F0") + "s)");
 
             // CRITICAL: Start playback monitor timer so buffer swapping ticks!
             StartPlaybackMonitor();
@@ -1229,6 +1243,7 @@ namespace AudioPlayerTask
 
                 if (_isCurrentTrackLive && !string.IsNullOrEmpty(_currentLiveBaseUrl))
                 {
+                    LogLive("[Live PlayUrl] vid=" + vidId + " seq=" + _currentLiveSeq + " url=" + trackUrl.Substring(0, Math.Min(40, trackUrl.Length)) + "...");
                     PlayLiveBufferedTrackAsync(vidId);
                     return;
                 }
@@ -1264,7 +1279,7 @@ namespace AudioPlayerTask
             if (_isCurrentTrackLive)
             {
                 string hr = args.ExtendedErrorCode != null ? args.ExtendedErrorCode.HResult.ToString("X") : "unknown";
-                SendToast("[Live Lỗi MediaFailed] 0x" + hr);
+                LogLive("[Live Lỗi MediaFailed] 0x" + hr);
             }
 
             // [FIX-SOF] Guard against re-entrancy – prevents StackOverflowException
@@ -1328,6 +1343,21 @@ namespace AudioPlayerTask
         private void SendToast(string message)
         {
             try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "ToastMessage", message } }); } catch { }
+        }
+
+        private void LogLive(string msg)
+        {
+            try
+            {
+                string line = DateTime.Now.ToString("HH:mm:ss.fff") + " " + msg;
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                string prev = ls.ContainsKey("LiveDebugLog") ? (ls["LiveDebugLog"]?.ToString() ?? "") : "";
+                string updated = line + "\n" + prev;
+                if (updated.Length > 8000) updated = updated.Substring(0, 8000);
+                ls["LiveDebugLog"] = updated;
+            }
+            catch { }
+            SendToast(msg);
         }
 
         private void ReportErrorToUI(string errorDetail)
@@ -1504,7 +1534,7 @@ namespace AudioPlayerTask
 
                     if ((nearEnd || finishedBuffer) && !_isLiveSwapping)
                     {
-                        SendToast("[Live] Đổi sang Buffer " + (1 - _currentLiveBufferIndex) + " (đã phát " + elapsed.ToString("F1") + "s, ready=" + _isNextLiveBufferReady + ")");
+                        LogLive("[Live Đổi Buffer] -> buf=" + (1 - _currentLiveBufferIndex) + " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
                         SwapToNextLiveBuffer();
                     }
                     else if (!_isNextLiveBufferReady && (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && elapsed < (_liveBufferDurationSec - 5.0))
@@ -1680,21 +1710,25 @@ namespace AudioPlayerTask
             {
                 int nextIndex = 1 - _currentLiveBufferIndex;
                 string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
+                LogLive("[Live Swap Bắt đầu] -> buf=" + nextIndex + ", ready=" + _isNextLiveBufferReady + ", elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s");
 
                 // If next buffer is not yet ready, wait briefly for current download task
                 if (!_isNextLiveBufferReady)
                 {
                     if (_nextLiveBufferTask == null)
                     {
+                        LogLive("[Live Swap] Task rỗng, gọi PreBuffer...");
                         PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     if (_nextLiveBufferTask != null)
                     {
+                        LogLive("[Live Swap] Đang chờ task tải xong (tối đa 8s)...");
                         try
                         {
                             await Task.WhenAny(_nextLiveBufferTask, Task.Delay(8000));
                         }
                         catch { }
+                        LogLive("[Live Swap] Chờ xong, ready=" + _isNextLiveBufferReady);
                     }
                 }
 
@@ -1709,10 +1743,13 @@ namespace AudioPlayerTask
                         try
                         {
                             _mediaPlayer.AutoPlay = true;
-                            _mediaPlayer.SetUriSource(new Uri("ms-appdata:///local/" + nextFile));
+                            string nextUri = "ms-appdata:///local/" + nextFile;
+                            LogLive("[Live Swap Đặt nguồn] " + nextUri + " (lần " + setAttempt + ")");
+                            _mediaPlayer.SetUriSource(new Uri(nextUri));
                             try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                             _mediaPlayer.Play();
                             try { _liveBufferStopwatch.Restart(); } catch { }
+                            LogLive("[Live Swap Thành công] buf=" + nextIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s)");
 
                             // Start pre-buffering next chunk into the inactive buffer
                             PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
@@ -1720,14 +1757,14 @@ namespace AudioPlayerTask
                         }
                         catch (Exception ex)
                         {
-                            SendToast("[Live Lỗi Swap] " + ex.Message);
+                            LogLive("[Live Lỗi Swap] lần " + setAttempt + ": " + ex.Message);
                             await Task.Delay(150);
                         }
                     }
                 }
 
                 // If buffer swap failed, reconnect cleanly via fresh buffer
-                SendToast("[Live] Buffer swap thất bại, kết nối lại...");
+                LogLive("[Live Swap Thất bại] Reconnect lần " + _liveReconnectCount + "/5");
                 if (_liveReconnectCount < 5)
                 {
                     _liveReconnectCount++;
@@ -1750,6 +1787,10 @@ namespace AudioPlayerTask
         {
             if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
             {
+                if (_isCurrentTrackLive)
+                {
+                    LogLive("[Live MediaEnded] elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s");
+                }
                 SwapToNextLiveBuffer();
                 return;
             }
@@ -1762,6 +1803,11 @@ namespace AudioPlayerTask
         {
             try
             {
+                if (_isCurrentTrackLive)
+                {
+                    LogLive("[Live State] " + sender.CurrentState + " (elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s)");
+                }
+
                 if (sender.CurrentState == MediaPlayerState.Playing)
                 {
                     if (_isCurrentTrackLive)
@@ -1825,7 +1871,7 @@ namespace AudioPlayerTask
                 {
                     try { _liveBufferStopwatch.Restart(); } catch { }
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
-                    SendToast("[Live] Đang phát Buffer " + _currentLiveBufferIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s)");
+                    LogLive("[Live MediaOpened] Đang phát Buffer " + _currentLiveBufferIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s, state=" + sender.CurrentState + ")");
                 }
             }
             catch { }

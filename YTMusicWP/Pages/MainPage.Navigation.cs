@@ -25,6 +25,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseSongCreditsDialog_Click(null, null);
             }
+            else if (LiveDebugDialog != null && LiveDebugDialog.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseLiveDebugDialog_Click(null, null);
+            }
             else if (NowPlayingMenuDialog.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
