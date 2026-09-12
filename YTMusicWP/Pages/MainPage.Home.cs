@@ -576,8 +576,7 @@ namespace YTMusicWP
 
         private bool _isPullReady = false;
         private bool _isRefreshingHome = false;
-        private bool _isPointerTouching = false;
-        private bool _pullEligible = false;
+        private bool _pullEligible = true;
         private static readonly Windows.UI.Xaml.Media.SolidColorBrush _pullMutedBrush =
             new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 136, 136, 136));
 
@@ -587,68 +586,17 @@ namespace YTMusicWP
 
             HomeMusicPanel.ViewChanging += HomeMusicPanel_ViewChanging;
             HomeMusicPanel.ViewChanged += HomeMusicPanel_ViewChanged;
-
-            // Track touch events reliably even when DirectManipulation handles pointer panning
-            HomeMusicPanel.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler(HomeMusicPanel_PointerPressed), true);
-            HomeMusicPanel.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler(HomeMusicPanel_PointerReleased), true);
-            HomeMusicPanel.AddHandler(UIElement.PointerCaptureLostEvent, new PointerEventHandler(HomeMusicPanel_PointerCaptureLost), true);
-            HomeMusicPanel.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler(HomeMusicPanel_PointerCanceled), true);
-
             HomeMusicPanel.Loaded += HomeMusicPanel_Loaded;
+            _pullEligible = true;
         }
 
         private async void HomeMusicPanel_Loaded(object sender, RoutedEventArgs e)
         {
+            _pullEligible = true;
             ResetHomeScrollToRest(immediate: true);
             await Task.Delay(50);
             ResetHomeScrollToRest(immediate: true);
-        }
-
-        private void HomeMusicPanel_PointerPressed(object sender, PointerRoutedEventArgs e)
-        {
-            _isPointerTouching = true;
-            _pullEligible = (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset <= PULL_RESTING_OFFSET + 5.0);
-        }
-
-        private void HomeMusicPanel_PointerReleased(object sender, PointerRoutedEventArgs e)
-        {
-            OnPointerUp();
-        }
-
-        private void HomeMusicPanel_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
-        {
-            OnPointerUp();
-        }
-
-        private void HomeMusicPanel_PointerCanceled(object sender, PointerRoutedEventArgs e)
-        {
-            OnPointerUp();
-        }
-
-        private void OnPointerUp()
-        {
-            _isPointerTouching = false;
-            CheckPullTriggerOrSnap();
-            _pullEligible = false;
-        }
-
-        private void CheckPullTriggerOrSnap()
-        {
-            if (_isRefreshingHome) return;
-            if (HomeMusicPanel == null) return;
-
-            if (_isPullReady)
-            {
-                _isPullReady = false;
-                _pullEligible = false;
-                var ignored = RefreshHomeFeedAsync();
-            }
-            else if (HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET)
-            {
-                _isPullReady = false;
-                _pullEligible = false;
-                ResetHomeScrollToRest(immediate: false);
-            }
+            _pullEligible = true;
         }
 
         internal void ResetHomeScrollToRest(bool immediate = false)
@@ -659,6 +607,7 @@ namespace YTMusicWP
                 HomeMusicPanel.ChangeView(null, PULL_RESTING_OFFSET, null, disableAnimation: immediate);
             }
             catch { }
+            _pullEligible = true;
         }
 
         internal void EnsureHomePullTimer()
@@ -667,6 +616,7 @@ namespace YTMusicWP
             {
                 ResetHomeScrollToRest(immediate: true);
             }
+            _pullEligible = true;
         }
 
         private void HomeMusicPanel_ViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
@@ -700,17 +650,30 @@ namespace YTMusicWP
                 return;
             }
 
-            // Pulling down (offset < 60.0)
+            // Pulling down in overscroll area (offset < 60.0)
             if (_isRefreshingHome) return;
 
-            // Only allow pull-to-refresh if currently touching and touch started at top rest
-            if (!_isPointerTouching || !_pullEligible)
+            // If view is changing due to inertia (fling from below, or inertia bounce),
+            // OR if this gesture did not originate from the top rest position:
+            if (e.IsInertial || !_pullEligible)
             {
+                // If user was dragging, reached threshold and just released finger (transition to inertia bounce):
+                if (_isPullReady)
+                {
+                    _isPullReady = false;
+                    _pullEligible = false;
+                    var ignored = RefreshHomeFeedAsync();
+                    return;
+                }
+
+                // Otherwise (upward inertia fling from below, or scroll from bottom):
+                // Hide indicator and do not arm pull-to-refresh
                 _isPullReady = false;
                 HomePullIndicator.Opacity = 0;
                 return;
             }
 
+            // Active direct user drag starting from top rest position
             double pullDistance = PULL_RESTING_OFFSET - offset;
             HomePullIndicator.Opacity = Math.Min(1.0, pullDistance / 30.0);
 
@@ -751,17 +714,19 @@ namespace YTMusicWP
                     }
                 }
 
-                if (_isPullReady && !_isPointerTouching)
+                if (_isPullReady)
                 {
                     _isPullReady = false;
                     _pullEligible = false;
                     var ignored = RefreshHomeFeedAsync();
                 }
-                else if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET && !_isPointerTouching)
+                else if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET)
                 {
-                    _isPullReady = false;
-                    _pullEligible = false;
                     ResetHomeScrollToRest(immediate: false);
+                }
+                else if (HomeMusicPanel != null && Math.Abs(HomeMusicPanel.VerticalOffset - PULL_RESTING_OFFSET) <= 5.0)
+                {
+                    _pullEligible = true;
                 }
             }
         }
@@ -854,7 +819,7 @@ namespace YTMusicWP
 
                 _isPullReady = false;
                 _isRefreshingHome = false;
-                _pullEligible = false;
+                _pullEligible = true;
 
                 // 6. Smoothly snap back to resting position if still at top
                 if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET)
