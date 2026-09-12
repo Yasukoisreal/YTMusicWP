@@ -1241,7 +1241,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" Margin="10,0,0,0"/>
+                <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="10,0,0,0"/>
 
                 <Border x:Name="SuggestionPopup" Visibility="Collapsed" Background="#1E1E1E" VerticalAlignment="Top" CornerRadius="8" Margin="10,0,15,0">
                     <ListView x:Name="SuggestionList" IsItemClickEnabled="True" ItemClick="SuggestionList_ItemClick" MaxHeight="250" SelectionMode="None">
@@ -1324,7 +1324,7 @@
             </Grid>
 
             <!-- Unified Library List -->
-            <ListView x:Name="LibraryUnifiedList" Grid.Row="3" IsItemClickEnabled="True" ItemClick="LibraryUnified_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" Margin="15,0,15,0">
+            <ListView x:Name="LibraryUnifiedList" Grid.Row="3" IsItemClickEnabled="True" ItemClick="LibraryUnified_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="15,0,15,0">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,5,0,5" Background="Transparent">
@@ -1985,7 +1985,7 @@
                     </Button>
                 </Grid>
             </StackPanel>
-            <ListView x:Name="PlaylistSongsList" Grid.Row="2" Margin="20,0,20,0" Padding="0" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource PlaylistSongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
+            <ListView x:Name="PlaylistSongsList" Grid.Row="2" Margin="20,0,20,0" Padding="0" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource PlaylistSongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
         </Grid>
 
         <!-- ═══════════════════════════════════ MUSIC SHORTS VIEW ═══════════════════════════════════ -->
@@ -2418,7 +2418,7 @@
             <!-- Apple Music: frosted artwork backdrop (Collapsed by default, shown by code) -->
             <Image x:Name="AppleMusicBackdrop" Stretch="UniformToFill" Visibility="Collapsed"/>
             <!-- Apple Music: tinted gradient wash over the blur -->
-            <Rectangle x:Name="AppleMusicWash" Opacity="0.72" Visibility="Collapsed">
+            <Rectangle x:Name="AppleMusicWash" Opacity="0.45" Visibility="Collapsed">
                 <Rectangle.Fill>
                     <LinearGradientBrush x:Name="AppleMusicWashGradient" StartPoint="0,0" EndPoint="0,1">
                         <GradientStop x:Name="AppleMusicGradTop" Color="#1A1A2E" Offset="0"/>
@@ -2445,7 +2445,7 @@
                             </LinearGradientBrush>
                         </Rectangle.Fill>
                     </Rectangle>
-                    <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="260" IsHitTestVisible="False">
+                    <Rectangle x:Name="AppleMusicArtworkFade" VerticalAlignment="Bottom" Height="140" Visibility="Collapsed" IsHitTestVisible="False">
                         <Rectangle.Fill>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                 <GradientStop x:Name="AppleMusicArtFadeTop" Color="#00000000" Offset="0"/>

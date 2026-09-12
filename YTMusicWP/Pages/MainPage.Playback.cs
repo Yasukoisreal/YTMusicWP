@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.IO;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Imaging;
@@ -15,6 +17,7 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace YTMusicWP
 {
@@ -1095,6 +1098,95 @@ namespace YTMusicWP
                 (byte)(from.B + (to.B - from.B) * t));
         }
 
+        private static Windows.UI.Color ExtractDominantColorFromBitmap(Windows.UI.Xaml.Media.Imaging.WriteableBitmap bitmap)
+        {
+            if (bitmap == null) return Windows.UI.Color.FromArgb(255, 30, 50, 70);
+
+            try
+            {
+                int w = bitmap.PixelWidth;
+                int h = bitmap.PixelHeight;
+                int len = w * h * 4;
+                byte[] pixels = new byte[len];
+                using (var stream = bitmap.PixelBuffer.AsStream())
+                {
+                    stream.Read(pixels, 0, len);
+                }
+
+                double bestScore = -1.0;
+                byte bestR = 30, bestG = 50, bestB = 70;
+                long totalR = 0, totalG = 0, totalB = 0;
+                int validCount = 0;
+                long allTotalR = 0, allTotalG = 0, allTotalB = 0;
+                int allOpaqueCount = 0;
+
+                // Sample every 2nd pixel for speed
+                for (int i = 0; i < len; i += 8)
+                {
+                    byte b = pixels[i];
+                    byte g = pixels[i + 1];
+                    byte r = pixels[i + 2];
+                    byte a = pixels[i + 3];
+
+                    if (a < 128) continue;
+
+                    allTotalR += r;
+                    allTotalG += g;
+                    allTotalB += b;
+                    allOpaqueCount++;
+
+                    double lum = 0.299 * r + 0.587 * g + 0.114 * b;
+                    if (lum < 15 || lum > 248) continue;
+
+                    totalR += r;
+                    totalG += g;
+                    totalB += b;
+                    validCount++;
+
+                    double max = Math.Max(r, Math.Max(g, b));
+                    double min = Math.Min(r, Math.Min(g, b));
+                    double delta = max - min;
+                    double sat = max == 0 ? 0 : delta / max;
+
+                    if (sat < 0.10) continue;
+
+                    double lumDist = Math.Abs(lum - 110.0) / 110.0;
+                    double score = (sat * 2.5) + (1.0 - lumDist);
+
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestR = r;
+                        bestG = g;
+                        bestB = b;
+                    }
+                }
+
+                if (bestScore <= 0 && validCount > 0)
+                {
+                    bestR = (byte)(totalR / validCount);
+                    bestG = (byte)(totalG / validCount);
+                    bestB = (byte)(totalB / validCount);
+                    bestScore = 1.0;
+                }
+                else if (bestScore <= 0 && allOpaqueCount > 0)
+                {
+                    bestR = (byte)(allTotalR / allOpaqueCount);
+                    bestG = (byte)(allTotalG / allOpaqueCount);
+                    bestB = (byte)(allTotalB / allOpaqueCount);
+                    bestScore = 0.5;
+                }
+
+                if (bestScore > 0)
+                {
+                    return Windows.UI.Color.FromArgb(255, bestR, bestG, bestB);
+                }
+            }
+            catch { }
+
+            return Windows.UI.Color.FromArgb(255, 30, 50, 70);
+        }
+
         private int _appleMusicBackdropSeq = 0;
 
         private async Task UpdateAppleMusicBackdropAsync(string thumbnailUrl, Windows.UI.Color seedColor)
@@ -1104,13 +1196,13 @@ namespace YTMusicWP
             int currentSeq = ++_appleMusicBackdropSeq;
 
             var black = Windows.UI.Colors.Black;
-            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.05);
-            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.32);
-            if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.78);
-            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.45);
+            if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(seedColor, black, 0.10);
+            if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(seedColor, black, 0.35);
+            if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(seedColor, black, 0.58);
+            if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(seedColor, black, 0.32);
             if (AppleMusicArtFadeMid != null)
             {
-                var midFade = LerpColor(seedColor, black, 0.45);
+                var midFade = LerpColor(seedColor, black, 0.32);
                 AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
             }
             UpdateLyricsFadeColors(seedColor);
@@ -1125,6 +1217,24 @@ namespace YTMusicWP
                     AppleMusicArtwork.Source = cachedFaded;
                     if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
                 }
+                Windows.UI.Color cachedColor;
+                bool hasColor = false;
+                lock (_dominantColorCache)
+                {
+                    hasColor = _dominantColorCache.TryGetValue(thumbnailUrl, out cachedColor);
+                }
+                if (!hasColor)
+                {
+                    cachedColor = ExtractDominantColorFromBitmap(cached);
+                    lock (_dominantColorCache)
+                    {
+                        _dominantColorCache[thumbnailUrl] = cachedColor;
+                        string norm = GetAppleMusicThumbnail(thumbnailUrl);
+                        if (!string.IsNullOrEmpty(norm)) _dominantColorCache[norm] = cachedColor;
+                    }
+                }
+                _currentGradientColor = cachedColor;
+                AnimateGradientTo(cachedColor);
                 PrecacheNextTrackArtwork();
                 return;
             }
@@ -1138,29 +1248,51 @@ namespace YTMusicWP
 
                 if (bytes != null && bytes.Length > 0)
                 {
-                    using (var stream = new System.IO.MemoryStream(bytes))
+                    int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 72;
+                    int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 120;
+                    int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 25 : 35;
+                    WriteableBitmap blurred = cached;
+                    if (blurred == null)
                     {
-                        var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 64, 108, 120);
+                        using (var blurStream = new System.IO.MemoryStream(bytes))
+                        {
+                            blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(blurStream, blurW, blurH, blurKernel);
+                        }
                         if (currentSeq != _appleMusicBackdropSeq) return;
-
                         Services.LumiaBlurHelper.PutCache(thumbnailUrl, blurred);
                         if (AppleMusicBackdrop != null) AppleMusicBackdrop.Source = blurred;
 
-                        // Render true alpha-faded artwork with deep dissolve into the heavily blurred backdrop
-                        int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
-                        int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 175 : 260;
-                        var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, targetFadeSize, targetFadeSize, fadeHeight);
-                        if (currentSeq != _appleMusicBackdropSeq) return;
-
-                        Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
-                        if (AppleMusicArtwork != null)
+                        var extractedColor = ExtractDominantColorFromBitmap(blurred);
+                        _currentGradientColor = extractedColor;
+                        lock (_dominantColorCache)
                         {
-                            AppleMusicArtwork.Source = faded;
-                            if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
+                            _dominantColorCache[thumbnailUrl] = extractedColor;
+                            string norm = GetAppleMusicThumbnail(thumbnailUrl);
+                            if (!string.IsNullOrEmpty(norm)) _dominantColorCache[norm] = extractedColor;
                         }
-
-                        PrecacheNextTrackArtwork();
+                        AnimateGradientTo(extractedColor);
                     }
+
+                    WriteableBitmap faded = cachedFaded;
+                    if (faded == null)
+                    {
+                        int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
+                        int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 65 : 85;
+                        using (var fadeStream = new System.IO.MemoryStream(bytes))
+                        {
+                            faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight);
+                        }
+                        if (currentSeq != _appleMusicBackdropSeq) return;
+                        Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
+                    }
+
+                    if (AppleMusicArtwork != null && faded != null)
+                    {
+                        AppleMusicArtwork.Source = faded;
+                    }
+                    if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
+
+                    PrecacheNextTrackArtwork();
                 }
             }
             catch (Exception ex)
@@ -1213,12 +1345,20 @@ namespace YTMusicWP
                         try
                         {
                             if (Services.LumiaBlurHelper.GetCachedFaded(thumbUrl) != null) return;
-                            using (var stream = new System.IO.MemoryStream(bytes))
+                            int blurW = Services.MemoryHelper.IsLowMemoryDevice ? 48 : 72;
+                            int blurH = Services.MemoryHelper.IsLowMemoryDevice ? 80 : 120;
+                            int blurKernel = Services.MemoryHelper.IsLowMemoryDevice ? 25 : 35;
+                            using (var blurStream = new System.IO.MemoryStream(bytes))
                             {
-                                var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(stream, 64, 108, 120);
+                                var blurred = await Services.LumiaBlurHelper.RenderBlurredAsync(blurStream, blurW, blurH, blurKernel);
                                 Services.LumiaBlurHelper.PutCache(thumbUrl, blurred);
+                            }
 
-                                var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(stream, 480, 480, 260);
+                            int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
+                            int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 65 : 85;
+                            using (var fadeStream = new System.IO.MemoryStream(bytes))
+                            {
+                                var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight);
                                 Services.LumiaBlurHelper.PutCachedFaded(thumbUrl, faded);
                             }
                         }
@@ -1310,13 +1450,13 @@ namespace YTMusicWP
             {
                 _currentGradientColor = targetColor;
                 var black = Windows.UI.Colors.Black;
-                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.05);
-                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.32);
-                if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(targetColor, black, 0.78);
-                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.45);
+                if (AppleMusicGradTop != null) AppleMusicGradTop.Color = LerpColor(targetColor, black, 0.10);
+                if (AppleMusicGradMid != null) AppleMusicGradMid.Color = LerpColor(targetColor, black, 0.35);
+                if (AppleMusicGradBot != null) AppleMusicGradBot.Color = LerpColor(targetColor, black, 0.58);
+                if (AppleMusicArtFadeBot != null) AppleMusicArtFadeBot.Color = LerpColor(targetColor, black, 0.32);
                 if (AppleMusicArtFadeMid != null)
                 {
-                    var midFade = LerpColor(targetColor, black, 0.45);
+                    var midFade = LerpColor(targetColor, black, 0.32);
                     AppleMusicArtFadeMid.Color = Windows.UI.Color.FromArgb(100, midFade.R, midFade.G, midFade.B);
                 }
 
