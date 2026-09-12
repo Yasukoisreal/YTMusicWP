@@ -57,8 +57,8 @@ namespace AudioPlayerTask
         private Task<bool> _nextLiveBufferTask = null;
         private CancellationTokenSource _liveCts = null;
         private int _liveReconnectCount = 0;
-        private const int LIVE_INITIAL_SEGMENTS = 6;  // 30s quick start
-        private const int LIVE_DEEP_SEGMENTS = 24;    // 120s (2 minutes) deep continuous buffer
+        private const int LIVE_INITIAL_SEGMENTS = 2;  // 10s instant start (only 160KB, ready in < 1s)
+        private const int LIVE_DEEP_SEGMENTS = 6;     // 30s rolling buffer (490KB, ready in ~3s while audio is playing)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -873,40 +873,50 @@ namespace AudioPlayerTask
         private async Task<byte[]> DownloadLiveSegmentAsync(string baseUrl, long seq, CancellationToken ct)
         {
             string segUrl = baseUrl + (baseUrl.EndsWith("/") ? "" : "/") + "sq/" + seq;
+
+            // Try HttpWebRequest first (fastest .NET stream on WP8.1)
             try
             {
-                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl));
-                using (var response = await _httpClient.SendRequestAsync(request).AsTask(ct))
+                var req = System.Net.WebRequest.CreateHttp(segUrl);
+                req.Method = "GET";
+                using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    if (response.IsSuccessStatusCode)
+                    timeoutCts.CancelAfter(4000);
+                    using (timeoutCts.Token.Register(() => { try { req.Abort(); } catch { } }))
+                    using (var resp = (System.Net.HttpWebResponse)await req.GetResponseAsync())
                     {
-                        var buffer = await response.Content.ReadAsBufferAsync().AsTask(ct);
-                        byte[] bytes = new byte[buffer.Length];
-                        using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
+                        if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                         {
-                            reader.ReadBytes(bytes);
+                            using (var respStream = resp.GetResponseStream())
+                            using (var ms = new MemoryStream())
+                            {
+                                await respStream.CopyToAsync(ms);
+                                return ms.ToArray();
+                            }
                         }
-                        return bytes;
                     }
                 }
             }
             catch { }
 
-            // Fallback via HttpWebRequest if WinRT HttpClient fails
+            // Fallback via WinRT HttpClient
             try
             {
-                var req = System.Net.WebRequest.CreateHttp(segUrl);
-                req.Method = "GET";
-                using (ct.Register(() => { try { req.Abort(); } catch { } }))
-                using (var resp = (System.Net.HttpWebResponse)await req.GetResponseAsync())
+                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl));
+                using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    if (resp.StatusCode == System.Net.HttpStatusCode.OK)
+                    timeoutCts.CancelAfter(4000);
+                    using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                     {
-                        using (var respStream = resp.GetResponseStream())
-                        using (var ms = new MemoryStream())
+                        if (response.IsSuccessStatusCode)
                         {
-                            await respStream.CopyToAsync(ms);
-                            return ms.ToArray();
+                            var buffer = await response.Content.ReadAsBufferAsync().AsTask(timeoutCts.Token);
+                            byte[] bytes = new byte[buffer.Length];
+                            using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
+                            {
+                                reader.ReadBytes(bytes);
+                            }
+                            return bytes;
                         }
                     }
                 }
@@ -916,7 +926,7 @@ namespace AudioPlayerTask
             return null;
         }
 
-        private async Task<bool> AssembleLiveBufferAsync(string baseUrl, long startSeq, int count, string fileName, CancellationToken ct)
+        private async Task<int> AssembleLiveBufferAsync(string baseUrl, long startSeq, int count, string fileName, CancellationToken ct)
         {
             try
             {
@@ -934,29 +944,29 @@ namespace AudioPlayerTask
                         await Task.Delay(200, ct);
                     }
                 }
-                if (file == null) return false;
+                if (file == null) return 0;
 
                 using (var stream = await file.OpenStreamForWriteAsync())
                 {
                     int downloaded = 0;
                     for (int i = 0; i < count; i++)
                     {
-                        if (ct.IsCancellationRequested) return false;
+                        if (ct.IsCancellationRequested) return downloaded;
                         long targetSeq = startSeq + i;
                         byte[] segBytes = null;
 
-                        for (int attempt = 0; attempt < 4; attempt++)
+                        for (int attempt = 0; attempt < 3; attempt++)
                         {
-                            if (ct.IsCancellationRequested) return false;
+                            if (ct.IsCancellationRequested) return downloaded;
                             segBytes = await DownloadLiveSegmentAsync(baseUrl, targetSeq, ct);
                             if (segBytes != null && segBytes.Length > 0) break;
-                            await Task.Delay(500, ct);
+                            await Task.Delay(300, ct);
                         }
 
                         if (segBytes == null || segBytes.Length == 0)
                         {
                             if (downloaded > 0) break;
-                            return false;
+                            return 0;
                         }
 
                         if (downloaded == 0)
@@ -978,16 +988,16 @@ namespace AudioPlayerTask
                         downloaded++;
                     }
                     await stream.FlushAsync();
-                    return downloaded > 0;
+                    return downloaded;
                 }
             }
             catch (OperationCanceledException)
             {
-                return false;
+                return 0;
             }
             catch (Exception)
             {
-                return false;
+                return 0;
             }
         }
 
@@ -1004,11 +1014,11 @@ namespace AudioPlayerTask
             _isNextLiveBufferReady = false;
             _nextLiveBufferTask = Task.Run(async () =>
             {
-                bool ok = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, count, nextFile, ct);
-                if (ok && !ct.IsCancellationRequested)
+                int downloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, count, nextFile, ct);
+                if (downloaded > 0 && !ct.IsCancellationRequested)
                 {
                     _isNextLiveBufferReady = true;
-                    _nextLiveStartSeq = startSeq + count;
+                    _nextLiveStartSeq = startSeq + downloaded;
                     return true;
                 }
                 return false;
@@ -1065,18 +1075,18 @@ namespace AudioPlayerTask
                 catch { }
             }
 
-            // Start safely in DVR window (~2.8 minutes behind live edge)
-            // This guarantees all initial and deep-buffer segments are 100% cached on Google's CDN
+            // Start safely in DVR window (~65 seconds behind live edge)
+            // This guarantees all initial and rolling segments are 100% cached on Google's CDN
             long safetyOffset = LIVE_INITIAL_SEGMENTS + LIVE_DEEP_SEGMENTS + 4;
             long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
             string buf0File = "temp_live_buf_0.mp4";
-            bool success = false;
+            int initialDownloaded = 0;
             if (startSeq > 0)
             {
-                success = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_INITIAL_SEGMENTS, buf0File, ct);
+                initialDownloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_INITIAL_SEGMENTS, buf0File, ct);
             }
 
-            if (!success || ct.IsCancellationRequested)
+            if (initialDownloaded <= 0 || ct.IsCancellationRequested)
             {
                 if (!ct.IsCancellationRequested && !string.IsNullOrEmpty(_currentLiveBaseUrl))
                 {
@@ -1088,7 +1098,7 @@ namespace AudioPlayerTask
                 return;
             }
 
-            _nextLiveStartSeq = startSeq + LIVE_INITIAL_SEGMENTS;
+            _nextLiveStartSeq = startSeq + initialDownloaded;
             _currentLoadedVidId = vidId;
 
             string localUri = "ms-appdata:///local/" + buf0File;
@@ -1097,7 +1107,7 @@ namespace AudioPlayerTask
             _mediaPlayer.Play();
             _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
 
-            // Start deep pre-buffering (24 segments = 120s) for Buffer 1
+            // Start rolling pre-buffering (6 segments = 30s) for Buffer 1
             PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
         }
 
@@ -1585,12 +1595,12 @@ namespace AudioPlayerTask
                 int nextIndex = 1 - _currentLiveBufferIndex;
                 string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
 
-                // Wait up to 6 seconds if next buffer is still downloading
+                // Wait up to 10 seconds if next buffer is still downloading
                 if (!_isNextLiveBufferReady && _nextLiveBufferTask != null)
                 {
                     try
                     {
-                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(6000));
+                        await Task.WhenAny(_nextLiveBufferTask, Task.Delay(10000));
                     }
                     catch { }
                 }
