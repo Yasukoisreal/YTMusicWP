@@ -10,11 +10,13 @@ namespace YTMusicWP
 {
     public static partial class InnerTubeClient
     {
-        // Search result with continuation token for pagination
+        // Search result with continuation token for pagination, top card, and filter chips
         public class SearchResult
         {
             public List<YouTubeTrack> Tracks { get; set; }
             public string ContinuationToken { get; set; }
+            public SearchCardItem Card { get; set; }
+            public List<SearchChipItem> Chips { get; set; }
         }
 
         public static async Task<List<YouTubeTrack>> SearchAsync(string query, int maxResults = 20, string searchParams = null)
@@ -27,6 +29,9 @@ namespace YTMusicWP
         {
             var results = new List<YouTubeTrack>();
             string continuationToken = null;
+            SearchCardItem topCard = null;
+            var chipsList = new List<SearchChipItem>();
+
             try
             {
                 string vd = await GetVisitorDataAsync();
@@ -40,17 +45,143 @@ namespace YTMusicWP
                 if (!string.IsNullOrEmpty(searchParams))
                     body["params"] = searchParams;
 
-                var data = await PostInnerTubeAsync(
-                    "https://music.youtube.com/youtubei/v1/search?prettyPrint=false", body, true);
+                JObject data;
+                if (HasCookieAuth)
+                {
+                    var searchExtra = new JObject { ["query"] = query };
+                    if (!string.IsNullOrEmpty(searchParams))
+                        searchExtra["params"] = searchParams;
+                    data = await CookieInnerTubePostAsync("search", searchExtra);
+                }
+                else
+                {
+                    data = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/search?prettyPrint=false", body, true);
+                }
 
                 var tabs = data?["contents"]?["tabbedSearchResultsRenderer"]?["tabs"];
                 if (tabs == null || !tabs.HasValues) return new SearchResult { Tracks = results };
 
-                var sections = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
-                if (sections == null) return new SearchResult { Tracks = results };
+                var sectionList = tabs[0]?["tabRenderer"]?["content"]?["sectionListRenderer"];
+                if (sectionList == null) return new SearchResult { Tracks = results };
+
+                // Extract Search Filter Chips
+                var chipNodes = sectionList["header"]?["chipCloudRenderer"]?["chips"];
+                if (chipNodes != null && chipNodes.HasValues)
+                {
+                    foreach (var cn in chipNodes)
+                    {
+                        var ccr = cn["chipCloudChipRenderer"];
+                        if (ccr == null) continue;
+                        string chipText = "";
+                        var textRuns = ccr["text"]?["runs"];
+                        if (textRuns != null && textRuns.HasValues)
+                            chipText = string.Join("", textRuns.Select(r => r["text"]?.ToString() ?? ""));
+                        if (string.IsNullOrWhiteSpace(chipText)) continue;
+
+                        string chipParams = ccr["navigationEndpoint"]?["searchEndpoint"]?["params"]?.ToString();
+                        bool isSel = ccr["isSelected"] != null && (bool)ccr["isSelected"];
+
+                        chipsList.Add(new SearchChipItem
+                        {
+                            Title = chipText,
+                            FilterParams = chipParams,
+                            IsSelected = isSel
+                        });
+                    }
+                }
+
+                var sections = sectionList["contents"];
+                if (sections == null) return new SearchResult { Tracks = results, Chips = chipsList };
 
                 foreach (var sec in sections)
                 {
+                    var card = sec["musicCardShelfRenderer"];
+                    if (card != null && topCard == null)
+                    {
+                        try
+                        {
+                            string cardTitle = card["title"]?["runs"]?[0]?["text"]?.ToString();
+                            string cardVid = card["title"]?["runs"]?[0]?["navigationEndpoint"]?["watchEndpoint"]?["videoId"]?.ToString();
+                            string cardBrowseId = card["title"]?["runs"]?[0]?["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                            if (string.IsNullOrEmpty(cardBrowseId))
+                                cardBrowseId = card["onTap"]?["browseEndpoint"]?["browseId"]?.ToString();
+                            if (string.IsNullOrEmpty(cardVid))
+                                cardVid = card["onTap"]?["watchEndpoint"]?["videoId"]?.ToString();
+
+                            var cardThumbs = card["thumbnail"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
+                            string cardThumb = (cardThumbs != null && cardThumbs.HasValues) ? cardThumbs.Last?["url"]?.ToString() : "";
+                            string cardCrop = card["thumbnail"]?["musicThumbnailRenderer"]?["thumbnailCrop"]?.ToString();
+
+                            string fullSub = "";
+                            var subRuns = card["subtitle"]?["runs"];
+                            if (subRuns != null && subRuns.HasValues)
+                            {
+                                fullSub = string.Join("", subRuns.Select(r => r["text"]?.ToString() ?? ""));
+                            }
+
+                            string itemType = "song";
+                            if (cardCrop == "MUSIC_THUMBNAIL_CROP_CIRCLE" || (!string.IsNullOrEmpty(cardBrowseId) && cardBrowseId.StartsWith("UC")))
+                                itemType = "artist";
+                            else if (!string.IsNullOrEmpty(cardBrowseId) && (cardBrowseId.StartsWith("VL") || cardBrowseId.StartsWith("PL")))
+                                itemType = "playlist";
+                            else if (!string.IsNullOrEmpty(cardBrowseId) && cardBrowseId.StartsWith("MPREb_"))
+                                itemType = "album";
+
+                            string shufflePlaylistId = null;
+                            string radioPlaylistId = null;
+                            var cardButtons = card["buttons"];
+                            if (cardButtons != null && cardButtons.HasValues)
+                            {
+                                foreach (var btn in cardButtons)
+                                {
+                                    var br = btn["buttonRenderer"];
+                                    if (br == null) continue;
+                                    string iconType = br["icon"]?["iconType"]?.ToString();
+                                    string cmdPlaylistId = br["command"]?["watchPlaylistEndpoint"]?["playlistId"]?.ToString();
+                                    string cmdVideoId = br["command"]?["watchEndpoint"]?["videoId"]?.ToString();
+
+                                    if (iconType == "MUSIC_SHUFFLE")
+                                        shufflePlaylistId = cmdPlaylistId;
+                                    else if (iconType == "MIX")
+                                        radioPlaylistId = cmdPlaylistId;
+                                    else if (iconType == "PLAY_ARROW" && string.IsNullOrEmpty(cardVid))
+                                        cardVid = cmdVideoId;
+                                }
+                            }
+
+                            var topSongs = new List<YouTubeTrack>();
+                            var cardContents = card["contents"];
+                            if (cardContents != null && cardContents.HasValues)
+                            {
+                                foreach (var cItem in cardContents)
+                                {
+                                    try
+                                    {
+                                        var t = ParseMusicListItem(cItem);
+                                        if (t != null && !string.IsNullOrEmpty(t.VideoId))
+                                            topSongs.Add(t);
+                                    }
+                                    catch { }
+                                }
+                            }
+
+                            topCard = new SearchCardItem
+                            {
+                                Title = cardTitle,
+                                Subtitle = fullSub,
+                                ThumbnailUrl = cardThumb,
+                                ItemType = itemType,
+                                BrowseId = cardBrowseId,
+                                VideoId = cardVid,
+                                ShufflePlaylistId = shufflePlaylistId,
+                                RadioPlaylistId = radioPlaylistId,
+                                TopSongs = topSongs
+                            };
+                        }
+                        catch { }
+                        continue;
+                    }
+
                     var shelf = sec["musicShelfRenderer"];
                     if (shelf != null)
                     {
@@ -109,60 +240,10 @@ namespace YTMusicWP
                         }
                         continue;
                     }
-
-                    var card = sec["musicCardShelfRenderer"];
-                    if (card != null)
-                    {
-                        try
-                        {
-                            string cardTitle = card["title"]?["runs"]?[0]?["text"]?.ToString();
-                            string cardVid = card["title"]?["runs"]?[0]?["navigationEndpoint"]?["watchEndpoint"]?["videoId"]?.ToString();
-                            string cardBrowseId = card["title"]?["runs"]?[0]?["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
-                            var cardThumbs = card["thumbnail"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
-                            string cardThumb = cardThumbs != null && cardThumbs.HasValues ? cardThumbs.Last?["url"]?.ToString() : "";
-
-                            string cardSub = "";
-                            var subRuns = card["subtitle"]?["runs"];
-                            if (subRuns != null)
-                            {
-                                foreach (var r in subRuns)
-                                {
-                                    string t = r["text"]?.ToString();
-                                    if (t != null && t != " • " && t != " · " && t != "Song" && t != "Video" && t != "Artist" && t != "Playlist" && t != "Album" && t != "EP" && t != "Single")
-                                    {
-                                        if (t.Contains(" views") || t.Contains(" view")) continue;
-                                        if (t.Length <= 6 && t.Contains(":")) continue;
-                                        cardSub = t;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            string vid = cardVid;
-                            if (string.IsNullOrEmpty(vid) && !string.IsNullOrEmpty(cardBrowseId))
-                            {
-                                if (cardBrowseId.StartsWith("UC")) vid = "CHANNEL:" + cardBrowseId;
-                                else if (cardBrowseId.StartsWith("VL") || cardBrowseId.StartsWith("PL"))
-                                    vid = "PLAYLIST:" + cardBrowseId.Replace("VL", "");
-                            }
-
-                            if (!string.IsNullOrEmpty(vid) && !string.IsNullOrEmpty(cardTitle))
-                            {
-                                results.Add(new YouTubeTrack
-                                {
-                                    VideoId = vid,
-                                    Title = cardTitle,
-                                    ChannelName = CleanChannelName(cardSub),
-                                    ThumbnailUrl = cardThumb ?? ""
-                                });
-                            }
-                        }
-                        catch { }
-                    }
                 }
             }
             catch { }
-            return new SearchResult { Tracks = results, ContinuationToken = continuationToken };
+            return new SearchResult { Tracks = results, ContinuationToken = continuationToken, Card = topCard, Chips = chipsList };
         }
 
         /// <summary>
@@ -355,9 +436,27 @@ namespace YTMusicWP
             // SetVideoId (for playlist items)
             string setVideoId = mr["playlistItemData"]?["playlistSetVideoId"]?.ToString() ?? mr["playlistItemData"]?["setVideoId"]?.ToString();
 
+            // Extract full subtitle string across columns from col 1 onwards
+            List<string> subParts = new List<string>();
+            if (cols != null)
+            {
+                for (int cIdx = 1; cIdx < cols.Count(); cIdx++)
+                {
+                    var colRuns = cols[cIdx]?["musicResponsiveListItemFlexColumnRenderer"]?["text"]?["runs"];
+                    if (colRuns != null && colRuns.HasValues)
+                    {
+                        string colText = string.Join("", colRuns.Select(r => r["text"]?.ToString() ?? "")).Trim(' ', '•', '·');
+                        if (!string.IsNullOrWhiteSpace(colText))
+                            subParts.Add(colText);
+                    }
+                }
+            }
+            string fullSubtitle = string.Join(" • ", subParts);
+
             // Thumbnail
             string thumbUrl = "";
             double coverWidth = 140; // Default 1:1
+            string thumbCrop = mr["thumbnail"]?["musicThumbnailRenderer"]?["thumbnailCrop"]?.ToString();
             var thumbs = mr["thumbnail"]?["musicThumbnailRenderer"]
                 ?["thumbnail"]?["thumbnails"];
             if (thumbs != null && thumbs.HasValues)
@@ -375,16 +474,54 @@ namespace YTMusicWP
                 }
             }
 
+            // Badges (e.g. LIVE)
+            bool isLive = false;
+            var badges = mr["badges"];
+            if (badges != null && badges.HasValues)
+            {
+                foreach (var b in badges)
+                {
+                    var badgeR = b["musicInlineBadgeRenderer"];
+                    if (badgeR != null)
+                    {
+                        string iconType = badgeR["icon"]?["iconType"]?.ToString();
+                        string label = badgeR["accessibilityData"]?["accessibilityData"]?["label"]?.ToString();
+                        if (iconType == "LIVE" || (label != null && (label.IndexOf("LIVE", StringComparison.OrdinalIgnoreCase) >= 0 || label.IndexOf("Trực tiếp", StringComparison.OrdinalIgnoreCase) >= 0)))
+                        {
+                            isLive = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
             // Determine type
             string type = "song";
-            if (!string.IsNullOrEmpty(browseId) && string.IsNullOrEmpty(videoId))
+            if (thumbCrop == "MUSIC_THUMBNAIL_CROP_CIRCLE" || (!string.IsNullOrEmpty(browseId) && browseId.StartsWith("UC")))
             {
-                if (browseId.StartsWith("UC")) type = "artist";
-                else if (browseId.StartsWith("VL") || browseId.StartsWith("PL")) type = "playlist";
+                type = "artist";
+            }
+            else if (!string.IsNullOrEmpty(browseId) && (browseId.StartsWith("VL") || browseId.StartsWith("PL")))
+            {
+                type = "playlist";
+            }
+            else if (!string.IsNullOrEmpty(browseId) && browseId.StartsWith("MPREb_"))
+            {
+                type = "album";
+            }
+            else if (fullSubtitle.StartsWith("Video", StringComparison.OrdinalIgnoreCase))
+            {
+                type = "video";
+            }
 
-                // Use browseId as videoId marker
-                if (type == "artist") videoId = "CHANNEL:" + browseId;
-                else if (type == "playlist") videoId = "PLAYLIST:" + browseId.Replace("VL", "");
+            // Use browseId as videoId marker if needed
+            if (type == "artist" && !string.IsNullOrEmpty(browseId) && string.IsNullOrEmpty(videoId))
+            {
+                videoId = "CHANNEL:" + browseId;
+            }
+            else if ((type == "playlist" || type == "album") && !string.IsNullOrEmpty(browseId) && string.IsNullOrEmpty(videoId))
+            {
+                videoId = "PLAYLIST:" + browseId.Replace("VL", "");
             }
 
             // Extract AlbumName if present
@@ -440,7 +577,10 @@ namespace YTMusicWP
                 CreditsBrowseId = creditsBrowseId,
                 ThumbnailUrl = thumbUrl,
                 SetVideoId = setVideoId,
-                CoverWidth = coverWidth
+                CoverWidth = coverWidth,
+                Subtitle = fullSubtitle,
+                ItemType = type,
+                IsLive = isLive
             };
         }
 
@@ -652,6 +792,64 @@ namespace YTMusicWP
         {
             get { return (Type != SearchSuggestionType.Query && Type != SearchSuggestionType.Artist) ? Visibility.Visible : Visibility.Collapsed; }
         }
+    }
+
+    public class SearchCardItem
+    {
+        public string Title { get; set; }
+        public string Subtitle { get; set; }
+        public string ThumbnailUrl { get; set; }
+        public string ItemType { get; set; }
+        public string BrowseId { get; set; }
+        public string VideoId { get; set; }
+        public string RadioPlaylistId { get; set; }
+        public string ShufflePlaylistId { get; set; }
+        public List<YouTubeTrack> TopSongs { get; set; }
+
+        public Uri ThumbnailBitmapUri
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ThumbnailUrl)) return null;
+                Uri uri;
+                if (Uri.TryCreate(ThumbnailUrl, UriKind.Absolute, out uri))
+                    return uri;
+                return null;
+            }
+        }
+
+        public Visibility ArtistThumbVisibility
+        {
+            get { return (ItemType == "artist" || (!string.IsNullOrEmpty(BrowseId) && BrowseId.StartsWith("UC"))) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility SquareThumbVisibility
+        {
+            get { return (ItemType != "artist" && (string.IsNullOrEmpty(BrowseId) || !BrowseId.StartsWith("UC"))) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility ShuffleButtonVisibility
+        {
+            get { return (!string.IsNullOrEmpty(ShufflePlaylistId) || ItemType == "artist") ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility MixButtonVisibility
+        {
+            get { return (!string.IsNullOrEmpty(RadioPlaylistId) || !string.IsNullOrEmpty(VideoId) || ItemType == "artist") ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility TopSongsVisibility
+        {
+            get { return (TopSongs != null && TopSongs.Count > 0) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+    }
+
+    public class SearchChipItem
+    {
+        public string Title { get; set; }
+        public string FilterKey { get; set; }
+        public string FilterParams { get; set; }
+        public bool IsSelected { get; set; }
     }
 }
 

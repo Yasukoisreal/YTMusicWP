@@ -1,5 +1,6 @@
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http;
@@ -25,11 +26,21 @@ namespace YTMusicWP
                 _nextSearchToken = "";
                 _currentSearchQuery = SearchBox.Text.Trim();
                 _isLoadingMoreSearch = false;
+                if (_activeSearchChipBorder != null)
+                {
+                    SetChipVisualState(_activeSearchChipBorder, false);
+                    _activeSearchChipBorder = null;
+                }
+                _currentSearchFilterParams = null;
                 ExecuteSearch(_currentSearchQuery);
             }
         }
 
         private ScrollViewer _searchScrollViewer;
+        private Border _activeSearchChipBorder;
+        private string _currentSearchFilterParams;
+        private SearchCardItem _lastSearchCard;
+        private List<SearchChipItem> _lastSearchChips;
 
         private async void ExecuteSearch(string query)
         {
@@ -39,50 +50,29 @@ namespace YTMusicWP
             SearchSongList.Visibility = Visibility.Visible;
             SearchSongList.ItemsSource = null;
             searchResults.Clear();
+            if (TopResultCard != null) TopResultCard.Visibility = Visibility.Collapsed;
 
-            // Detect active filter
-            var songBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterSongsBtn.Background).Color;
-            var playlistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterPlaylistsBtn.Background).Color;
-            var artistBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterArtistsBtn.Background).Color;
-            var videoBg = ((Windows.UI.Xaml.Media.SolidColorBrush)FilterVideosBtn.Background).Color;
-            var activeColor = Windows.UI.Color.FromArgb(255, 29, 185, 84); // #1DB954
+            var tracks = await FetchMusicList(query, "", searchFilter: _currentSearchFilterParams);
 
-            // YouTube Music search params for filtered search
-            // Songs: EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D
-            // Videos: EgWKAQIQAWoKEAMQBBAKEAkQBQ%3D%3D  
-            // Playlists: EgeKAQQoAEABagoQAxAEEAoQCRAF
-            // Artists: EgWKAQIgAWoKEAMQBBAKEAkQBQ%3D%3D
-            string searchFilter = null;
-            if (songBg == activeColor) searchFilter = "songs";
-            else if (videoBg == activeColor) searchFilter = "videos";
-            else if (playlistBg == activeColor) searchFilter = "playlists";
-            else if (artistBg == activeColor) searchFilter = "artists";
-
-            var tracks = await FetchMusicList(query, "", searchFilter: searchFilter);
-
-            if (tracks.Count > 0)
+            if (tracks != null && tracks.Count > 0)
             {
-                var filteredTracks = tracks.AsEnumerable();
-                
-                // Additional client-side filter as safety net
-                if (searchFilter == "songs" || searchFilter == "videos")
-                    filteredTracks = filteredTracks.Where(t => !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:"));
-                else if (searchFilter == "playlists")
-                    filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("PLAYLIST:"));
-                else if (searchFilter == "artists")
-                    filteredTracks = filteredTracks.Where(t => t.VideoId.StartsWith("CHANNEL:"));
-
-                foreach (var t in filteredTracks) searchResults.Add(t);
+                foreach (var t in tracks) searchResults.Add(t);
             }
-            else
+            else if (_lastSearchCard == null)
             {
                 ShowToast("No results found.");
             }
-            
+
+            // Populate Top Result Card
+            PopulateTopResultCard(_lastSearchCard);
+
+            // Sync Search Filter Chips from API
+            UpdateSearchChips(_lastSearchChips);
+
             SearchSongList.ItemsSource = searchResults;
             SearchLoading.Visibility = Visibility.Collapsed;
 
-            System.Diagnostics.Debug.WriteLine("[Search] Results: " + searchResults.Count + ", NextToken: " + (_nextSearchToken ?? "null"));
+            System.Diagnostics.Debug.WriteLine("[Search] Results: " + searchResults.Count + ", Card: " + (_lastSearchCard != null ? _lastSearchCard.Title : "none") + ", NextToken: " + (_nextSearchToken ?? "null"));
 
             // Attach ScrollViewer AFTER data loaded and layout updated
             SearchSongList.UpdateLayout();
@@ -361,48 +351,300 @@ namespace YTMusicWP
             e.Handled = true;
         }
 
-        private void ResetFilters()
+        private void PopulateTopResultCard(SearchCardItem card)
         {
-            FilterAllBtn.Background = _filterInactiveBg;
-            FilterSongsBtn.Background = _filterInactiveBg;
-            FilterPlaylistsBtn.Background = _filterInactiveBg;
-            FilterArtistsBtn.Background = _filterInactiveBg;
-            FilterVideosBtn.Background = _filterInactiveBg;
+            if (TopResultCard == null) return;
+            if (card == null)
+            {
+                TopResultCard.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            TopCardTitle.Text = card.Title ?? "";
+            TopCardSubtitle.Text = card.Subtitle ?? "";
+
+            // Thumbnail
+            if (!string.IsNullOrEmpty(card.ThumbnailUrl))
+            {
+                if (card.ArtistThumbVisibility == Visibility.Visible)
+                {
+                    TopCardArtistThumb.Visibility = Visibility.Visible;
+                    TopCardSquareThumb.Visibility = Visibility.Collapsed;
+                    TopCardArtistThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetArtistAvatar(card.ThumbnailUrl)));
+                }
+                else
+                {
+                    TopCardArtistThumb.Visibility = Visibility.Collapsed;
+                    TopCardSquareThumb.Visibility = Visibility.Visible;
+                    TopCardSquareThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(card.ThumbnailUrl)));
+                }
+            }
+            else
+            {
+                TopCardArtistThumb.Visibility = Visibility.Collapsed;
+                TopCardSquareThumb.Visibility = Visibility.Collapsed;
+            }
+
+            // Action buttons
+            TopCardShuffleBtn.Visibility = card.ShuffleButtonVisibility;
+            TopCardMixBtn.Visibility = card.MixButtonVisibility;
+
+            // Top Songs
+            if (card.TopSongs != null && card.TopSongs.Count > 0)
+            {
+                TopCardSongsPanel.Visibility = Visibility.Visible;
+
+                // Song 1
+                if (card.TopSongs.Count > 0)
+                {
+                    var s1 = card.TopSongs[0];
+                    TopCardSong1.Visibility = Visibility.Visible;
+                    TopCardSong1Title.Text = s1.Title ?? "";
+                    TopCardSong1Sub.Text = s1.DisplaySubtitle ?? "";
+                    if (!string.IsNullOrEmpty(s1.ThumbnailUrl))
+                        TopCardSong1Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s1.ThumbnailUrl)));
+                }
+                else TopCardSong1.Visibility = Visibility.Collapsed;
+
+                // Song 2
+                if (card.TopSongs.Count > 1)
+                {
+                    var s2 = card.TopSongs[1];
+                    TopCardSong2.Visibility = Visibility.Visible;
+                    TopCardSong2Title.Text = s2.Title ?? "";
+                    TopCardSong2Sub.Text = s2.DisplaySubtitle ?? "";
+                    if (!string.IsNullOrEmpty(s2.ThumbnailUrl))
+                        TopCardSong2Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s2.ThumbnailUrl)));
+                }
+                else TopCardSong2.Visibility = Visibility.Collapsed;
+
+                // Song 3
+                if (card.TopSongs.Count > 2)
+                {
+                    var s3 = card.TopSongs[2];
+                    TopCardSong3.Visibility = Visibility.Visible;
+                    TopCardSong3Title.Text = s3.Title ?? "";
+                    TopCardSong3Sub.Text = s3.DisplaySubtitle ?? "";
+                    if (!string.IsNullOrEmpty(s3.ThumbnailUrl))
+                        TopCardSong3Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s3.ThumbnailUrl)));
+                }
+                else TopCardSong3.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                TopCardSongsPanel.Visibility = Visibility.Collapsed;
+            }
+
+            TopResultCard.Visibility = Visibility.Visible;
         }
 
-        private void FilterAllBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        private void SearchChip_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
-            ResetFilters();
-            FilterAllBtn.Background = _filterActiveBg;
-            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+            var border = sender as Border;
+            if (border == null) return;
+            var chipParams = border.Tag as string;
+
+            if (_activeSearchChipBorder == border)
+            {
+                // Deselect active chip (revert to All/unfiltered)
+                SetChipVisualState(border, false);
+                _activeSearchChipBorder = null;
+                _currentSearchFilterParams = null;
+            }
+            else
+            {
+                if (_activeSearchChipBorder != null)
+                {
+                    SetChipVisualState(_activeSearchChipBorder, false);
+                }
+                _activeSearchChipBorder = border;
+                _currentSearchFilterParams = chipParams;
+                SetChipVisualState(border, true);
+            }
+
+            if (!string.IsNullOrWhiteSpace(SearchBox.Text))
+            {
+                _nextSearchToken = "";
+                _isLoadingMoreSearch = false;
+                ExecuteSearch(_currentSearchQuery);
+            }
         }
 
-        private void FilterSongsBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        private void UpdateSearchChips(List<SearchChipItem> chips)
         {
-            ResetFilters();
-            FilterSongsBtn.Background = _filterActiveBg;
-            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+            if (chips == null || chips.Count == 0 || SearchChipsPanel == null) return;
+
+            if (SearchChipsPanel.Children.Count == chips.Count)
+            {
+                for (int i = 0; i < chips.Count; i++)
+                {
+                    var border = SearchChipsPanel.Children[i] as Border;
+                    if (border != null)
+                    {
+                        border.Tag = chips[i].FilterParams;
+                        var tb = border.Child as TextBlock;
+                        if (tb != null) tb.Text = chips[i].Title;
+
+                        bool isSel = chips[i].IsSelected || (!string.IsNullOrEmpty(_currentSearchFilterParams) && chips[i].FilterParams == _currentSearchFilterParams);
+                        if (isSel) _activeSearchChipBorder = border;
+                        SetChipVisualState(border, isSel);
+                    }
+                }
+            }
+            else
+            {
+                SearchChipsPanel.Children.Clear();
+                _activeSearchChipBorder = null;
+                for (int i = 0; i < chips.Count; i++)
+                {
+                    var chip = chips[i];
+                    var border = new Border
+                    {
+                        Background = _ytmChipInactiveBgBrush,
+                        CornerRadius = new CornerRadius(8),
+                        Padding = new Thickness(14, 6, 14, 6),
+                        Margin = new Thickness(0, 0, (i == chips.Count - 1) ? 16 : 8, 0),
+                        Tag = chip.FilterParams
+                    };
+                    var tb = new TextBlock
+                    {
+                        Text = chip.Title,
+                        Foreground = _ytmChipInactiveFgBrush,
+                        FontSize = 13,
+                        FontWeight = Windows.UI.Text.FontWeights.SemiBold
+                    };
+                    try
+                    {
+                        if (Resources.ContainsKey("MontserratSemiBold"))
+                            tb.FontFamily = (Windows.UI.Xaml.Media.FontFamily)Resources["MontserratSemiBold"];
+                    }
+                    catch { }
+                    border.Child = tb;
+                    border.Tapped += SearchChip_Tapped;
+
+                    bool isSel = chip.IsSelected || (!string.IsNullOrEmpty(_currentSearchFilterParams) && chip.FilterParams == _currentSearchFilterParams);
+                    if (isSel)
+                    {
+                        _activeSearchChipBorder = border;
+                        SetChipVisualState(border, true);
+                    }
+
+                    SearchChipsPanel.Children.Add(border);
+                }
+            }
         }
 
-        private void FilterPlaylistsBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        private void TopResultCard_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
-            ResetFilters();
-            FilterPlaylistsBtn.Background = _filterActiveBg;
-            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+            if (_lastSearchCard == null) return;
+            if (_lastSearchCard.ItemType == "artist" || (!string.IsNullOrEmpty(_lastSearchCard.BrowseId) && _lastSearchCard.BrowseId.StartsWith("UC")))
+            {
+                OpenArtistProfile(_lastSearchCard.BrowseId, _lastSearchCard.Title, true);
+            }
+            else if (_lastSearchCard.ItemType == "playlist" || (!string.IsNullOrEmpty(_lastSearchCard.BrowseId) && (_lastSearchCard.BrowseId.StartsWith("VL") || _lastSearchCard.BrowseId.StartsWith("PL"))))
+            {
+                OpenYouTubePlaylist(_lastSearchCard.BrowseId.Replace("VL", ""), _lastSearchCard.Title, _lastSearchCard.ThumbnailUrl);
+            }
+            else if (_lastSearchCard.ItemType == "album" || (!string.IsNullOrEmpty(_lastSearchCard.BrowseId) && _lastSearchCard.BrowseId.StartsWith("MPREb_")))
+            {
+                OpenYouTubePlaylist(_lastSearchCard.BrowseId, _lastSearchCard.Title, _lastSearchCard.ThumbnailUrl);
+            }
+            else if (!string.IsNullOrEmpty(_lastSearchCard.VideoId))
+            {
+                PlayTrack(new YouTubeTrack
+                {
+                    VideoId = _lastSearchCard.VideoId,
+                    Title = _lastSearchCard.Title,
+                    ChannelName = _lastSearchCard.Subtitle,
+                    ThumbnailUrl = _lastSearchCard.ThumbnailUrl
+                });
+            }
         }
 
-        private void FilterArtistsBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        private void TopCardChevron_Click(object sender, RoutedEventArgs e)
         {
-            ResetFilters();
-            FilterArtistsBtn.Background = _filterActiveBg;
-            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+            TopResultCard_Tapped(null, null);
         }
 
-        private void FilterVideosBtn_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        private void TopResultShuffle_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
-            ResetFilters();
-            FilterVideosBtn.Background = _filterActiveBg;
-            if (!string.IsNullOrWhiteSpace(SearchBox.Text)) SearchButton_Click(null, null);
+            e.Handled = true;
+            if (_lastSearchCard == null) return;
+            if (!string.IsNullOrEmpty(_lastSearchCard.ShufflePlaylistId))
+            {
+                OpenYouTubePlaylist(_lastSearchCard.ShufflePlaylistId, _lastSearchCard.Title, _lastSearchCard.ThumbnailUrl);
+            }
+            else if (!string.IsNullOrEmpty(_lastSearchCard.BrowseId))
+            {
+                OpenArtistProfile(_lastSearchCard.BrowseId, _lastSearchCard.Title, true);
+            }
+        }
+
+        private void TopResultMix_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_lastSearchCard == null) return;
+            if (!string.IsNullOrEmpty(_lastSearchCard.RadioPlaylistId))
+            {
+                OpenYouTubePlaylist(_lastSearchCard.RadioPlaylistId, _lastSearchCard.Title, _lastSearchCard.ThumbnailUrl);
+            }
+            else if (!string.IsNullOrEmpty(_lastSearchCard.VideoId))
+            {
+                OpenYouTubePlaylist("RDAMVM" + _lastSearchCard.VideoId, _lastSearchCard.Title, _lastSearchCard.ThumbnailUrl);
+            }
+        }
+
+        private void TopCardSong1_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_lastSearchCard?.TopSongs != null && _lastSearchCard.TopSongs.Count > 0)
+                PlayTrack(_lastSearchCard.TopSongs[0]);
+        }
+
+        private void TopCardSong2_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_lastSearchCard?.TopSongs != null && _lastSearchCard.TopSongs.Count > 1)
+                PlayTrack(_lastSearchCard.TopSongs[1]);
+        }
+
+        private void TopCardSong3_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_lastSearchCard?.TopSongs != null && _lastSearchCard.TopSongs.Count > 2)
+                PlayTrack(_lastSearchCard.TopSongs[2]);
+        }
+
+        private void SearchSongList_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var track = e.ClickedItem as YouTubeTrack;
+            if (track == null) return;
+
+            if (track.ItemType == "artist" || (track.VideoId != null && track.VideoId.StartsWith("CHANNEL:")))
+            {
+                string chId = track.ChannelId ?? (track.VideoId != null ? track.VideoId.Replace("CHANNEL:", "") : null);
+                if (!string.IsNullOrEmpty(chId))
+                    OpenArtistProfile(chId, track.Title, true);
+                return;
+            }
+
+            if (track.ItemType == "playlist" || (track.VideoId != null && track.VideoId.StartsWith("PLAYLIST:")))
+            {
+                string pid = track.VideoId != null ? track.VideoId.Replace("PLAYLIST:", "") : null;
+                if (!string.IsNullOrEmpty(pid))
+                    OpenYouTubePlaylist(pid, track.Title, track.ThumbnailUrl);
+                return;
+            }
+
+            if (track.ItemType == "album" || (track.VideoId != null && track.VideoId.StartsWith("ALBUM:")))
+            {
+                string aid = track.VideoId != null ? track.VideoId.Replace("ALBUM:", "") : null;
+                if (!string.IsNullOrEmpty(aid))
+                    OpenYouTubePlaylist(aid, track.Title, track.ThumbnailUrl);
+                return;
+            }
+
+            PlayTrack(track);
         }
 
         // ==========================================

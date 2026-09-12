@@ -252,22 +252,29 @@ namespace YTMusicWP
             try
             {
                 // YouTube Music search params for each filter type
-                string ytmParams = null;
+                string ytmParams = searchFilter;
                 if (!string.IsNullOrEmpty(searchFilter))
                 {
                     switch (searchFilter)
                     {
-                        case "songs": ytmParams = "EgWKAQIIAWoKEAMQBBAKEAkQBQ%3D%3D"; break;
-                        case "videos": ytmParams = "EgWKAQIQAWoKEAMQBBAKEAkQBQ%3D%3D"; break;
-                        case "playlists": ytmParams = "EgeKAQQoAEABagoQAxAEEAoQCRAF"; break;
-                        case "artists": ytmParams = "EgWKAQIgAWoKEAMQBBAKEAkQBQ%3D%3D"; break;
+                        case "songs": ytmParams = "EgWKAQIIAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D"; break;
+                        case "videos": ytmParams = "EgWKAQIQAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D"; break;
+                        case "albums": ytmParams = "EgWKAQIYAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D"; break;
+                        case "playlists": ytmParams = "EgeKAQQoAEABahAQBRADEAQQCRAKEBAQFRAR"; break;
+                        case "artists": ytmParams = "EgWKAQIgAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D"; break;
+                        default: ytmParams = searchFilter; break;
                     }
                 }
 
                 var innerResult = await InnerTubeClient.SearchWithContinuationAsync(query, 20, ytmParams);
-                if (innerResult != null && innerResult.Tracks != null && innerResult.Tracks.Count > 0)
+                if (innerResult != null)
                 {
-                    list.AddRange(innerResult.Tracks);
+                    _lastSearchCard = innerResult.Card;
+                    _lastSearchChips = innerResult.Chips;
+                    if (innerResult.Tracks != null && innerResult.Tracks.Count > 0)
+                    {
+                        list.AddRange(innerResult.Tracks);
+                    }
                     _nextSearchToken = innerResult.ContinuationToken ?? "";
                 }
             }

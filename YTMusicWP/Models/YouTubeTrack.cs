@@ -80,6 +80,30 @@ namespace YTMusicWP
             get { return _isPlaying ? _activeGreenBrush : _defaultWhiteBrush; }
         }
 
+        public string Subtitle { get; set; }
+        public string ItemType { get; set; }
+        public bool IsLive { get; set; }
+
+        public Visibility LiveBadgeVisibility
+        {
+            get { return IsLive ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility ArtistThumbVisibility
+        {
+            get { return (ItemType == "artist" || (VideoId != null && VideoId.StartsWith("CHANNEL:"))) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility SquareThumbVisibility
+        {
+            get { return (ItemType != "artist" && (VideoId == null || !VideoId.StartsWith("CHANNEL:"))) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public string DisplaySubtitle
+        {
+            get { return !string.IsNullOrEmpty(Subtitle) ? Subtitle : ChannelName; }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string name)
         {

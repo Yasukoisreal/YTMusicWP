@@ -273,6 +273,63 @@
             </Grid>
         </DataTemplate>
 
+        <DataTemplate x:Key="SearchResultItemTemplate">
+            <Grid Margin="0,0,0,12" Background="Transparent" Holding="SongItem_Holding">
+                <FlyoutBase.AttachedFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem Text="📋 Add to Queue" Click="MenuAddToQueue_Click"/>
+                        <MenuFlyoutItem Text="♡ Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem Text="📻 Go to Radio" Click="MenuGoToRadio_Click"/>
+                        <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem Text="✛ Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                    </MenuFlyout>
+                </FlyoutBase.AttachedFlyout>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Thumbnail: Ellipse for artist, Rectangle (Radius 4) for song/video/album/playlist -->
+                <Grid Grid.Column="0" Width="48" Height="48" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Ellipse Width="48" Height="48" Visibility="{Binding ArtistThumbVisibility}">
+                        <Ellipse.Fill>
+                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
+                                <ImageBrush.ImageSource>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="80"/>
+                                </ImageBrush.ImageSource>
+                            </ImageBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <Rectangle Width="48" Height="48" RadiusX="4" RadiusY="4" Visibility="{Binding SquareThumbVisibility}">
+                        <Rectangle.Fill>
+                            <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
+                                <ImageBrush.ImageSource>
+                                    <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="80"/>
+                                </ImageBrush.ImageSource>
+                            </ImageBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Grid>
+
+                <!-- Text information -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding TitleColor}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Background="#CC0000" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding LiveBadgeVisibility}">
+                            <TextBlock Text="LIVE" Foreground="White" FontSize="10" FontWeight="Bold"/>
+                        </Border>
+                        <TextBlock Text="{Binding DisplaySubtitle}" FontSize="13" Foreground="#AAAAAA" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Button Grid.Column="2" Content="⋮" Foreground="#B3B3B3" FontSize="20" Style="{StaticResource IconButtonStyle}" Width="44" Click="MoreButton_Click" HorizontalAlignment="Right"/>
+            </Grid>
+        </DataTemplate>
+
         <DataTemplate x:Key="PlaylistSongItemTemplate">
             <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
@@ -949,23 +1006,32 @@
                 </Grid>
             </Border>
 
-            <!-- Filter Buttons -->
+            <!-- Search Filter Chips (YouTube Music Standard) -->
             <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,0,0,10">
-                <StackPanel Orientation="Horizontal">
-                    <Border x:Name="FilterAllBtn" Background="#1DB954" CornerRadius="16" Padding="14,6" Margin="0,0,8,0" Tapped="FilterAllBtn_Tapped">
-                        <TextBlock Text="All" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                <StackPanel x:Name="SearchChipsPanel" Orientation="Horizontal">
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIgAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
+                        <TextBlock Text="Nghệ sĩ" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterSongsBtn" Background="#232323" CornerRadius="16" Padding="14,6" Margin="0,0,8,0" Tapped="FilterSongsBtn_Tapped">
-                        <TextBlock Text="Music" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIIAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
+                        <TextBlock Text="Bài hát" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterPlaylistsBtn" Background="#232323" CornerRadius="16" Padding="14,6" Margin="0,0,8,0" Tapped="FilterPlaylistsBtn_Tapped">
-                        <TextBlock Text="Playlists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIYAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
+                        <TextBlock Text="Đĩa nhạc" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterArtistsBtn" Background="#232323" CornerRadius="16" Padding="14,6" Margin="0,0,8,0" Tapped="FilterArtistsBtn_Tapped">
-                        <TextBlock Text="Artists" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIQAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
+                        <TextBlock Text="Video" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
-                    <Border x:Name="FilterVideosBtn" Background="#232323" CornerRadius="16" Padding="14,6" Tapped="FilterVideosBtn_Tapped">
-                        <TextBlock Text="Videos" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgeKAQQoAEABahAQBRADEAQQCRAKEBAQFRAR">
+                        <TextBlock Text="Danh sách phát của cộng đồng" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    </Border>
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQJIAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
+                        <TextBlock Text="Tập podcast" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    </Border>
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQJYAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
+                        <TextBlock Text="Hồ sơ" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                    </Border>
+                    <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,16,0" Tapped="SearchChip_Tapped" Tag="EgWKAQJQAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
+                        <TextBlock Text="Podcast" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
@@ -1259,7 +1325,128 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="10,0,0,0"/>
+                <ListView x:Name="SearchSongList" Visibility="Collapsed" IsItemClickEnabled="True" ItemClick="SearchSongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SearchResultItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="10,0,0,0">
+                    <ListView.Header>
+                        <StackPanel x:Name="SearchHeaderPanel" Margin="0,0,10,12">
+                            <!-- YouTube Music Top Result Card -->
+                            <Border x:Name="TopResultCard" Visibility="Collapsed" Background="#181818" CornerRadius="10" Padding="14" Margin="0,0,0,10" Tapped="TopResultCard_Tapped">
+                                <StackPanel>
+                                    <!-- Hero row: Thumbnail, Title, Subtitle, Chevron -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Thumbnail: Artist Circle or Non-artist Rounded Rectangle -->
+                                        <Grid Grid.Column="0" Width="64" Height="64" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <Ellipse x:Name="TopCardArtistThumb" Width="64" Height="64" Visibility="Collapsed">
+                                                <Ellipse.Fill>
+                                                    <ImageBrush x:Name="TopCardArtistThumbBrush" Stretch="UniformToFill"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <Rectangle x:Name="TopCardSquareThumb" Width="64" Height="64" RadiusX="6" RadiusY="6" Visibility="Collapsed">
+                                                <Rectangle.Fill>
+                                                    <ImageBrush x:Name="TopCardSquareThumbBrush" Stretch="UniformToFill"/>
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                        </Grid>
+
+                                        <!-- Title & Subtitle -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TopCardTitle" Text="" FontSize="17" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock x:Name="TopCardSubtitle" Text="" FontSize="13" Foreground="#AAAAAA" Margin="0,4,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <!-- Chevron to open profile/details -->
+                                        <Button Grid.Column="2" x:Name="TopCardChevronBtn" Content="&#xE00F;" FontFamily="Segoe UI Symbol" FontSize="18" Foreground="#888888" Background="Transparent" VerticalAlignment="Center" Click="TopCardChevron_Click" Margin="4,0,0,0"/>
+                                    </Grid>
+
+                                    <!-- Action Buttons: Shuffle and Mix (or Play) -->
+                                    <StackPanel x:Name="TopCardActionRow" Orientation="Horizontal" Margin="0,0,0,6">
+                                        <!-- Shuffle Button -->
+                                        <Border x:Name="TopCardShuffleBtn" Background="#262626" CornerRadius="16" Padding="14,6" Margin="0,0,10,0" Tapped="TopResultShuffle_Tapped">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="🔀" FontSize="12" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="TopCardShuffleText" Text="Trộn bài" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <!-- Mix Button -->
+                                        <Border x:Name="TopCardMixBtn" Background="#262626" CornerRadius="16" Padding="14,6" Tapped="TopResultMix_Tapped">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="📻" FontSize="12" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="TopCardMixText" Text="Tuyển tập" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- Top Songs Sub-list (up to 3 tracks) -->
+                                    <StackPanel x:Name="TopCardSongsPanel" Visibility="Collapsed" Margin="0,4,0,0">
+                                        <Border Height="1" Background="#262626" Margin="0,0,0,8"/>
+                                        
+                                        <!-- Song 1 -->
+                                        <Grid x:Name="TopCardSong1" Visibility="Collapsed" Margin="0,4,0,4" Background="Transparent" Tapped="TopCardSong1_Tapped">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Rectangle Grid.Column="0" Width="40" Height="40" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
+                                                <Rectangle.Fill>
+                                                    <ImageBrush x:Name="TopCardSong1Thumb" Stretch="UniformToFill"/>
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TopCardSong1Title" Text="" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="TopCardSong1Sub" Text="" FontSize="12" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="▶" Foreground="#888888" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                        </Grid>
+
+                                        <!-- Song 2 -->
+                                        <Grid x:Name="TopCardSong2" Visibility="Collapsed" Margin="0,4,0,4" Background="Transparent" Tapped="TopCardSong2_Tapped">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Rectangle Grid.Column="0" Width="40" Height="40" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
+                                                <Rectangle.Fill>
+                                                    <ImageBrush x:Name="TopCardSong2Thumb" Stretch="UniformToFill"/>
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TopCardSong2Title" Text="" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="TopCardSong2Sub" Text="" FontSize="12" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="▶" Foreground="#888888" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                        </Grid>
+
+                                        <!-- Song 3 -->
+                                        <Grid x:Name="TopCardSong3" Visibility="Collapsed" Margin="0,4,0,4" Background="Transparent" Tapped="TopCardSong3_Tapped">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Rectangle Grid.Column="0" Width="40" Height="40" RadiusX="4" RadiusY="4" Margin="0,0,10,0">
+                                                <Rectangle.Fill>
+                                                    <ImageBrush x:Name="TopCardSong3Thumb" Stretch="UniformToFill"/>
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock x:Name="TopCardSong3Title" Text="" FontSize="14" Foreground="White" TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="TopCardSong3Sub" Text="" FontSize="12" Foreground="#888888" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="▶" Foreground="#888888" FontSize="12" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ListView.Header>
+                </ListView>
 
                 <Border x:Name="SuggestionPopup" Visibility="Collapsed" Background="#0F0F0F" BorderBrush="#262626" BorderThickness="1" VerticalAlignment="Top" CornerRadius="8" Margin="10,0,15,0" Canvas.ZIndex="100" Tapped="SuggestionPopup_Tapped">
                     <ListView x:Name="SuggestionList" IsItemClickEnabled="True" ItemClick="SuggestionList_ItemClick" MaxHeight="450" SelectionMode="None" ShowsScrollingPlaceholders="False">
