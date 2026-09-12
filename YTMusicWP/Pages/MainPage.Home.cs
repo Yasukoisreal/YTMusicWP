@@ -18,8 +18,7 @@ namespace YTMusicWP
         private bool _isLoadingMoreHomeSections;
         private bool _hasMoreHomeSections;
         private int _homeLoadedPagesCount;
-        private System.Collections.Generic.List<YTMusicWP.MoodCategory> _cachedMoodsData;
-        private System.Collections.Generic.List<DiscoverItem> _cachedChartsData;
+        private bool _isLoadingHomeEndSections;
 
         private void RefreshHomeHistorySections()
         {
@@ -270,16 +269,9 @@ namespace YTMusicWP
                 HomeDynamicSections.ItemsSource = _homeDynamicSections;
 
                 var homeFirstPageTask = InnerTubeClient.BrowseHomeFirstPageAsync(null);
-                var chartsTask = InnerTubeClient.BrowseChartsAsync();
-                var moodsTask = InnerTubeClient.BrowseMoodsAndGenresAsync();
-                
                 var homeResult = default(InnerTubeClient.HomeBrowseResult);
-                _cachedMoodsData = null;
-                _cachedChartsData = null;
 
                 try { homeResult = await homeFirstPageTask; } catch { }
-                try { _cachedChartsData = await chartsTask; } catch { }
-                try { _cachedMoodsData = await moodsTask; } catch { }
 
                 // Moods & Charts are kept Collapsed until all home sections/continuation pages have loaded
                 if (MoodsGenresListView != null)
@@ -452,35 +444,42 @@ namespace YTMusicWP
 
         private async void ShowHomeEndSections()
         {
+            if (_isLoadingHomeEndSections) return;
+            _isLoadingHomeEndSections = true;
+
             try
             {
-                if (_cachedMoodsData == null)
-                {
-                    try { _cachedMoodsData = await InnerTubeClient.BrowseMoodsAndGenresAsync(); } catch { }
-                }
-                if (_cachedChartsData == null)
-                {
-                    try { _cachedChartsData = await InnerTubeClient.BrowseChartsAsync(); } catch { }
-                }
+                var moodsTask = InnerTubeClient.BrowseMoodsAndGenresAsync();
+                var chartsTask = InnerTubeClient.BrowseChartsAsync();
 
-                if (_cachedMoodsData != null && _cachedMoodsData.Count > 0 && MoodsGenresListView != null)
+                var moodsData = default(System.Collections.Generic.List<YTMusicWP.MoodCategory>);
+                var chartsData = default(System.Collections.Generic.List<DiscoverItem>);
+
+                try { moodsData = await moodsTask; } catch { }
+                try { chartsData = await chartsTask; } catch { }
+
+                if (moodsData != null && moodsData.Count > 0 && MoodsGenresListView != null)
                 {
-                    MoodsGenresListView.ItemsSource = _cachedMoodsData;
+                    MoodsGenresListView.ItemsSource = moodsData;
                     MoodsGenresListView.Visibility = Visibility.Visible;
                 }
 
-                if (_cachedChartsData != null && _cachedChartsData.Count > 0)
+                if (chartsData != null && chartsData.Count > 0)
                 {
                     if (HomeChartsTitle != null)
                         HomeChartsTitle.Visibility = Visibility.Visible;
                     if (HomeChartsCarousel != null)
                     {
-                        HomeChartsCarousel.ItemsSource = _cachedChartsData;
+                        HomeChartsCarousel.ItemsSource = chartsData;
                         HomeChartsCarousel.Visibility = Visibility.Visible;
                     }
                 }
             }
             catch { }
+            finally
+            {
+                _isLoadingHomeEndSections = false;
+            }
         }
 
         private static bool IsMusicTrack(YouTubeTrack t)
@@ -790,8 +789,7 @@ namespace YTMusicWP
                 _hasMoreHomeSections = false;
                 _homeLoadedPagesCount = 0;
                 _isLoadingMoreHomeSections = false;
-                _cachedMoodsData = null;
-                _cachedChartsData = null;
+                _isLoadingHomeEndSections = false;
                 if (_homeDynamicSections != null)
                     _homeDynamicSections.Clear();
                 if (HomeDynamicSections != null)
