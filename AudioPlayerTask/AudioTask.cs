@@ -69,8 +69,8 @@ namespace AudioPlayerTask
         private System.Diagnostics.Stopwatch _liveBaseUrlStopwatch = new System.Diagnostics.Stopwatch();
         private static readonly System.Threading.SemaphoreSlim _liveDownloadSemaphore = new System.Threading.SemaphoreSlim(3, 3);
         private static readonly System.Threading.SemaphoreSlim _liveRefreshSemaphore = new System.Threading.SemaphoreSlim(1, 1);
-        private const int LIVE_INITIAL_SEGMENTS = 6;  // 30s initial buffer (~480KB, fast startup)
-        private const int LIVE_DEEP_SEGMENTS = 24;    // 120s rolling buffer (~1.9MB, downloads in ~8s, 110s safe runway)
+        private const int LIVE_INITIAL_SEGMENTS = 4;  // 20s initial buffer (~300KB, fast 1.5s startup)
+        private const int LIVE_DEEP_SEGMENTS = 8;     // 40s rolling buffer (~600KB, downloads in ~2s, 14s safe runway)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -1365,8 +1365,8 @@ namespace AudioPlayerTask
                         LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                     }
 
-                    // 3. Start safely in DVR window (30 segments = 150s behind live edge)
-                    long safetyOffset = 30;
+                    // 3. Start safely in DVR window (10 segments = 50s behind live edge)
+                    long safetyOffset = 10;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
                     if (startSeq <= 0 && _nextLiveStartSeq > 0)
                     {
@@ -1825,11 +1825,12 @@ namespace AudioPlayerTask
                              !_isLiveSwapping && 
                              !_isLiveInitializing &&
                              (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && 
-                             (DateTime.UtcNow - _lastPreBufferFailureTime).TotalSeconds >= 5.0 &&
-                             elapsed >= 4.0)
+                              (DateTime.UtcNow - _lastPreBufferFailureTime).TotalSeconds >= 4.0 &&
+                              elapsed >= Math.Max(4.0, _liveBufferDurationSec - 14.0))
                     {
-                        // Ping-pong buffering: trigger pre-buffering early (after 4.0s of steady playback)
-                        // With 120s buffer, this provides 110+ seconds of download runway!
+                        // Paced pre-buffering: trigger ~14s before current buffer ends.
+                        // Allows YouTube to generate upcoming chunks so we can stay close to live edge (~50s delay)
+                        // while maintaining a generous ~14s download runway.
                         PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     return;
