@@ -225,28 +225,32 @@ namespace AudioPlayerTask
                         continue;
                     }
 
-                    // 2. BaseURL check: Only refresh if BaseURL was invalidated (e.g. 403 Forbidden).
+                    // 2. BaseURL maintenance:
+                    // Unauthenticated YouTube live BaseURLs expire in ~30s on Google Video CDN.
+                    // Proactively refresh when BaseURL is >= 20s old and buffer is healthy (>= 400 samples / ~9s),
+                    // or immediately if _currentBaseUrl is missing/invalidated.
+                    bool needRefresh = string.IsNullOrEmpty(_currentBaseUrl) ||
+                                       (_baseUrlStopwatch.Elapsed.TotalSeconds >= 20.0 && count >= 400);
+
+                    if (needRefresh && _refreshBaseUrlFunc != null)
+                    {
+                        try
+                        {
+                            string freshUrl = await _refreshBaseUrlFunc(_videoId, token);
+                            if (!string.IsNullOrEmpty(freshUrl))
+                            {
+                                _currentBaseUrl = freshUrl;
+                                _baseUrlStopwatch.Restart();
+                                Log("BaseURL refreshed successfully (buffered=" + BufferedSeconds.ToString("F1") + "s)");
+                            }
+                        }
+                        catch { }
+                    }
+
                     if (string.IsNullOrEmpty(_currentBaseUrl))
                     {
-                        if (_refreshBaseUrlFunc != null)
-                        {
-                            try
-                            {
-                                string freshUrl = await _refreshBaseUrlFunc(_videoId, token);
-                                if (!string.IsNullOrEmpty(freshUrl))
-                                {
-                                    _currentBaseUrl = freshUrl;
-                                    Log("BaseURL refreshed successfully");
-                                }
-                            }
-                            catch { }
-                        }
-
-                        if (string.IsNullOrEmpty(_currentBaseUrl))
-                        {
-                            await Task.Delay(2000, token);
-                            continue;
-                        }
+                        await Task.Delay(1500, token);
+                        continue;
                     }
 
                     // 3. Live Edge Pacing Guard:
@@ -300,9 +304,28 @@ namespace AudioPlayerTask
                     }
                     else
                     {
-                        // Download returned null (BaseURL expired or transient network error)
-                        Log("Download returned null for seq=" + targetSeq + ", waiting 1.5s (buffered=" + BufferedSeconds.ToString("F1") + "s)...");
-                        await Task.Delay(1500, token);
+                        // Download returned null (BaseURL expired with 403 Forbidden, or transient error)
+                        Log("Download returned null for seq=" + targetSeq + ", refreshing BaseURL (buffered=" + BufferedSeconds.ToString("F1") + "s)...");
+                        _currentBaseUrl = null;
+                        if (_refreshBaseUrlFunc != null)
+                        {
+                            try
+                            {
+                                string freshUrl = await _refreshBaseUrlFunc(_videoId, token);
+                                if (!string.IsNullOrEmpty(freshUrl))
+                                {
+                                    _currentBaseUrl = freshUrl;
+                                    _baseUrlStopwatch.Restart();
+                                    Log("BaseURL refreshed successfully after null download");
+                                }
+                            }
+                            catch { }
+                        }
+
+                        if (string.IsNullOrEmpty(_currentBaseUrl))
+                        {
+                            await Task.Delay(1500, token);
+                        }
                     }
                 }
                 catch (OperationCanceledException)

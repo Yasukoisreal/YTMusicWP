@@ -1109,6 +1109,7 @@ namespace AudioPlayerTask
                     if (ct.IsCancellationRequested) return null;
                     var bytes = await DownloadLiveSegmentAsync(baseUrl, seq, ct);
                     if (bytes != null && bytes.Length > 0) return bytes;
+                    if (_currentLiveBaseUrl == null) break; // 403 Forbidden: BaseURL expired, do not retry with the same expired URL
                     try { await Task.Delay(150, ct); } catch { return null; }
                 }
                 return null;
