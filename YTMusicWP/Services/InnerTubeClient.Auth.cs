@@ -1,5 +1,7 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -99,12 +101,18 @@ namespace YTMusicWP
 
             using (var response = await _client.SendAsync(request))
             {
-                string resultJson = await response.Content.ReadAsStringAsync();
-
                 if (!response.IsSuccessStatusCode)
+                {
+                    string resultJson = await response.Content.ReadAsStringAsync();
                     return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
+                }
 
-                return JObject.Parse(resultJson);
+                using (var stream = await response.Content.ReadAsStreamAsync())
+                using (var reader = new StreamReader(stream))
+                using (var jsonReader = new JsonTextReader(reader))
+                {
+                    return JObject.Load(jsonReader);
+                }
             }
         }
 
@@ -188,12 +196,18 @@ namespace YTMusicWP
 
             using (var response = await _client.SendAsync(request))
             {
-                string resultJson = await response.Content.ReadAsStringAsync();
-                
                 if (!response.IsSuccessStatusCode)
+                {
+                    string resultJson = await response.Content.ReadAsStringAsync();
                     return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
-                
-                return JObject.Parse(resultJson);
+                }
+
+                using (var stream = await response.Content.ReadAsStreamAsync())
+                using (var reader = new StreamReader(stream))
+                using (var jsonReader = new JsonTextReader(reader))
+                {
+                    return JObject.Load(jsonReader);
+                }
             }
         }
     }

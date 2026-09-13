@@ -20,11 +20,21 @@ namespace YTMusicWP
             this.UnhandledException += App_UnhandledException;
         }
 
-        private void App_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private async void App_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             // Prevent app crash — especially important for OOM on 512MB WP8.1 devices
             e.Handled = true;
-            System.Diagnostics.Debug.WriteLine("[CRASH PREVENTED] " + (e.Exception?.Message ?? "Unknown error"));
+            string msg = e.Exception != null ? e.Exception.Message : "Unknown error";
+            string stack = e.Exception != null ? e.Exception.StackTrace : "No stack trace";
+            string err = string.Format("[{0:yyyy-MM-dd HH:mm:ss}] {1}\r\nStack: {2}\r\n\r\n", DateTime.Now, msg, stack);
+            System.Diagnostics.Debug.WriteLine("[CRASH PREVENTED] " + err);
+            try
+            {
+                var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+                var file = await folder.CreateFileAsync("crash.log", Windows.Storage.CreationCollisionOption.OpenIfExists);
+                await Windows.Storage.FileIO.AppendTextAsync(file, err);
+            }
+            catch { }
         }
 
         protected override void OnLaunched(LaunchActivatedEventArgs e)

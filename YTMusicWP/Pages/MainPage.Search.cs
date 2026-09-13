@@ -138,15 +138,28 @@ namespace YTMusicWP
                 SearchLoading.Visibility = Visibility.Visible;
                 System.Diagnostics.Debug.WriteLine("[Search] Loading more with token: " + _nextSearchToken.Substring(0, Math.Min(30, _nextSearchToken.Length)) + "...");
 
-                var tracks = await FetchMusicList(_currentSearchQuery, _nextSearchToken);
-                if (tracks != null)
+                try
                 {
-                    foreach (var t in tracks) searchResults.Add(t);
-                    System.Diagnostics.Debug.WriteLine("[Search] Loaded " + tracks.Count + " more, total: " + searchResults.Count);
+                    var tracks = await FetchMusicList(_currentSearchQuery, _nextSearchToken);
+                    if (tracks != null && tracks.Count > 0)
+                    {
+                        for (int i = 0; i < tracks.Count; i++)
+                        {
+                            searchResults.Add(tracks[i]);
+                            if (i % 5 == 4) await Task.Yield();
+                        }
+                        System.Diagnostics.Debug.WriteLine("[Search] Loaded " + tracks.Count + " more, total: " + searchResults.Count);
+                    }
                 }
-
-                SearchLoading.Visibility = Visibility.Collapsed;
-                _isLoadingMoreSearch = false;
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("[Search] Pagination error: " + ex.Message);
+                }
+                finally
+                {
+                    SearchLoading.Visibility = Visibility.Collapsed;
+                    _isLoadingMoreSearch = false;
+                }
             }
         }
 

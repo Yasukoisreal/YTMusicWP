@@ -611,6 +611,14 @@ namespace YTMusicWP
             double speed = _playbackSpeeds[_playbackSpeedIndex];
             MenuPlaybackSpeedStatus.Text = speed.ToString("0.0#") + "x";
 
+            try
+            {
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
+                settings.Values["PlaybackSpeedIndex"] = _playbackSpeedIndex;
+                settings.Values["PlaybackRate"] = speed;
+            }
+            catch { }
+
             var msg = new Windows.Foundation.Collections.ValueSet();
             msg.Add("SetPlaybackRate", speed);
             try { BackgroundMediaPlayer.SendMessageToBackground(msg); } catch { }
@@ -623,6 +631,10 @@ namespace YTMusicWP
         {
             CloseBottomSheet_Click(null, null);
             if (_bottomSheetTrack == null) return;
+
+            // Avoid duplicates in queue
+            var existing = currentQueueTracks.FirstOrDefault(t => t.VideoId == _bottomSheetTrack.VideoId);
+            if (existing != null) currentQueueTracks.Remove(existing);
 
             // Find current track index in queue
             int currentIdx = -1;
@@ -637,11 +649,6 @@ namespace YTMusicWP
 
             // Insert after current track (or at end if not found)
             int insertIdx = currentIdx >= 0 ? currentIdx + 1 : currentQueueTracks.Count;
-            
-            // Avoid duplicates in queue
-            var existing = currentQueueTracks.FirstOrDefault(t => t.VideoId == _bottomSheetTrack.VideoId);
-            if (existing != null) currentQueueTracks.Remove(existing);
-
             if (insertIdx > currentQueueTracks.Count) insertIdx = currentQueueTracks.Count;
             currentQueueTracks.Insert(insertIdx, _bottomSheetTrack);
             UpdateQueueActiveState();

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Windows.Phone.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -208,7 +209,10 @@ namespace YTMusicWP
 
             if (Services.MemoryHelper.IsLowMemoryDevice)
             {
-                GC.Collect();
+                Task.Run(() =>
+                {
+                    try { GC.Collect(1, GCCollectionMode.Optimized); } catch { }
+                });
             }
         }
 

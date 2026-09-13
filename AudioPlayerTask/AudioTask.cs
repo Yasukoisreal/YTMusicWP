@@ -74,6 +74,9 @@ namespace AudioPlayerTask
         private static readonly System.Threading.SemaphoreSlim _liveRefreshSemaphore = new System.Threading.SemaphoreSlim(1, 1);
         private const int LIVE_INITIAL_SEGMENTS = 4;  // 20s initial buffer (~300KB, fast 1.5s startup)
         private const int LIVE_DEEP_SEGMENTS = 8;     // 40s rolling buffer (~600KB, downloads in ~2s, 14s safe runway)
+        private readonly object _logLock = new object();
+        private readonly List<string> _pendingLiveLogs = new List<string>();
+        private DateTime _lastLogFlushTime = DateTime.MinValue;
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -92,6 +95,16 @@ namespace AudioPlayerTask
 
             _mediaPlayer = BackgroundMediaPlayer.Current;
             _mediaPlayer.AutoPlay = true;
+            try
+            {
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (settings.ContainsKey("PlaybackRate"))
+                {
+                    _playbackRate = Convert.ToDouble(settings["PlaybackRate"]);
+                    _mediaPlayer.PlaybackRate = _playbackRate;
+                }
+            }
+            catch { }
             _mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
             _mediaPlayer.MediaFailed += MediaPlayer_MediaFailed;
             _mediaPlayer.MediaOpened += MediaPlayer_MediaOpened;
@@ -106,6 +119,7 @@ namespace AudioPlayerTask
             try
             {
                 LogLive("[Live TaskInstance_Canceled] reason=" + reason);
+                FlushLiveLogs();
                 _systemControls.ButtonPressed -= SystemControls_ButtonPressed;
                 _systemControls.IsEnabled = false;
                 _mediaPlayer.MediaEnded -= MediaPlayer_MediaEnded;
@@ -186,6 +200,7 @@ namespace AudioPlayerTask
                 {
                     _playbackRate = (double)e.Data["SetPlaybackRate"];
                     _mediaPlayer.PlaybackRate = _playbackRate;
+                    Windows.Storage.ApplicationData.Current.LocalSettings.Values["PlaybackRate"] = _playbackRate;
                 }
                 catch { }
             }
@@ -1440,7 +1455,15 @@ namespace AudioPlayerTask
 
                 if (!ct.IsCancellationRequested)
                 {
-                    ReportErrorToUI("Live stream unavailable");
+                    LogLive("[Live Fallback] MSS không khả dụng sau 3 lần thử, kích hoạt file-swap buffer...");
+                    _liveMss = null;
+                    _liveReconnectCount = 0;
+                    _liveBufferCycle = 0;
+                    _nextLiveStartSeq = Math.Max(1, _currentLiveSeq - 7);
+                    PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
+                    SwapToNextLiveBuffer();
+                    StartPlaybackMonitor();
+                    return;
                 }
             }
             finally
@@ -1648,21 +1671,63 @@ namespace AudioPlayerTask
             {
                 string line = DateTime.Now.ToString("HH:mm:ss.fff") + " " + msg;
                 System.Diagnostics.Debug.WriteLine(line);
-                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                string prev = ls.ContainsKey("LiveDebugLog") ? (ls["LiveDebugLog"]?.ToString() ?? "") : "";
-                string updated = line + "\n" + prev;
-                // WinRT LocalSettings has a strict 4096-byte limit per value.
-                // Cap to 1500 chars (3000 UTF-16 bytes) to never throw WinRT quota exceptions.
-                if (updated.Length > 1500) updated = updated.Substring(0, 1500);
-                ls["LiveDebugLog"] = updated;
+
+                bool shouldFlush = false;
+                lock (_logLock)
+                {
+                    _pendingLiveLogs.Add(line);
+                    if (_pendingLiveLogs.Count > 50)
+                    {
+                        _pendingLiveLogs.RemoveAt(0);
+                    }
+                    if ((DateTime.UtcNow - _lastLogFlushTime).TotalSeconds >= 4.0 || _pendingLiveLogs.Count >= 10)
+                    {
+                        shouldFlush = true;
+                    }
+                }
+
+                if (shouldFlush)
+                {
+                    FlushLiveLogs();
+                }
             }
             catch { }
             // NOTE: Do NOT call SendToast here — sending rapid IPC messages to foreground
             // on every live chunk/event crashes Windows.Media.BackgroundPlayback.exe with 0x800703e9 (STATUS_STACK_OVERFLOW).
         }
 
+        private void FlushLiveLogs()
+        {
+            try
+            {
+                string joined;
+                lock (_logLock)
+                {
+                    if (_pendingLiveLogs.Count == 0) return;
+                    _lastLogFlushTime = DateTime.UtcNow;
+                    var sb = new System.Text.StringBuilder();
+                    for (int i = _pendingLiveLogs.Count - 1; i >= 0; i--)
+                    {
+                        sb.AppendLine(_pendingLiveLogs[i]);
+                    }
+                    joined = sb.ToString();
+                    _pendingLiveLogs.Clear();
+                }
+
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                string prev = ls.ContainsKey("LiveDebugLog") ? (ls["LiveDebugLog"]?.ToString() ?? "") : "";
+                string updated = joined + prev;
+                // WinRT LocalSettings has a strict 4096-byte limit per value.
+                // Cap to 1500 chars (3000 UTF-16 bytes) to never throw WinRT quota exceptions.
+                if (updated.Length > 1500) updated = updated.Substring(0, 1500);
+                ls["LiveDebugLog"] = updated;
+            }
+            catch { }
+        }
+
         private void ReportErrorToUI(string errorDetail)
         {
+            FlushLiveLogs();
             string title = "Beatora";
             string thumb = null;
             lock (_playlistLock)

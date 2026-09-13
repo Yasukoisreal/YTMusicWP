@@ -435,7 +435,9 @@ namespace YTMusicWP
                 {
                     try
                     {
-                        SetPlayPauseIcon(sender.CurrentState == MediaPlayerState.Playing);
+                        var state = sender.CurrentState;
+                        bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
+                        SetPlayPauseIcon(isPlaying);
                     }
                     catch { }
                 });
@@ -637,6 +639,7 @@ namespace YTMusicWP
         }
 
         private void MusicSlider_PointerPressed(object sender, PointerRoutedEventArgs e) => _isSliderManipulating = true;
+        private void MusicSlider_PointerCanceled(object sender, PointerRoutedEventArgs e) => MusicSlider_PointerCaptureLost(sender, e);
         private void MusicSlider_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         {
             _isSliderManipulating = false;
@@ -716,9 +719,10 @@ namespace YTMusicWP
             {
                 var localSettings = ApplicationData.Current.LocalSettings.Values;
 
-                if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing || _appMediaPlayer.CurrentState == MediaPlayerState.Paused)
+                var state = _appMediaPlayer.CurrentState;
+                if (state == MediaPlayerState.Playing || state == MediaPlayerState.Paused || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening)
                 {
-                    bool isPlaying = (_appMediaPlayer.CurrentState == MediaPlayerState.Playing);
+                    bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
                     SetPlayPauseIcon(isPlaying);
 
                     string title = localSettings.ContainsKey("CurrentTitle") ? localSettings["CurrentTitle"].ToString() : "Unknown";

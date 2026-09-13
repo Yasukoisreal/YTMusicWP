@@ -135,6 +135,16 @@ namespace YTMusicWP
                 GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
                 NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
 
+                int speedIdx = SafeGetInt(settings, "PlaybackSpeedIndex", 2);
+                if (speedIdx >= 0 && speedIdx < _playbackSpeeds.Length)
+                {
+                    _playbackSpeedIndex = speedIdx;
+                    if (MenuPlaybackSpeedStatus != null)
+                    {
+                        MenuPlaybackSpeedStatus.Text = _playbackSpeeds[_playbackSpeedIndex].ToString("0.0#") + "x";
+                    }
+                }
+
                 object styleVal = settings.ContainsKey("NowPlayingStyle") ? settings["NowPlayingStyle"] : null;
                 int npStyle = 0;
                 if (styleVal != null)

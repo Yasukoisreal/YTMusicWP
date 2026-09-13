@@ -443,17 +443,24 @@ namespace YTMusicWP
 
             CreatePlaylistDialog.Visibility = Visibility.Collapsed;
 
-            string plId = await CreateYouTubePlaylistAsync(name);
-            _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+            try
             {
-                PlaylistId = plId,
-                Title = name,
-                TrackCount = 0,
-                ThumbnailUrl = ""
-            });
-            SaveYouTubePlaylistsCacheAsync();
-            RefreshLibraryList();
-            ShowToast("Playlist created!");
+                string plId = await CreateYouTubePlaylistAsync(name);
+                _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                {
+                    PlaylistId = plId,
+                    Title = name,
+                    TrackCount = 0,
+                    ThumbnailUrl = ""
+                });
+                SaveYouTubePlaylistsCacheAsync();
+                RefreshLibraryList();
+                ShowToast("Playlist created!");
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Failed to create playlist: " + ex.Message);
+            }
         }
 
         private void PlaylistItem_Holding(object sender, HoldingRoutedEventArgs e)
@@ -479,19 +486,26 @@ namespace YTMusicWP
         {
             if (_currentViewingYtPlaylistId != null)
             {
-                ShowToast("Deleting playlist...");
-                bool success = await DeleteYouTubePlaylistAsync(_currentViewingYtPlaylistId);
-                if (success)
+                try
                 {
-                    var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == _currentViewingYtPlaylistId);
-                    if (pl != null) _youtubeUserPlaylists.Remove(pl);
-                    RefreshLibraryList();
-                    ShowToast("Playlist deleted!");
-                    PlaylistSlideOutStoryboard.Begin();
+                    ShowToast("Deleting playlist...");
+                    bool success = await DeleteYouTubePlaylistAsync(_currentViewingYtPlaylistId);
+                    if (success)
+                    {
+                        var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == _currentViewingYtPlaylistId);
+                        if (pl != null) _youtubeUserPlaylists.Remove(pl);
+                        RefreshLibraryList();
+                        ShowToast("Playlist deleted!");
+                        PlaylistSlideOutStoryboard.Begin();
+                    }
+                    else
+                    {
+                        ShowToast("Failed to delete playlist");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    ShowToast("Failed to delete playlist");
+                    ShowToast("Error deleting playlist: " + ex.Message);
                 }
             }
         }
@@ -501,25 +515,32 @@ namespace YTMusicWP
             var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
             if (track != null && _currentViewingYtPlaylistId != null)
             {
-                bool success = await RemoveFromYouTubePlaylistAsync(_currentViewingYtPlaylistId, track.VideoId, track.SetVideoId);
-                if (success)
+                try
                 {
-                    // Remove from local cache for local playlists
-                    if (_currentViewingYtPlaylistId.StartsWith("LOCAL_"))
+                    bool success = await RemoveFromYouTubePlaylistAsync(_currentViewingYtPlaylistId, track.VideoId, track.SetVideoId);
+                    if (success)
                     {
-                        var localTracks = await LoadLocalPlaylistTracksAsync(_currentViewingYtPlaylistId);
-                        localTracks.RemoveAll(t => t.VideoId == track.VideoId);
-                        await SaveLocalPlaylistTracksAsync(_currentViewingYtPlaylistId, localTracks);
-                        var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == _currentViewingYtPlaylistId);
-                        if (pl != null) { pl.TrackCount = localTracks.Count; SaveYouTubePlaylistsCacheAsync(); }
+                        // Remove from local cache for local playlists
+                        if (_currentViewingYtPlaylistId.StartsWith("LOCAL_"))
+                        {
+                            var localTracks = await LoadLocalPlaylistTracksAsync(_currentViewingYtPlaylistId);
+                            localTracks.RemoveAll(t => t.VideoId == track.VideoId);
+                            await SaveLocalPlaylistTracksAsync(_currentViewingYtPlaylistId, localTracks);
+                            var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == _currentViewingYtPlaylistId);
+                            if (pl != null) { pl.TrackCount = localTracks.Count; SaveYouTubePlaylistsCacheAsync(); }
+                        }
+                        var ytTracks = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
+                        if (ytTracks != null) ytTracks.Remove(track);
+                        ShowToast("Removed from playlist");
                     }
-                    var ytTracks = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
-                    if (ytTracks != null) ytTracks.Remove(track);
-                    ShowToast("Removed from playlist");
+                    else
+                    {
+                        ShowToast("Failed to remove");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    ShowToast("Failed to remove");
+                    ShowToast("Error removing track: " + ex.Message);
                 }
             }
         }
@@ -609,26 +630,33 @@ namespace YTMusicWP
 
             if (ytPlaylist != null && track != null)
             {
-                ShowToast("Adding to " + ytPlaylist.Title + "...");
+                try
+                {
+                    ShowToast("Adding to " + ytPlaylist.Title + "...");
 
-                bool success = (await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, track.VideoId)) != null;
-                if (success)
-                {
-                    // Save track to local cache for local playlists
-                    if (ytPlaylist.PlaylistId.StartsWith("LOCAL_"))
+                    bool success = (await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, track.VideoId)) != null;
+                    if (success)
                     {
-                        await AddTrackToLocalPlaylistAsync(ytPlaylist.PlaylistId, track);
-                        // Use first track's thumbnail as playlist cover
-                        if (string.IsNullOrEmpty(ytPlaylist.ThumbnailUrl) && !string.IsNullOrEmpty(track.ThumbnailUrl))
-                            ytPlaylist.ThumbnailUrl = track.ThumbnailUrl;
+                        // Save track to local cache for local playlists
+                        if (ytPlaylist.PlaylistId.StartsWith("LOCAL_"))
+                        {
+                            await AddTrackToLocalPlaylistAsync(ytPlaylist.PlaylistId, track);
+                            // Use first track's thumbnail as playlist cover
+                            if (string.IsNullOrEmpty(ytPlaylist.ThumbnailUrl) && !string.IsNullOrEmpty(track.ThumbnailUrl))
+                                ytPlaylist.ThumbnailUrl = track.ThumbnailUrl;
+                        }
+                        ytPlaylist.TrackCount++;
+                        SaveYouTubePlaylistsCacheAsync();
+                        ShowToast("Added to " + ytPlaylist.Title);
                     }
-                    ytPlaylist.TrackCount++;
-                    SaveYouTubePlaylistsCacheAsync();
-                    ShowToast("Added to " + ytPlaylist.Title);
+                    else
+                    {
+                        ShowToast("Failed to add to playlist");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    ShowToast("Failed to add to playlist");
+                    ShowToast("Error adding to playlist: " + ex.Message);
                 }
             }
         }
