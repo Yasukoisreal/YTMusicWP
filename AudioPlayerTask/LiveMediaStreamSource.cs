@@ -21,6 +21,8 @@ namespace AudioPlayerTask
         public delegate Task<byte[]> DownloadSegmentDelegate(string baseUrl, long seq, CancellationToken ct);
         public delegate Task<string> RefreshBaseUrlDelegate(string vidId, CancellationToken ct);
         public delegate long GetCachedHeadSeqDelegate();
+        public delegate Task<long> GetFreshHeadSeqDelegate(CancellationToken ct);
+        public delegate bool CheckBaseUrlValidDelegate();
 
         private static readonly byte[] BOX_TRUN = new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'n' };
         private static readonly byte[] BOX_MDAT = new byte[] { (byte)'m', (byte)'d', (byte)'a', (byte)'t' };
@@ -49,6 +51,8 @@ namespace AudioPlayerTask
         private readonly DownloadSegmentDelegate _downloadFunc;
         private readonly RefreshBaseUrlDelegate _refreshBaseUrlFunc;
         private readonly GetCachedHeadSeqDelegate _getCachedHeadSeqFunc;
+        private readonly GetFreshHeadSeqDelegate _getFreshHeadSeqFunc;
+        private readonly CheckBaseUrlValidDelegate _checkBaseUrlValidFunc;
         private readonly Action<string> _logFunc;
 
         public MediaStreamSource StreamSource { get { return _mss; } }
@@ -72,6 +76,8 @@ namespace AudioPlayerTask
             DownloadSegmentDelegate downloadFunc,
             RefreshBaseUrlDelegate refreshBaseUrlFunc,
             GetCachedHeadSeqDelegate getCachedHeadSeqFunc,
+            GetFreshHeadSeqDelegate getFreshHeadSeqFunc,
+            CheckBaseUrlValidDelegate checkBaseUrlValidFunc,
             Action<string> logFunc = null)
         {
             _videoId = videoId;
@@ -80,6 +86,8 @@ namespace AudioPlayerTask
             _downloadFunc = downloadFunc;
             _refreshBaseUrlFunc = refreshBaseUrlFunc;
             _getCachedHeadSeqFunc = getCachedHeadSeqFunc;
+            _getFreshHeadSeqFunc = getFreshHeadSeqFunc;
+            _checkBaseUrlValidFunc = checkBaseUrlValidFunc;
             _logFunc = logFunc;
             _baseUrlStopwatch.Restart();
 
@@ -182,8 +190,18 @@ namespace AudioPlayerTask
                     int parsed0 = ParseAndEnqueueChunk(bytesArr[0]);
                     int parsed1 = ParseAndEnqueueChunk(bytesArr[1]);
 
-                    if (parsed0 > 0) _nextSequence++;
-                    if (parsed1 > 0) _nextSequence++;
+                    if (parsed0 > 0)
+                    {
+                        _nextSequence = seq0 + 1;
+                        if (parsed1 > 0)
+                        {
+                            _nextSequence = seq1 + 1;
+                        }
+                    }
+                    else if (parsed1 > 0)
+                    {
+                        _nextSequence = seq1 + 1;
+                    }
 
                     if (parsed0 > 0 || parsed1 > 0)
                     {
@@ -270,14 +288,34 @@ namespace AudioPlayerTask
                     }
 
                     // 3. Live Edge Collision Guard:
-                    // If targetSeq has caught up to the broadcast live edge, pause 1.5s to allow YouTube's encoder to publish it.
+                    // If targetSeq has caught up to the broadcast live edge, query encoder.
                     long targetSeq = _nextSequence;
                     long head = _getCachedHeadSeqFunc != null ? _getCachedHeadSeqFunc() : -1;
-                    if (head > 0 && targetSeq >= head)
+                    if (head > 0 && targetSeq > head)
                     {
-                        Log("Near live edge (seq=" + targetSeq + ", head=" + head + "). Waiting 1.5s for encoder...");
-                        await Task.Delay(1500, token);
-                        continue;
+                        if (_getFreshHeadSeqFunc != null)
+                        {
+                            try
+                            {
+                                using (var headCts = CancellationTokenSource.CreateLinkedTokenSource(token))
+                                {
+                                    headCts.CancelAfter(3500);
+                                    long freshHead = await _getFreshHeadSeqFunc(headCts.Token);
+                                    if (freshHead > 0)
+                                    {
+                                        head = freshHead;
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+
+                        if (head > 0 && targetSeq > head)
+                        {
+                            Log("Near live edge (seq=" + targetSeq + ", head=" + head + "). Waiting 1.0s for encoder...");
+                            await Task.Delay(1000, token);
+                            continue;
+                        }
                     }
 
                     // 4. Download segment with guaranteed 6s overarching timeout
@@ -331,33 +369,44 @@ namespace AudioPlayerTask
                     else
                     {
                         // Download returned null (BaseURL expired with 403, or transient network error)
-                        Log("Download returned null for seq=" + targetSeq + ", refreshing BaseURL (buffered=" + BufferedSeconds.ToString("F1") + "s)...");
-                        _currentBaseUrl = null;
-                        if (_refreshBaseUrlFunc != null)
+                        bool isUrlExpired = (_checkBaseUrlValidFunc != null && !_checkBaseUrlValidFunc()) || string.IsNullOrEmpty(_currentBaseUrl);
+
+                        if (isUrlExpired)
                         {
-                            try
+                            Log("Download returned null (403 Expired) for seq=" + targetSeq + ", refreshing BaseURL (buffered=" + BufferedSeconds.ToString("F1") + "s)...");
+                            _currentBaseUrl = null;
+                            if (_refreshBaseUrlFunc != null)
                             {
-                                using (var refreshCts = CancellationTokenSource.CreateLinkedTokenSource(token))
+                                try
                                 {
-                                    refreshCts.CancelAfter(8000);
-                                    string freshUrl = await _refreshBaseUrlFunc(_videoId, refreshCts.Token);
-                                    if (!string.IsNullOrEmpty(freshUrl))
+                                    using (var refreshCts = CancellationTokenSource.CreateLinkedTokenSource(token))
                                     {
-                                        _currentBaseUrl = freshUrl;
-                                        _baseUrlStopwatch.Restart();
-                                        Log("BaseURL refreshed successfully after null download");
+                                        refreshCts.CancelAfter(8000);
+                                        string freshUrl = await _refreshBaseUrlFunc(_videoId, refreshCts.Token);
+                                        if (!string.IsNullOrEmpty(freshUrl))
+                                        {
+                                            _currentBaseUrl = freshUrl;
+                                            _baseUrlStopwatch.Restart();
+                                            Log("BaseURL refreshed successfully after 403");
+                                        }
                                     }
                                 }
+                                catch (Exception ex)
+                                {
+                                    Log("BaseURL refresh after 403 threw: " + ex.Message);
+                                }
                             }
-                            catch (Exception ex)
+
+                            if (string.IsNullOrEmpty(_currentBaseUrl))
                             {
-                                Log("BaseURL refresh after null download threw: " + ex.Message);
+                                await Task.Delay(1500, token);
                             }
                         }
-
-                        if (string.IsNullOrEmpty(_currentBaseUrl))
+                        else
                         {
-                            await Task.Delay(1500, token);
+                            // Transient download failure/timeout. Do NOT discard valid BaseURL!
+                            Log("Download returned null (transient) for seq=" + targetSeq + ", retrying in 500ms (buffered=" + BufferedSeconds.ToString("F1") + "s)...");
+                            await Task.Delay(500, token);
                         }
                     }
                 }

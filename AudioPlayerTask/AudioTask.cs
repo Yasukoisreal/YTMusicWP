@@ -945,30 +945,31 @@ namespace AudioPlayerTask
             if (string.IsNullOrEmpty(baseUrl)) return -1;
             try
             {
-                var headReq = System.Net.WebRequest.CreateHttp(baseUrl);
-                headReq.Method = "HEAD";
-                try { headReq.Headers["User-Agent"] = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip"; } catch { }
+                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Head, new Uri(baseUrl));
+                request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(3000);
-                    using (timeoutCts.Token.Register(() => { try { headReq.Abort(); } catch { } }))
-                    using (var headResp = (System.Net.HttpWebResponse)await headReq.GetResponseAsync())
+                    timeoutCts.CancelAfter(3500);
+                    using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                     {
-                        string seqHeader = headResp.Headers["X-Head-Seqnum"] ?? headResp.Headers["X-Sequence-Num"];
-                        long parsedSeq;
-                        if (!string.IsNullOrEmpty(seqHeader) && long.TryParse(seqHeader, out parsedSeq))
+                        if (response.IsSuccessStatusCode)
                         {
-                            return parsedSeq;
+                            string seqHeader;
+                            if ((response.Headers.TryGetValue("X-Head-Seqnum", out seqHeader) || response.Headers.TryGetValue("X-Sequence-Num", out seqHeader)) && !string.IsNullOrEmpty(seqHeader))
+                            {
+                                long parsedSeq;
+                                if (long.TryParse(seqHeader, out parsedSeq))
+                                {
+                                    if (parsedSeq > _currentLiveSeq) _currentLiveSeq = parsedSeq;
+                                    return parsedSeq;
+                                }
+                            }
+                        }
+                        else if (response.StatusCode == Windows.Web.Http.HttpStatusCode.Forbidden)
+                        {
+                            _currentLiveBaseUrl = null;
                         }
                     }
-                }
-            }
-            catch (System.Net.WebException wex)
-            {
-                var resp = wex.Response as System.Net.HttpWebResponse;
-                if (resp != null && resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
-                {
-                    _currentLiveBaseUrl = null; // BaseURL expired (30s TTL)
                 }
             }
             catch { }
@@ -977,64 +978,16 @@ namespace AudioPlayerTask
 
         private async Task<byte[]> DownloadLiveSegmentAsync(string baseUrl, long seq, CancellationToken ct)
         {
+            if (string.IsNullOrEmpty(baseUrl)) return null;
             string segUrl = baseUrl + (baseUrl.EndsWith("/") ? "" : "/") + "sq/" + seq;
 
-            // Try HttpWebRequest first (fastest .NET stream on WP8.1)
-            try
-            {
-                var req = System.Net.WebRequest.CreateHttp(segUrl);
-                req.Method = "GET";
-                try { req.Headers["User-Agent"] = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip"; } catch { }
-                using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
-                {
-                    timeoutCts.CancelAfter(3500);
-                    using (timeoutCts.Token.Register(() => { try { req.Abort(); } catch { } }))
-                    using (var resp = (System.Net.HttpWebResponse)await req.GetResponseAsync())
-                    {
-                        if (resp.StatusCode == System.Net.HttpStatusCode.OK)
-                        {
-                            string headSeqStr = resp.Headers["X-Head-Seqnum"] ?? resp.Headers["X-Sequence-Num"];
-                            long hSeq;
-                            if (!string.IsNullOrEmpty(headSeqStr) && long.TryParse(headSeqStr, out hSeq))
-                            {
-                                if (hSeq > _currentLiveSeq) _currentLiveSeq = hSeq;
-                            }
-
-                            using (var respStream = resp.GetResponseStream())
-                            using (var ms = new MemoryStream())
-                            {
-                                await respStream.CopyToAsync(ms, 16384, timeoutCts.Token);
-                                return ms.ToArray();
-                            }
-                        }
-                    }
-                }
-            }
-            catch (System.Net.WebException wex)
-            {
-                var resp = wex.Response as System.Net.HttpWebResponse;
-                int code = resp != null ? (int)resp.StatusCode : -1;
-                if (!ct.IsCancellationRequested && code != 200)
-                {
-                    LogLive("[Live Seg " + seq + " WebEx] code=" + code + " " + wex.Message);
-                }
-                if (code == 403)
-                {
-                    // Invalidate BaseURL so caller can refresh URL
-                    _currentLiveBaseUrl = null;
-                    return null;
-                }
-            }
-            catch { }
-
-            // Fallback via WinRT HttpClient
             try
             {
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl));
                 request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(3500);
+                    timeoutCts.CancelAfter(4500);
                     using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                     {
                         if (response.IsSuccessStatusCode)
@@ -1072,7 +1025,13 @@ namespace AudioPlayerTask
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                if (!ct.IsCancellationRequested)
+                {
+                    LogLive("[Live Seg " + seq + " Ex] " + ex.Message);
+                }
+            }
 
             return null;
         }
@@ -1395,6 +1354,8 @@ namespace AudioPlayerTask
                             DownloadLiveSegmentWithRetryAsync,
                             (v, c) => RefreshLiveBaseUrlAsync(v, c, true),
                             () => _currentLiveSeq,
+                            (c) => GetLatestLiveSeqAsync(_currentLiveBaseUrl, c),
+                            () => _currentLiveBaseUrl != null,
                             LogLive);
 
                         bool preloaded = await _liveMss.PreloadInitialChunksAsync(ct);
