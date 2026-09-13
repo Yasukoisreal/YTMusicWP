@@ -542,25 +542,10 @@ namespace YTMusicWP
                             // Target ListView = fullscreen or regular
                         var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
 
-                        UpdateLyricsVisualState();
+                        UpdateLyricsVisualState(oldIndex);
 
                         if (!_isAppleMusicStyle && !isFullscreen)
                         {
-                            // Defensive sweep: ensure all other realized containers outside active and old lines are reset to inactive scale/opacity
-                            for (int i = 0; i < currentLyrics.Count; i++)
-                            {
-                                if (i == currentLyricIndex || i == oldIndex) continue;
-                                var c = targetListView.ContainerFromIndex(i) as FrameworkElement;
-                                if (c == null) continue;
-                                if (c.Opacity != 0.5) c.Opacity = 0.5;
-                                var st = c.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                if (st != null && (st.ScaleX != 0.85 || st.ScaleY != 0.85))
-                                {
-                                    st.ScaleX = 0.85;
-                                    st.ScaleY = 0.85;
-                                }
-                            }
-
                             // Animate OLD lyric
                             if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
                             {

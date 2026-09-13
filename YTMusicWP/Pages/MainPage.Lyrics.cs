@@ -226,13 +226,13 @@ namespace YTMusicWP
 
                 if (string.IsNullOrWhiteSpace(syncedLyrics) && string.IsNullOrWhiteSpace(plainLyrics))
                 {
-                // â”€â”€ Fire ALL search requests IMMEDIATELY â”€â”€
+                // Fire search requests with cancellation support
                 string url1 = "https://lrclib.net/api/search?track_name=" + Uri.EscapeDataString(cleanTitle) + "&artist_name=" + Uri.EscapeDataString(cleanArtist);
                 string url2 = "https://lrclib.net/api/search?q=" + Uri.EscapeDataString(cleanTitle + " " + cleanArtist);
-                var searchTask1 = _apiClient.GetStringAsync(url1);
-                var searchTask2 = _apiClient.GetStringAsync(url2);
+                var searchTask1 = SafeGetStringWithTokenAsync(_apiClient, url1, token);
+                var searchTask2 = SafeGetStringWithTokenAsync(_apiClient, url2, token);
 
-                // â”€â”€ Quick duration poll (max 500ms) â€” in parallel with searches â”€â”€
+                // Quick duration poll (max 500ms) — in parallel with searches
                 for (int attempt = 0; attempt < 5; attempt++)
                 {
                     try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
@@ -241,45 +241,51 @@ namespace YTMusicWP
                     token.ThrowIfCancellationRequested();
                 }
 
-                // â”€â”€ Fire /api/get with duration in parallel too â”€â”€
+                // Fire /api/get with duration in parallel too
                 Task<string> getTask = null;
                 if (trackDurationSec > 10)
                 {
                     string getUrl = "https://lrclib.net/api/get?track_name=" + Uri.EscapeDataString(cleanTitle)
                         + "&artist_name=" + Uri.EscapeDataString(cleanArtist)
                         + "&duration=" + ((int)Math.Round(trackDurationSec)).ToString();
-                    getTask = _apiClient.GetStringAsync(getUrl);
+                    getTask = SafeGetStringWithTokenAsync(_apiClient, getUrl, token);
                 }
 
-                // â”€â”€ LAYER 0: /api/get with exact duration (best, fastest) â”€â”€
+                // LAYER 0: /api/get with exact duration (best, fastest)
                 if (getTask != null)
                 {
                     try
                     {
                         var getResp = await getTask;
                         token.ThrowIfCancellationRequested();
-                        var getJson = JObject.Parse(getResp);
-                        syncedLyrics = getJson["syncedLyrics"]?.ToString();
-                        plainLyrics = getJson["plainLyrics"]?.ToString();
-                        if (!string.IsNullOrWhiteSpace(syncedLyrics)) syncedLyrics += "\n[99:99.99] Lyrics provided by LRCLIB";
-                        if (!string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics += "\n\nLyrics provided by LRCLIB";
+                        if (!string.IsNullOrEmpty(getResp))
+                        {
+                            var getJson = JObject.Parse(getResp);
+                            syncedLyrics = getJson["syncedLyrics"]?.ToString();
+                            plainLyrics = getJson["plainLyrics"]?.ToString();
+                            if (!string.IsNullOrWhiteSpace(syncedLyrics)) syncedLyrics += "\n[99:99.99] Lyrics provided by LRCLIB";
+                            if (!string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics += "\n\nLyrics provided by LRCLIB";
+                        }
                     }
                     catch { }
                 }
 
-                // â”€â”€ LAYER 1: Use search results (already running in parallel) â”€â”€
+                // LAYER 1: Use search results (already running in parallel)
                 if (string.IsNullOrWhiteSpace(syncedLyrics))
                 {
                     try
                     {
                         var resp1 = await searchTask1;
                         token.ThrowIfCancellationRequested();
-                        var arr1 = JArray.Parse(resp1);
-                        if (arr1.Count > 0)
+                        if (!string.IsNullOrEmpty(resp1))
                         {
-                            var match1 = pickBestMatch(arr1, trackDurationSec);
-                            syncedLyrics = match1[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
-                              plainLyrics = match1[1] + "\n\nLyrics provided by LRCLIB";
+                            var arr1 = JArray.Parse(resp1);
+                            if (arr1.Count > 0)
+                            {
+                                var match1 = pickBestMatch(arr1, trackDurationSec);
+                                syncedLyrics = match1[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
+                                plainLyrics = match1[1] + "\n\nLyrics provided by LRCLIB";
+                            }
                         }
                     }
                     catch { }
@@ -290,12 +296,15 @@ namespace YTMusicWP
                         {
                             var resp2 = await searchTask2;
                             token.ThrowIfCancellationRequested();
-                            var arr2 = JArray.Parse(resp2);
-                            if (arr2.Count > 0)
+                            if (!string.IsNullOrEmpty(resp2))
                             {
-                                var match2 = pickBestMatch(arr2, trackDurationSec);
-                                if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
-                                if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1] + "\n\nLyrics provided by LRCLIB";
+                                var arr2 = JArray.Parse(resp2);
+                                if (arr2.Count > 0)
+                                {
+                                    var match2 = pickBestMatch(arr2, trackDurationSec);
+                                    if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
+                                    if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1] + "\n\nLyrics provided by LRCLIB";
+                                }
                             }
                         }
                         catch { }
@@ -566,14 +575,47 @@ namespace YTMusicWP
             fadeOut.Begin();
         }
 
-        private void UpdateLyricsVisualState()
+        private static async Task<string> SafeGetStringWithTokenAsync(System.Net.Http.HttpClient client, string url, CancellationToken token)
+        {
+            try
+            {
+                using (var resp = await client.GetAsync(url, token))
+                {
+                    if (!resp.IsSuccessStatusCode) return null;
+                    return await resp.Content.ReadAsStringAsync();
+                }
+            }
+            catch { return null; }
+        }
+
+        private void UpdateLyricsVisualState(int oldIndex = -1)
         {
             if (currentLyrics == null || currentLyrics.Count == 0) return;
 
             if (_isAppleMusicStyle)
             {
-                for (int i = 0; i < currentLyrics.Count; i++)
+                List<int> affectedIndices = null;
+                if (oldIndex >= 0)
                 {
+                    affectedIndices = new List<int>();
+                    for (int k = Math.Max(0, oldIndex - 3); k <= Math.Min(currentLyrics.Count - 1, oldIndex + 3); k++)
+                    {
+                        affectedIndices.Add(k);
+                    }
+                    if (currentLyricIndex >= 0)
+                    {
+                        for (int k = Math.Max(0, currentLyricIndex - 3); k <= Math.Min(currentLyrics.Count - 1, currentLyricIndex + 3); k++)
+                        {
+                            if (!affectedIndices.Contains(k)) affectedIndices.Add(k);
+                        }
+                    }
+                }
+
+                int count = affectedIndices != null ? affectedIndices.Count : currentLyrics.Count;
+                for (int idx = 0; idx < count; idx++)
+                {
+                    int i = affectedIndices != null ? affectedIndices[idx] : idx;
+
                     if (currentLyricIndex < 0)
                     {
                         currentLyrics[i].Opacity = 0.50;
@@ -656,18 +698,38 @@ namespace YTMusicWP
             }
             else
             {
-                for (int i = 0; i < currentLyrics.Count; i++)
+                if (oldIndex >= 0)
                 {
-                    currentLyrics[i].BlurOpacity = 0.0;
-                    currentLyrics[i].FarBlurOpacity = 0.0;
-                    currentLyrics[i].Opacity = 1.0;
-                    if (i == currentLyricIndex)
+                    if (oldIndex < currentLyrics.Count)
                     {
-                        currentLyrics[i].ColorBrush = _lyricActiveBrush;
+                        currentLyrics[oldIndex].BlurOpacity = 0.0;
+                        currentLyrics[oldIndex].FarBlurOpacity = 0.0;
+                        currentLyrics[oldIndex].Opacity = 1.0;
+                        currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
                     }
-                    else
+                    if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                     {
-                        currentLyrics[i].ColorBrush = _lyricInactiveBrush;
+                        currentLyrics[currentLyricIndex].BlurOpacity = 0.0;
+                        currentLyrics[currentLyricIndex].FarBlurOpacity = 0.0;
+                        currentLyrics[currentLyricIndex].Opacity = 1.0;
+                        currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < currentLyrics.Count; i++)
+                    {
+                        currentLyrics[i].BlurOpacity = 0.0;
+                        currentLyrics[i].FarBlurOpacity = 0.0;
+                        currentLyrics[i].Opacity = 1.0;
+                        if (i == currentLyricIndex)
+                        {
+                            currentLyrics[i].ColorBrush = _lyricActiveBrush;
+                        }
+                        else
+                        {
+                            currentLyrics[i].ColorBrush = _lyricInactiveBrush;
+                        }
                     }
                 }
             }

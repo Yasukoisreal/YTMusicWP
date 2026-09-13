@@ -3,6 +3,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
@@ -97,11 +98,19 @@ namespace YTMusicWP
 
         // [OPT-AV] Debounce avatar fetch requests
         private DateTime _lastArtistFetchTime = DateTime.MinValue;
+        private CancellationTokenSource _refreshArtistsCts = null;
 
         private async void RefreshRecentArtists()
         {
             try
             {
+                if (_refreshArtistsCts != null)
+                {
+                    try { _refreshArtistsCts.Cancel(); _refreshArtistsCts.Dispose(); } catch { }
+                }
+                _refreshArtistsCts = new CancellationTokenSource();
+                var token = _refreshArtistsCts.Token;
+
                 var seenArtists = new System.Collections.Generic.HashSet<string>();
                 var artistItems = new System.Collections.Generic.List<YouTubeTrack>();
 
@@ -176,7 +185,9 @@ namespace YTMusicWP
                             {
                                 try
                                 {
+                                    if (token.IsCancellationRequested) return;
                                     var searchResults = await InnerTubeClient.SearchAsync(artist.Title, 5);
+                                    if (token.IsCancellationRequested) return;
                                     var artistMatch = searchResults.FirstOrDefault(r =>
                                         r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
                                         r.Title.Equals(artist.Title, StringComparison.OrdinalIgnoreCase));
@@ -193,6 +204,7 @@ namespace YTMusicWP
                                             localSettings[ck] = avatarUrl;
                                             localSettings[ckId] = ytmChannelId;
 
+                                            if (token.IsCancellationRequested) return;
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
                                                 artistItems[idx].ThumbnailUrl = avatarUrl;
@@ -203,7 +215,9 @@ namespace YTMusicWP
                                     }
                                     else
                                     {
+                                        if (token.IsCancellationRequested) return;
                                         var searchResults2 = await InnerTubeClient.SearchAsync(artist.Title + " artist", 3);
+                                        if (token.IsCancellationRequested) return;
                                         var fallbackMatch = searchResults2.FirstOrDefault(r =>
                                             r.VideoId != null && r.VideoId.StartsWith("CHANNEL:"));
                                         if (fallbackMatch != null && !string.IsNullOrEmpty(fallbackMatch.ThumbnailUrl))
@@ -215,6 +229,7 @@ namespace YTMusicWP
                                             localSettings[ck] = fallbackAvatar;
                                             if (!string.IsNullOrEmpty(ytmChannelId)) localSettings[ckId] = ytmChannelId;
 
+                                            if (token.IsCancellationRequested) return;
                                             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                             {
                                                 artistItems[idx].ThumbnailUrl = fallbackAvatar;
@@ -232,10 +247,13 @@ namespace YTMusicWP
                         }
                         foreach (var searchTask in batch)
                         {
+                            if (token.IsCancellationRequested) return;
                             await searchTask;
+                            if (token.IsCancellationRequested) return;
                             await Task.Delay(500); // 500ms delay between each artist search to avoid API spam
                         }
                         
+                        if (token.IsCancellationRequested) return;
                         await Task.Delay(1000); // 1s rest between batches
                     }
                 }
@@ -281,6 +299,7 @@ namespace YTMusicWP
             // ═══════════════════════════════════════════════════
             try
             {
+                HomeDynamicSections.ItemsSource = null;
                 if (_homeDynamicSections == null)
                 {
                     _homeDynamicSections = new ObservableCollection<YTMusicWP.InnerTubeClient.HomeSection>();
@@ -289,7 +308,6 @@ namespace YTMusicWP
                 {
                     _homeDynamicSections.Clear();
                 }
-                HomeDynamicSections.ItemsSource = _homeDynamicSections;
 
                 var homeFirstPageTask = InnerTubeClient.BrowseHomeFirstPageAsync(filterParams);
                 var homeResult = default(InnerTubeClient.HomeBrowseResult);
@@ -323,6 +341,7 @@ namespace YTMusicWP
                     {
                         _homeDynamicSections.Add(sec);
                     }
+                    HomeDynamicSections.ItemsSource = _homeDynamicSections;
 
                     _homeContinuationToken = homeResult.ContinuationToken;
                     _hasMoreHomeSections = !string.IsNullOrEmpty(_homeContinuationToken);
@@ -340,8 +359,18 @@ namespace YTMusicWP
                     HomeLoading.Visibility = Visibility.Collapsed;
                     return;
                 }
+                else
+                {
+                    HomeDynamicSections.ItemsSource = _homeDynamicSections;
+                }
             }
-            catch { }
+            catch
+            {
+                if (HomeDynamicSections != null && HomeDynamicSections.ItemsSource == null)
+                {
+                    HomeDynamicSections.ItemsSource = _homeDynamicSections;
+                }
+            }
 
             // ═══════════════════════════════════════════════════
             // FALLBACK: Search-based recommendations (if BrowseHome fails)

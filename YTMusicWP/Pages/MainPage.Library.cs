@@ -23,6 +23,7 @@ namespace YTMusicWP
         private ObservableCollection<LibraryItem> _libraryItems = new ObservableCollection<LibraryItem>();
         private bool _isViewingLikedSongs = false;
         private List<YouTubeTrack> _currentPlaylistFullTracks;
+        private DispatcherTimer _playlistFilterTimer;
         private string _pendingExportM3u;
 
         private static readonly SolidColorBrush _libChipActiveTextBrush = new SolidColorBrush(Windows.UI.Colors.Black);
@@ -197,6 +198,32 @@ namespace YTMusicWP
         }
 
         private void PlaylistFilterBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (PlaylistFilterBox == null) return;
+
+            if (_playlistFilterTimer == null)
+            {
+                _playlistFilterTimer = new DispatcherTimer();
+                _playlistFilterTimer.Interval = TimeSpan.FromMilliseconds(300);
+                _playlistFilterTimer.Tick += (s, args) =>
+                {
+                    _playlistFilterTimer.Stop();
+                    ApplyPlaylistFilter();
+                };
+            }
+
+            _playlistFilterTimer.Stop();
+            if (string.IsNullOrEmpty(PlaylistFilterBox.Text))
+            {
+                ApplyPlaylistFilter();
+            }
+            else
+            {
+                _playlistFilterTimer.Start();
+            }
+        }
+
+        private void ApplyPlaylistFilter()
         {
             if (PlaylistFilterBox == null) return;
 

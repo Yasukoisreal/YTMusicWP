@@ -118,11 +118,20 @@ namespace AudioPlayerTask
             Log("Mss_Starting -> SetActualStartPosition(Zero)");
             lock (_queueLock)
             {
-                foreach (var p in _pendingRequests)
+                // Fulfill any pending requests if samples are available
+                while (_pendingRequests.Count > 0 && _sampleQueue.Count > 0)
                 {
-                    try { p.Deferral.Complete(); } catch { }
+                    var p = _pendingRequests[0];
+                    _pendingRequests.RemoveAt(0);
+                    try
+                    {
+                        p.Request.Sample = _sampleQueue.Dequeue();
+                        p.Deferral.Complete();
+                    }
+                    catch { }
                 }
-                _pendingRequests.Clear();
+                // Do NOT complete remaining deferrals with null samples, as that signals EOS to WinRT!
+                // Leave any remaining pending requests in _pendingRequests so DownloadLoop can fulfill them.
             }
             args.Request.SetActualStartPosition(TimeSpan.Zero);
         }

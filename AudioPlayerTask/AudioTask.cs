@@ -49,6 +49,7 @@ namespace AudioPlayerTask
         private bool _innerTubeAttempted = false;
         private double _playbackRate = 1.0;
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
+        private volatile bool _isUserPaused = false;
         private bool _isCurrentTrackLive = false;
         private LiveMediaStreamSource _liveMss = null;
         private string _currentLiveBaseUrl = null;
@@ -294,17 +295,19 @@ namespace AudioPlayerTask
         {
             try
             {
-                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
-                    new Uri("https://www.youtube.com/sw.js_data"));
-                request.Headers.TryAppendWithoutValidation("User-Agent",
-                    "Mozilla/5.0 (Linux; Andr0id 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 OPR/46.0.2207.0 OMI/4.21.0.273.DIA6.149 Model/Sony-BRAVIA-8K-UR2,gzip(gfe)");
-                request.Headers.Add("Accept", "application/json");
-
-                string result;
-                using (var response = await _httpClient.SendRequestAsync(request))
+                string result = null;
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
+                    new Uri("https://www.youtube.com/sw.js_data")))
                 {
-                    if (!response.IsSuccessStatusCode) return null;
-                    result = await response.Content.ReadAsStringAsync();
+                    request.Headers.TryAppendWithoutValidation("User-Agent",
+                        "Mozilla/5.0 (Linux; Andr0id 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 OPR/46.0.2207.0 OMI/4.21.0.273.DIA6.149 Model/Sony-BRAVIA-8K-UR2,gzip(gfe)");
+                    request.Headers.Add("Accept", "application/json");
+
+                    using (var response = await _httpClient.SendRequestAsync(request))
+                    {
+                        if (!response.IsSuccessStatusCode) return null;
+                        result = await response.Content.ReadAsStringAsync();
+                    }
                 }
 
                 if (result.StartsWith(")]}'"))
@@ -440,7 +443,7 @@ namespace AudioPlayerTask
                 
                 using (var httpClient = new Windows.Web.Http.HttpClient(filter))
                 {
-                    var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                    using (var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json"))
                     using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
                     {
                         if (!resp.IsSuccessStatusCode) return null;
@@ -596,38 +599,38 @@ namespace AudioPlayerTask
                     "\"videoId\":\"" + videoId + "\"" +
                 "}";
 
-                var content = new Windows.Web.Http.HttpStringContent(
+                string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" || clientName == "VISIONOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI");
+                string json;
+                using (var content = new Windows.Web.Http.HttpStringContent(
                     requestBody,
                     Windows.Storage.Streams.UnicodeEncoding.Utf8,
                     "application/json"
-                );
-
-                string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" || clientName == "VISIONOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI");
-                // [FIX] Use per-request headers instead of DefaultRequestHeaders to avoid race condition
-                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
-                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData"));
-                request.Content = content;
-                request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
-                request.Headers.Add("X-YouTube-Client-Name", clientId);
-                request.Headers.Add("X-YouTube-Client-Version", clientVersion);
-                
-                if (!string.IsNullOrEmpty(cookie) && !string.IsNullOrEmpty(auth))
+                ))
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
+                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData")))
                 {
-                    request.Headers.Add("Cookie", cookie);
-                    request.Headers.Add("Authorization", auth);
-                    request.Headers.Add("Origin", "https://music.youtube.com");
-                }
-
-                string json;
-                using (var reqCts = new CancellationTokenSource(5000))
-                using (var response = await _httpClient.SendRequestAsync(request).AsTask(reqCts.Token))
-                {
-                    if (!response.IsSuccessStatusCode)
+                    request.Content = content;
+                    request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
+                    request.Headers.Add("X-YouTube-Client-Name", clientId);
+                    request.Headers.Add("X-YouTube-Client-Version", clientVersion);
+                    
+                    if (!string.IsNullOrEmpty(cookie) && !string.IsNullOrEmpty(auth))
                     {
-                        _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":H" + (int)response.StatusCode + "]";
-                        return null;
+                        request.Headers.Add("Cookie", cookie);
+                        request.Headers.Add("Authorization", auth);
+                        request.Headers.Add("Origin", "https://music.youtube.com");
                     }
-                    json = await response.Content.ReadAsStringAsync().AsTask(reqCts.Token);
+
+                    using (var reqCts = new CancellationTokenSource(5000))
+                    using (var response = await _httpClient.SendRequestAsync(request).AsTask(reqCts.Token))
+                    {
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":H" + (int)response.StatusCode + "]";
+                            return null;
+                        }
+                        json = await response.Content.ReadAsStringAsync().AsTask(reqCts.Token);
+                    }
                 }
 
                 Windows.Data.Json.JsonObject data;
@@ -707,21 +710,23 @@ namespace AudioPlayerTask
                             {
                                 try
                                 {
-                                    var dashReq = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(dashUrl));
-                                    dashReq.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
-                                    using (var dashCts = new CancellationTokenSource(5000))
-                                    using (var dashResp = await _httpClient.SendRequestAsync(dashReq).AsTask(dashCts.Token))
+                                    using (var dashReq = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(dashUrl)))
                                     {
-                                        if (dashResp.IsSuccessStatusCode)
+                                        dashReq.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
+                                        using (var dashCts = new CancellationTokenSource(5000))
+                                        using (var dashResp = await _httpClient.SendRequestAsync(dashReq).AsTask(dashCts.Token))
                                         {
-                                            string dashBaseUrl = await ExtractDashAudioBaseUrlFromStreamAsync(dashResp);
-                                            if (!string.IsNullOrEmpty(dashBaseUrl))
+                                            if (dashResp.IsSuccessStatusCode)
                                             {
-                                                _currentLiveBaseUrl = dashBaseUrl;
-                                                _isCurrentTrackLive = true;
-                                                try { _liveBaseUrlStopwatch.Restart(); } catch { }
-                                                _innerTubeDebug += " [" + clientName + ":DASH:OK]";
-                                                return dashBaseUrl;
+                                                string dashBaseUrl = await ExtractDashAudioBaseUrlFromStreamAsync(dashResp);
+                                                if (!string.IsNullOrEmpty(dashBaseUrl))
+                                                {
+                                                    _currentLiveBaseUrl = dashBaseUrl;
+                                                    _isCurrentTrackLive = true;
+                                                    try { _liveBaseUrlStopwatch.Restart(); } catch { }
+                                                    _innerTubeDebug += " [" + clientName + ":DASH:OK]";
+                                                    return dashBaseUrl;
+                                                }
                                             }
                                         }
                                     }
@@ -971,29 +976,31 @@ namespace AudioPlayerTask
             if (string.IsNullOrEmpty(baseUrl)) return -1;
             try
             {
-                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Head, new Uri(baseUrl));
-                request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
-                using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Head, new Uri(baseUrl)))
                 {
-                    timeoutCts.CancelAfter(3500);
-                    using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
+                    request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+                    using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                     {
-                        if (response.IsSuccessStatusCode)
+                        timeoutCts.CancelAfter(3500);
+                        using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                         {
-                            string seqHeader;
-                            if ((response.Headers.TryGetValue("X-Head-Seqnum", out seqHeader) || response.Headers.TryGetValue("X-Sequence-Num", out seqHeader)) && !string.IsNullOrEmpty(seqHeader))
+                            if (response.IsSuccessStatusCode)
                             {
-                                long parsedSeq;
-                                if (long.TryParse(seqHeader, out parsedSeq))
+                                string seqHeader;
+                                if ((response.Headers.TryGetValue("X-Head-Seqnum", out seqHeader) || response.Headers.TryGetValue("X-Sequence-Num", out seqHeader)) && !string.IsNullOrEmpty(seqHeader))
                                 {
-                                    if (parsedSeq > _currentLiveSeq) _currentLiveSeq = parsedSeq;
-                                    return parsedSeq;
+                                    long parsedSeq;
+                                    if (long.TryParse(seqHeader, out parsedSeq))
+                                    {
+                                        if (parsedSeq > _currentLiveSeq) _currentLiveSeq = parsedSeq;
+                                        return parsedSeq;
+                                    }
                                 }
                             }
-                        }
-                        else if (response.StatusCode == Windows.Web.Http.HttpStatusCode.Forbidden)
-                        {
-                            _currentLiveBaseUrl = null;
+                            else if (response.StatusCode == Windows.Web.Http.HttpStatusCode.Forbidden)
+                            {
+                                _currentLiveBaseUrl = null;
+                            }
                         }
                     }
                 }
@@ -1009,24 +1016,25 @@ namespace AudioPlayerTask
 
             try
             {
-                var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl));
-                request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
-                using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl)))
                 {
-                    timeoutCts.CancelAfter(4500);
-                    using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
+                    request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+                    using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                     {
-                        if (response.IsSuccessStatusCode)
+                        timeoutCts.CancelAfter(4500);
+                        using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                         {
-                            string headSeqStr;
-                            if ((response.Headers.TryGetValue("X-Head-Seqnum", out headSeqStr) || response.Headers.TryGetValue("X-Sequence-Num", out headSeqStr)) && !string.IsNullOrEmpty(headSeqStr))
+                            if (response.IsSuccessStatusCode)
                             {
-                                long hSeq;
-                                if (long.TryParse(headSeqStr, out hSeq) && hSeq > _currentLiveSeq)
+                                string headSeqStr;
+                                if ((response.Headers.TryGetValue("X-Head-Seqnum", out headSeqStr) || response.Headers.TryGetValue("X-Sequence-Num", out headSeqStr)) && !string.IsNullOrEmpty(headSeqStr))
                                 {
-                                    _currentLiveSeq = hSeq;
+                                    long hSeq;
+                                    if (long.TryParse(headSeqStr, out hSeq) && hSeq > _currentLiveSeq)
+                                    {
+                                        _currentLiveSeq = hSeq;
+                                    }
                                 }
-                            }
 
                             var buffer = await response.Content.ReadAsBufferAsync().AsTask(timeoutCts.Token);
                             byte[] bytes = new byte[buffer.Length];
@@ -1050,6 +1058,7 @@ namespace AudioPlayerTask
                         }
                     }
                 }
+            }
             }
             catch (Exception ex)
             {
@@ -2207,6 +2216,7 @@ namespace AudioPlayerTask
 
                 if (sender.CurrentState == MediaPlayerState.Playing)
                 {
+                    _isUserPaused = false;
                     if (_isCurrentTrackLive)
                     {
                         try { _liveBufferStopwatch.Start(); } catch { }
@@ -2230,16 +2240,21 @@ namespace AudioPlayerTask
                 {
                     if (_isCurrentTrackLive)
                     {
-                        double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
-                        // Immediate swap when player pauses near end of buffer! Eliminates 250ms waiting for MediaEnded!
-                        if (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 1.5) &&
-                            !_isLiveSwapping && !_isLiveInitializing && (DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
-                        {
-                            LogLive("[Live State Paused Swap] elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F1") + "s");
-                            SwapToNextLiveBuffer();
-                            return;
-                        }
                         try { _liveBufferStopwatch.Stop(); } catch { }
+
+                        // Immediate swap ONLY for legacy file-swap fallback (when _liveMss == null) and if NOT user-paused
+                        if (_liveMss == null && !_isUserPaused)
+                        {
+                            double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
+                            // Immediate swap when player pauses near end of buffer! Eliminates 250ms waiting for MediaEnded!
+                            if (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 1.5) &&
+                                !_isLiveSwapping && !_isLiveInitializing && (DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
+                            {
+                                LogLive("[Live State Paused Swap] elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F1") + "s");
+                                SwapToNextLiveBuffer();
+                                return;
+                            }
+                        }
                     }
 
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
@@ -2275,16 +2290,7 @@ namespace AudioPlayerTask
 
                 if (_isCurrentTrackLive)
                 {
-                    try { _liveBufferStopwatch.Restart(); } catch { }
-                    try
-                    {
-                        if (sender.NaturalDuration > TimeSpan.Zero)
-                        {
-                            _liveBufferDurationSec = sender.NaturalDuration.TotalSeconds;
-                        }
-                    }
-                    catch { }
-                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                    _liveBufferStopwatch.Restart();
                     LogLive("[Live MediaOpened] Đang phát Buffer " + _currentLiveBufferIndex + " (" + _liveBufferDurationSec.ToString("F1") + "s, state=" + sender.CurrentState + ")");
                 }
             }
@@ -2295,8 +2301,8 @@ namespace AudioPlayerTask
         {
             switch (args.Button)
             {
-                case SystemMediaTransportControlsButton.Play: try { if (_mediaPlayer.CurrentState == MediaPlayerState.Closed) StartPlaybackAsync(); else _mediaPlayer.Play(); } catch { StartPlaybackAsync(); } break;
-                case SystemMediaTransportControlsButton.Pause: try { _mediaPlayer.Pause(); } catch { } break;
+                case SystemMediaTransportControlsButton.Play: _isUserPaused = false; try { if (_mediaPlayer.CurrentState == MediaPlayerState.Closed) StartPlaybackAsync(); else _mediaPlayer.Play(); } catch { StartPlaybackAsync(); } break;
+                case SystemMediaTransportControlsButton.Pause: _isUserPaused = true; try { _mediaPlayer.Pause(); } catch { } break;
                 case SystemMediaTransportControlsButton.Next: MoveNext(); break;
                 case SystemMediaTransportControlsButton.Previous: MovePrevious(); break;
             }
