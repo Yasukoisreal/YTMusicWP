@@ -609,14 +609,15 @@ namespace AudioPlayerTask
                 }
 
                 string json;
-                using (var response = await _httpClient.SendRequestAsync(request))
+                using (var reqCts = new CancellationTokenSource(5000))
+                using (var response = await _httpClient.SendRequestAsync(request).AsTask(reqCts.Token))
                 {
                     if (!response.IsSuccessStatusCode)
                     {
                         _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":H" + (int)response.StatusCode + "]";
                         return null;
                     }
-                    json = await response.Content.ReadAsStringAsync();
+                    json = await response.Content.ReadAsStringAsync().AsTask(reqCts.Token);
                 }
 
                 Windows.Data.Json.JsonObject data;
@@ -698,7 +699,8 @@ namespace AudioPlayerTask
                                 {
                                     var dashReq = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(dashUrl));
                                     dashReq.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
-                                    using (var dashResp = await _httpClient.SendRequestAsync(dashReq))
+                                    using (var dashCts = new CancellationTokenSource(5000))
+                                    using (var dashResp = await _httpClient.SendRequestAsync(dashReq).AsTask(dashCts.Token))
                                     {
                                         if (dashResp.IsSuccessStatusCode)
                                         {
@@ -1001,7 +1003,7 @@ namespace AudioPlayerTask
                             using (var respStream = resp.GetResponseStream())
                             using (var ms = new MemoryStream())
                             {
-                                await respStream.CopyToAsync(ms);
+                                await respStream.CopyToAsync(ms, 16384, timeoutCts.Token);
                                 return ms.ToArray();
                             }
                         }

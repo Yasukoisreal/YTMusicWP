@@ -93,6 +93,7 @@ namespace AudioPlayerTask
 
             _mss.Starting += Mss_Starting;
             _mss.SampleRequested += Mss_SampleRequested;
+            _mss.Paused += Mss_Paused;
             _mss.Closed += Mss_Closed;
         }
 
@@ -118,6 +119,11 @@ namespace AudioPlayerTask
             args.Request.SetActualStartPosition(TimeSpan.Zero);
         }
 
+        private void Mss_Paused(MediaStreamSource sender, object args)
+        {
+            Log("Mss_Paused");
+        }
+
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             if (_isDisposed) return;
@@ -136,6 +142,7 @@ namespace AudioPlayerTask
                     // Buffer is temporarily empty: hold deferral until next chunk is parsed.
                     // Do NOT complete with null, as that signals EOS (End-Of-Stream) to WinRT!
                     _pendingRequests.Add(new PendingRequest { Request = request, Deferral = request.GetDeferral() });
+                    Log("SampleRequested deferral held (queue empty, pending=" + _pendingRequests.Count + ")");
                 }
             }
             catch (Exception ex)
@@ -206,6 +213,7 @@ namespace AudioPlayerTask
             Log("Background download loop started at seq=" + _nextSequence);
             var token = _cts.Token;
 
+            int stallCount = 0;
             while (!token.IsCancellationRequested && !_isDisposed)
             {
                 try
@@ -217,9 +225,15 @@ namespace AudioPlayerTask
 
                     if (count >= 700)
                     {
+                        stallCount++;
+                        if (stallCount % 5 == 0) // Log every 7.5s if queue is not draining
+                        {
+                            Log("Flow control active (buffered=" + BufferedSeconds.ToString("F1") + "s, queue=" + count + ")");
+                        }
                         await Task.Delay(1500, token);
                         continue;
                     }
+                    stallCount = 0;
 
                     // 2. BaseURL maintenance:
                     // YouTube Live BaseURLs are valid for several hours.
@@ -231,15 +245,22 @@ namespace AudioPlayerTask
                     {
                         try
                         {
-                            string freshUrl = await _refreshBaseUrlFunc(_videoId, token);
-                            if (!string.IsNullOrEmpty(freshUrl))
+                            using (var refreshCts = CancellationTokenSource.CreateLinkedTokenSource(token))
                             {
-                                _currentBaseUrl = freshUrl;
-                                _baseUrlStopwatch.Restart();
-                                Log("BaseURL refreshed successfully (buffered=" + BufferedSeconds.ToString("F1") + "s)");
+                                refreshCts.CancelAfter(8000);
+                                string freshUrl = await _refreshBaseUrlFunc(_videoId, refreshCts.Token);
+                                if (!string.IsNullOrEmpty(freshUrl))
+                                {
+                                    _currentBaseUrl = freshUrl;
+                                    _baseUrlStopwatch.Restart();
+                                    Log("BaseURL refreshed successfully (buffered=" + BufferedSeconds.ToString("F1") + "s)");
+                                }
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            Log("BaseURL refresh exception: " + ex.Message);
+                        }
                     }
 
                     if (string.IsNullOrEmpty(_currentBaseUrl))
@@ -259,8 +280,20 @@ namespace AudioPlayerTask
                         continue;
                     }
 
-                    // 4. Download segment
-                    byte[] chunkBytes = await _downloadFunc(_currentBaseUrl, targetSeq, token);
+                    // 4. Download segment with guaranteed 6s overarching timeout
+                    byte[] chunkBytes = null;
+                    try
+                    {
+                        using (var segCts = CancellationTokenSource.CreateLinkedTokenSource(token))
+                        {
+                            segCts.CancelAfter(6000);
+                            chunkBytes = await _downloadFunc(_currentBaseUrl, targetSeq, segCts.Token);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log("DownloadFunc seq=" + targetSeq + " threw: " + ex.Message);
+                    }
 
                     if (chunkBytes != null && chunkBytes.Length > 0)
                     {
@@ -304,15 +337,22 @@ namespace AudioPlayerTask
                         {
                             try
                             {
-                                string freshUrl = await _refreshBaseUrlFunc(_videoId, token);
-                                if (!string.IsNullOrEmpty(freshUrl))
+                                using (var refreshCts = CancellationTokenSource.CreateLinkedTokenSource(token))
                                 {
-                                    _currentBaseUrl = freshUrl;
-                                    _baseUrlStopwatch.Restart();
-                                    Log("BaseURL refreshed successfully after null download");
+                                    refreshCts.CancelAfter(8000);
+                                    string freshUrl = await _refreshBaseUrlFunc(_videoId, refreshCts.Token);
+                                    if (!string.IsNullOrEmpty(freshUrl))
+                                    {
+                                        _currentBaseUrl = freshUrl;
+                                        _baseUrlStopwatch.Restart();
+                                        Log("BaseURL refreshed successfully after null download");
+                                    }
                                 }
                             }
-                            catch { }
+                            catch (Exception ex)
+                            {
+                                Log("BaseURL refresh after null download threw: " + ex.Message);
+                            }
                         }
 
                         if (string.IsNullOrEmpty(_currentBaseUrl))
@@ -481,6 +521,7 @@ namespace AudioPlayerTask
                 {
                     _mss.Starting -= Mss_Starting;
                     _mss.SampleRequested -= Mss_SampleRequested;
+                    _mss.Paused -= Mss_Paused;
                     _mss.Closed -= Mss_Closed;
                 }
                 catch { }
