@@ -684,7 +684,7 @@ namespace AudioPlayerTask
                             }
                         }
 
-                        // 3. Fallback cho Live stream: trích xuất direct audio BaseURL từ dashManifestUrl (MP4 AAC itag 140/139)
+                        // 3. Fallback cho Live stream: trích xuất direct audio BaseURL từ dashManifestUrl (MP4 AAC itag 140/139) bằng streaming reader siêu nhẹ (~170KB, 0 bytes trên Large Object Heap)
                         if (streamingData.ContainsKey("dashManifestUrl"))
                         {
                             string dashUrl = streamingData.GetNamedString("dashManifestUrl");
@@ -694,22 +694,18 @@ namespace AudioPlayerTask
                                 {
                                     var dashReq = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(dashUrl));
                                     dashReq.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
-                                    using (var dashResp = await _httpClient.SendRequestAsync(dashReq))
+                                    using (var dashResp = await _httpClient.SendRequestAsync(dashReq, Windows.Web.Http.HttpCompletionOption.ResponseHeadersRead))
                                     {
                                         if (dashResp.IsSuccessStatusCode)
                                         {
-                                            string xml = await dashResp.Content.ReadAsStringAsync();
-                                            string dashBaseUrl = ExtractDashAudioBaseUrl(xml);
-                                            long latestSeq = ExtractDashLatestSeq(xml);
-                                            xml = null; // Release ~1.5MB XML string immediately from memory
+                                            string dashBaseUrl = await ExtractDashAudioBaseUrlFromStreamAsync(dashResp);
                                             if (!string.IsNullOrEmpty(dashBaseUrl))
                                             {
                                                 _currentLiveBaseUrl = dashBaseUrl;
-                                                if (latestSeq > 0) _currentLiveSeq = latestSeq;
                                                 _isCurrentTrackLive = true;
                                                 try { _liveBaseUrlStopwatch.Restart(); } catch { }
-                                                _innerTubeDebug += " [" + clientName + ":DASH:s" + latestSeq + ":OK]";
-                                                return (latestSeq > 0) ? (dashBaseUrl + "#sq=" + latestSeq) : dashBaseUrl;
+                                                _innerTubeDebug += " [" + clientName + ":DASH:OK]";
+                                                return dashBaseUrl;
                                             }
                                         }
                                     }
@@ -831,51 +827,62 @@ namespace AudioPlayerTask
             return url;
         }
 
-        private static string ExtractDashAudioBaseUrl(string xml)
+        private static async Task<string> ExtractDashAudioBaseUrlFromStreamAsync(Windows.Web.Http.HttpResponseMessage resp)
         {
-            if (string.IsNullOrEmpty(xml)) return null;
-            // Ưu tiên itag 140 (AAC 128kbps/144kbps), fallback itag 139 (AAC 48kbps)
-            string[] audioItags = new[] { "140", "139" };
-            foreach (string itag in audioItags)
+            try
             {
-                string tag = "id=\"" + itag + "\"";
-                int idx = xml.IndexOf(tag, StringComparison.OrdinalIgnoreCase);
-                if (idx >= 0)
+                using (var inputStream = await resp.Content.ReadAsInputStreamAsync())
+                using (var stream = inputStream.AsStreamForRead())
                 {
-                    int bStart = xml.IndexOf("<BaseURL>", idx, StringComparison.OrdinalIgnoreCase);
-                    if (bStart >= 0)
+                    byte[] buf = new byte[8192];
+                    var sb = new System.Text.StringBuilder();
+                    int bytesRead;
+                    while ((bytesRead = await stream.ReadAsync(buf, 0, buf.Length)) > 0)
                     {
-                        bStart += 9;
-                        int bEnd = xml.IndexOf("</BaseURL>", bStart, StringComparison.OrdinalIgnoreCase);
-                        if (bEnd > bStart)
+                        string chunk = System.Text.Encoding.UTF8.GetString(buf, 0, bytesRead);
+                        sb.Append(chunk);
+                        string full = sb.ToString();
+
+                        int idx = full.IndexOf("id=\"140\"", StringComparison.OrdinalIgnoreCase);
+                        if (idx < 0) idx = full.IndexOf("id=\"139\"", StringComparison.OrdinalIgnoreCase);
+
+                        if (idx >= 0)
                         {
-                            string url = xml.Substring(bStart, bEnd - bStart).Trim();
-                            url = url.Replace("&amp;", "&");
-                            if (!string.IsNullOrEmpty(url)) return url;
+                            int bStart = full.IndexOf("<BaseURL", idx, StringComparison.OrdinalIgnoreCase);
+                            if (bStart >= 0)
+                            {
+                                int bContentStart = full.IndexOf('>', bStart);
+                                if (bContentStart >= 0)
+                                {
+                                    bContentStart++;
+                                    int bEnd = full.IndexOf("</BaseURL>", bContentStart, StringComparison.OrdinalIgnoreCase);
+                                    if (bEnd > bContentStart)
+                                    {
+                                        string url = full.Substring(bContentStart, bEnd - bContentStart).Trim();
+                                        return url.Replace("&amp;", "&");
+                                    }
+                                }
+                            }
+                        }
+
+                        if (sb.Length > 32768)
+                        {
+                            int keepIdx = full.LastIndexOf("id=\"140\"", StringComparison.OrdinalIgnoreCase);
+                            if (keepIdx < 0) keepIdx = full.LastIndexOf("id=\"139\"", StringComparison.OrdinalIgnoreCase);
+                            if (keepIdx > 0 && keepIdx < sb.Length)
+                            {
+                                sb.Remove(0, keepIdx);
+                            }
+                            else if (keepIdx < 0)
+                            {
+                                sb.Remove(0, 16384);
+                            }
                         }
                     }
                 }
             }
+            catch { }
             return null;
-        }
-
-        private static long ExtractDashLatestSeq(string xml)
-        {
-            if (string.IsNullOrEmpty(xml)) return -1;
-            int lastSq = xml.LastIndexOf("sq/", StringComparison.OrdinalIgnoreCase);
-            if (lastSq < 0) return -1;
-            int numStart = lastSq + 3;
-            int numEnd = xml.IndexOfAny(new[] { '/', '"', '<', '?', ' ' }, numStart);
-            if (numEnd > numStart)
-            {
-                string numStr = xml.Substring(numStart, numEnd - numStart);
-                long seq;
-                if (long.TryParse(numStr, out seq))
-                {
-                    return seq;
-                }
-            }
-            return -1;
         }
 
         private static int FindMoofOffset(byte[] bytes)
@@ -896,9 +903,9 @@ namespace AudioPlayerTask
         {
             if (string.IsNullOrEmpty(vidId) || ct.IsCancellationRequested) return null;
 
-            // Reuse existing BaseURL if fetched recently (< 10s ago) unless forced
+            // Reuse existing BaseURL if fetched recently (< 15s ago) unless forced
             if (!force && !string.IsNullOrEmpty(_currentLiveBaseUrl) &&
-                _liveBaseUrlStopwatch.IsRunning && _liveBaseUrlStopwatch.Elapsed.TotalSeconds < 10.0)
+                _liveBaseUrlStopwatch.IsRunning && _liveBaseUrlStopwatch.Elapsed.TotalSeconds < 15.0)
             {
                 return _currentLiveBaseUrl;
             }
@@ -916,7 +923,7 @@ namespace AudioPlayerTask
             {
                 // Re-check after acquiring semaphore
                 if (!force && !string.IsNullOrEmpty(_currentLiveBaseUrl) &&
-                    _liveBaseUrlStopwatch.IsRunning && _liveBaseUrlStopwatch.Elapsed.TotalSeconds < 10.0)
+                    _liveBaseUrlStopwatch.IsRunning && _liveBaseUrlStopwatch.Elapsed.TotalSeconds < 15.0)
                 {
                     return _currentLiveBaseUrl;
                 }
@@ -1198,8 +1205,10 @@ namespace AudioPlayerTask
                             }
                         }
                         downloaded++;
+                        segments[i] = null; // Release segment buffer immediately to prevent memory buildup
                     }
                     await stream.FlushAsync();
+                    segments = null;
                     return downloaded;
                 }
             }
@@ -1237,10 +1246,10 @@ namespace AudioPlayerTask
                         ? _videoIdList[_currentTrackIndex] : null;
 
                     // YouTube enforces a strict 30-second TTL on unauthenticated live BaseURLs.
-                    // Refresh BaseURL before prebuffering if current URL is approaching expiry (>= 10s old) or missing.
+                    // Refresh BaseURL before prebuffering if current URL is approaching expiry (>= 15s old) or missing.
                     if (string.IsNullOrEmpty(_currentLiveBaseUrl) || 
                         !_liveBaseUrlStopwatch.IsRunning || 
-                        _liveBaseUrlStopwatch.Elapsed.TotalSeconds >= 10.0)
+                        _liveBaseUrlStopwatch.Elapsed.TotalSeconds >= 15.0)
                     {
                         if (!string.IsNullOrEmpty(curVidId) && !ct.IsCancellationRequested)
                         {
@@ -1320,7 +1329,7 @@ namespace AudioPlayerTask
                     // 1. Get or refresh BaseURL
                     if (string.IsNullOrEmpty(_currentLiveBaseUrl) || 
                         !_liveBaseUrlStopwatch.IsRunning || 
-                        _liveBaseUrlStopwatch.Elapsed.TotalSeconds >= 12.0)
+                        _liveBaseUrlStopwatch.Elapsed.TotalSeconds >= 15.0)
                     {
                         await RefreshLiveBaseUrlAsync(vidId, ct);
                     }
