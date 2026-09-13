@@ -69,8 +69,8 @@ namespace AudioPlayerTask
         private System.Diagnostics.Stopwatch _liveBaseUrlStopwatch = new System.Diagnostics.Stopwatch();
         private static readonly System.Threading.SemaphoreSlim _liveDownloadSemaphore = new System.Threading.SemaphoreSlim(3, 3);
         private static readonly System.Threading.SemaphoreSlim _liveRefreshSemaphore = new System.Threading.SemaphoreSlim(1, 1);
-        private const int LIVE_INITIAL_SEGMENTS = 6;  // 30s initial buffer (~480KB)
-        private const int LIVE_DEEP_SEGMENTS = 8;     // 40s rolling buffer (~640KB, downloads in ~1.5s, 35s safe runway)
+        private const int LIVE_INITIAL_SEGMENTS = 6;  // 30s initial buffer (~480KB, fast startup)
+        private const int LIVE_DEEP_SEGMENTS = 12;    // 60s rolling buffer (~960KB, downloads in ~4s, 55s safe runway)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -1352,8 +1352,8 @@ namespace AudioPlayerTask
                         LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                     }
 
-                    // 3. Start safely in DVR window (14 segments = 70s behind live edge)
-                    long safetyOffset = 14;
+                    // 3. Start safely in DVR window (18 segments = 90s behind live edge)
+                    long safetyOffset = 18;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
                     if (startSeq <= 0 && _nextLiveStartSeq > 0)
                     {
@@ -1742,9 +1742,10 @@ namespace AudioPlayerTask
         private void StartPlaybackMonitor()
         {
             StopPlaybackMonitor();
-            // Poll every 500ms to check if we're near end of track
+            // High-precision 100ms polling for live stream handover; 500ms for regular tracks
+            int intervalMs = _isCurrentTrackLive ? 100 : 500;
             _playbackMonitorTimer = Windows.System.Threading.ThreadPoolTimer.CreatePeriodicTimer(
-                PlaybackMonitorTimer_Tick, TimeSpan.FromMilliseconds(500));
+                PlaybackMonitorTimer_Tick, TimeSpan.FromMilliseconds(intervalMs));
         }
 
         private void StopPlaybackMonitor()
@@ -1774,9 +1775,34 @@ namespace AudioPlayerTask
                 if (_isCurrentTrackLive)
                 {
                     double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
-                    // Trigger swap 0.2s before buffer end to hide topology change latency and eliminate the 0.2s stutter
-                    bool nearEnd = (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 0.2));
-                    bool finishedBuffer = (_liveBufferDurationSec > 1.0 && elapsed >= 3.0 && (_mediaPlayer.CurrentState == MediaPlayerState.Paused || _mediaPlayer.CurrentState == MediaPlayerState.Stopped));
+                    double duration = _liveBufferDurationSec;
+                    double liveRemaining = -1;
+
+                    try
+                    {
+                        if (_mediaPlayer.NaturalDuration > TimeSpan.Zero)
+                        {
+                            duration = _mediaPlayer.NaturalDuration.TotalSeconds;
+                            _liveBufferDurationSec = duration;
+                            var livePos = _mediaPlayer.Position;
+                            if (livePos <= _mediaPlayer.NaturalDuration)
+                            {
+                                liveRemaining = (_mediaPlayer.NaturalDuration - livePos).TotalSeconds;
+                            }
+                        }
+                    }
+                    catch { }
+
+                    if (liveRemaining < 0 || double.IsNaN(liveRemaining))
+                    {
+                        liveRemaining = duration - elapsed;
+                    }
+
+                    // Pre-emptive swap: trigger when remaining <= 0.25s while next buffer is ready!
+                    // This starts opening the next buffer while current buffer is playing its last milliseconds,
+                    // seamlessly bridging the ~300ms MediaFoundation topology switch latency!
+                    bool nearEnd = (_isNextLiveBufferReady && elapsed >= 3.0 && liveRemaining >= 0 && liveRemaining <= 0.25);
+                    bool finishedBuffer = (elapsed >= 3.0 && (_mediaPlayer.CurrentState == MediaPlayerState.Paused || _mediaPlayer.CurrentState == MediaPlayerState.Stopped));
 
                     // Auto-kickstart if player got stuck in Paused right after buffer swap (< 3s)
                     if (_mediaPlayer.CurrentState == MediaPlayerState.Paused && elapsed < 3.0 && !_isLiveSwapping && !_isLiveInitializing)
@@ -1786,7 +1812,8 @@ namespace AudioPlayerTask
 
                     if ((nearEnd || finishedBuffer) && !_isLiveSwapping && !_isLiveInitializing && (DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
                     {
-                        LogLive("[Live Đổi Buffer] -> buf=" + ((_liveBufferCycle + 1) % 3) + " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
+                        LogLive("[Live Đổi Buffer] -> buf=" + ((_liveBufferCycle + 1) % 3) + 
+                            " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " rem=" + liveRemaining.ToString("F2") + "s ela=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F1") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
                         SwapToNextLiveBuffer();
                     }
                     else if (!_isNextLiveBufferReady && 
@@ -1798,7 +1825,7 @@ namespace AudioPlayerTask
                              elapsed >= 4.0)
                     {
                         // Ping-pong buffering: trigger pre-buffering early (after 4.0s of steady playback)
-                        // With 40s buffer, this provides 36 seconds of download runway!
+                        // With 60s buffer, this provides 55 seconds of download runway!
                         PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     return;
@@ -2013,7 +2040,6 @@ namespace AudioPlayerTask
                             _mediaPlayer.SetUriSource(new Uri(nextUri));
                             try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                             _mediaPlayer.Play();
-                            try { _liveBufferStopwatch.Restart(); } catch { }
                             LogLive("[Live Swap Thành công] buf=" + nextIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s)");
                             _liveReconnectCount = 0;
                             return;
@@ -2115,7 +2141,7 @@ namespace AudioPlayerTask
                         if (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 1.5) &&
                             !_isLiveSwapping && !_isLiveInitializing && (DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
                         {
-                            LogLive("[Live State Paused Swap] elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s");
+                            LogLive("[Live State Paused Swap] elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F1") + "s");
                             SwapToNextLiveBuffer();
                             return;
                         }
@@ -2156,8 +2182,16 @@ namespace AudioPlayerTask
                 if (_isCurrentTrackLive)
                 {
                     try { _liveBufferStopwatch.Restart(); } catch { }
+                    try
+                    {
+                        if (sender.NaturalDuration > TimeSpan.Zero)
+                        {
+                            _liveBufferDurationSec = sender.NaturalDuration.TotalSeconds;
+                        }
+                    }
+                    catch { }
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
-                    LogLive("[Live MediaOpened] Đang phát Buffer " + _currentLiveBufferIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s, state=" + sender.CurrentState + ")");
+                    LogLive("[Live MediaOpened] Đang phát Buffer " + _currentLiveBufferIndex + " (" + _liveBufferDurationSec.ToString("F1") + "s, state=" + sender.CurrentState + ")");
                 }
             }
             catch { }
