@@ -313,6 +313,21 @@ namespace YTMusicWP
 
                     if (added > 0)
                     {
+                        // [OPT-C3] Cap queue size to prevent unbounded memory growth on 512MB RAM devices
+                        const int MAX_QUEUE_ITEMS = 200;
+                        if (currentQueueTracks.Count > MAX_QUEUE_ITEMS)
+                        {
+                            int currentIdx = currentTrack != null ? currentQueueTracks.IndexOf(currentTrack) : -1;
+                            // Keep at least 20 past tracks behind current track for back-button, trim older ones from beginning
+                            int removeCount = currentQueueTracks.Count - MAX_QUEUE_ITEMS;
+                            int maxSafeRemove = currentIdx > 20 ? currentIdx - 20 : 0;
+                            int toRemove = Math.Min(removeCount, maxSafeRemove);
+                            for (int r = 0; r < toRemove; r++)
+                            {
+                                currentQueueTracks.RemoveAt(0);
+                            }
+                        }
+
                         UpdateQueueActiveState();
                         SyncQueueToBackground(false);
                     }

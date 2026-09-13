@@ -2445,7 +2445,7 @@
                             <DataTemplate>
                                 <StackPanel Margin="0,0,0,16">
                                     <TextBlock Text="{Binding Title}" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,0,16,8"/>
-                                    <ListView ItemsSource="{Binding Items}" IsItemClickEnabled="True" ItemClick="ArtistAlbum_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource ArtistAlbumItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="16,0,0,0">
+                                    <ListView ItemsSource="{Binding Items}" Height="172" VirtualizingStackPanel.VirtualizationMode="Recycling" IsItemClickEnabled="True" ItemClick="ArtistAlbum_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource ArtistAlbumItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="16,0,0,0">
                                         <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                                     </ListView>
                                 </StackPanel>
