@@ -70,7 +70,7 @@ namespace AudioPlayerTask
         private static readonly System.Threading.SemaphoreSlim _liveDownloadSemaphore = new System.Threading.SemaphoreSlim(3, 3);
         private static readonly System.Threading.SemaphoreSlim _liveRefreshSemaphore = new System.Threading.SemaphoreSlim(1, 1);
         private const int LIVE_INITIAL_SEGMENTS = 6;  // 30s initial buffer (~480KB, fast startup)
-        private const int LIVE_DEEP_SEGMENTS = 12;    // 60s rolling buffer (~960KB, downloads in ~4s, 55s safe runway)
+        private const int LIVE_DEEP_SEGMENTS = 24;    // 120s rolling buffer (~1.9MB, downloads in ~8s, 110s safe runway)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -1829,7 +1829,7 @@ namespace AudioPlayerTask
                              elapsed >= 4.0)
                     {
                         // Ping-pong buffering: trigger pre-buffering early (after 4.0s of steady playback)
-                        // With 60s buffer, this provides 55 seconds of download runway!
+                        // With 120s buffer, this provides 110+ seconds of download runway!
                         PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     return;
