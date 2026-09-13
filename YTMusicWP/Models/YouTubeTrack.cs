@@ -104,6 +104,40 @@ namespace YTMusicWP
             get { return !string.IsNullOrEmpty(Subtitle) ? Subtitle : ChannelName; }
         }
 
+        public string Duration { get; set; }
+        public Visibility DurationVisibility
+        {
+            get { return !string.IsNullOrEmpty(Duration) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        private double _playProgressPercent = 0.0;
+        public double PlayProgressPercent
+        {
+            get { return _playProgressPercent; }
+            set
+            {
+                if (_playProgressPercent != value)
+                {
+                    _playProgressPercent = value;
+                    OnPropertyChanged("PlayProgressPercent");
+                    OnPropertyChanged("ProgressWidth");
+                }
+            }
+        }
+
+        public double ProgressWidth
+        {
+            get { return System.Math.Max(8, System.Math.Min(100, 100 * (_playProgressPercent > 0 ? _playProgressPercent : 0.45))); }
+        }
+
+        public string CommentCount { get; set; }
+        public string TopCommentAuthor { get; set; }
+        public string TopCommentText { get; set; }
+        public Visibility CommentVisibility
+        {
+            get { return !string.IsNullOrEmpty(TopCommentText) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string name)
         {

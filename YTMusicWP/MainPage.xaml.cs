@@ -30,17 +30,39 @@ namespace YTMusicWP
     {
         public DataTemplate NormalTemplate { get; set; }
         public DataTemplate QuickPicksTemplate { get; set; }
+        public DataTemplate MultiTrackColumnTemplate { get; set; }
+        public DataTemplate SpeedDialTemplate { get; set; }
+        public DataTemplate FeaturedCardTemplate { get; set; }
+        public DataTemplate MostDiscussedTemplate { get; set; }
+        public DataTemplate LandscapeVideoTemplate { get; set; }
         public DataTemplate VideoTemplate { get; set; }
+        public DataTemplate EditorialBannerTemplate { get; set; }
 
         protected override DataTemplate SelectTemplateCore(object item, DependencyObject container)
         {
             var section = item as YTMusicWP.InnerTubeClient.HomeSection;
             if (section != null)
             {
-                if (section.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.QuickPicks)
-                    return QuickPicksTemplate;
-                else if (section.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.Video)
-                    return NormalTemplate; // Use dynamic width instead of fixed VideoTemplate
+                switch (section.Layout)
+                {
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.MultiTrackColumn:
+                        return MultiTrackColumnTemplate ?? QuickPicksTemplate ?? NormalTemplate;
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial:
+                        return SpeedDialTemplate ?? NormalTemplate;
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.FeaturedCard:
+                        return FeaturedCardTemplate ?? NormalTemplate;
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.MostDiscussed:
+                        return MostDiscussedTemplate ?? NormalTemplate;
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.LandscapeVideo:
+                        return LandscapeVideoTemplate ?? NormalTemplate;
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.EditorialBanner:
+                        return EditorialBannerTemplate ?? NormalTemplate;
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.QuickPicks:
+                        return MultiTrackColumnTemplate ?? QuickPicksTemplate ?? NormalTemplate;
+                    case YTMusicWP.InnerTubeClient.HomeSectionLayout.Normal:
+                    default:
+                        return NormalTemplate;
+                }
             }
             return NormalTemplate;
         }

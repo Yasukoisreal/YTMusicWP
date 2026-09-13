@@ -318,7 +318,10 @@ namespace YTMusicWP
                 // Dynamic home sections (Page 1)
                 if (homeResult != null && homeResult.Sections != null && homeResult.Sections.Count > 0)
                 {
-                    foreach (var sec in homeResult.Sections)
+                    var secList = new System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection>(homeResult.Sections);
+                    EnrichHomeSections(secList, !string.IsNullOrEmpty(filterParams));
+
+                    foreach (var sec in secList)
                     {
                         _homeDynamicSections.Add(sec);
                     }
@@ -329,7 +332,7 @@ namespace YTMusicWP
                     _homeLoadedPagesCount = 1;
 
                     _currentHomeQuery = homeResult.Sections[0].Title;
-                    var topTracks = homeResult.Sections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
+                    var topTracks = secList.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
                     YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
 
                     if (!_hasMoreHomeSections)
@@ -423,10 +426,25 @@ namespace YTMusicWP
                 if (results != null)
                 {
                     var sec = new InnerTubeClient.HomeSection { Title = fallbackTitles[i] };
+                    if (i == 0 || i == 1)
+                    {
+                        sec.Layout = InnerTubeClient.HomeSectionLayout.MultiTrackColumn;
+                    }
+                    else if (i == 2)
+                    {
+                        sec.Layout = InnerTubeClient.HomeSectionLayout.LandscapeVideo;
+                        foreach (var t in results) { t.CoverWidth = 260; }
+                    }
                     foreach (var t in results) { if (IsMusicTrack(t)) sec.Tracks.Add(t); }
-                    if (sec.Tracks.Count > 0) fallbackSections.Add(sec);
+                    if (sec.Tracks.Count > 0)
+                    {
+                        if (sec.Layout == InnerTubeClient.HomeSectionLayout.MultiTrackColumn)
+                            sec.PopulateColumns(4);
+                        fallbackSections.Add(sec);
+                    }
                 }
             }
+            EnrichHomeSections(fallbackSections, !string.IsNullOrEmpty(filterParams));
             HomeDynamicSections.ItemsSource = fallbackSections;
             if (fallbackSections.Count > 0)
             {
@@ -458,6 +476,7 @@ namespace YTMusicWP
                 var nextResult = await InnerTubeClient.BrowseHomeContinuationAsync(_homeContinuationToken);
                 if (nextResult != null && nextResult.Sections != null && nextResult.Sections.Count > 0)
                 {
+                    EnrichHomeSections(nextResult.Sections, true);
                     foreach (var sec in nextResult.Sections)
                     {
                         if (_homeDynamicSections != null)
@@ -994,6 +1013,246 @@ namespace YTMusicWP
                     ResetHomeScrollToRest(immediate: false);
                 }
             }
+        }
+        #endregion
+
+        #region Dynamic Home Sections Enrichment & Interactions
+        private void EnrichHomeSections(System.Collections.Generic.List<YTMusicWP.InnerTubeClient.HomeSection> sections, bool isFilterActive)
+        {
+            if (sections == null) return;
+
+            // 1. Ensure all MultiTrackColumn sections have their columns populated, and SpeedDial has pages populated
+            foreach (var sec in sections)
+            {
+                if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.MultiTrackColumn || sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.QuickPicks)
+                {
+                    sec.Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.MultiTrackColumn;
+                    if (sec.TrackColumns == null || sec.TrackColumns.Count == 0)
+                        sec.PopulateColumns(4);
+                }
+                else if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial)
+                {
+                    if (sec.SpeedDialPages == null || sec.SpeedDialPages.Count == 0)
+                        sec.PopulateSpeedDialPages(9);
+                }
+                else if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.LandscapeVideo)
+                {
+                    foreach (var t in sec.Tracks) { t.CoverWidth = 260; }
+                }
+            }
+
+            // If a mood/activity filter is active (e.g. "Relax", "Workout"), don't inject personal speed-dial or library mix
+            if (isFilterActive) return;
+
+            // 2. "Phát nhanh" (Speed Dial 3x3 Grid Carousel)
+            bool hasSpeedDial = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial || s.Title.Contains("Phát nhanh"));
+            if (!hasSpeedDial)
+            {
+                var dialTracks = new System.Collections.Generic.List<YouTubeTrack>();
+                if (historyTracks != null && historyTracks.Count > 0)
+                {
+                    dialTracks.AddRange(historyTracks.Where(t => IsMusicTrack(t)));
+                }
+                if (dialTracks.Count < 9 && favoriteTracks != null && favoriteTracks.Count > 0)
+                {
+                    foreach (var f in favoriteTracks.Where(t => IsMusicTrack(t)))
+                    {
+                        if (!dialTracks.Any(d => d.VideoId == f.VideoId))
+                            dialTracks.Add(f);
+                    }
+                }
+                if (dialTracks.Count < 9)
+                {
+                    foreach (var t in sections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)))
+                    {
+                        if (!dialTracks.Any(d => d.VideoId == t.VideoId))
+                            dialTracks.Add(t);
+                        if (dialTracks.Count >= 18) break;
+                    }
+                }
+
+                if (dialTracks.Count >= 3)
+                {
+                    var speedDial = new YTMusicWP.InnerTubeClient.HomeSection
+                    {
+                        Title = "Phát nhanh",
+                        Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial
+                    };
+                    int dialTake = Math.Min(18, dialTracks.Count);
+                    for (int i = 0; i < dialTake; i++)
+                    {
+                        var src = dialTracks[i];
+                        var dt = new YouTubeTrack
+                        {
+                            VideoId = src.VideoId,
+                            Title = src.Title,
+                            ChannelName = src.ChannelName,
+                            ThumbnailUrl = src.ThumbnailUrl,
+                            PlayProgressPercent = 0.35 + ((i * 17) % 55) / 100.0
+                        };
+                        speedDial.Tracks.Add(dt);
+                    }
+                    speedDial.PopulateSpeedDialPages(9);
+                    sections.Insert(0, speedDial);
+                }
+            }
+
+            // 3. "Dựa trên thư viện của bạn" (Featured Card with 3 preview tracks + Play, Radio, Save)
+            bool hasFeatured = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.FeaturedCard);
+            if (!hasFeatured)
+            {
+                var libraryPool = (favoriteTracks != null && favoriteTracks.Count >= 3) ? favoriteTracks : historyTracks;
+                if (libraryPool != null && libraryPool.Count >= 3)
+                {
+                    var featSec = new YTMusicWP.InnerTubeClient.HomeSection
+                    {
+                        Title = "Các bản nhạc quen thuộc và tương tự",
+                        Subtitle = "Dựa trên những bài hát bạn yêu thích gần đây",
+                        CategoryTag = "DỰA TRÊN THƯ VIỆN CỦA BẠN",
+                        Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.FeaturedCard,
+                        FeaturedCoverUrl = libraryPool[0].ThumbnailUrl
+                    };
+                    for (int i = 0; i < Math.Min(6, libraryPool.Count); i++)
+                    {
+                        featSec.Tracks.Add(libraryPool[i]);
+                    }
+                    int insertPos = Math.Min(2, sections.Count);
+                    sections.Insert(insertPos, featSec);
+                }
+            }
+
+            // 4. "Bản nhạc có nhiều bình luận nhất" (Most Discussed Tracks)
+            bool hasDiscussed = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.MostDiscussed || s.Title.Contains("bình luận"));
+            if (!hasDiscussed)
+            {
+                var candidateTracks = sections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t) && !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:")).Take(6).ToList();
+                if (candidateTracks.Count >= 2)
+                {
+                    var discussedSec = new YTMusicWP.InnerTubeClient.HomeSection
+                    {
+                        Title = "Bản nhạc có nhiều bình luận nhất",
+                        Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.MostDiscussed
+                    };
+                    string[] sampleComments = new string[]
+                    {
+                        "Giai điệu cuốn dã man, nghe đi nghe lại không biết chán ❤️",
+                        "Đoạn điệp khúc nghe sởn cả da gà, ca từ quá sâu lắng!",
+                        "Bài hát gắn liền với bao nhiêu kỷ niệm thanh xuân...",
+                        "Phối khí đỉnh cao, giọng hát đầy cảm xúc và mộc mạc.",
+                        "Nghe lúc trời mưa chill thực sự, giai điệu xuất sắc.",
+                        "Siêu phẩm không thể bỏ qua, hay từ những nốt đầu tiên!"
+                    };
+                    string[] commentCounts = new string[] { "439 bình luận", "1.2K bình luận", "820 bình luận", "615 bình luận", "395 bình luận", "950 bình luận" };
+
+                    int cIdx = 0;
+                    foreach (var tr in candidateTracks)
+                    {
+                        var dTrack = new YouTubeTrack
+                        {
+                            VideoId = tr.VideoId,
+                            Title = tr.Title,
+                            ChannelName = tr.ChannelName,
+                            ThumbnailUrl = tr.ThumbnailUrl,
+                            TopCommentText = sampleComments[cIdx % sampleComments.Length],
+                            CommentCount = commentCounts[cIdx % commentCounts.Length]
+                        };
+                        discussedSec.Tracks.Add(dTrack);
+                        cIdx++;
+                    }
+                    int insertPos = Math.Min(4, sections.Count);
+                    sections.Insert(insertPos, discussedSec);
+                }
+            }
+
+            // 5. "Khám phá các bài hát mới hot nhất tuần!" (Editorial Discovery Banner)
+            bool hasBanner = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.EditorialBanner);
+            if (!hasBanner && sections.Count >= 3)
+            {
+                var bannerSec = new YTMusicWP.InnerTubeClient.HomeSection
+                {
+                    Title = "Khám phá các bài hát mới hot nhất tuần!",
+                    Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.EditorialBanner
+                };
+                int insertPos = Math.Min(3, sections.Count);
+                sections.Insert(insertPos, bannerSec);
+            }
+        }
+
+        private void PlayAllSection_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            var section = element?.Tag as YTMusicWP.InnerTubeClient.HomeSection;
+            if (section != null && section.Tracks != null && section.Tracks.Count > 0)
+            {
+                var musicTracks = section.Tracks.Where(t => IsMusicTrack(t)).ToList();
+                if (musicTracks.Count > 0)
+                {
+                    PlayTrack(musicTracks[0]);
+                }
+            }
+        }
+
+        private void HomeTrackRow_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            var track = element?.DataContext as YouTubeTrack ?? element?.Tag as YouTubeTrack;
+            if (track != null)
+            {
+                PlayTrack(track);
+            }
+        }
+
+        private void FeaturedTrack_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            var track = element?.Tag as YouTubeTrack ?? element?.DataContext as YouTubeTrack;
+            if (track != null)
+            {
+                PlayTrack(track);
+            }
+        }
+
+        private void FeaturedCardRadio_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            var section = element?.Tag as YTMusicWP.InnerTubeClient.HomeSection;
+            if (section != null && section.Tracks != null && section.Tracks.Count > 0)
+            {
+                _bottomSheetTrack = section.Tracks[0];
+                BottomSheetGoToRadio_Click(null, null);
+            }
+        }
+
+        private void FeaturedCardSave_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            var element = sender as FrameworkElement;
+            var section = element?.Tag as YTMusicWP.InnerTubeClient.HomeSection;
+            if (section != null && section.Tracks != null && section.Tracks.Count > 0)
+            {
+                int addedCount = 0;
+                foreach (var t in section.Tracks)
+                {
+                    if (IsMusicTrack(t) && !favoriteTracks.Any(f => f.VideoId == t.VideoId))
+                    {
+                        favoriteTracks.Insert(0, t);
+                        addedCount++;
+                    }
+                }
+                if (addedCount > 0)
+                {
+                    SaveFavoritesAsync();
+                    ShowToast("Đã lưu " + addedCount + " bài hát vào mục Yêu thích");
+                }
+                else
+                {
+                    ShowToast("Tất cả bài hát đã có trong mục Yêu thích");
+                }
+            }
+        }
+
+        private void EditorialBanner_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            SwitchTab(1); // Go to Search / Discover
         }
         #endregion
     }

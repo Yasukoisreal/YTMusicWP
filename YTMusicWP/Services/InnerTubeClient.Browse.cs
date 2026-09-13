@@ -824,17 +824,84 @@ namespace YTMusicWP
         // ==========================================
         public enum HomeSectionLayout
         {
-            Normal,
-            QuickPicks,
-            Video
+            Normal,             // 1-row horizontal carousel (Albums, Playlists)
+            QuickPicks,         // Legacy/Compat
+            MultiTrackColumn,   // 4-track vertical columns carousel with "Phát tất cả" button
+            SpeedDial,          // 3x3 square grid with progress bar and pagination dots ("Phát nhanh")
+            FeaturedCard,       // Large card with cover, 3 preview tracks, and 3 round action buttons
+            MostDiscussed,      // Cards with track info + quoted comment bubble & comment count
+            LandscapeVideo,     // 16:9 widescreen video cards with duration
+            Video,              // Compat
+            EditorialBanner     // Promotional discovery banner
+        }
+
+        public class HomeTrackColumn
+        {
+            public List<YouTubeTrack> Tracks { get; set; }
+            public HomeTrackColumn() { Tracks = new List<YouTubeTrack>(); }
+        }
+
+        public class HomeSpeedDialPage
+        {
+            public List<YouTubeTrack> Items { get; set; }
+            public HomeSpeedDialPage() { Items = new List<YouTubeTrack>(); }
         }
 
         public class HomeSection
         {
             public string Title { get; set; }
+            public string Subtitle { get; set; }
+            public string CategoryTag { get; set; }
+            public string FeaturedCoverUrl { get; set; }
+            public string CardBgColor { get; set; }
             public HomeSectionLayout Layout { get; set; }
             public List<YouTubeTrack> Tracks { get; set; }
-            public HomeSection() { Tracks = new List<YouTubeTrack>(); Layout = HomeSectionLayout.Normal; }
+            public List<HomeTrackColumn> TrackColumns { get; set; }
+            public List<HomeSpeedDialPage> SpeedDialPages { get; set; }
+
+            public YouTubeTrack FirstTrack { get { return (Tracks != null && Tracks.Count > 0) ? Tracks[0] : null; } }
+            public YouTubeTrack SecondTrack { get { return (Tracks != null && Tracks.Count > 1) ? Tracks[1] : null; } }
+            public YouTubeTrack ThirdTrack { get { return (Tracks != null && Tracks.Count > 2) ? Tracks[2] : null; } }
+
+            public HomeSection()
+            {
+                Tracks = new List<YouTubeTrack>();
+                TrackColumns = new List<HomeTrackColumn>();
+                SpeedDialPages = new List<HomeSpeedDialPage>();
+                Layout = HomeSectionLayout.Normal;
+                CardBgColor = "#1C1824";
+                CategoryTag = "NỔI BẬT";
+            }
+
+            public void PopulateColumns(int chunkSize = 4)
+            {
+                if (Tracks == null) return;
+                TrackColumns = new List<HomeTrackColumn>();
+                for (int i = 0; i < Tracks.Count; i += chunkSize)
+                {
+                    var col = new HomeTrackColumn();
+                    for (int j = i; j < Math.Min(i + chunkSize, Tracks.Count); j++)
+                    {
+                        col.Tracks.Add(Tracks[j]);
+                    }
+                    TrackColumns.Add(col);
+                }
+            }
+
+            public void PopulateSpeedDialPages(int pageSize = 9)
+            {
+                if (Tracks == null) return;
+                SpeedDialPages = new List<HomeSpeedDialPage>();
+                for (int i = 0; i < Tracks.Count; i += pageSize)
+                {
+                    var page = new HomeSpeedDialPage();
+                    for (int j = i; j < Math.Min(i + pageSize, Tracks.Count); j++)
+                    {
+                        page.Items.Add(Tracks[j]);
+                    }
+                    SpeedDialPages.Add(page);
+                }
+            }
         }
 
         public static void ClearHomeCache()
@@ -899,10 +966,14 @@ namespace YTMusicWP
 
                     var homeSection = new HomeSection { Title = sectionTitle };
                     string lowerTitle = sectionTitle.ToLowerInvariant();
-                    if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("quick") || lowerTitle.Contains("start radio") || lowerTitle.Contains("bắt đầu một đài phát"))
-                        homeSection.Layout = HomeSectionLayout.QuickPicks;
-                    else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn"))
-                        homeSection.Layout = HomeSectionLayout.Video;
+                    if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("speed dial"))
+                        homeSection.Layout = HomeSectionLayout.SpeedDial;
+                    else if (lowerTitle.Contains("bình luận") || lowerTitle.Contains("comment") || lowerTitle.Contains("thảo luận"))
+                        homeSection.Layout = HomeSectionLayout.MostDiscussed;
+                    else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn") || lowerTitle.Contains("dần trôi") || lowerTitle.Contains("thước phim"))
+                        homeSection.Layout = HomeSectionLayout.LandscapeVideo;
+                    else if (lowerTitle.Contains("đài phát") || lowerTitle.Contains("quick") || lowerTitle.Contains("phối lại") || lowerTitle.Contains("hát lại") || lowerTitle.Contains("thịnh hành") || lowerTitle.Contains("nghe lâu"))
+                        homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
 
                     var cItems = carousel["contents"];
                     if (cItems != null)
@@ -993,7 +1064,76 @@ namespace YTMusicWP
                     }
 
                     if (homeSection.Tracks.Count > 0)
+                    {
+                        if (homeSection.Layout == HomeSectionLayout.QuickPicks || homeSection.Layout == HomeSectionLayout.MultiTrackColumn)
+                        {
+                            homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
+                            homeSection.PopulateColumns(4);
+                        }
+                        else if (homeSection.Layout == HomeSectionLayout.SpeedDial)
+                        {
+                            homeSection.PopulateSpeedDialPages(9);
+                        }
+                        else if (homeSection.Layout == HomeSectionLayout.LandscapeVideo)
+                        {
+                            foreach (var t in homeSection.Tracks) { t.CoverWidth = 260; }
+                        }
                         targetList.Add(homeSection);
+                    }
+                    continue;
+                }
+
+                // musicCardShelfRenderer = Featured Card (e.g. "Dựa trên thư viện của bạn", "Tập thể dục", "Recap")
+                var cardShelf = sec["musicCardShelfRenderer"];
+                if (cardShelf != null)
+                {
+                    string cardTitle = cardShelf["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                    string cardSubtitle = cardShelf["subtitle"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                    string strapline = cardShelf["header"]?["musicCardShelfHeaderBasicRenderer"]?["strapline"]?["runs"]?[0]?["text"]?.ToString() ?? "DỰA TRÊN THƯ VIỆN CỦA BẠN";
+                    if (string.IsNullOrEmpty(cardTitle) && cardShelf["header"] != null)
+                    {
+                        cardTitle = cardShelf["header"]?["musicCardShelfHeaderBasicRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                    }
+
+                    if (!string.IsNullOrEmpty(cardTitle))
+                    {
+                        var homeSectionCard = new HomeSection
+                        {
+                            Title = cardTitle,
+                            Subtitle = cardSubtitle,
+                            CategoryTag = strapline.ToUpperInvariant(),
+                            Layout = HomeSectionLayout.FeaturedCard
+                        };
+
+                        var thumbs = cardShelf["thumbnail"]?["musicThumbnailRenderer"]?["thumbnail"]?["thumbnails"];
+                        if (thumbs != null && thumbs.HasValues)
+                        {
+                            homeSectionCard.FeaturedCoverUrl = thumbs.Last?["url"]?.ToString() ?? "";
+                        }
+
+                        var cItems = cardShelf["contents"];
+                        if (cItems != null)
+                        {
+                            foreach (var cItem in cItems)
+                            {
+                                if (homeSectionCard.Tracks.Count >= 10) break;
+                                try
+                                {
+                                    var track = ParseMusicListItem(cItem);
+                                    if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                        homeSectionCard.Tracks.Add(track);
+                                }
+                                catch { }
+                            }
+                        }
+
+                        if (homeSectionCard.Tracks.Count > 0)
+                        {
+                            if (string.IsNullOrEmpty(homeSectionCard.FeaturedCoverUrl))
+                                homeSectionCard.FeaturedCoverUrl = homeSectionCard.Tracks[0].ThumbnailUrl;
+                            targetList.Add(homeSectionCard);
+                        }
+                    }
                     continue;
                 }
 
@@ -1021,7 +1161,11 @@ namespace YTMusicWP
                         }
                     }
                     if (homeSection2.Tracks.Count > 0)
+                    {
+                        homeSection2.Layout = HomeSectionLayout.MultiTrackColumn;
+                        homeSection2.PopulateColumns(4);
                         targetList.Add(homeSection2);
+                    }
                 }
             }
         }
