@@ -114,7 +114,7 @@ namespace YTMusicWP
 
                         chipsList.Add(new SearchChipItem
                         {
-                            Title = chipText,
+                            Title = NormalizeSearchChipTitle(chipText),
                             FilterParams = chipParams,
                             IsSelected = isSel
                         });
@@ -962,6 +962,21 @@ namespace YTMusicWP
             }
 
             return list;
+        }
+
+        public static string NormalizeSearchChipTitle(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return text;
+            string lower = text.Trim().ToLowerInvariant();
+            if (lower == "nghệ sĩ" || lower == "nghe si" || lower == "artists" || lower == "artist") return "Artists";
+            if (lower == "bài hát" || lower == "bai hat" || lower == "songs" || lower == "song") return "Songs";
+            if (lower == "đĩa nhạc" || lower == "dia nhac" || lower == "album" || lower == "albums") return "Albums";
+            if (lower == "video" || lower == "videos") return "Videos";
+            if (lower.Contains("danh sách phát") || lower.Contains("community playlists") || lower.Contains("playlists") || lower.Contains("playlist")) return "Community playlists";
+            if (lower.Contains("tập podcast") || lower.Contains("tập") || lower.Contains("episodes") || lower.Contains("episode")) return "Episodes";
+            if (lower == "hồ sơ" || lower == "ho so" || lower == "profiles" || lower == "profile") return "Profiles";
+            if (lower.Contains("podcast")) return "Podcasts";
+            return text;
         }
     }
 

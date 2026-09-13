@@ -498,7 +498,7 @@ namespace YTMusicWP
                     {
                         border.Tag = chips[i].FilterParams;
                         var tb = border.Child as TextBlock;
-                        if (tb != null) tb.Text = chips[i].Title;
+                        if (tb != null) tb.Text = InnerTubeClient.NormalizeSearchChipTitle(chips[i].Title);
 
                         bool isSel = chips[i].IsSelected || (!string.IsNullOrEmpty(_currentSearchFilterParams) && chips[i].FilterParams == _currentSearchFilterParams);
                         if (isSel) _activeSearchChipBorder = border;
@@ -523,7 +523,7 @@ namespace YTMusicWP
                     };
                     var tb = new TextBlock
                     {
-                        Text = chip.Title,
+                        Text = InnerTubeClient.NormalizeSearchChipTitle(chip.Title),
                         Foreground = _ytmChipInactiveFgBrush,
                         FontSize = 13,
                         FontWeight = Windows.UI.Text.FontWeights.SemiBold

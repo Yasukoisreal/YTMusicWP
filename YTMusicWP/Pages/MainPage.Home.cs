@@ -39,6 +39,7 @@ namespace YTMusicWP
             {
                 HomeHistorySection.Visibility = Visibility.Visible;
                 HomeQuickGrid.ItemsSource = null;
+                HomeQuickGrid.Visibility = Visibility.Collapsed;
                 HomeHistoryCarousel.ItemsSource = null;
 
                 historyQuickGridTracks.Clear();
@@ -55,7 +56,6 @@ namespace YTMusicWP
                     homeHistoryCarouselTracks.Add(historyTracks[i]);
                 }
 
-                HomeQuickGrid.ItemsSource = historyQuickGridTracks;
                 HomeHistoryCarousel.ItemsSource = homeHistoryCarouselTracks;
 
                 // Recently Played Artists — extract unique artists from history
@@ -931,7 +931,10 @@ namespace YTMusicWP
                 if (HomeDynamicSections != null)
                     HomeDynamicSections.ItemsSource = null;
                 if (HomeQuickGrid != null)
+                {
                     HomeQuickGrid.ItemsSource = null;
+                    HomeQuickGrid.Visibility = Visibility.Collapsed;
+                }
                 if (HomeHistoryCarousel != null)
                     HomeHistoryCarousel.ItemsSource = null;
                 if (HomeArtistsCarousel != null)
@@ -1044,8 +1047,8 @@ namespace YTMusicWP
             // If a mood/activity filter is active (e.g. "Relax", "Workout"), don't inject personal speed-dial or library mix
             if (isFilterActive) return;
 
-            // 2. "Quick picks" (Speed Dial 3x3 Grid Carousel)
-            bool hasSpeedDial = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial || s.Title.Contains("Quick picks") || s.Title.Contains("Phát nhanh"));
+            // 2. "Speed dial" (Speed Dial 3x3 Grid Carousel)
+            bool hasSpeedDial = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial);
             if (!hasSpeedDial)
             {
                 var dialTracks = new System.Collections.Generic.List<YouTubeTrack>();
@@ -1071,17 +1074,17 @@ namespace YTMusicWP
                     }
                 }
 
-                if (dialTracks.Count >= 3)
+                if (dialTracks.Count >= 1)
                 {
                     var speedDial = new YTMusicWP.InnerTubeClient.HomeSection
                     {
-                        Title = "Quick picks",
+                        Title = "Speed dial",
                         Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial
                     };
-                    int dialTake = Math.Min(18, dialTracks.Count);
+                    int dialTake = Math.Min(18, Math.Max(dialTracks.Count, 9));
                     for (int i = 0; i < dialTake; i++)
                     {
-                        var src = dialTracks[i];
+                        var src = dialTracks[i % dialTracks.Count];
                         var dt = new YouTubeTrack
                         {
                             VideoId = src.VideoId,

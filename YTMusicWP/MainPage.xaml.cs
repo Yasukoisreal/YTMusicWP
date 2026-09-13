@@ -228,7 +228,7 @@ namespace YTMusicWP
             SearchSongList.ItemsSource = searchResults;
 
             HomeHistoryCarousel.ItemsSource = homeHistoryCarouselTracks;
-            HomeQuickGrid.ItemsSource = historyQuickGridTracks;
+            HomeQuickGrid.Visibility = Visibility.Collapsed;
 
             FavoriteSongList.ItemsSource = favoriteTracks;
             DownloadedSongList.ItemsSource = downloadedTracks;

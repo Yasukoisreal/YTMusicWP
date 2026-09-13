@@ -916,8 +916,8 @@ namespace YTMusicWP
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 ls["LiveDebugLog"] = "";
-                LiveDebugTextBox.Text = "Chưa có log livestream nào được ghi nhận.";
-                ShowToast("Đã xóa log livestream.");
+                LiveDebugTextBox.Text = "No livestream logs recorded yet.";
+                ShowToast("Cleared livestream logs.");
             }
             catch { }
         }
@@ -933,11 +933,11 @@ namespace YTMusicWP
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 string log = ls.ContainsKey("LiveDebugLog") ? ls["LiveDebugLog"]?.ToString() : null;
-                LiveDebugTextBox.Text = !string.IsNullOrEmpty(log) ? log : "Chưa có log livestream nào được ghi nhận.";
+                LiveDebugTextBox.Text = !string.IsNullOrEmpty(log) ? log : "No livestream logs recorded yet.";
             }
             catch (Exception ex)
             {
-                LiveDebugTextBox.Text = "Lỗi đọc log: " + ex.Message;
+                LiveDebugTextBox.Text = "Error reading logs: " + ex.Message;
             }
         }
 
@@ -948,7 +948,7 @@ namespace YTMusicWP
                 LiveDebugTextBox.IsReadOnly = false;
                 LiveDebugTextBox.Focus(FocusState.Programmatic);
                 LiveDebugTextBox.SelectAll();
-                ShowToast("Đã chọn toàn bộ log. Nhấn biểu tượng Copy trên bàn phím!");
+                ShowToast("All logs selected. Tap Copy on keyboard!");
             }
             catch { }
         }
@@ -962,12 +962,12 @@ namespace YTMusicWP
                 {
                     var file = await Windows.Storage.KnownFolders.MusicLibrary.CreateFileAsync("LiveStream_Debug.txt", Windows.Storage.CreationCollisionOption.ReplaceExisting);
                     await Windows.Storage.FileIO.WriteTextAsync(file, text);
-                    ShowToast("Đã lưu LiveStream_Debug.txt vào thư mục Music của máy!");
+                    ShowToast("Saved LiveStream_Debug.txt to Music folder!");
                 }
             }
             catch (Exception ex)
             {
-                ShowToast("Lỗi lưu file: " + ex.Message);
+                ShowToast("Error saving file: " + ex.Message);
             }
         }
 

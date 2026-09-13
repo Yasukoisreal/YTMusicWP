@@ -1189,7 +1189,7 @@
 
                         <StackPanel Margin="0,175,0,30">
                         <!-- Quick shortcuts grid -->
-                        <GridView x:Name="HomeQuickGrid" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
+                        <GridView x:Name="HomeQuickGrid" Visibility="Collapsed" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
                             <GridView.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2"/>
@@ -1371,28 +1371,28 @@
             <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="10,0,0,10">
                 <StackPanel x:Name="SearchChipsPanel" Orientation="Horizontal">
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIgAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
-                        <TextBlock Text="Nghệ sĩ" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Artists" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIIAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
-                        <TextBlock Text="Bài hát" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Songs" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIYAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
-                        <TextBlock Text="Đĩa nhạc" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Albums" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQIQAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
-                        <TextBlock Text="Video" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Videos" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgeKAQQoAEABahAQBRADEAQQCRAKEBAQFRAR">
-                        <TextBlock Text="Danh sách phát của cộng đồng" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Community playlists" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQJIAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
-                        <TextBlock Text="Tập podcast" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Episodes" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,8,0" Tapped="SearchChip_Tapped" Tag="EgWKAQJYAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
-                        <TextBlock Text="Hồ sơ" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Profiles" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                     <Border Background="#262626" CornerRadius="8" Padding="14,6" Margin="0,0,16,0" Tapped="SearchChip_Tapped" Tag="EgWKAQJQAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D">
-                        <TextBlock Text="Podcast" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Podcasts" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold"/>
                     </Border>
                 </StackPanel>
             </ScrollViewer>
@@ -1732,14 +1732,14 @@
                                         <Border x:Name="TopCardShuffleBtn" Background="#262626" CornerRadius="16" Padding="14,6" Margin="0,0,10,0" Tapped="TopResultShuffle_Tapped">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBlock Text="🔀" FontSize="12" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                                <TextBlock x:Name="TopCardShuffleText" Text="Trộn bài" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="TopCardShuffleText" Text="Shuffle" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
                                         <!-- Mix Button -->
                                         <Border x:Name="TopCardMixBtn" Background="#262626" CornerRadius="16" Padding="14,6" Tapped="TopResultMix_Tapped">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 <TextBlock Text="📻" FontSize="12" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                                <TextBlock x:Name="TopCardMixText" Text="Tuyển tập" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="TopCardMixText" Text="Radio" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
