@@ -962,6 +962,7 @@ namespace AudioPlayerTask
             {
                 var headReq = System.Net.WebRequest.CreateHttp(baseUrl);
                 headReq.Method = "HEAD";
+                try { headReq.Headers["User-Agent"] = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip"; } catch { }
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
                     timeoutCts.CancelAfter(3000);
@@ -1383,8 +1384,8 @@ namespace AudioPlayerTask
                         LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                     }
 
-                    // 3. Start safely in DVR window: 5 chunks = ~25s behind live edge for stable playback without live edge collision
-                    long safetyOffset = 5;
+                    // 3. Start safely in DVR window: 7 chunks = ~35s behind live edge (safe runway matching YouTube standard latency)
+                    long safetyOffset = 7;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
 
                     // If still no valid sequence or BaseURL is missing, force a fresh BaseURL resolve
@@ -1409,7 +1410,6 @@ namespace AudioPlayerTask
                             DownloadLiveSegmentWithRetryAsync,
                             (v, c) => RefreshLiveBaseUrlAsync(v, c, true),
                             () => _currentLiveSeq,
-                            (u, c) => GetLatestLiveSeqAsync(u, c),
                             LogLive);
 
                         bool preloaded = await _liveMss.PreloadInitialChunksAsync(ct);
