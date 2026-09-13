@@ -103,6 +103,7 @@ namespace AudioPlayerTask
         {
             try
             {
+                LogLive("[Live TaskInstance_Canceled] reason=" + reason);
                 _systemControls.ButtonPressed -= SystemControls_ButtonPressed;
                 _systemControls.IsEnabled = false;
                 _mediaPlayer.MediaEnded -= MediaPlayer_MediaEnded;

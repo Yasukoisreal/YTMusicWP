@@ -121,19 +121,26 @@ namespace AudioPlayerTask
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             if (_isDisposed) return;
-            var request = args.Request;
-
-            lock (_queueLock)
+            try
             {
-                if (_sampleQueue.Count > 0)
-                {
-                    request.Sample = _sampleQueue.Dequeue();
-                    return;
-                }
+                var request = args.Request;
 
-                // Buffer is temporarily empty: hold deferral until next chunk is parsed.
-                // Do NOT complete with null, as that signals EOS (End-Of-Stream) to WinRT!
-                _pendingRequests.Add(new PendingRequest { Request = request, Deferral = request.GetDeferral() });
+                lock (_queueLock)
+                {
+                    if (_sampleQueue.Count > 0)
+                    {
+                        request.Sample = _sampleQueue.Dequeue();
+                        return;
+                    }
+
+                    // Buffer is temporarily empty: hold deferral until next chunk is parsed.
+                    // Do NOT complete with null, as that signals EOS (End-Of-Stream) to WinRT!
+                    _pendingRequests.Add(new PendingRequest { Request = request, Deferral = request.GetDeferral() });
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Mss_SampleRequested exception: " + ex.Message);
             }
         }
 
