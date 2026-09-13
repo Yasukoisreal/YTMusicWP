@@ -49,6 +49,7 @@ namespace AudioPlayerTask
         private double _playbackRate = 1.0;
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
         private bool _isCurrentTrackLive = false;
+        private LiveMediaStreamSource _liveMss = null;
         private string _currentLiveBaseUrl = null;
         private long _currentLiveSeq = -1;
         private long _nextLiveStartSeq = -1;
@@ -1312,6 +1313,12 @@ namespace AudioPlayerTask
 
             try
             {
+                if (_liveMss != null)
+                {
+                    try { _liveMss.Dispose(); } catch { }
+                    _liveMss = null;
+                }
+
                 if (_liveCts != null)
                 {
                     try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
@@ -1321,12 +1328,6 @@ namespace AudioPlayerTask
                 var ct = _liveCts.Token;
 
                 _isCurrentTrackLive = true;
-                _liveBufferCycle++;
-                _currentLiveBufferIndex = _liveBufferCycle % 3;
-                _isNextLiveBufferReady = false;
-                _nextLiveBufferTask = null;
-                _isPreBuffering = false;
-                _lastLiveSwapTime = DateTime.UtcNow;
 
                 try
                 {
@@ -1338,9 +1339,6 @@ namespace AudioPlayerTask
                 bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
                 _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
                 UpdateSystemMediaControls();
-
-                string buf0File = "temp_live_buf_" + _currentLiveBufferIndex + ".mp4";
-                int initialDownloaded = 0;
 
                 while (!ct.IsCancellationRequested && _liveReconnectCount < 3)
                 {
@@ -1365,13 +1363,9 @@ namespace AudioPlayerTask
                         LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                     }
 
-                    // 3. Start safely in DVR window (10 segments = 50s behind live edge)
-                    long safetyOffset = 10;
+                    // 3. Start safely in DVR window: 3 chunks = 15s behind live edge for low delay
+                    long safetyOffset = 3;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
-                    if (startSeq <= 0 && _nextLiveStartSeq > 0)
-                    {
-                        startSeq = _nextLiveStartSeq;
-                    }
 
                     // If still no valid sequence or BaseURL is missing, force a fresh BaseURL resolve
                     if (startSeq <= 0 || string.IsNullOrEmpty(_currentLiveBaseUrl))
@@ -1383,54 +1377,54 @@ namespace AudioPlayerTask
                             if (headSeq > 0) _currentLiveSeq = headSeq;
                         }
                         startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
-                        if (startSeq <= 0 && _nextLiveStartSeq > 0) startSeq = _nextLiveStartSeq;
                     }
 
-                    LogLive("[Live InitBuf0 Bắt đầu] startSeq=" + startSeq + " (currSeq=" + _currentLiveSeq + ", offset=" + safetyOffset + ")");
-                    var dlSw0 = System.Diagnostics.Stopwatch.StartNew();
                     if (startSeq > 0 && !string.IsNullOrEmpty(_currentLiveBaseUrl))
                     {
-                        initialDownloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_INITIAL_SEGMENTS, buf0File, ct);
-                    }
-                    dlSw0.Stop();
-                    LogLive("[Live InitBuf0 Xong] " + initialDownloaded + "/" + LIVE_INITIAL_SEGMENTS + " chunks in " + dlSw0.ElapsedMilliseconds + "ms");
+                        LogLive("[Live MSS Init] startSeq=" + startSeq + " (head=" + _currentLiveSeq + ", offset=" + safetyOffset + ")");
+                        _liveMss = new LiveMediaStreamSource(
+                            vidId,
+                            _currentLiveBaseUrl,
+                            startSeq,
+                            DownloadLiveSegmentWithRetryAsync,
+                            (v, c) => RefreshLiveBaseUrlAsync(v, c, true),
+                            LogLive);
 
-                    if (initialDownloaded > 0 && !ct.IsCancellationRequested)
-                    {
-                        _nextLiveStartSeq = startSeq + initialDownloaded;
-                        _currentLoadedVidId = vidId;
-
-                        _liveBufferDurationSec = initialDownloaded * 5.0;
-                        _isLiveSwapping = false;
-                        _lastLiveSwapTime = DateTime.UtcNow;
-                        try { _liveBufferStopwatch.Restart(); } catch { }
-
-                        _mediaPlayer.AutoPlay = true;
-                        string localUri = "ms-appdata:///local/" + buf0File;
-                        _mediaPlayer.SetUriSource(new Uri(localUri));
-                        try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
-                        _mediaPlayer.Play();
-                        _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
-                        LogLive("[Live Phát Buffer " + _currentLiveBufferIndex + "] " + initialDownloaded + " chunk (" + _liveBufferDurationSec.ToString("F0") + "s)");
-
-                        // Start playback monitor timer ONLY after buffer 0 is successfully playing!
-                        StartPlaybackMonitor();
-                        return;
+                        bool preloaded = await _liveMss.PreloadInitialChunksAsync(ct);
+                        if (preloaded && !ct.IsCancellationRequested)
+                        {
+                            _currentLoadedVidId = vidId;
+                            _mediaPlayer.AutoPlay = true;
+                            _mediaPlayer.SetMediaSource(_liveMss.StreamSource);
+                            try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
+                            _mediaPlayer.Play();
+                            _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                            _liveMss.StartStreaming();
+                            LogLive("[Live MSS Playing] Stream started successfully via MediaStreamSource!");
+                            _liveReconnectCount = 0;
+                            StartPlaybackMonitor();
+                            return;
+                        }
+                        else
+                        {
+                            if (_liveMss != null)
+                            {
+                                try { _liveMss.Dispose(); } catch { }
+                                _liveMss = null;
+                            }
+                        }
                     }
 
                     _liveReconnectCount++;
-                    LogLive("[Live Init Lỗi] Không tải được chunk ban đầu, thử lại lần " + _liveReconnectCount + "/3");
+                    LogLive("[Live MSS Lỗi] Khởi tạo thất bại, thử lại lần " + _liveReconnectCount + "/3");
                     if (_liveReconnectCount < 3 && !ct.IsCancellationRequested)
                     {
                         _currentLiveBaseUrl = null;
-                        _liveBufferCycle++;
-                        _currentLiveBufferIndex = _liveBufferCycle % 3;
-                        buf0File = "temp_live_buf_" + _currentLiveBufferIndex + ".mp4";
                         try { await Task.Delay(1500, ct); } catch { break; }
                     }
                 }
 
-                if (!ct.IsCancellationRequested && initialDownloaded <= 0)
+                if (!ct.IsCancellationRequested)
                 {
                     ReportErrorToUI("Live stream unavailable");
                 }
@@ -1495,10 +1489,18 @@ namespace AudioPlayerTask
                 _isCurrentTrackLive = IsLiveStreamUrl(trackUrl);
                 _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
                 if (_isCurrentTrackLive) try { _liveBaseUrlStopwatch.Restart(); } catch { }
-                if (!_isCurrentTrackLive && _liveCts != null)
+                if (!_isCurrentTrackLive)
                 {
-                    try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
-                    _liveCts = null;
+                    if (_liveMss != null)
+                    {
+                        try { _liveMss.Dispose(); } catch { }
+                        _liveMss = null;
+                    }
+                    if (_liveCts != null)
+                    {
+                        try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
+                        _liveCts = null;
+                    }
                 }
                 if (_currentLoadedVidId != vidId) _liveReconnectCount = 0;
 
@@ -1541,6 +1543,11 @@ namespace AudioPlayerTask
             {
                 string hr = args.ExtendedErrorCode != null ? args.ExtendedErrorCode.HResult.ToString("X") : "unknown";
                 LogLive("[Live Lỗi MediaFailed] 0x" + hr);
+                if (_liveMss != null)
+                {
+                    try { _liveMss.Dispose(); } catch { }
+                    _liveMss = null;
+                }
             }
 
             // [FIX-SOF] Guard against re-entrancy – prevents StackOverflowException
@@ -1787,6 +1794,12 @@ namespace AudioPlayerTask
 
                 if (_isCurrentTrackLive)
                 {
+                    if (_liveMss != null)
+                    {
+                        // LiveMediaStreamSource streams continuously in RAM without any buffer swaps!
+                        return;
+                    }
+
                     double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
                     double duration = _liveBufferDurationSec;
                     try
@@ -2086,6 +2099,16 @@ namespace AudioPlayerTask
 
         private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
         {
+            if (_isCurrentTrackLive && _liveMss != null)
+            {
+                LogLive("[Live MSS MediaEnded] Livestream completed");
+                try { _liveMss.Dispose(); } catch { }
+                _liveMss = null;
+                StopPlaybackMonitor();
+                MoveNext();
+                return;
+            }
+
             if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
             {
                 if (_isCurrentTrackLive)
