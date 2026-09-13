@@ -15,9 +15,9 @@ namespace YTMusicWP.Services
 
         public static async Task InitializeAsync()
         {
+            string dbPath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "YTMusicWP.db3");
             try
             {
-                var dbPath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "YTMusicWP.db3");
                 _db = new SQLiteAsyncConnection(dbPath);
 
                 // Create tables
@@ -27,6 +27,19 @@ namespace YTMusicWP.Services
             catch (Exception ex)
             {
                 Debug.WriteLine("Database Initialize Error: " + ex.Message);
+                try
+                {
+                    _db = null;
+                    var file = await ApplicationData.Current.LocalFolder.GetFileAsync("YTMusicWP.db3");
+                    if (file != null) await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                    _db = new SQLiteAsyncConnection(dbPath);
+                    await _db.CreateTableAsync<HistoryEntity>();
+                    await _db.CreateTableAsync<FavoriteEntity>();
+                }
+                catch (Exception retryEx)
+                {
+                    Debug.WriteLine("Database Recovery Error: " + retryEx.Message);
+                }
             }
         }
 

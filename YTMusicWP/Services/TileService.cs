@@ -692,20 +692,21 @@ namespace YTMusicWP.Services
             if (string.IsNullOrEmpty(url)) return null;
             try
             {
-                byte[] raw = await _httpClient.GetByteArrayAsync(url);
-                if (raw == null || raw.Length == 0) return null;
-
-                byte[] squarePngBytes = null;
-                try
+                using (var netStream = await _httpClient.GetStreamAsync(url))
+                using (var inStream = new InMemoryRandomAccessStream())
                 {
-                    using (var inStream = new InMemoryRandomAccessStream())
+                    using (var outStream = inStream.AsStreamForWrite())
                     {
-                        using (var writer = new DataWriter(inStream.GetOutputStreamAt(0)))
-                        {
-                            writer.WriteBytes(raw);
-                            await writer.StoreAsync();
-                        }
+                        await netStream.CopyToAsync(outStream);
+                        await outStream.FlushAsync();
+                    }
+                    inStream.Seek(0);
+                    if (inStream.Size == 0) return null;
 
+                    var file = await ApplicationData.Current.LocalFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
+
+                    try
+                    {
                         var decoder = await BitmapDecoder.CreateAsync(inStream);
                         uint srcW = decoder.PixelWidth;
                         uint srcH = decoder.PixelHeight;
@@ -738,9 +739,9 @@ namespace YTMusicWP.Services
 
                         byte[] pixels = pixelData.DetachPixelData();
 
-                        using (var outStream = new InMemoryRandomAccessStream())
+                        using (var fileStream = await file.OpenAsync(FileAccessMode.ReadWrite))
                         {
-                            var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, outStream);
+                            var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, fileStream);
                             encoder.SetPixelData(
                                 BitmapPixelFormat.Bgra8,
                                 BitmapAlphaMode.Premultiplied,
@@ -750,29 +751,22 @@ namespace YTMusicWP.Services
                                 96,
                                 pixels);
                             await encoder.FlushAsync();
-
-                            squarePngBytes = new byte[outStream.Size];
-                            using (var reader = new DataReader(outStream.GetInputStreamAt(0)))
-                            {
-                                await reader.LoadAsync((uint)outStream.Size);
-                                reader.ReadBytes(squarePngBytes);
-                            }
                         }
+                        return "ms-appdata:///local/" + fileName;
                     }
-                }
-                catch { }
-
-                var file = await ApplicationData.Current.LocalFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
-                using (var stream = await file.OpenAsync(FileAccessMode.ReadWrite))
-                {
-                    using (var writer = new DataWriter(stream))
+                    catch
                     {
-                        writer.WriteBytes(squarePngBytes ?? raw);
-                        await writer.StoreAsync();
-                        await writer.FlushAsync();
+                        // Fallback: write original stream directly to file if crop fails
+                        inStream.Seek(0);
+                        using (var fileStream = await file.OpenAsync(FileAccessMode.ReadWrite))
+                        using (var fileOut = fileStream.AsStreamForWrite())
+                        {
+                            await inStream.AsStreamForRead().CopyToAsync(fileOut);
+                            await fileOut.FlushAsync();
+                        }
+                        return "ms-appdata:///local/" + fileName;
                     }
                 }
-                return "ms-appdata:///local/" + fileName;
             }
             catch
             {
