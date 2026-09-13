@@ -1112,18 +1112,31 @@ namespace AudioPlayerTask
                     if (startSeq + count - 1 > maxSafeSeq)
                     {
                         int clamped = (int)(maxSafeSeq - startSeq + 1);
-                        if (clamped < count)
+                        if (clamped <= 0)
+                        {
+                            // If caught up to live edge, wait 4s for YouTube to publish the next chunk and re-check
+                            LogLive("[Live Pacing] Chạm mép live (start=" + startSeq + ", head=" + headSeq + "), chờ 4s chunk mới...");
+                            try { await Task.Delay(4000, ct); } catch { return 0; }
+                            headSeq = await GetLatestLiveSeqAsync(baseUrl, ct);
+                            if (headSeq > 0)
+                            {
+                                _currentLiveSeq = headSeq;
+                                maxSafeSeq = headSeq - 1;
+                                clamped = (int)(maxSafeSeq - startSeq + 1);
+                            }
+                        }
+
+                        if (clamped > 0 && clamped < count)
                         {
                             LogLive("[Live Pacing] Clamp count " + count + " -> " + clamped + " (head=" + headSeq + ")");
                             count = clamped;
                         }
+                        else if (clamped <= 0)
+                        {
+                            LogLive("[Live Pacing] Vẫn chưa có chunk mới, hoãn tải");
+                            return 0;
+                        }
                     }
-                }
-
-                if (count <= 0)
-                {
-                    LogLive("[Live Pacing] Chạm mép live, hoãn tải");
-                    return 0;
                 }
 
                 // Download all segments in parallel using Task.WhenAll with semaphore throttling (max 3 concurrent)
@@ -1352,8 +1365,8 @@ namespace AudioPlayerTask
                         LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                     }
 
-                    // 3. Start safely in DVR window (18 segments = 90s behind live edge)
-                    long safetyOffset = 18;
+                    // 3. Start safely in DVR window (30 segments = 150s behind live edge)
+                    long safetyOffset = 30;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
                     if (startSeq <= 0 && _nextLiveStartSeq > 0)
                     {
@@ -1776,32 +1789,23 @@ namespace AudioPlayerTask
                 {
                     double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
                     double duration = _liveBufferDurationSec;
-                    double liveRemaining = -1;
-
                     try
                     {
                         if (_mediaPlayer.NaturalDuration > TimeSpan.Zero)
                         {
                             duration = _mediaPlayer.NaturalDuration.TotalSeconds;
                             _liveBufferDurationSec = duration;
-                            var livePos = _mediaPlayer.Position;
-                            if (livePos <= _mediaPlayer.NaturalDuration)
-                            {
-                                liveRemaining = (_mediaPlayer.NaturalDuration - livePos).TotalSeconds;
-                            }
                         }
                     }
                     catch { }
 
-                    if (liveRemaining < 0 || double.IsNaN(liveRemaining))
-                    {
-                        liveRemaining = duration - elapsed;
-                    }
-
-                    // Pre-emptive swap: trigger when remaining <= 0.25s while next buffer is ready!
-                    // This starts opening the next buffer while current buffer is playing its last milliseconds,
-                    // seamlessly bridging the ~300ms MediaFoundation topology switch latency!
-                    bool nearEnd = (_isNextLiveBufferReady && elapsed >= 3.0 && liveRemaining >= 0 && liveRemaining <= 0.25);
+                    // Hardware AAC stream terminates ~0.55s before nominal MP4 duration due to
+                    // 215-frame chunk quantization (4.992s per chunk) and decoder priming sample trimming.
+                    // The actual audio ends at ~(_liveBufferDurationSec - 0.55s).
+                    // Triggering swap when elapsed reaches (_liveBufferDurationSec - 0.75s) ensures we begin
+                    // loading the next buffer ~200-250ms before audio runs out, perfectly matching the ~270ms
+                    // MediaFoundation pipeline switch latency and completely eliminating the pause/stutter!
+                    bool nearEnd = (_isNextLiveBufferReady && elapsed >= 3.0 && duration > 2.0 && elapsed >= (duration - 0.75));
                     bool finishedBuffer = (elapsed >= 3.0 && (_mediaPlayer.CurrentState == MediaPlayerState.Paused || _mediaPlayer.CurrentState == MediaPlayerState.Stopped));
 
                     // Auto-kickstart if player got stuck in Paused right after buffer swap (< 3s)
@@ -1813,7 +1817,7 @@ namespace AudioPlayerTask
                     if ((nearEnd || finishedBuffer) && !_isLiveSwapping && !_isLiveInitializing && (DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
                     {
                         LogLive("[Live Đổi Buffer] -> buf=" + ((_liveBufferCycle + 1) % 3) + 
-                            " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " rem=" + liveRemaining.ToString("F2") + "s ela=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F1") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
+                            " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " ela=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F1") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
                         SwapToNextLiveBuffer();
                     }
                     else if (!_isNextLiveBufferReady && 
