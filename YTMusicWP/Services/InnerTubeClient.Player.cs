@@ -353,6 +353,7 @@ namespace YTMusicWP
                                     string xml = await dashResp.Content.ReadAsStringAsync();
                                     string dashBaseUrl = ExtractDashAudioBaseUrl(xml);
                                     long latestSeq = ExtractDashLatestSeq(xml);
+                                    xml = null;
                                     if (!string.IsNullOrEmpty(dashBaseUrl))
                                     {
                                         LastResolveDebug += " DASH:s" + latestSeq + ":OK";

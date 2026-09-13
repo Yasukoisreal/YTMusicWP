@@ -701,6 +701,7 @@ namespace AudioPlayerTask
                                             string xml = await dashResp.Content.ReadAsStringAsync();
                                             string dashBaseUrl = ExtractDashAudioBaseUrl(xml);
                                             long latestSeq = ExtractDashLatestSeq(xml);
+                                            xml = null; // Release ~1.5MB XML string immediately from memory
                                             if (!string.IsNullOrEmpty(dashBaseUrl))
                                             {
                                                 _currentLiveBaseUrl = dashBaseUrl;
@@ -708,7 +709,7 @@ namespace AudioPlayerTask
                                                 _isCurrentTrackLive = true;
                                                 try { _liveBaseUrlStopwatch.Restart(); } catch { }
                                                 _innerTubeDebug += " [" + clientName + ":DASH:s" + latestSeq + ":OK]";
-                                                return dashBaseUrl;
+                                                return (latestSeq > 0) ? (dashBaseUrl + "#sq=" + latestSeq) : dashBaseUrl;
                                             }
                                         }
                                     }
@@ -966,6 +967,14 @@ namespace AudioPlayerTask
                     }
                 }
             }
+            catch (System.Net.WebException wex)
+            {
+                var resp = wex.Response as System.Net.HttpWebResponse;
+                if (resp != null && resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    _currentLiveBaseUrl = null; // BaseURL expired (30s TTL)
+                }
+            }
             catch { }
             return -1;
         }
@@ -1005,6 +1014,12 @@ namespace AudioPlayerTask
                 {
                     LogLive("[Live Seg " + seq + " WebEx] code=" + code + " " + wex.Message);
                 }
+                if (code == 403)
+                {
+                    // 30s TTL expired: immediately invalidate BaseURL and abort this segment so caller can refresh URL
+                    _currentLiveBaseUrl = null;
+                    return null;
+                }
             }
             catch { }
 
@@ -1027,9 +1042,17 @@ namespace AudioPlayerTask
                             }
                             return bytes;
                         }
-                        else if (!ct.IsCancellationRequested)
+                        else
                         {
-                            LogLive("[Live Seg " + seq + " HttpErr] code=" + (int)response.StatusCode);
+                            if (response.StatusCode == Windows.Web.Http.HttpStatusCode.Forbidden)
+                            {
+                                _currentLiveBaseUrl = null;
+                                return null;
+                            }
+                            if (!ct.IsCancellationRequested)
+                            {
+                                LogLive("[Live Seg " + seq + " HttpErr] code=" + (int)response.StatusCode);
+                            }
                         }
                     }
                 }
@@ -1318,6 +1341,23 @@ namespace AudioPlayerTask
                     // 3. Start safely in DVR window (12 segments = 60s behind live edge)
                     long safetyOffset = 12;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
+                    if (startSeq <= 0 && _nextLiveStartSeq > 0)
+                    {
+                        startSeq = _nextLiveStartSeq;
+                    }
+
+                    // If still no valid sequence or BaseURL is missing, force a fresh BaseURL resolve
+                    if (startSeq <= 0 || string.IsNullOrEmpty(_currentLiveBaseUrl))
+                    {
+                        await RefreshLiveBaseUrlAsync(vidId, ct, true);
+                        if (!string.IsNullOrEmpty(_currentLiveBaseUrl))
+                        {
+                            headSeq = await GetLatestLiveSeqAsync(_currentLiveBaseUrl, ct);
+                            if (headSeq > 0) _currentLiveSeq = headSeq;
+                        }
+                        startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
+                        if (startSeq <= 0 && _nextLiveStartSeq > 0) startSeq = _nextLiveStartSeq;
+                    }
 
                     LogLive("[Live InitBuf0 Bắt đầu] startSeq=" + startSeq + " (currSeq=" + _currentLiveSeq + ", offset=" + safetyOffset + ")");
                     var dlSw0 = System.Diagnostics.Stopwatch.StartNew();
@@ -1543,14 +1583,18 @@ namespace AudioPlayerTask
             try
             {
                 string line = DateTime.Now.ToString("HH:mm:ss.fff") + " " + msg;
+                System.Diagnostics.Debug.WriteLine(line);
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 string prev = ls.ContainsKey("LiveDebugLog") ? (ls["LiveDebugLog"]?.ToString() ?? "") : "";
                 string updated = line + "\n" + prev;
-                if (updated.Length > 8000) updated = updated.Substring(0, 8000);
+                // WinRT LocalSettings has a strict 4096-byte limit per value.
+                // Cap to 1500 chars (3000 UTF-16 bytes) to never throw WinRT quota exceptions.
+                if (updated.Length > 1500) updated = updated.Substring(0, 1500);
                 ls["LiveDebugLog"] = updated;
             }
             catch { }
-            SendToast(msg);
+            // NOTE: Do NOT call SendToast here — sending rapid IPC messages to foreground
+            // on every live chunk/event crashes Windows.Media.BackgroundPlayback.exe with 0x800703e9 (STATUS_STACK_OVERFLOW).
         }
 
         private void ReportErrorToUI(string errorDetail)
@@ -1736,9 +1780,10 @@ namespace AudioPlayerTask
                              !_isLiveInitializing &&
                              (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && 
                              (DateTime.UtcNow - _lastPreBufferFailureTime).TotalSeconds >= 5.0 &&
-                             elapsed >= Math.Max(2.0, _liveBufferDurationSec - 10.0))
+                             elapsed >= 2.5)
                     {
-                        // Trigger pre-buffering when 10 seconds remain in current buffer (with 5s failure cooldown)
+                        // Ping-pong buffering: trigger pre-buffering early (after 2.5s of steady playback)
+                        // This provides ~17.5 seconds of download runway, ensuring next buffer is 100% ready before swap!
                         PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     return;
@@ -1921,10 +1966,10 @@ namespace AudioPlayerTask
                     }
                     if (_nextLiveBufferTask != null)
                     {
-                        LogLive("[Live Swap] Đang chờ task tải xong (tối đa 5s)...");
+                        LogLive("[Live Swap] Đang chờ task tải xong (tối đa 8s)...");
                         try
                         {
-                            await Task.WhenAny(_nextLiveBufferTask, Task.Delay(5000));
+                            await Task.WhenAny(_nextLiveBufferTask, Task.Delay(8000));
                         }
                         catch { }
                         LogLive("[Live Swap] Chờ xong, ready=" + _isNextLiveBufferReady);
