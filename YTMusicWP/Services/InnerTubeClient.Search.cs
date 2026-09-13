@@ -345,7 +345,7 @@ namespace YTMusicWP
                 if (string.IsNullOrEmpty(t)) continue;
                 
                 string browseTarget = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
-                if (!string.IsNullOrEmpty(browseTarget) && browseTarget.StartsWith("UC"))
+                if (!string.IsNullOrEmpty(browseTarget) && (browseTarget.StartsWith("UC") || browseTarget.StartsWith("MPSP") || browseTarget.StartsWith("FEmusic_podcast")))
                 {
                     artists.Add(t);
                 }
@@ -360,19 +360,52 @@ namespace YTMusicWP
             foreach (var r in runs)
             {
                 string t = r["text"]?.ToString();
-                if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == " & ") continue;
+                if (string.IsNullOrEmpty(t) || t == " • " || t == " · " || t == " & " || t == ", ") continue;
                 
-                string lower = t.ToLowerInvariant();
-                if (lower == "song" || lower == "video" || lower == "artist" || lower == "playlist" || lower == "album" || lower == "ep" || lower == "single") continue;
-                if (lower.Contains(" views") || lower.Contains(" view") || lower.Contains(" lượt phát") || lower.Contains(" lượt xem") || lower.Contains(" views") || lower.Contains(" subscriber") || lower.Contains(" người đăng ký") || lower.Contains(" plays") || lower.Contains(" play") || lower.Contains(" song") || lower.Contains(" bài hát") || lower.Contains(" track")) continue;
+                string lower = t.ToLowerInvariant().Trim();
+                if (lower == "song" || lower == "video" || lower == "artist" || lower == "playlist" || lower == "album" || lower == "ep" || lower == "single" ||
+                    lower == "episode" || lower == "podcast" || lower == "show" || lower == "profile" || lower == "station" ||
+                    lower == "bài hát" || lower == "nghệ sĩ" || lower == "danh sách phát" || lower == "tập" || lower == "tập podcast" || lower == "chương trình" || lower == "hồ sơ")
+                    continue;
+
+                if (lower.Contains(" views") || lower.Contains(" view") || lower.Contains(" lượt phát") || lower.Contains(" lượt xem") ||
+                    lower.Contains(" subscriber") || lower.Contains(" người đăng ký") || lower.Contains(" plays") || lower.Contains(" play") ||
+                    lower.Contains(" song") || lower.Contains(" bài hát") || lower.Contains(" track") || lower.Contains(" người nghe") || lower.Contains(" monthly"))
+                    continue;
+
                 if (t.Length <= 6 && t.Contains(":")) continue; // duration like "3:57"
                 int parsedYear;
                 if (t.Length == 4 && int.TryParse(t, out parsedYear)) continue; // ignore year like "2026"
+                if (IsDateOrRelativeTime(lower)) continue; // ignore dates like "Aug 19", "Oct 17, 2024", "7h ago"
                 
                 return t;
             }
             
             return "";
+        }
+
+        private static bool IsDateOrRelativeTime(string lower)
+        {
+            if (string.IsNullOrEmpty(lower)) return false;
+            if (lower.Contains(" ago") || lower.Contains(" trước")) return true;
+            if (lower.Contains("thg ")) return true;
+
+            // Dates require at least one digit (day, time, or year)
+            bool hasDigit = false;
+            for (int i = 0; i < lower.Length; i++)
+            {
+                if (char.IsDigit(lower[i])) { hasDigit = true; break; }
+            }
+            if (!hasDigit) return false;
+
+            string[] months = new string[] { "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec" };
+            foreach (var m in months)
+            {
+                if (lower.StartsWith(m + " ") || lower.Contains(" " + m + " ") || lower.EndsWith(" " + m))
+                    return true;
+            }
+            if (lower.Contains(", 20") || lower.Contains(", 19")) return true;
+            return false;
         }
 
         /// <summary>
@@ -407,7 +440,7 @@ namespace YTMusicWP
                         if (r["text"]?.ToString() == artist)
                         {
                             string browseTarget = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
-                            if (!string.IsNullOrEmpty(browseTarget) && browseTarget.StartsWith("UC"))
+                            if (!string.IsNullOrEmpty(browseTarget) && (browseTarget.StartsWith("UC") || browseTarget.StartsWith("MPSP") || browseTarget.StartsWith("FEmusic_podcast")))
                             {
                                 channelId = browseTarget;
                             }
@@ -481,6 +514,14 @@ namespace YTMusicWP
             {
                 foreach (var b in badges)
                 {
+                    // Live badge renderer (standard on YouTube Music live streams)
+                    var liveR = b["liveBadgeRenderer"];
+                    if (liveR != null)
+                    {
+                        isLive = true;
+                        break;
+                    }
+
                     var badgeR = b["musicInlineBadgeRenderer"];
                     if (badgeR != null)
                     {
@@ -493,6 +534,10 @@ namespace YTMusicWP
                         }
                     }
                 }
+            }
+            if (!isLive && fullSubtitle != null && (fullSubtitle.StartsWith("LIVE", StringComparison.OrdinalIgnoreCase) || fullSubtitle.StartsWith("Trực tiếp", StringComparison.OrdinalIgnoreCase)))
+            {
+                isLive = true;
             }
 
             // Determine type

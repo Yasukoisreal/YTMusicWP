@@ -478,8 +478,31 @@ namespace YTMusicWP
         {
             if (string.IsNullOrEmpty(name)) return name;
             if (name == "Nghệ sĩ") return "Artist";
-            if (name.EndsWith(" - Topic")) return name.Substring(0, name.Length - 8);
-            if (name.EndsWith(" - Chủ đề")) return name.Substring(0, name.Length - 9);
+            if (name.EndsWith(" - Topic")) name = name.Substring(0, name.Length - 8);
+            else if (name.EndsWith(" - Chủ đề")) name = name.Substring(0, name.Length - 9);
+
+            name = name.Trim();
+            string[] prefixes = new string[] { "📻", "🎙", "🎧", "▶", "🔴" };
+            bool stripped = true;
+            while (stripped && name.Length > 0)
+            {
+                stripped = false;
+                foreach (var p in prefixes)
+                {
+                    if (name.StartsWith(p))
+                    {
+                        name = name.Substring(p.Length).Trim();
+                        stripped = true;
+                        break;
+                    }
+                }
+            }
+
+            if (name.EndsWith(" - Radios", StringComparison.OrdinalIgnoreCase))
+                name = name.Substring(0, name.Length - 9).Trim();
+            else if (name.EndsWith(" - Radio", StringComparison.OrdinalIgnoreCase))
+                name = name.Substring(0, name.Length - 8).Trim();
+
             return name;
         }
 
