@@ -117,6 +117,20 @@ namespace YTMusicWP
                 // [OPT-AV] Load cached avatars from LocalSettings
                 var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
 
+                // [MIGRATION] Purge any poisoned artist channel IDs/avatars from earlier builds
+                int cacheVer = SafeGetInt(localSettings, "AvatarCacheVer", 0);
+                if (cacheVer < 2)
+                {
+                    var keysToRemove = localSettings.Keys
+                        .Where(k => k.StartsWith("AvatarChId_") || k.StartsWith("AvatarCache_"))
+                        .ToList();
+                    foreach (var k in keysToRemove)
+                    {
+                        localSettings.Remove(k);
+                    }
+                    localSettings["AvatarCacheVer"] = 2;
+                }
+
                 foreach (var track in historyTracks)
                 {
                     if (string.IsNullOrEmpty(track.ChannelName) || track.ChannelName == "Unknown") continue;
@@ -186,60 +200,26 @@ namespace YTMusicWP
                                 try
                                 {
                                     if (token.IsCancellationRequested) return;
-                                    var searchResults = await InnerTubeClient.SearchAsync(artist.Title, 5);
-                                    if (token.IsCancellationRequested) return;
-                                    var artistMatch = searchResults.FirstOrDefault(r =>
-                                        r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
-                                        r.Title.Equals(artist.Title, StringComparison.OrdinalIgnoreCase));
+                                    var artistTrack = await InnerTubeClient.FindArtistAsync(artist.Title);
+                                    if (token.IsCancellationRequested || artistTrack == null) return;
 
-                                    if (artistMatch != null)
+                                    string ytmChannelId = artistTrack.ChannelId ?? (artistTrack.VideoId != null ? artistTrack.VideoId.Replace("CHANNEL:", "") : "");
+                                    string avatarUrl = GetArtistAvatar(artistTrack.ThumbnailUrl);
+                                    if (!string.IsNullOrEmpty(avatarUrl) && !string.IsNullOrEmpty(ytmChannelId))
                                     {
-                                        string ytmChannelId = artistMatch.VideoId.Replace("CHANNEL:", "");
-                                        string avatarUrl = GetArtistAvatar(artistMatch.ThumbnailUrl);
-                                        if (!string.IsNullOrEmpty(avatarUrl))
-                                        {
-                                            // Save to cache
-                                            string ck = "AvatarCache_" + artist.Title.ToLowerInvariant();
-                                            string ckId = "AvatarChId_" + artist.Title.ToLowerInvariant();
-                                            localSettings[ck] = avatarUrl;
-                                            localSettings[ckId] = ytmChannelId;
+                                        // Save verified artist channelId & avatar to cache
+                                        string ck = "AvatarCache_" + artist.Title.ToLowerInvariant();
+                                        string ckId = "AvatarChId_" + artist.Title.ToLowerInvariant();
+                                        localSettings[ck] = avatarUrl;
+                                        localSettings[ckId] = ytmChannelId;
 
-                                            if (token.IsCancellationRequested) return;
-                                            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
-                                            {
-                                                artistItems[idx].ThumbnailUrl = avatarUrl;
-                                                artistItems[idx].ChannelId = ytmChannelId;
-                                                artistItems[idx].VideoId = "CHANNEL:" + ytmChannelId;
-                                            });
-                                        }
-                                    }
-                                    else
-                                    {
                                         if (token.IsCancellationRequested) return;
-                                        var searchResults2 = await InnerTubeClient.SearchAsync(artist.Title + " artist", 3);
-                                        if (token.IsCancellationRequested) return;
-                                        var fallbackMatch = searchResults2.FirstOrDefault(r =>
-                                            r.VideoId != null && r.VideoId.StartsWith("CHANNEL:"));
-                                        if (fallbackMatch != null && !string.IsNullOrEmpty(fallbackMatch.ThumbnailUrl))
+                                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
                                         {
-                                            string fallbackAvatar = GetArtistAvatar(fallbackMatch.ThumbnailUrl);
-                                            string ytmChannelId = fallbackMatch.VideoId.Replace("CHANNEL:", "");
-                                            string ck = "AvatarCache_" + artist.Title.ToLowerInvariant();
-                                            string ckId = "AvatarChId_" + artist.Title.ToLowerInvariant();
-                                            localSettings[ck] = fallbackAvatar;
-                                            if (!string.IsNullOrEmpty(ytmChannelId)) localSettings[ckId] = ytmChannelId;
-
-                                            if (token.IsCancellationRequested) return;
-                                            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
-                                            {
-                                                artistItems[idx].ThumbnailUrl = fallbackAvatar;
-                                                if (!string.IsNullOrEmpty(ytmChannelId))
-                                                {
-                                                    artistItems[idx].ChannelId = ytmChannelId;
-                                                    artistItems[idx].VideoId = "CHANNEL:" + ytmChannelId;
-                                                }
-                                            });
-                                        }
+                                            artistItems[idx].ThumbnailUrl = avatarUrl;
+                                            artistItems[idx].ChannelId = ytmChannelId;
+                                            artistItems[idx].VideoId = "CHANNEL:" + ytmChannelId;
+                                        });
                                     }
                                 }
                                 catch { }

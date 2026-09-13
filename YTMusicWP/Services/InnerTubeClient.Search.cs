@@ -22,7 +22,38 @@ namespace YTMusicWP
         public static async Task<List<YouTubeTrack>> SearchAsync(string query, int maxResults = 20, string searchParams = null)
         {
             var result = await SearchWithContinuationAsync(query, maxResults, searchParams);
-            return result?.Tracks ?? new List<YouTubeTrack>();
+            if (result == null) return new List<YouTubeTrack>();
+            var tracks = result.Tracks ?? new List<YouTubeTrack>();
+
+            // Ensure top card (e.g. artist or album) is included at index 0 if it has a valid browseId/videoId
+            if (result.Card != null && !string.IsNullOrEmpty(result.Card.Title))
+            {
+                string bId = result.Card.BrowseId;
+                string vId = result.Card.VideoId;
+                if (string.IsNullOrEmpty(vId) && !string.IsNullOrEmpty(bId))
+                {
+                    if (result.Card.ItemType == "artist" || bId.StartsWith("UC"))
+                        vId = "CHANNEL:" + bId;
+                    else if (result.Card.ItemType == "playlist" || result.Card.ItemType == "album")
+                        vId = "PLAYLIST:" + bId.Replace("VL", "");
+                }
+
+                if (!string.IsNullOrEmpty(vId) && !tracks.Any(t => t.VideoId == vId))
+                {
+                    tracks.Insert(0, new YouTubeTrack
+                    {
+                        VideoId = vId,
+                        Title = result.Card.Title,
+                        ChannelName = result.Card.Title,
+                        ChannelId = bId,
+                        ThumbnailUrl = result.Card.ThumbnailUrl,
+                        Subtitle = result.Card.Subtitle,
+                        ItemType = result.Card.ItemType
+                    });
+                }
+            }
+
+            return tracks;
         }
 
         public static async Task<SearchResult> SearchWithContinuationAsync(string query, int maxResults = 20, string searchParams = null)
@@ -334,6 +365,140 @@ namespace YTMusicWP
             return new SearchResult { Tracks = results, ContinuationToken = nextToken };
         }
 
+        /// <summary>
+        /// Check if a candidate channel/artist title matches the target artist name closely.
+        /// Prevents unrelated TV shows, labels, or collaboration titles from hijacking artist profiles.
+        /// </summary>
+        public static bool IsArtistNameMatch(string candidate, string target)
+        {
+            if (string.IsNullOrWhiteSpace(candidate) || string.IsNullOrWhiteSpace(target))
+                return false;
+
+            candidate = candidate.Trim();
+            target = target.Trim();
+
+            // Exact case-insensitive match (e.g. "Dương Domic" == "dương domic", "Captain Boy" == "CAPTAIN BOY")
+            if (candidate.Equals(target, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Candidate contains Topic suffix or official channel marker (e.g. "Dương Domic - Topic", "Lou Hoàng Official")
+            if (candidate.StartsWith(target + " -", StringComparison.OrdinalIgnoreCase) ||
+                candidate.StartsWith(target + " Official", StringComparison.OrdinalIgnoreCase) ||
+                candidate.StartsWith(target + " Channel", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Target contains artist qualifier
+            if (target.StartsWith(candidate + " -", StringComparison.OrdinalIgnoreCase) ||
+                target.StartsWith(candidate + " Official", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// High-precision artist channel resolver.
+        /// Uses the YouTube Music Artists filter (EgWKAQIgAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D) and Top Card.
+        /// Strictly verifies candidate name matching to prevent false positives.
+        /// </summary>
+        public static async Task<YouTubeTrack> FindArtistAsync(string artistName)
+        {
+            if (string.IsNullOrWhiteSpace(artistName)) return null;
+            artistName = artistName.Trim();
+
+            try
+            {
+                // 1. Primary: Search YouTube Music with the "Artists" filter
+                var artistFilterResult = await SearchWithContinuationAsync(artistName, 5, "EgWKAQIgAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D");
+                if (artistFilterResult != null)
+                {
+                    // Check Top Card first
+                    if (artistFilterResult.Card != null && !string.IsNullOrEmpty(artistFilterResult.Card.BrowseId))
+                    {
+                        if (IsArtistNameMatch(artistFilterResult.Card.Title, artistName))
+                        {
+                            return new YouTubeTrack
+                            {
+                                VideoId = "CHANNEL:" + artistFilterResult.Card.BrowseId,
+                                ChannelId = artistFilterResult.Card.BrowseId,
+                                Title = artistFilterResult.Card.Title,
+                                ChannelName = artistFilterResult.Card.Title,
+                                ThumbnailUrl = artistFilterResult.Card.ThumbnailUrl,
+                                ItemType = "artist"
+                            };
+                        }
+                    }
+
+                    // Check Tracks from the Artists filter
+                    if (artistFilterResult.Tracks != null && artistFilterResult.Tracks.Count > 0)
+                    {
+                        var match = artistFilterResult.Tracks.FirstOrDefault(t =>
+                            t.VideoId != null && t.VideoId.StartsWith("CHANNEL:") &&
+                            IsArtistNameMatch(t.Title, artistName));
+
+                        if (match != null)
+                        {
+                            string chId = match.ChannelId ?? match.VideoId.Replace("CHANNEL:", "");
+                            return new YouTubeTrack
+                            {
+                                VideoId = "CHANNEL:" + chId,
+                                ChannelId = chId,
+                                Title = match.Title,
+                                ChannelName = match.Title,
+                                ThumbnailUrl = match.ThumbnailUrl,
+                                ItemType = "artist"
+                            };
+                        }
+                    }
+                }
+
+                // 2. Secondary: Normal search with Top Card inspection
+                var normalResult = await SearchWithContinuationAsync(artistName, 5, null);
+                if (normalResult != null)
+                {
+                    if (normalResult.Card != null && !string.IsNullOrEmpty(normalResult.Card.BrowseId))
+                    {
+                        if ((normalResult.Card.ItemType == "artist" || normalResult.Card.BrowseId.StartsWith("UC")) &&
+                            IsArtistNameMatch(normalResult.Card.Title, artistName))
+                        {
+                            return new YouTubeTrack
+                            {
+                                VideoId = "CHANNEL:" + normalResult.Card.BrowseId,
+                                ChannelId = normalResult.Card.BrowseId,
+                                Title = normalResult.Card.Title,
+                                ChannelName = normalResult.Card.Title,
+                                ThumbnailUrl = normalResult.Card.ThumbnailUrl,
+                                ItemType = "artist"
+                            };
+                        }
+                    }
+
+                    if (normalResult.Tracks != null && normalResult.Tracks.Count > 0)
+                    {
+                        var match = normalResult.Tracks.FirstOrDefault(t =>
+                            t.VideoId != null && t.VideoId.StartsWith("CHANNEL:") &&
+                            IsArtistNameMatch(t.Title, artistName));
+
+                        if (match != null)
+                        {
+                            string chId = match.ChannelId ?? match.VideoId.Replace("CHANNEL:", "");
+                            return new YouTubeTrack
+                            {
+                                VideoId = "CHANNEL:" + chId,
+                                ChannelId = chId,
+                                Title = match.Title,
+                                ChannelName = match.Title,
+                                ThumbnailUrl = match.ThumbnailUrl,
+                                ItemType = "artist"
+                            };
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
         internal static string ExtractArtistFromRuns(JToken runs)
         {
             if (runs == null || !runs.HasValues) return "";
@@ -437,13 +602,13 @@ namespace YTMusicWP
                 {
                     foreach (var r in runs)
                     {
-                        if (r["text"]?.ToString() == artist)
+                        string rText = r["text"]?.ToString();
+                        string browseTarget = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                        if (!string.IsNullOrEmpty(browseTarget) && (browseTarget.StartsWith("UC") || browseTarget.StartsWith("MPSP") || browseTarget.StartsWith("FEmusic_podcast")))
                         {
-                            string browseTarget = r["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
-                            if (!string.IsNullOrEmpty(browseTarget) && (browseTarget.StartsWith("UC") || browseTarget.StartsWith("MPSP") || browseTarget.StartsWith("FEmusic_podcast")))
-                            {
-                                channelId = browseTarget;
-                            }
+                            channelId = browseTarget;
+                            if (rText == artist) break; // Exact single artist match
+                            // Otherwise keep first artist channelId found
                             break;
                         }
                     }
@@ -603,11 +768,25 @@ namespace YTMusicWP
             {
                 foreach (var mi in menuItems)
                 {
-                    string bId = mi["menuNavigationItemRenderer"]?["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
-                    if (!string.IsNullOrEmpty(bId) && bId.StartsWith("MPTC"))
+                    var nav = mi["menuNavigationItemRenderer"];
+                    if (nav != null)
                     {
-                        creditsBrowseId = bId;
-                        break;
+                        string bId = nav["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                        if (!string.IsNullOrEmpty(bId))
+                        {
+                            if (bId.StartsWith("MPTC"))
+                            {
+                                creditsBrowseId = bId;
+                            }
+                            else if (string.IsNullOrEmpty(channelId) && (bId.StartsWith("UC") || bId.StartsWith("FEmusic_artist")))
+                            {
+                                string iconType = nav["icon"]?["iconType"]?.ToString();
+                                if (iconType == "ARTIST" || bId.StartsWith("UC"))
+                                {
+                                    channelId = bId;
+                                }
+                            }
+                        }
                     }
                 }
             }

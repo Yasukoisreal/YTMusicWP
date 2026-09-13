@@ -148,31 +148,50 @@ namespace YTMusicWP
                 try
                 {
                     var artistResult = await InnerTubeClient.BrowseArtistAsync(channelId);
-                    ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
+                    // Verify that the browsed artist name matches the requested channelName (prevent mismatched show/label channel hijacking)
+                    if (artistResult != null && !string.IsNullOrEmpty(artistResult.Name) && !string.IsNullOrEmpty(channelName))
+                    {
+                        if (!InnerTubeClient.IsArtistNameMatch(artistResult.Name, channelName))
+                        {
+                            // Mismatched channel! Purge poisoned cache and reject
+                            var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                            string ckId = "AvatarChId_" + channelName.ToLowerInvariant();
+                            string ckAv = "AvatarCache_" + channelName.ToLowerInvariant();
+                            if (localSettings.ContainsKey(ckId)) localSettings.Remove(ckId);
+                            if (localSettings.ContainsKey(ckAv)) localSettings.Remove(ckAv);
+
+                            artistResult = null;
+                        }
+                    }
+
+                    if (artistResult != null)
+                    {
+                        ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
+                    }
                 }
                 catch { }
             }
 
-            // Search YouTube Music for artist (preferred when channelId not trusted)
+            // Search YouTube Music for artist using high-precision FindArtistAsync
             if ((tracks == null || tracks.Count == 0) && !string.IsNullOrEmpty(channelName))
             {
                 try
                 {
-                    var searchResults = await InnerTubeClient.SearchAsync(channelName, 10);
-                    var artistMatch = searchResults.FirstOrDefault(r =>
-                        r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
-                        r.Title == channelName); // Exact case-sensitive match
-
-                    // If no exact match, try case-insensitive
-                    if (artistMatch == null)
-                        artistMatch = searchResults.FirstOrDefault(r =>
-                            r.VideoId != null && r.VideoId.StartsWith("CHANNEL:") &&
-                            r.Title.Equals(channelName, StringComparison.OrdinalIgnoreCase));
-
-                    if (artistMatch != null)
+                    var artistMatch = await InnerTubeClient.FindArtistAsync(channelName);
+                    if (artistMatch != null && !string.IsNullOrEmpty(artistMatch.ChannelId))
                     {
-                        string ytmChannelId = artistMatch.VideoId.Replace("CHANNEL:", "");
+                        string ytmChannelId = artistMatch.ChannelId.Replace("CHANNEL:", "");
                         _currentArtistChannelId = ytmChannelId;
+
+                        // Save verified channelId into cache
+                        var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                        localSettings["AvatarChId_" + channelName.ToLowerInvariant()] = ytmChannelId;
+                        if (!string.IsNullOrEmpty(artistMatch.ThumbnailUrl))
+                        {
+                            string av = GetArtistAvatar(artistMatch.ThumbnailUrl);
+                            if (!string.IsNullOrEmpty(av))
+                                localSettings["AvatarCache_" + channelName.ToLowerInvariant()] = av;
+                        }
 
                         var artistResult = await InnerTubeClient.BrowseArtistAsync(ytmChannelId);
                         ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
@@ -181,13 +200,21 @@ namespace YTMusicWP
                 catch { }
             }
 
-            // Fallback to channelId browse
-            if ((tracks == null || tracks.Count == 0) && !string.IsNullOrEmpty(channelId))
+            // Fallback to channelId browse if channelId was not trusted but passed
+            if ((tracks == null || tracks.Count == 0) && !string.IsNullOrEmpty(channelId) && !trustChannelId)
             {
                 try
                 {
                     var artistResult = await InnerTubeClient.BrowseArtistAsync(channelId);
-                    ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
+                    if (artistResult != null && !string.IsNullOrEmpty(artistResult.Name) && !string.IsNullOrEmpty(channelName))
+                    {
+                        if (!InnerTubeClient.IsArtistNameMatch(artistResult.Name, channelName))
+                            artistResult = null;
+                    }
+                    if (artistResult != null)
+                    {
+                        ApplyArtistProfileResult(artistResult, ref tracks, ref albums, ref subscriberCount, ref description, ref avatarUrl);
+                    }
                 }
                 catch { }
             }
