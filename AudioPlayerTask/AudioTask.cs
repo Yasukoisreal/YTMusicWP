@@ -53,6 +53,8 @@ namespace AudioPlayerTask
         private long _currentLiveSeq = -1;
         private long _nextLiveStartSeq = -1;
         private int _currentLiveBufferIndex = 0;
+        private int _liveBufferCycle = 0;
+        private DateTime _lastLiveSwapTime = DateTime.MinValue;
         private bool _isNextLiveBufferReady = false;
         private Task<bool> _nextLiveBufferTask = null;
         private CancellationTokenSource _liveCts = null;
@@ -67,8 +69,8 @@ namespace AudioPlayerTask
         private System.Diagnostics.Stopwatch _liveBaseUrlStopwatch = new System.Diagnostics.Stopwatch();
         private static readonly System.Threading.SemaphoreSlim _liveDownloadSemaphore = new System.Threading.SemaphoreSlim(3, 3);
         private static readonly System.Threading.SemaphoreSlim _liveRefreshSemaphore = new System.Threading.SemaphoreSlim(1, 1);
-        private const int LIVE_INITIAL_SEGMENTS = 4;  // 20s instant start (320KB, parallel download ready in ~1s)
-        private const int LIVE_DEEP_SEGMENTS = 4;     // 20s rolling buffer (320KB, parallel download ready in ~1s, safely within 30s TTL)
+        private const int LIVE_INITIAL_SEGMENTS = 6;  // 30s initial buffer (~480KB)
+        private const int LIVE_DEEP_SEGMENTS = 8;     // 40s rolling buffer (~640KB, downloads in ~1.5s, 35s safe runway)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -1231,7 +1233,8 @@ namespace AudioPlayerTask
             if (_isPreBuffering) return;
             _isPreBuffering = true;
 
-            int nextIndex = 1 - _currentLiveBufferIndex;
+            int nextCycle = _liveBufferCycle + 1;
+            int nextIndex = nextCycle % 3;
             string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
             long startSeq = _nextLiveStartSeq;
             var ct = _liveCts.Token;
@@ -1305,10 +1308,12 @@ namespace AudioPlayerTask
                 var ct = _liveCts.Token;
 
                 _isCurrentTrackLive = true;
-                _currentLiveBufferIndex = 0;
+                _liveBufferCycle++;
+                _currentLiveBufferIndex = _liveBufferCycle % 3;
                 _isNextLiveBufferReady = false;
                 _nextLiveBufferTask = null;
                 _isPreBuffering = false;
+                _lastLiveSwapTime = DateTime.UtcNow;
 
                 try
                 {
@@ -1321,7 +1326,7 @@ namespace AudioPlayerTask
                 _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
                 UpdateSystemMediaControls();
 
-                string buf0File = "temp_live_buf_0.mp4";
+                string buf0File = "temp_live_buf_" + _currentLiveBufferIndex + ".mp4";
                 int initialDownloaded = 0;
 
                 while (!ct.IsCancellationRequested && _liveReconnectCount < 3)
@@ -1347,8 +1352,8 @@ namespace AudioPlayerTask
                         LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                     }
 
-                    // 3. Start safely in DVR window (12 segments = 60s behind live edge)
-                    long safetyOffset = 12;
+                    // 3. Start safely in DVR window (14 segments = 70s behind live edge)
+                    long safetyOffset = 14;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
                     if (startSeq <= 0 && _nextLiveStartSeq > 0)
                     {
@@ -1384,6 +1389,7 @@ namespace AudioPlayerTask
 
                         _liveBufferDurationSec = initialDownloaded * 5.0;
                         _isLiveSwapping = false;
+                        _lastLiveSwapTime = DateTime.UtcNow;
                         try { _liveBufferStopwatch.Restart(); } catch { }
 
                         _mediaPlayer.AutoPlay = true;
@@ -1392,7 +1398,7 @@ namespace AudioPlayerTask
                         try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                         _mediaPlayer.Play();
                         _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
-                        LogLive("[Live Phát Buffer 0] " + initialDownloaded + " chunk (" + _liveBufferDurationSec.ToString("F0") + "s)");
+                        LogLive("[Live Phát Buffer " + _currentLiveBufferIndex + "] " + initialDownloaded + " chunk (" + _liveBufferDurationSec.ToString("F0") + "s)");
 
                         // Start playback monitor timer ONLY after buffer 0 is successfully playing!
                         StartPlaybackMonitor();
@@ -1404,6 +1410,9 @@ namespace AudioPlayerTask
                     if (_liveReconnectCount < 3 && !ct.IsCancellationRequested)
                     {
                         _currentLiveBaseUrl = null;
+                        _liveBufferCycle++;
+                        _currentLiveBufferIndex = _liveBufferCycle % 3;
+                        buf0File = "temp_live_buf_" + _currentLiveBufferIndex + ".mp4";
                         try { await Task.Delay(1500, ct); } catch { break; }
                     }
                 }
@@ -1424,18 +1433,15 @@ namespace AudioPlayerTask
             try
             {
                 var localFolder = ApplicationData.Current.LocalFolder;
-                try
+                for (int i = 0; i < 3; i++)
                 {
-                    var f0 = await localFolder.GetFileAsync("temp_live_buf_0.mp4");
-                    if (f0 != null) await f0.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                    try
+                    {
+                        var f = await localFolder.GetFileAsync("temp_live_buf_" + i + ".mp4");
+                        if (f != null) await f.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                    }
+                    catch { }
                 }
-                catch { }
-                try
-                {
-                    var f1 = await localFolder.GetFileAsync("temp_live_buf_1.mp4");
-                    if (f1 != null) await f1.DeleteAsync(StorageDeleteOption.PermanentDelete);
-                }
-                catch { }
             }
             catch { }
         }
@@ -1768,8 +1774,8 @@ namespace AudioPlayerTask
                 if (_isCurrentTrackLive)
                 {
                     double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
-                    // Swap when buffer has finished playing (elapsed >= duration), OR if player stalled/paused unexpectedly after at least 3 seconds of playback
-                    bool nearEnd = (_liveBufferDurationSec > 1.0 && elapsed >= _liveBufferDurationSec);
+                    // Trigger swap 0.2s before buffer end to hide topology change latency and eliminate the 0.2s stutter
+                    bool nearEnd = (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 0.2));
                     bool finishedBuffer = (_liveBufferDurationSec > 1.0 && elapsed >= 3.0 && (_mediaPlayer.CurrentState == MediaPlayerState.Paused || _mediaPlayer.CurrentState == MediaPlayerState.Stopped));
 
                     // Auto-kickstart if player got stuck in Paused right after buffer swap (< 3s)
@@ -1778,9 +1784,9 @@ namespace AudioPlayerTask
                         try { _mediaPlayer.Play(); } catch { }
                     }
 
-                    if ((nearEnd || finishedBuffer) && !_isLiveSwapping && !_isLiveInitializing)
+                    if ((nearEnd || finishedBuffer) && !_isLiveSwapping && !_isLiveInitializing && (DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
                     {
-                        LogLive("[Live Đổi Buffer] -> buf=" + (1 - _currentLiveBufferIndex) + " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
+                        LogLive("[Live Đổi Buffer] -> buf=" + ((_liveBufferCycle + 1) % 3) + " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
                         SwapToNextLiveBuffer();
                     }
                     else if (!_isNextLiveBufferReady && 
@@ -1789,10 +1795,10 @@ namespace AudioPlayerTask
                              !_isLiveInitializing &&
                              (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && 
                              (DateTime.UtcNow - _lastPreBufferFailureTime).TotalSeconds >= 5.0 &&
-                             elapsed >= 2.5)
+                             elapsed >= 4.0)
                     {
-                        // Ping-pong buffering: trigger pre-buffering early (after 2.5s of steady playback)
-                        // This provides ~17.5 seconds of download runway, ensuring next buffer is 100% ready before swap!
+                        // Ping-pong buffering: trigger pre-buffering early (after 4.0s of steady playback)
+                        // With 40s buffer, this provides 36 seconds of download runway!
                         PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     return;
@@ -1958,10 +1964,15 @@ namespace AudioPlayerTask
         private async void SwapToNextLiveBuffer()
         {
             if (!_isCurrentTrackLive || _isLiveSwapping) return;
+            // Prevent double-swap within 2.5 seconds (prevents race between timer and MediaEnded/StateChanged)
+            if ((DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds < 2.5) return;
             _isLiveSwapping = true;
+            _lastLiveSwapTime = DateTime.UtcNow;
+
             try
             {
-                int nextIndex = 1 - _currentLiveBufferIndex;
+                int nextCycle = _liveBufferCycle + 1;
+                int nextIndex = nextCycle % 3;
                 string nextFile = "temp_live_buf_" + nextIndex + ".mp4";
                 LogLive("[Live Swap Bắt đầu] -> buf=" + nextIndex + ", ready=" + _isNextLiveBufferReady + ", elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s");
 
@@ -1987,6 +1998,7 @@ namespace AudioPlayerTask
 
                 if (_isNextLiveBufferReady)
                 {
+                    _liveBufferCycle = nextCycle;
                     _currentLiveBufferIndex = nextIndex;
                     _isNextLiveBufferReady = false;
                     _liveBufferDurationSec = _nextLiveDurationSec > 0 ? _nextLiveDurationSec : (LIVE_DEEP_SEGMENTS * 5.0);
@@ -2004,8 +2016,6 @@ namespace AudioPlayerTask
                             try { _liveBufferStopwatch.Restart(); } catch { }
                             LogLive("[Live Swap Thành công] buf=" + nextIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s)");
                             _liveReconnectCount = 0;
-
-                            // Pacing: PlaybackMonitor will trigger PreBufferNextLiveChunkAsync when remaining duration is <= 12s.
                             return;
                         }
                         catch (Exception ex)
@@ -2050,8 +2060,15 @@ namespace AudioPlayerTask
                 if (_isCurrentTrackLive)
                 {
                     LogLive("[Live MediaEnded] elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s");
+                    if ((DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
+                    {
+                        SwapToNextLiveBuffer();
+                    }
                 }
-                SwapToNextLiveBuffer();
+                else
+                {
+                    SwapToNextLiveBuffer();
+                }
                 return;
             }
 
@@ -2093,6 +2110,15 @@ namespace AudioPlayerTask
                 {
                     if (_isCurrentTrackLive)
                     {
+                        double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
+                        // Immediate swap when player pauses near end of buffer! Eliminates 250ms waiting for MediaEnded!
+                        if (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 1.5) &&
+                            !_isLiveSwapping && !_isLiveInitializing && (DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
+                        {
+                            LogLive("[Live State Paused Swap] elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s");
+                            SwapToNextLiveBuffer();
+                            return;
+                        }
                         try { _liveBufferStopwatch.Stop(); } catch { }
                     }
 
