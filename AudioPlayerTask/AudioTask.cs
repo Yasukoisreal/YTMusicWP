@@ -922,6 +922,7 @@ namespace AudioPlayerTask
                     long freshHead = await GetLatestLiveSeqAsync(freshUrl, ct);
                     if (freshHead > 0 && freshHead > _currentLiveSeq) _currentLiveSeq = freshHead;
                     LogLive("[Live Refresh URL Xong] URL mới seq=" + _currentLiveSeq);
+                    try { GC.Collect(); } catch { }
                     return freshUrl;
                 }
             }

@@ -203,22 +203,22 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    // 1. Flow control: Maintain ~18-22s buffer in RAM (~750 - 950 samples).
-                    // When buffer is full (>= 850 samples), wait 1.5s to let playback drain audio naturally.
+                    // 1. Flow control: Maintain ~15-18s buffer in RAM (~600 - 750 samples).
+                    // When buffer is full (>= 700 samples), wait 1.5s to let playback drain audio naturally.
                     int count = 0;
                     lock (_queueLock) { count = _sampleQueue.Count; }
 
-                    if (count >= 850)
+                    if (count >= 700)
                     {
                         await Task.Delay(1500, token);
                         continue;
                     }
 
                     // 2. BaseURL maintenance:
-                    // Google Video unauthenticated live BaseURLs expire in ~30s on CDN.
-                    // Proactively refresh BaseURL every 20s, or immediately if invalidated.
+                    // YouTube Live BaseURLs are valid for several hours.
+                    // Proactively refresh only after 30 minutes, or immediately if invalidated (on 403).
                     bool needRefresh = string.IsNullOrEmpty(_currentBaseUrl) ||
-                                       _baseUrlStopwatch.Elapsed.TotalSeconds >= 20.0;
+                                       _baseUrlStopwatch.Elapsed.TotalMinutes >= 30.0;
 
                     if (needRefresh && _refreshBaseUrlFunc != null)
                     {
@@ -270,8 +270,14 @@ namespace AudioPlayerTask
                                 Log("WARNING: Chunk seq=" + targetSeq + " only had " + parsed + " samples (expected ~216). BaseURL itag may be wrong!");
                             }
 
+                            // Periodically trigger GC every 8 chunks (~40s) to reclaim native COM wrappers and prevent OOM
+                            if (_nextSequence % 8 == 0)
+                            {
+                                try { GC.Collect(); } catch { }
+                            }
+
                             lock (_queueLock) { count = _sampleQueue.Count; }
-                            if (count >= 450)
+                            if (count >= 400)
                             {
                                 await Task.Delay(150, token);
                             }
