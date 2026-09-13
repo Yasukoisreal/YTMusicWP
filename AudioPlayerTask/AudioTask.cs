@@ -998,14 +998,22 @@ namespace AudioPlayerTask
             {
                 var req = System.Net.WebRequest.CreateHttp(segUrl);
                 req.Method = "GET";
+                try { req.Headers["User-Agent"] = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip"; } catch { }
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(4000);
+                    timeoutCts.CancelAfter(5000);
                     using (timeoutCts.Token.Register(() => { try { req.Abort(); } catch { } }))
                     using (var resp = (System.Net.HttpWebResponse)await req.GetResponseAsync())
                     {
                         if (resp.StatusCode == System.Net.HttpStatusCode.OK)
                         {
+                            string headSeqStr = resp.Headers["X-Head-Seqnum"] ?? resp.Headers["X-Sequence-Num"];
+                            long hSeq;
+                            if (!string.IsNullOrEmpty(headSeqStr) && long.TryParse(headSeqStr, out hSeq))
+                            {
+                                if (hSeq > _currentLiveSeq) _currentLiveSeq = hSeq;
+                            }
+
                             using (var respStream = resp.GetResponseStream())
                             using (var ms = new MemoryStream())
                             {
@@ -1026,7 +1034,7 @@ namespace AudioPlayerTask
                 }
                 if (code == 403)
                 {
-                    // 30s TTL expired: immediately invalidate BaseURL and abort this segment so caller can refresh URL
+                    // Invalidate BaseURL so caller can refresh URL
                     _currentLiveBaseUrl = null;
                     return null;
                 }
@@ -1037,13 +1045,24 @@ namespace AudioPlayerTask
             try
             {
                 var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl));
+                request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(4000);
+                    timeoutCts.CancelAfter(5000);
                     using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                     {
                         if (response.IsSuccessStatusCode)
                         {
+                            string headSeqStr;
+                            if ((response.Headers.TryGetValue("X-Head-Seqnum", out headSeqStr) || response.Headers.TryGetValue("X-Sequence-Num", out headSeqStr)) && !string.IsNullOrEmpty(headSeqStr))
+                            {
+                                long hSeq;
+                                if (long.TryParse(headSeqStr, out hSeq) && hSeq > _currentLiveSeq)
+                                {
+                                    _currentLiveSeq = hSeq;
+                                }
+                            }
+
                             var buffer = await response.Content.ReadAsBufferAsync().AsTask(timeoutCts.Token);
                             byte[] bytes = new byte[buffer.Length];
                             using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(buffer))
@@ -1363,8 +1382,8 @@ namespace AudioPlayerTask
                         LogLive("[Live HEAD] seq=" + _currentLiveSeq);
                     }
 
-                    // 3. Start safely in DVR window: 3 chunks = 15s behind live edge for low delay
-                    long safetyOffset = 3;
+                    // 3. Start safely in DVR window: 5 chunks = ~25s behind live edge for stable playback without live edge collision
+                    long safetyOffset = 5;
                     long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
 
                     // If still no valid sequence or BaseURL is missing, force a fresh BaseURL resolve
@@ -1388,6 +1407,8 @@ namespace AudioPlayerTask
                             startSeq,
                             DownloadLiveSegmentWithRetryAsync,
                             (v, c) => RefreshLiveBaseUrlAsync(v, c, true),
+                            () => _currentLiveSeq,
+                            (u, c) => GetLatestLiveSeqAsync(u, c),
                             LogLive);
 
                         bool preloaded = await _liveMss.PreloadInitialChunksAsync(ct);

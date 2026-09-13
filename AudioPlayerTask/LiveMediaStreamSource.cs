@@ -20,6 +20,8 @@ namespace AudioPlayerTask
     {
         public delegate Task<byte[]> DownloadSegmentDelegate(string baseUrl, long seq, CancellationToken ct);
         public delegate Task<string> RefreshBaseUrlDelegate(string vidId, CancellationToken ct);
+        public delegate Task<long> QueryHeadSeqDelegate(string baseUrl, CancellationToken ct);
+        public delegate long GetCachedHeadSeqDelegate();
 
         private static readonly byte[] BOX_TRUN = new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'n' };
         private static readonly byte[] BOX_MDAT = new byte[] { (byte)'m', (byte)'d', (byte)'a', (byte)'t' };
@@ -32,6 +34,7 @@ namespace AudioPlayerTask
 
         private long _sampleIndex = 0;
         private long _nextSequence = 0;
+        private long _lastKnownHeadSeq = 0;
         private string _videoId;
         private string _currentBaseUrl;
         private Stopwatch _baseUrlStopwatch = new Stopwatch();
@@ -42,6 +45,8 @@ namespace AudioPlayerTask
 
         private readonly DownloadSegmentDelegate _downloadFunc;
         private readonly RefreshBaseUrlDelegate _refreshBaseUrlFunc;
+        private readonly GetCachedHeadSeqDelegate _getCachedHeadSeqFunc;
+        private readonly QueryHeadSeqDelegate _queryHeadSeqFunc;
         private readonly Action<string> _logFunc;
 
         public MediaStreamSource StreamSource { get { return _mss; } }
@@ -64,6 +69,8 @@ namespace AudioPlayerTask
             long startSeq,
             DownloadSegmentDelegate downloadFunc,
             RefreshBaseUrlDelegate refreshBaseUrlFunc,
+            GetCachedHeadSeqDelegate getCachedHeadSeqFunc,
+            QueryHeadSeqDelegate queryHeadSeqFunc,
             Action<string> logFunc = null)
         {
             _videoId = videoId;
@@ -71,7 +78,13 @@ namespace AudioPlayerTask
             _nextSequence = startSeq;
             _downloadFunc = downloadFunc;
             _refreshBaseUrlFunc = refreshBaseUrlFunc;
+            _getCachedHeadSeqFunc = getCachedHeadSeqFunc;
+            _queryHeadSeqFunc = queryHeadSeqFunc;
             _logFunc = logFunc;
+            if (_getCachedHeadSeqFunc != null)
+            {
+                try { _lastKnownHeadSeq = _getCachedHeadSeqFunc(); } catch { }
+            }
             _baseUrlStopwatch.Restart();
 
             // Native WinRT AAC-ADTS stream descriptor at standard 44.1kHz Stereo 128kbps
@@ -98,6 +111,15 @@ namespace AudioPlayerTask
         private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
             Log("Mss_Starting -> SetActualStartPosition(Zero)");
+            lock (_queueLock)
+            {
+                if (_pendingDeferral != null)
+                {
+                    try { _pendingDeferral.Complete(); } catch { }
+                    _pendingDeferral = null;
+                    _pendingRequest = null;
+                }
+            }
             args.Request.SetActualStartPosition(TimeSpan.Zero);
         }
 
@@ -114,7 +136,13 @@ namespace AudioPlayerTask
                     return;
                 }
 
-                // Buffer is temporarily empty: defer request until next chunk arrives
+                // Buffer is temporarily empty: safely complete previous deferral if any exists
+                if (_pendingDeferral != null)
+                {
+                    try { _pendingDeferral.Complete(); } catch { }
+                    _pendingDeferral = null;
+                    _pendingRequest = null;
+                }
                 _pendingDeferral = request.GetDeferral();
                 _pendingRequest = request;
             }
@@ -151,9 +179,11 @@ namespace AudioPlayerTask
                     int parsed0 = ParseAndEnqueueChunk(bytesArr[0]);
                     int parsed1 = ParseAndEnqueueChunk(bytesArr[1]);
 
+                    if (parsed0 > 0) _nextSequence++;
+                    if (parsed1 > 0) _nextSequence++;
+
                     if (parsed0 > 0 || parsed1 > 0)
                     {
-                        _nextSequence += 2;
                         Log("Preload done: parsed " + (parsed0 + parsed1) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
                         return true;
                     }
@@ -167,7 +197,7 @@ namespace AudioPlayerTask
         }
 
         /// <summary>
-        /// Starts background download loop that keeps ~10s buffer ahead of playback.
+        /// Starts background download loop that keeps ~15-22s buffer ahead of playback.
         /// </summary>
         public void StartStreaming()
         {
@@ -184,20 +214,19 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    // Flow control: keep 300 to 500 samples (~7s - 12s) in queue.
-                    // This keeps latency low (~15-20s) while preventing overrun against YouTube live edge.
+                    // 1. Flow control: Maintain 600 - 950 samples (~14s - 22s) in RAM buffer.
+                    // When buffer is full (>= 900 samples), wait 1.5s to let playback drain samples naturally.
                     int count = 0;
                     lock (_queueLock) { count = _sampleQueue.Count; }
 
-                    if (count > 450)
+                    if (count >= 900)
                     {
-                        await Task.Delay(1000, token);
+                        await Task.Delay(1500, token);
                         continue;
                     }
 
-                    // BaseURL TTL guard: unauthenticated YouTube live BaseURLs expire in 30s.
-                    // Refresh BaseURL proactively when it is >= 15s old.
-                    if (string.IsNullOrEmpty(_currentBaseUrl) || _baseUrlStopwatch.Elapsed.TotalSeconds >= 15.0)
+                    // 2. BaseURL check: Only refresh if BaseURL was invalidated (e.g. 403 Forbidden).
+                    if (string.IsNullOrEmpty(_currentBaseUrl))
                     {
                         if (_refreshBaseUrlFunc != null)
                         {
@@ -207,20 +236,47 @@ namespace AudioPlayerTask
                                 if (!string.IsNullOrEmpty(freshUrl))
                                 {
                                     _currentBaseUrl = freshUrl;
-                                    _baseUrlStopwatch.Restart();
-                                    Log("BaseURL refreshed proactively");
+                                    Log("BaseURL refreshed successfully");
                                 }
                             }
                             catch { }
                         }
+
+                        if (string.IsNullOrEmpty(_currentBaseUrl))
+                        {
+                            await Task.Delay(2000, token);
+                            continue;
+                        }
                     }
 
-                    if (string.IsNullOrEmpty(_currentBaseUrl))
+                    // 3. Live Edge Pacing Guard:
+                    // Segments cannot be downloaded before YouTube encodes/publishes them.
+                    long cachedHead = _getCachedHeadSeqFunc != null ? _getCachedHeadSeqFunc() : -1;
+                    if (cachedHead > _lastKnownHeadSeq) _lastKnownHeadSeq = cachedHead;
+
+                    // If _nextSequence is at or past known head, query YouTube for latest published head
+                    if (_nextSequence > _lastKnownHeadSeq)
                     {
-                        await Task.Delay(1500, token);
+                        if (_queryHeadSeqFunc != null)
+                        {
+                            long freshHead = await _queryHeadSeqFunc(_currentBaseUrl, token);
+                            if (freshHead > 0)
+                            {
+                                _lastKnownHeadSeq = freshHead;
+                            }
+                        }
+                    }
+
+                    // If still past head, wait 2.5s for YouTube to publish the chunk.
+                    // Playback continues smoothly from the 15-20s buffer in RAM.
+                    if (_lastKnownHeadSeq > 0 && _nextSequence > _lastKnownHeadSeq)
+                    {
+                        Log("At live edge (next=" + _nextSequence + ", head=" + _lastKnownHeadSeq + ", buffered=" + BufferedSeconds.ToString("F1") + "s). Waiting 2.5s...");
+                        await Task.Delay(2500, token);
                         continue;
                     }
 
+                    // 4. Download segment
                     long targetSeq = _nextSequence;
                     byte[] chunkBytes = await _downloadFunc(_currentBaseUrl, targetSeq, token);
 
@@ -230,30 +286,22 @@ namespace AudioPlayerTask
                         if (parsed > 0)
                         {
                             _nextSequence++;
+                            lock (_queueLock) { count = _sampleQueue.Count; }
+                            if (count >= 450)
+                            {
+                                await Task.Delay(200, token);
+                            }
                         }
                         else
                         {
-                            // Could not parse samples (corrupted or empty)
-                            await Task.Delay(500, token);
+                            Log("Parse returned 0 samples for seq=" + targetSeq);
+                            await Task.Delay(1000, token);
                         }
                     }
                     else
                     {
-                        // Download returned null (403 Forbidden or caught up to live edge)
-                        Log("Download returned null for seq=" + targetSeq + ", waiting 1.5s...");
-                        if (_refreshBaseUrlFunc != null)
-                        {
-                            try
-                            {
-                                string freshUrl = await _refreshBaseUrlFunc(_videoId, token);
-                                if (!string.IsNullOrEmpty(freshUrl))
-                                {
-                                    _currentBaseUrl = freshUrl;
-                                    _baseUrlStopwatch.Restart();
-                                }
-                            }
-                            catch { }
-                        }
+                        // Download returned null (BaseURL expired or transient network error)
+                        Log("Download returned null for seq=" + targetSeq + ", waiting 1.5s (buffered=" + BufferedSeconds.ToString("F1") + "s)...");
                         await Task.Delay(1500, token);
                     }
                 }
