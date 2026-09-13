@@ -878,7 +878,7 @@
                         </StackPanel>
 
                         <!-- ═══════ DYNAMIC HOME SECTIONS ═══════ -->
-                        <ListView x:Name="HomeDynamicSections" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" ItemTemplateSelector="{StaticResource HomeSectionSelector}">
+                        <ListView x:Name="HomeDynamicSections" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" ItemTemplateSelector="{StaticResource HomeSectionSelector}" VirtualizingStackPanel.VirtualizationMode="Recycling">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Padding" Value="0"/>
@@ -889,7 +889,7 @@
                         </ListView>
 
                         <!-- ═══════ MOODS & GENRES ═══════ -->
-                        <ListView x:Name="MoodsGenresListView" Visibility="Collapsed" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="10,20,0,30">
+                        <ListView x:Name="MoodsGenresListView" Visibility="Collapsed" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="10,20,0,30" VirtualizingStackPanel.VirtualizationMode="Recycling">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Padding" Value="0"/>
