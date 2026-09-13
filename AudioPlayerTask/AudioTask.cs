@@ -697,7 +697,7 @@ namespace AudioPlayerTask
                                 {
                                     var dashReq = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(dashUrl));
                                     dashReq.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
-                                    using (var dashResp = await _httpClient.SendRequestAsync(dashReq, Windows.Web.Http.HttpCompletionOption.ResponseHeadersRead))
+                                    using (var dashResp = await _httpClient.SendRequestAsync(dashReq))
                                     {
                                         if (dashResp.IsSuccessStatusCode)
                                         {
@@ -834,51 +834,30 @@ namespace AudioPlayerTask
         {
             try
             {
-                using (var inputStream = await resp.Content.ReadAsInputStreamAsync())
-                using (var stream = inputStream.AsStreamForRead())
+                string xml = await resp.Content.ReadAsStringAsync();
+                if (string.IsNullOrEmpty(xml)) return null;
+
+                // Priority 1: itag 140 (AAC 44.1kHz Stereo 128kbps) - REQUIRED for LiveMediaStreamSource
+                int idx = xml.IndexOf("id=\"140\"", StringComparison.OrdinalIgnoreCase);
+                if (idx < 0)
                 {
-                    byte[] buf = new byte[8192];
-                    var sb = new System.Text.StringBuilder();
-                    int bytesRead;
-                    while ((bytesRead = await stream.ReadAsync(buf, 0, buf.Length)) > 0)
+                    idx = xml.IndexOf("id=\"139\"", StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (idx >= 0)
+                {
+                    int bStart = xml.IndexOf("<BaseURL", idx, StringComparison.OrdinalIgnoreCase);
+                    if (bStart >= 0)
                     {
-                        string chunk = System.Text.Encoding.UTF8.GetString(buf, 0, bytesRead);
-                        sb.Append(chunk);
-                        string full = sb.ToString();
-
-                        int idx = full.IndexOf("id=\"140\"", StringComparison.OrdinalIgnoreCase);
-                        if (idx < 0) idx = full.IndexOf("id=\"139\"", StringComparison.OrdinalIgnoreCase);
-
-                        if (idx >= 0)
+                        int bContentStart = xml.IndexOf('>', bStart);
+                        if (bContentStart >= 0)
                         {
-                            int bStart = full.IndexOf("<BaseURL", idx, StringComparison.OrdinalIgnoreCase);
-                            if (bStart >= 0)
+                            bContentStart++;
+                            int bEnd = xml.IndexOf("</BaseURL>", bContentStart, StringComparison.OrdinalIgnoreCase);
+                            if (bEnd > bContentStart)
                             {
-                                int bContentStart = full.IndexOf('>', bStart);
-                                if (bContentStart >= 0)
-                                {
-                                    bContentStart++;
-                                    int bEnd = full.IndexOf("</BaseURL>", bContentStart, StringComparison.OrdinalIgnoreCase);
-                                    if (bEnd > bContentStart)
-                                    {
-                                        string url = full.Substring(bContentStart, bEnd - bContentStart).Trim();
-                                        return url.Replace("&amp;", "&");
-                                    }
-                                }
-                            }
-                        }
-
-                        if (sb.Length > 32768)
-                        {
-                            int keepIdx = full.LastIndexOf("id=\"140\"", StringComparison.OrdinalIgnoreCase);
-                            if (keepIdx < 0) keepIdx = full.LastIndexOf("id=\"139\"", StringComparison.OrdinalIgnoreCase);
-                            if (keepIdx > 0 && keepIdx < sb.Length)
-                            {
-                                sb.Remove(0, keepIdx);
-                            }
-                            else if (keepIdx < 0)
-                            {
-                                sb.Remove(0, 16384);
+                                string url = xml.Substring(bContentStart, bEnd - bContentStart).Trim();
+                                return url.Replace("&amp;", "&");
                             }
                         }
                     }
@@ -940,6 +919,8 @@ namespace AudioPlayerTask
                     if (sqIdx >= 0) freshUrl = freshUrl.Substring(0, sqIdx);
                     _currentLiveBaseUrl = freshUrl;
                     try { _liveBaseUrlStopwatch.Restart(); } catch { }
+                    long freshHead = await GetLatestLiveSeqAsync(freshUrl, ct);
+                    if (freshHead > 0 && freshHead > _currentLiveSeq) _currentLiveSeq = freshHead;
                     LogLive("[Live Refresh URL Xong] URL mới seq=" + _currentLiveSeq);
                     return freshUrl;
                 }
@@ -1002,7 +983,7 @@ namespace AudioPlayerTask
                 try { req.Headers["User-Agent"] = "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip"; } catch { }
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(5000);
+                    timeoutCts.CancelAfter(3500);
                     using (timeoutCts.Token.Register(() => { try { req.Abort(); } catch { } }))
                     using (var resp = (System.Net.HttpWebResponse)await req.GetResponseAsync())
                     {
@@ -1049,7 +1030,7 @@ namespace AudioPlayerTask
                 request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
                 using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                 {
-                    timeoutCts.CancelAfter(5000);
+                    timeoutCts.CancelAfter(3500);
                     using (var response = await _httpClient.SendRequestAsync(request).AsTask(timeoutCts.Token))
                     {
                         if (response.IsSuccessStatusCode)

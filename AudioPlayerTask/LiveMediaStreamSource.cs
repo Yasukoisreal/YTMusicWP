@@ -203,14 +203,14 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    // 1. Flow control: Maintain ~20-25s buffer in RAM (~850 - 1100 samples).
-                    // When buffer is full (>= 1000 samples), wait 2.0s to let playback drain audio naturally.
+                    // 1. Flow control: Maintain ~18-22s buffer in RAM (~750 - 950 samples).
+                    // When buffer is full (>= 850 samples), wait 1.5s to let playback drain audio naturally.
                     int count = 0;
                     lock (_queueLock) { count = _sampleQueue.Count; }
 
-                    if (count >= 1000)
+                    if (count >= 850)
                     {
-                        await Task.Delay(2000, token);
+                        await Task.Delay(1500, token);
                         continue;
                     }
 
@@ -241,8 +241,18 @@ namespace AudioPlayerTask
                         continue;
                     }
 
-                    // 3. Download segment
+                    // 3. Live Edge Collision Guard:
+                    // If targetSeq has caught up to the broadcast live edge, pause 1.5s to allow YouTube's encoder to publish it.
                     long targetSeq = _nextSequence;
+                    long head = _getCachedHeadSeqFunc != null ? _getCachedHeadSeqFunc() : -1;
+                    if (head > 0 && targetSeq >= head)
+                    {
+                        Log("Near live edge (seq=" + targetSeq + ", head=" + head + "). Waiting 1.5s for encoder...");
+                        await Task.Delay(1500, token);
+                        continue;
+                    }
+
+                    // 4. Download segment
                     byte[] chunkBytes = await _downloadFunc(_currentBaseUrl, targetSeq, token);
 
                     if (chunkBytes != null && chunkBytes.Length > 0)
@@ -251,12 +261,17 @@ namespace AudioPlayerTask
                         if (parsed > 0)
                         {
                             _nextSequence++;
-                            long head = _getCachedHeadSeqFunc != null ? _getCachedHeadSeqFunc() : -1;
+                            head = _getCachedHeadSeqFunc != null ? _getCachedHeadSeqFunc() : -1;
                             long runway = head > 0 ? (head - targetSeq) : -1;
                             Log("Downloaded seq=" + targetSeq + " (" + parsed + " samples, head=" + head + ", runway=" + (runway >= 0 ? runway.ToString() : "?") + " chunks, buffered=" + BufferedSeconds.ToString("F1") + "s)");
 
+                            if (parsed < 180)
+                            {
+                                Log("WARNING: Chunk seq=" + targetSeq + " only had " + parsed + " samples (expected ~216). BaseURL itag may be wrong!");
+                            }
+
                             lock (_queueLock) { count = _sampleQueue.Count; }
-                            if (count >= 500)
+                            if (count >= 450)
                             {
                                 await Task.Delay(150, token);
                             }
