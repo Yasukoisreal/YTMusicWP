@@ -660,6 +660,13 @@
             </DoubleAnimation>
         </Storyboard>
 
+        <!-- Home Pull Spinner Rotation Storyboard -->
+        <Storyboard x:Name="HomePullSpinnerStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="HomePullSpinnerRotate"
+                             Storyboard.TargetProperty="Angle"
+                             From="0" To="360" Duration="0:0:0.85"/>
+        </Storyboard>
+
         <DataTemplate x:Key="QueueItemTemplate">
             <Grid Margin="0,0,0,12" Background="Transparent">
                 <Grid.ColumnDefinitions>
@@ -810,20 +817,39 @@
                 <!-- Music content -->
                 <ScrollViewer x:Name="HomeMusicPanel" VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
                     <Grid x:Name="HomeMusicContentGrid" MinHeight="2000">
-                        <!-- Pull To Refresh Visual Indicator -->
+                        <!-- Pull To Refresh Visual Indicator (Floating Capsule Pill) -->
                         <Border x:Name="HomePullIndicator" Height="60" VerticalAlignment="Top" Margin="0,115,0,0" Opacity="0" IsHitTestVisible="False" Canvas.ZIndex="10">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Grid Width="22" Height="22" Margin="0,0,8,0">
-                                    <Viewbox x:Name="HomePullArrowBox" Width="18" Height="18" RenderTransformOrigin="0.5,0.5">
-                                        <Viewbox.RenderTransform>
-                                            <RotateTransform x:Name="HomePullArrowRotate" Angle="0"/>
-                                        </Viewbox.RenderTransform>
-                                        <Path x:Name="HomePullArrowPath" Data="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" Fill="#888888"/>
-                                    </Viewbox>
-                                    <ProgressRing x:Name="HomePullSpinner" IsActive="False" Visibility="Collapsed" Width="18" Height="18" Foreground="#1DB954"/>
-                                </Grid>
-                                <TextBlock x:Name="HomePullText" Text="Pull to refresh" FontSize="13" FontFamily="{StaticResource MontserratMedium}" Foreground="#888888" VerticalAlignment="Center"/>
-                            </StackPanel>
+                            <Border Background="#252525" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="17" Padding="14,6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <!-- Icon Container -->
+                                    <Grid Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center">
+                                        <!-- Arrow Box (shown when pulling / ready) -->
+                                        <Viewbox x:Name="HomePullArrowBox" Width="16" Height="16" RenderTransformOrigin="0.5,0.5">
+                                            <Viewbox.RenderTransform>
+                                                <RotateTransform x:Name="HomePullArrowRotate" Angle="0"/>
+                                            </Viewbox.RenderTransform>
+                                            <Path x:Name="HomePullArrowPath" Data="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" Fill="#A0A0A0"/>
+                                        </Viewbox>
+
+                                        <!-- Modern Vector Spinner (Concentric 60fps GPU Arc, Zero Clipping) -->
+                                        <Grid x:Name="HomePullSpinnerGrid" Width="18" Height="18" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                                            <Grid.RenderTransform>
+                                                <RotateTransform x:Name="HomePullSpinnerRotate" Angle="0"/>
+                                            </Grid.RenderTransform>
+                                            <!-- Track -->
+                                            <Ellipse Width="16" Height="16" Stroke="#33FFFFFF" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <!-- 270-degree accent arc -->
+                                            <Path Stroke="#1DB954" StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  Data="M 9,1 A 8,8 0 1,1 1,9"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <TextBlock x:Name="HomePullText" Text="Pull to refresh" FontSize="12" 
+                                               FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" 
+                                               Foreground="#B3B3B3" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
                         </Border>
 
                         <StackPanel Margin="0,175,0,30">

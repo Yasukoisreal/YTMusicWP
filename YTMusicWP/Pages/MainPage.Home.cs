@@ -275,7 +275,8 @@ namespace YTMusicWP
 
         private async Task LoadHomeRecommendations(string filterParams = null)
         {
-            HomeLoading.Visibility = Visibility.Visible;
+            if (!_isRefreshingHome && HomeLoading != null)
+                HomeLoading.Visibility = Visibility.Visible;
 
             // Reset pagination
             _homeContinuationToken = null;
@@ -760,7 +761,7 @@ namespace YTMusicWP
         private bool _isRefreshingHome = false;
         private bool _pullEligible = true;
         private static readonly Windows.UI.Xaml.Media.SolidColorBrush _pullMutedBrush =
-            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 136, 136, 136));
+            new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
 
         private void InitializeHomePullToRefresh()
         {
@@ -954,16 +955,12 @@ namespace YTMusicWP
                     HomeChartsTitle.Visibility = Visibility.Collapsed;
 
                 // 2. Show UI progress indicators
-                if (HomeLoading != null)
-                    HomeLoading.Visibility = Visibility.Visible;
-
                 if (HomePullIndicator != null)
                     HomePullIndicator.Opacity = 1.0;
-                if (HomePullSpinner != null)
-                {
-                    HomePullSpinner.Visibility = Visibility.Visible;
-                    HomePullSpinner.IsActive = true;
-                }
+                if (HomePullSpinnerGrid != null)
+                    HomePullSpinnerGrid.Visibility = Visibility.Visible;
+                if (HomePullSpinnerStoryboard != null)
+                    HomePullSpinnerStoryboard.Begin();
                 if (HomePullArrowBox != null)
                     HomePullArrowBox.Visibility = Visibility.Collapsed;
                 if (HomePullText != null)
@@ -989,11 +986,10 @@ namespace YTMusicWP
                 if (HomeLoading != null)
                     HomeLoading.Visibility = Visibility.Collapsed;
 
-                if (HomePullSpinner != null)
-                {
-                    HomePullSpinner.IsActive = false;
-                    HomePullSpinner.Visibility = Visibility.Collapsed;
-                }
+                if (HomePullSpinnerStoryboard != null)
+                    HomePullSpinnerStoryboard.Stop();
+                if (HomePullSpinnerGrid != null)
+                    HomePullSpinnerGrid.Visibility = Visibility.Collapsed;
                 if (HomePullArrowBox != null)
                     HomePullArrowBox.Visibility = Visibility.Visible;
                 if (HomePullArrowRotate != null)
