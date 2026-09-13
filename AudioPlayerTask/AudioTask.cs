@@ -61,9 +61,10 @@ namespace AudioPlayerTask
         private double _nextLiveDurationSec = 0;
         private bool _isLiveSwapping = false;
         private System.Diagnostics.Stopwatch _liveBufferStopwatch = new System.Diagnostics.Stopwatch();
+        private System.Diagnostics.Stopwatch _liveBaseUrlStopwatch = new System.Diagnostics.Stopwatch();
         private static readonly System.Threading.SemaphoreSlim _liveDownloadSemaphore = new System.Threading.SemaphoreSlim(3, 3);
         private const int LIVE_INITIAL_SEGMENTS = 4;  // 20s instant start (320KB, parallel download ready in ~1s)
-        private const int LIVE_DEEP_SEGMENTS = 4;     // 20s rolling buffer (320KB, parallel download ready in ~1s)
+        private const int LIVE_DEEP_SEGMENTS = 6;     // 30s rolling buffer (480KB, parallel download ready in ~1.5s)
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
         private const int MAX_RETRIES = 4;
@@ -214,6 +215,7 @@ namespace AudioPlayerTask
             _nextLiveDurationSec = 0;
             _isLiveSwapping = false;
             try { _liveBufferStopwatch.Reset(); } catch { }
+            try { _liveBaseUrlStopwatch.Reset(); } catch { }
             try
             {
                 Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = false;
@@ -698,6 +700,7 @@ namespace AudioPlayerTask
                                                 _currentLiveBaseUrl = dashBaseUrl;
                                                 _currentLiveSeq = latestSeq;
                                                 _isCurrentTrackLive = true;
+                                                try { _liveBaseUrlStopwatch.Restart(); } catch { }
                                                 _innerTubeDebug += " [" + clientName + ":DASH:s" + latestSeq + ":OK]";
                                                 return dashBaseUrl;
                                             }
@@ -882,6 +885,31 @@ namespace AudioPlayerTask
             return -1;
         }
 
+        private async Task<string> RefreshLiveBaseUrlAsync(string vidId, CancellationToken ct)
+        {
+            if (string.IsNullOrEmpty(vidId) || ct.IsCancellationRequested) return null;
+            try
+            {
+                LogLive("[Live Refresh URL] Đang lấy BaseURL mới cho " + vidId + "...");
+                _cachedVisitorData = null;
+                string freshUrl = await ResolveViaInnerTubeDirectAsync(vidId);
+                if (!string.IsNullOrEmpty(freshUrl) && IsLiveStreamUrl(freshUrl))
+                {
+                    int sqIdx = freshUrl.IndexOf("#sq=");
+                    if (sqIdx >= 0) freshUrl = freshUrl.Substring(0, sqIdx);
+                    _currentLiveBaseUrl = freshUrl;
+                    try { _liveBaseUrlStopwatch.Restart(); } catch { }
+                    LogLive("[Live Refresh URL Xong] URL mới seq=" + _currentLiveSeq);
+                    return freshUrl;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogLive("[Live Refresh URL Lỗi] " + ex.Message);
+            }
+            return _currentLiveBaseUrl;
+        }
+
         private async Task<long> GetLatestLiveSeqAsync(string baseUrl, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(baseUrl)) return -1;
@@ -1042,6 +1070,30 @@ namespace AudioPlayerTask
 
                 byte[][] segments = await Task.WhenAll(downloadTasks);
                 if (ct.IsCancellationRequested) return 0;
+
+                // If segments failed (likely 403 Forbidden on expired BaseURL), refresh and retry once
+                if (segments == null || segments.Length == 0 || segments[0] == null || segments[0].Length == 0)
+                {
+                    string curVid = (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count)
+                        ? _videoIdList[_currentTrackIndex] : null;
+                    if (!string.IsNullOrEmpty(curVid) && !ct.IsCancellationRequested)
+                    {
+                        LogLive("[Live Assemble] Chunk thất bại (có thể 403), đang refresh BaseURL và thử lại...");
+                        string freshBase = await RefreshLiveBaseUrlAsync(curVid, ct);
+                        if (!string.IsNullOrEmpty(freshBase))
+                        {
+                            baseUrl = freshBase;
+                            for (int i = 0; i < count; i++)
+                            {
+                                long targetSeq = startSeq + i;
+                                downloadTasks[i] = DownloadLiveSegmentWithRetryAsync(baseUrl, targetSeq, ct);
+                            }
+                            segments = await Task.WhenAll(downloadTasks);
+                            if (ct.IsCancellationRequested) return 0;
+                        }
+                    }
+                }
+
                 if (segments == null || segments.Length == 0 || segments[0] == null || segments[0].Length == 0) return 0;
 
                 var localFolder = ApplicationData.Current.LocalFolder;
@@ -1108,7 +1160,7 @@ namespace AudioPlayerTask
 
         private void PreBufferNextLiveChunkAsync(int count = LIVE_DEEP_SEGMENTS)
         {
-            if (!_isCurrentTrackLive || string.IsNullOrEmpty(_currentLiveBaseUrl) || _nextLiveStartSeq <= 0) return;
+            if (!_isCurrentTrackLive || _nextLiveStartSeq <= 0) return;
             if (_liveCts == null || _liveCts.IsCancellationRequested) return;
 
             int nextIndex = 1 - _currentLiveBufferIndex;
@@ -1120,6 +1172,27 @@ namespace AudioPlayerTask
             _isNextLiveBufferReady = false;
             _nextLiveBufferTask = Task.Run(async () =>
             {
+                string curVidId = (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count)
+                    ? _videoIdList[_currentTrackIndex] : null;
+
+                // YouTube enforces a strict 30-second TTL on unauthenticated live BaseURLs.
+                // Refresh BaseURL before prebuffering if current URL is approaching expiry (>= 12s old) or missing.
+                if (string.IsNullOrEmpty(_currentLiveBaseUrl) || 
+                    !_liveBaseUrlStopwatch.IsRunning || 
+                    _liveBaseUrlStopwatch.Elapsed.TotalSeconds >= 12.0)
+                {
+                    if (!string.IsNullOrEmpty(curVidId) && !ct.IsCancellationRequested)
+                    {
+                        await RefreshLiveBaseUrlAsync(curVidId, ct);
+                    }
+                }
+
+                if (string.IsNullOrEmpty(_currentLiveBaseUrl))
+                {
+                    LogLive("[Live PreBuf Lỗi] BaseURL rỗng");
+                    return false;
+                }
+
                 var dlSw = System.Diagnostics.Stopwatch.StartNew();
                 int downloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, count, nextFile, ct);
                 dlSw.Stop();
@@ -1166,14 +1239,26 @@ namespace AudioPlayerTask
             UpdateSystemMediaControls();
 
             // Always discover fresh live edge sequence number via HEAD request
-            if (!string.IsNullOrEmpty(_currentLiveBaseUrl))
+            long headSeq = -1;
+            if (!string.IsNullOrEmpty(_currentLiveBaseUrl) && _liveBaseUrlStopwatch.Elapsed.TotalSeconds < 15.0)
             {
-                long headSeq = await GetLatestLiveSeqAsync(_currentLiveBaseUrl, ct);
-                if (headSeq > 0)
+                headSeq = await GetLatestLiveSeqAsync(_currentLiveBaseUrl, ct);
+            }
+
+            // If headSeq failed or baseUrl is missing/stale (> 15s), refresh BaseURL
+            if (headSeq <= 0)
+            {
+                string freshBase = await RefreshLiveBaseUrlAsync(vidId, ct);
+                if (!string.IsNullOrEmpty(freshBase))
                 {
-                    _currentLiveSeq = headSeq;
-                    LogLive("[Live HEAD] seq=" + _currentLiveSeq);
+                    headSeq = await GetLatestLiveSeqAsync(_currentLiveBaseUrl, ct);
                 }
+            }
+
+            if (headSeq > 0)
+            {
+                _currentLiveSeq = headSeq;
+                LogLive("[Live HEAD] seq=" + _currentLiveSeq);
             }
 
             // Start safely in DVR window (~60 seconds behind live edge)
@@ -1184,7 +1269,7 @@ namespace AudioPlayerTask
             int initialDownloaded = 0;
             LogLive("[Live InitBuf0 Bắt đầu] startSeq=" + startSeq + " (currSeq=" + _currentLiveSeq + ", offset=" + safetyOffset + ")");
             var dlSw0 = System.Diagnostics.Stopwatch.StartNew();
-            if (startSeq > 0)
+            if (startSeq > 0 && !string.IsNullOrEmpty(_currentLiveBaseUrl))
             {
                 initialDownloaded = await AssembleLiveBufferAsync(_currentLiveBaseUrl, startSeq, LIVE_INITIAL_SEGMENTS, buf0File, ct);
             }
@@ -1198,6 +1283,7 @@ namespace AudioPlayerTask
                 {
                     _liveReconnectCount++;
                     _currentLiveSeq = -1;
+                    _currentLiveBaseUrl = null;
                     await Task.Delay(1000);
                     PlayLiveBufferedTrackAsync(vidId);
                 }
@@ -1285,6 +1371,7 @@ namespace AudioPlayerTask
 
                 _isCurrentTrackLive = IsLiveStreamUrl(trackUrl);
                 _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
+                if (_isCurrentTrackLive) try { _liveBaseUrlStopwatch.Restart(); } catch { }
                 if (!_isCurrentTrackLive && _liveCts != null)
                 {
                     try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
@@ -1573,8 +1660,8 @@ namespace AudioPlayerTask
                 if (_isCurrentTrackLive)
                 {
                     double elapsed = _liveBufferStopwatch.Elapsed.TotalSeconds;
-                    // Swap 1.5 seconds before buffer ends, OR if player stalled/paused unexpectedly after at least 3 seconds of playback
-                    bool nearEnd = (_liveBufferDurationSec > 1.0 && elapsed >= (_liveBufferDurationSec - 1.5));
+                    // Swap when buffer has finished playing (elapsed >= duration), OR if player stalled/paused unexpectedly after at least 3 seconds of playback
+                    bool nearEnd = (_liveBufferDurationSec > 1.0 && elapsed >= _liveBufferDurationSec);
                     bool finishedBuffer = (_liveBufferDurationSec > 1.0 && elapsed >= 3.0 && (_mediaPlayer.CurrentState == MediaPlayerState.Paused || _mediaPlayer.CurrentState == MediaPlayerState.Stopped));
 
                     // Auto-kickstart if player got stuck in Paused right after buffer swap (< 3s)
@@ -1588,9 +1675,9 @@ namespace AudioPlayerTask
                         LogLive("[Live Đổi Buffer] -> buf=" + (1 - _currentLiveBufferIndex) + " (nearEnd=" + nearEnd + " fin=" + finishedBuffer + " elapsed=" + elapsed.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s state=" + _mediaPlayer.CurrentState + " ready=" + _isNextLiveBufferReady + ")");
                         SwapToNextLiveBuffer();
                     }
-                    else if (!_isNextLiveBufferReady && (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && elapsed >= Math.Max(2.0, _liveBufferDurationSec - 10.0))
+                    else if (!_isNextLiveBufferReady && (_nextLiveBufferTask == null || _nextLiveBufferTask.IsCompleted) && elapsed >= Math.Max(2.0, _liveBufferDurationSec - 12.0))
                     {
-                        // Trigger pre-buffering when 10 seconds remain in current buffer (or retry if previous attempt failed)
+                        // Trigger pre-buffering when 12 seconds remain in current buffer (or retry if previous attempt failed)
                         PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
                     }
                     return;
@@ -1801,8 +1888,9 @@ namespace AudioPlayerTask
                             _mediaPlayer.Play();
                             try { _liveBufferStopwatch.Restart(); } catch { }
                             LogLive("[Live Swap Thành công] buf=" + nextIndex + " (" + _liveBufferDurationSec.ToString("F0") + "s)");
+                            _liveReconnectCount = 0;
 
-                            // Pacing: PlaybackMonitor will trigger PreBufferNextLiveChunkAsync when remaining duration is <= 10s.
+                            // Pacing: PlaybackMonitor will trigger PreBufferNextLiveChunkAsync when remaining duration is <= 12s.
                             return;
                         }
                         catch (Exception ex)
