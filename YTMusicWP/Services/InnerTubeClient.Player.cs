@@ -1035,6 +1035,194 @@ namespace YTMusicWP
 
             return credits;
         }
+        // ==========================================
+        // REAL COMMENTS SNIPPET (ANDROID CLIENT)
+        // ==========================================
+        public class CommentSnippetResult
+        {
+            public string CommentCountText { get; set; }
+            public string Author { get; set; }
+            public string Text { get; set; }
+        }
+
+        private static readonly Dictionary<string, CommentSnippetResult> _commentSnippetCache = new Dictionary<string, CommentSnippetResult>();
+
+        public static async Task<CommentSnippetResult> GetTopCommentSnippetAsync(string videoId)
+        {
+            if (string.IsNullOrEmpty(videoId)) return null;
+
+            lock (_commentSnippetCache)
+            {
+                if (_commentSnippetCache.ContainsKey(videoId))
+                    return _commentSnippetCache[videoId];
+            }
+
+            try
+            {
+                var body = new JObject
+                {
+                    ["context"] = new JObject
+                    {
+                        ["client"] = new JObject
+                        {
+                            ["clientName"] = "ANDROID",
+                            ["clientVersion"] = "19.09.37",
+                            ["hl"] = CurrentLanguage ?? "en",
+                            ["gl"] = CurrentRegion ?? "US"
+                        }
+                    },
+                    ["videoId"] = videoId
+                };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://www.youtube.com/youtubei/v1/next?prettyPrint=false");
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "com.google.android.youtube/19.09.37");
+
+                string countText = null;
+                string continuationToken = null;
+
+                using (var response = await _client.SendAsync(request))
+                {
+                    if (!response.IsSuccessStatusCode) return null;
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var reader = new System.IO.StreamReader(stream))
+                    using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
+                    {
+                        var data = JObject.Load(jsonReader);
+                        var panels = data["engagementPanels"];
+                        if (panels != null)
+                        {
+                            foreach (var p in panels)
+                            {
+                                var r = p["engagementPanelSectionListRenderer"];
+                                if (r != null && r["panelIdentifier"] != null && r["panelIdentifier"].ToString().IndexOf("comments", StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    countText = r["header"]?["engagementPanelTitleHeaderRenderer"]?["contextualInfo"]?["runs"]?[0]?["text"]?.ToString();
+                                    var content = r["content"]?["sectionListRenderer"];
+                                    if (content != null)
+                                    {
+                                        var secs = content["contents"];
+                                        if (secs != null)
+                                        {
+                                            foreach (var c in secs)
+                                            {
+                                                var itemSec = c["itemSectionRenderer"]?["contents"];
+                                                if (itemSec != null)
+                                                {
+                                                    foreach (var ic in itemSec)
+                                                    {
+                                                        var cont = ic["continuationItemRenderer"];
+                                                        if (cont != null)
+                                                        {
+                                                            continuationToken = cont["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                if (!string.IsNullOrEmpty(continuationToken)) break;
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(continuationToken))
+                {
+                    if (!string.IsNullOrEmpty(countText))
+                    {
+                        var fallback = new CommentSnippetResult { CommentCountText = countText, Author = "", Text = "" };
+                        lock (_commentSnippetCache) { _commentSnippetCache[videoId] = fallback; }
+                        return fallback;
+                    }
+                    return null;
+                }
+
+                // 2. Fetch top comment using continuation token
+                var bodyCont = new JObject
+                {
+                    ["context"] = new JObject
+                    {
+                        ["client"] = new JObject
+                        {
+                            ["clientName"] = "ANDROID",
+                            ["clientVersion"] = "19.09.37",
+                            ["hl"] = CurrentLanguage ?? "en",
+                            ["gl"] = CurrentRegion ?? "US"
+                        }
+                    },
+                    ["continuation"] = continuationToken
+                };
+
+                var reqCont = new HttpRequestMessage(HttpMethod.Post, "https://www.youtube.com/youtubei/v1/next?prettyPrint=false");
+                reqCont.Content = new StringContent(bodyCont.ToString(), System.Text.Encoding.UTF8, "application/json");
+                reqCont.Headers.Add("User-Agent", "com.google.android.youtube/19.09.37");
+
+                string author = "";
+                string topText = "";
+
+                using (var respCont = await _client.SendAsync(reqCont))
+                {
+                    if (!respCont.IsSuccessStatusCode) return null;
+                    using (var stream = await respCont.Content.ReadAsStreamAsync())
+                    using (var reader = new System.IO.StreamReader(stream))
+                    using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
+                    {
+                        var dataCont = JObject.Load(jsonReader);
+                        var endpoints = dataCont["onResponseReceivedEndpoints"];
+                        if (endpoints != null)
+                        {
+                            foreach (var ep in endpoints)
+                            {
+                                var items = ep["reloadContinuationItemsCommand"]?["continuationItems"]
+                                         ?? ep["appendContinuationItemsAction"]?["continuationItems"];
+                                if (items != null)
+                                {
+                                    foreach (var it in items)
+                                    {
+                                        var comm = it["commentThreadRenderer"]?["comment"]?["commentRenderer"];
+                                        if (comm != null)
+                                        {
+                                            author = comm["authorText"]?["simpleText"]?.ToString() ?? "";
+                                            var contentRuns = comm["contentText"]?["runs"];
+                                            if (contentRuns != null)
+                                            {
+                                                var sb = new System.Text.StringBuilder();
+                                                foreach (var run in contentRuns)
+                                                {
+                                                    sb.Append(run["text"]?.ToString() ?? "");
+                                                }
+                                                topText = sb.ToString();
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (!string.IsNullOrEmpty(topText)) break;
+                            }
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(topText) || !string.IsNullOrEmpty(countText))
+                {
+                    var result = new CommentSnippetResult
+                    {
+                        CommentCountText = countText,
+                        Author = author,
+                        Text = topText
+                    };
+                    lock (_commentSnippetCache) { _commentSnippetCache[videoId] = result; }
+                    return result;
+                }
+            }
+            catch { }
+
+            return null;
+        }
     }
 
     public class CaptionTrack

@@ -756,7 +756,7 @@
                     <Border Grid.Column="1" Background="#262626" CornerRadius="14" Padding="12,5" Margin="8,0,0,0" VerticalAlignment="Center" Tapped="PlayAllSection_Tapped" Tag="{Binding}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="▶" FontSize="10" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Phát tất cả" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock Text="Play all" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -952,11 +952,11 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Title}" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="15" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                     <Border Grid.Column="1" Background="#262626" CornerRadius="14" Padding="12,5" Margin="8,0,0,0" VerticalAlignment="Center" Tapped="PlayAllSection_Tapped" Tag="{Binding}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="▶" FontSize="10" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Phát tất cả" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock Text="Play all" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -1027,8 +1027,8 @@
                         <Ellipse Width="8" Height="8" Fill="#111111"/>
                     </Grid>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="KHÁM PHÁ TUẦN NÀY" FontSize="10" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#FFAA88" CharacterSpacing="30"/>
-                        <TextBlock Text="Khám phá các bài hát mới hot nhất tuần trên YouTube Music" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" MaxLines="2" Margin="0,3,0,0"/>
+                        <TextBlock Text="THIS WEEK'S DISCOVERY" FontSize="10" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#FFAA88" CharacterSpacing="30"/>
+                        <TextBlock Text="Check out the hottest new songs this week on YouTube Music" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" MaxLines="2" Margin="0,3,0,0"/>
                     </StackPanel>
                     <Border Grid.Column="2" Width="36" Height="36" CornerRadius="18" Background="#33FFFFFF" VerticalAlignment="Center" Margin="8,0,0,0">
                         <TextBlock Text="→" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>

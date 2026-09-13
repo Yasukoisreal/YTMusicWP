@@ -968,11 +968,11 @@ namespace YTMusicWP
                     string lowerTitle = sectionTitle.ToLowerInvariant();
                     if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("speed dial"))
                         homeSection.Layout = HomeSectionLayout.SpeedDial;
-                    else if (lowerTitle.Contains("bình luận") || lowerTitle.Contains("comment") || lowerTitle.Contains("thảo luận"))
+                    else if (lowerTitle.Contains("bình luận") || lowerTitle.Contains("comment") || lowerTitle.Contains("thảo luận") || lowerTitle.Contains("discussed"))
                         homeSection.Layout = HomeSectionLayout.MostDiscussed;
                     else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn") || lowerTitle.Contains("dần trôi") || lowerTitle.Contains("thước phim"))
                         homeSection.Layout = HomeSectionLayout.LandscapeVideo;
-                    else if (lowerTitle.Contains("đài phát") || lowerTitle.Contains("quick") || lowerTitle.Contains("phối lại") || lowerTitle.Contains("hát lại") || lowerTitle.Contains("thịnh hành") || lowerTitle.Contains("nghe lâu"))
+                    else if (lowerTitle.Contains("đài phát") || lowerTitle.Contains("quick") || lowerTitle.Contains("phối lại") || lowerTitle.Contains("hát lại") || lowerTitle.Contains("thịnh hành") || lowerTitle.Contains("nghe lâu") || lowerTitle.Contains("trending") || lowerTitle.Contains("remix") || lowerTitle.Contains("cover") || lowerTitle.Contains("radio"))
                         homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
 
                     var cItems = carousel["contents"];

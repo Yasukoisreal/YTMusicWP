@@ -1044,8 +1044,8 @@ namespace YTMusicWP
             // If a mood/activity filter is active (e.g. "Relax", "Workout"), don't inject personal speed-dial or library mix
             if (isFilterActive) return;
 
-            // 2. "Phát nhanh" (Speed Dial 3x3 Grid Carousel)
-            bool hasSpeedDial = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial || s.Title.Contains("Phát nhanh"));
+            // 2. "Quick picks" (Speed Dial 3x3 Grid Carousel)
+            bool hasSpeedDial = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial || s.Title.Contains("Quick picks") || s.Title.Contains("Phát nhanh"));
             if (!hasSpeedDial)
             {
                 var dialTracks = new System.Collections.Generic.List<YouTubeTrack>();
@@ -1075,7 +1075,7 @@ namespace YTMusicWP
                 {
                     var speedDial = new YTMusicWP.InnerTubeClient.HomeSection
                     {
-                        Title = "Phát nhanh",
+                        Title = "Quick picks",
                         Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial
                     };
                     int dialTake = Math.Min(18, dialTracks.Count);
@@ -1097,7 +1097,7 @@ namespace YTMusicWP
                 }
             }
 
-            // 3. "Dựa trên thư viện của bạn" (Featured Card with 3 preview tracks + Play, Radio, Save)
+            // 3. "From your library" (Featured Card with 3 preview tracks + Play, Radio, Save)
             bool hasFeatured = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.FeaturedCard);
             if (!hasFeatured)
             {
@@ -1106,9 +1106,9 @@ namespace YTMusicWP
                 {
                     var featSec = new YTMusicWP.InnerTubeClient.HomeSection
                     {
-                        Title = "Các bản nhạc quen thuộc và tương tự",
-                        Subtitle = "Dựa trên những bài hát bạn yêu thích gần đây",
-                        CategoryTag = "DỰA TRÊN THƯ VIỆN CỦA BẠN",
+                        Title = "Familiar and similar favorites",
+                        Subtitle = "Based on songs you recently loved",
+                        CategoryTag = "FROM YOUR LIBRARY",
                         Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.FeaturedCard,
                         FeaturedCoverUrl = libraryPool[0].ThumbnailUrl
                     };
@@ -1121,8 +1121,8 @@ namespace YTMusicWP
                 }
             }
 
-            // 4. "Bản nhạc có nhiều bình luận nhất" (Most Discussed Tracks)
-            bool hasDiscussed = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.MostDiscussed || s.Title.Contains("bình luận"));
+            // 4. "Most discussed tracks" (Most Discussed Tracks with Real YouTube Comments)
+            bool hasDiscussed = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.MostDiscussed || s.Title.Contains("discussed") || s.Title.Contains("bình luận"));
             if (!hasDiscussed)
             {
                 var candidateTracks = sections.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t) && !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:")).Take(6).ToList();
@@ -1130,21 +1130,10 @@ namespace YTMusicWP
                 {
                     var discussedSec = new YTMusicWP.InnerTubeClient.HomeSection
                     {
-                        Title = "Bản nhạc có nhiều bình luận nhất",
+                        Title = "Most discussed tracks",
                         Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.MostDiscussed
                     };
-                    string[] sampleComments = new string[]
-                    {
-                        "Giai điệu cuốn dã man, nghe đi nghe lại không biết chán ❤️",
-                        "Đoạn điệp khúc nghe sởn cả da gà, ca từ quá sâu lắng!",
-                        "Bài hát gắn liền với bao nhiêu kỷ niệm thanh xuân...",
-                        "Phối khí đỉnh cao, giọng hát đầy cảm xúc và mộc mạc.",
-                        "Nghe lúc trời mưa chill thực sự, giai điệu xuất sắc.",
-                        "Siêu phẩm không thể bỏ qua, hay từ những nốt đầu tiên!"
-                    };
-                    string[] commentCounts = new string[] { "439 bình luận", "1.2K bình luận", "820 bình luận", "615 bình luận", "395 bình luận", "950 bình luận" };
 
-                    int cIdx = 0;
                     foreach (var tr in candidateTracks)
                     {
                         var dTrack = new YouTubeTrack
@@ -1153,24 +1142,26 @@ namespace YTMusicWP
                             Title = tr.Title,
                             ChannelName = tr.ChannelName,
                             ThumbnailUrl = tr.ThumbnailUrl,
-                            TopCommentText = sampleComments[cIdx % sampleComments.Length],
-                            CommentCount = commentCounts[cIdx % commentCounts.Length]
+                            TopCommentText = "Loading top comment...",
+                            CommentCount = "..."
                         };
                         discussedSec.Tracks.Add(dTrack);
-                        cIdx++;
                     }
                     int insertPos = Math.Min(4, sections.Count);
                     sections.Insert(insertPos, discussedSec);
+
+                    // Asynchronously load real comments from YouTube
+                    var ignoredComments = LoadRealCommentsForSectionAsync(discussedSec);
                 }
             }
 
-            // 5. "Khám phá các bài hát mới hot nhất tuần!" (Editorial Discovery Banner)
+            // 5. "Discover this week's hottest new tracks!" (Editorial Discovery Banner)
             bool hasBanner = sections.Any(s => s.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.EditorialBanner);
             if (!hasBanner && sections.Count >= 3)
             {
                 var bannerSec = new YTMusicWP.InnerTubeClient.HomeSection
                 {
-                    Title = "Khám phá các bài hát mới hot nhất tuần!",
+                    Title = "Discover this week's hottest new tracks!",
                     Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.EditorialBanner
                 };
                 int insertPos = Math.Min(3, sections.Count);
@@ -1241,18 +1232,67 @@ namespace YTMusicWP
                 if (addedCount > 0)
                 {
                     SaveFavoritesAsync();
-                    ShowToast("Đã lưu " + addedCount + " bài hát vào mục Yêu thích");
+                    ShowToast("Added " + addedCount + " songs to Favorites");
                 }
                 else
                 {
-                    ShowToast("Tất cả bài hát đã có trong mục Yêu thích");
+                    ShowToast("All songs are already in Favorites");
                 }
             }
         }
 
         private void EditorialBanner_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            SwitchTab(1); // Go to Search / Discover
+            OpenYouTubePlaylist("RDCLAK5uy_mXSZ6uWtp8W7PC7QnwF2cY9RyD8zNd7DY", "RELEASED", null);
+        }
+
+        private async Task LoadRealCommentsForSectionAsync(YTMusicWP.InnerTubeClient.HomeSection section)
+        {
+            if (section == null || section.Tracks == null) return;
+
+            foreach (var track in section.Tracks)
+            {
+                if (string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("PLAYLIST:") || track.VideoId.StartsWith("CHANNEL:"))
+                    continue;
+
+                try
+                {
+                    var snippet = await YTMusicWP.InnerTubeClient.GetTopCommentSnippetAsync(track.VideoId);
+                    if (snippet != null)
+                    {
+                        if (!string.IsNullOrEmpty(snippet.Text))
+                        {
+                            track.TopCommentText = snippet.Text;
+                        }
+                        else
+                        {
+                            track.TopCommentText = "Active discussion on YouTube Music.";
+                        }
+
+                        string cCount = snippet.CommentCountText;
+                        if (!string.IsNullOrEmpty(cCount))
+                        {
+                            track.CommentCount = cCount.IndexOf("comment", StringComparison.OrdinalIgnoreCase) >= 0 
+                                ? cCount 
+                                : (cCount + " comments");
+                        }
+                        else
+                        {
+                            track.CommentCount = "Top comment";
+                        }
+                        track.TopCommentAuthor = snippet.Author;
+                    }
+                    else
+                    {
+                        if (track.CommentCount == "...")
+                        {
+                            track.CommentCount = "Comments";
+                            track.TopCommentText = "Trending track with active community listeners.";
+                        }
+                    }
+                }
+                catch { }
+            }
         }
         #endregion
     }

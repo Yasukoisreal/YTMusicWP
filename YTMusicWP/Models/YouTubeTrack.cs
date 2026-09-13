@@ -130,12 +130,51 @@ namespace YTMusicWP
             get { return System.Math.Max(8, System.Math.Min(100, 100 * (_playProgressPercent > 0 ? _playProgressPercent : 0.45))); }
         }
 
-        public string CommentCount { get; set; }
-        public string TopCommentAuthor { get; set; }
-        public string TopCommentText { get; set; }
+        private string _commentCount;
+        public string CommentCount
+        {
+            get { return _commentCount; }
+            set
+            {
+                if (_commentCount != value)
+                {
+                    _commentCount = value;
+                    OnPropertyChanged("CommentCount");
+                }
+            }
+        }
+
+        private string _topCommentAuthor;
+        public string TopCommentAuthor
+        {
+            get { return _topCommentAuthor; }
+            set
+            {
+                if (_topCommentAuthor != value)
+                {
+                    _topCommentAuthor = value;
+                    OnPropertyChanged("TopCommentAuthor");
+                }
+            }
+        }
+
+        private string _topCommentText;
+        public string TopCommentText
+        {
+            get { return _topCommentText; }
+            set
+            {
+                if (_topCommentText != value)
+                {
+                    _topCommentText = value;
+                    OnPropertyChanged("TopCommentText");
+                    OnPropertyChanged("CommentVisibility");
+                }
+            }
+        }
         public Visibility CommentVisibility
         {
-            get { return !string.IsNullOrEmpty(TopCommentText) ? Visibility.Visible : Visibility.Collapsed; }
+            get { return !string.IsNullOrEmpty(_topCommentText) ? Visibility.Visible : Visibility.Collapsed; }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
