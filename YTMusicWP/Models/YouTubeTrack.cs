@@ -175,12 +175,39 @@ namespace YTMusicWP
             get { return (!IsLikedMusic && PlayProgressPercent > 0) ? Visibility.Visible : Visibility.Collapsed; }
         }
 
+        private double _speedDialCardSize = 120;
+        public double SpeedDialCardSize
+        {
+            get { return _speedDialCardSize > 0 ? _speedDialCardSize : 120; }
+            set
+            {
+                if (_speedDialCardSize != value)
+                {
+                    _speedDialCardSize = value;
+                    OnPropertyChanged("SpeedDialCardSize");
+                    OnPropertyChanged("SpeedDialProgressWidth");
+                }
+            }
+        }
+
+        private Thickness _speedDialCardMargin = new Thickness(0, 0, 10, 10);
+        public Thickness SpeedDialCardMargin
+        {
+            get { return _speedDialCardMargin; }
+            set
+            {
+                _speedDialCardMargin = value;
+                OnPropertyChanged("SpeedDialCardMargin");
+            }
+        }
+
         public double SpeedDialProgressWidth
         {
             get
             {
                 double p = _playProgressPercent > 0 ? _playProgressPercent : 0.45;
-                return System.Math.Max(8, System.Math.Min(98, 98 * p));
+                double maxW = (_speedDialCardSize > 20) ? (_speedDialCardSize - 14) : 106;
+                return System.Math.Max(8, System.Math.Min(maxW, maxW * p));
             }
         }
 

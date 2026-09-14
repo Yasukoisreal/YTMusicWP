@@ -846,10 +846,12 @@ namespace YTMusicWP
         {
             public List<YouTubeTrack> Items { get; set; }
             public double PageWidth { get; set; }
+            public Windows.UI.Xaml.Thickness PageMargin { get; set; }
             public HomeSpeedDialPage()
             {
                 Items = new List<YouTubeTrack>();
-                PageWidth = 360;
+                PageWidth = 390;
+                PageMargin = new Windows.UI.Xaml.Thickness(0, 0, 20, 0);
             }
         }
 
@@ -866,6 +868,28 @@ namespace YTMusicWP
             public string Subtitle { get; set; }
             public string AvatarUrl { get; set; }
             public string UserInitial { get; set; }
+
+            private Windows.UI.Xaml.Thickness _speedDialHeaderMargin = new Windows.UI.Xaml.Thickness(10, 0, 10, 12);
+            public Windows.UI.Xaml.Thickness SpeedDialHeaderMargin
+            {
+                get { return _speedDialHeaderMargin; }
+                set
+                {
+                    _speedDialHeaderMargin = value;
+                    OnPropertyChanged("SpeedDialHeaderMargin");
+                }
+            }
+
+            private Windows.UI.Xaml.Thickness _speedDialListViewMargin = new Windows.UI.Xaml.Thickness(10, 0, 0, 0);
+            public Windows.UI.Xaml.Thickness SpeedDialListViewMargin
+            {
+                get { return _speedDialListViewMargin; }
+                set
+                {
+                    _speedDialListViewMargin = value;
+                    OnPropertyChanged("SpeedDialListViewMargin");
+                }
+            }
 
             public Windows.UI.Xaml.Visibility AvatarImageVisibility
             {
@@ -949,17 +973,36 @@ namespace YTMusicWP
                 }
             }
 
-            public void PopulateSpeedDialPages(int pageSize = 9, double targetPageWidth = 0)
+            public void PopulateSpeedDialPages(int pageSize = 9, double screenWidth = 0)
             {
                 if (Tracks == null) return;
                 SpeedDialPages = new List<HomeSpeedDialPage>();
-                double pWidth = targetPageWidth > 0 ? targetPageWidth : 360;
+
+                if (screenWidth < 300) screenWidth = 400;
+                double gap = (screenWidth >= 400) ? 10 : 8;
+                double cardSize = Math.Floor((screenWidth - (4 * gap)) / 3.0);
+                if (cardSize < 90) cardSize = 112;
+                double pWidth = 3 * (cardSize + gap);
+
+                SpeedDialHeaderMargin = new Windows.UI.Xaml.Thickness(gap, 0, gap, 12);
+                SpeedDialListViewMargin = new Windows.UI.Xaml.Thickness(gap, 0, 0, 0);
+
+                var cardMargin = new Windows.UI.Xaml.Thickness(0, 0, gap, gap);
+                var pageMargin = new Windows.UI.Xaml.Thickness(0, 0, gap * 2, 0);
+
                 for (int i = 0; i < Tracks.Count; i += pageSize)
                 {
-                    var page = new HomeSpeedDialPage { PageWidth = pWidth };
+                    var page = new HomeSpeedDialPage 
+                    { 
+                        PageWidth = pWidth,
+                        PageMargin = pageMargin
+                    };
                     for (int j = i; j < Math.Min(i + pageSize, Tracks.Count); j++)
                     {
-                        page.Items.Add(Tracks[j]);
+                        var track = Tracks[j];
+                        track.SpeedDialCardSize = cardSize;
+                        track.SpeedDialCardMargin = cardMargin;
+                        page.Items.Add(track);
                     }
                     SpeedDialPages.Add(page);
                 }

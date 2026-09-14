@@ -1028,16 +1028,16 @@ namespace YTMusicWP
             var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
             string userName = SafeGetString(localSettings, "GoogleUserName", "");
             string avatarUrl = SafeGetString(localSettings, "GoogleAvatarUrl", "");
-            double targetPageWidth = 360;
+            double screenWidth = 400;
             try
             {
                 if (Window.Current != null && Window.Current.Bounds.Width > 0)
                 {
-                    targetPageWidth = Window.Current.Bounds.Width - 24;
+                    screenWidth = Window.Current.Bounds.Width;
                 }
             }
             catch { }
-            if (targetPageWidth < 300) targetPageWidth = 360;
+            if (screenWidth < 300) screenWidth = 400;
 
             foreach (var sec in sections)
             {
@@ -1077,7 +1077,7 @@ namespace YTMusicWP
                             PlayProgressPercent = 0
                         });
                     }
-                    sec.PopulateSpeedDialPages(9, targetPageWidth);
+                    sec.PopulateSpeedDialPages(9, screenWidth);
                 }
                 else if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.LandscapeVideo)
                 {
@@ -1167,7 +1167,7 @@ namespace YTMusicWP
                         };
                         speedDial.Tracks.Add(dt);
                     }
-                    speedDial.PopulateSpeedDialPages(9, targetPageWidth);
+                    speedDial.PopulateSpeedDialPages(9, screenWidth);
                     sections.Insert(0, speedDial);
                 }
             }
