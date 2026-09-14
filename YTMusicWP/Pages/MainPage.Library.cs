@@ -264,24 +264,7 @@ namespace YTMusicWP
             switch (item.ItemType)
             {
                 case "favorites":
-                    // Open a pseudo-playlist view showing favorites
-                    _currentViewingPlaylist = null;
-                    _currentViewingYtPlaylistId = null;
-                    _isViewingLikedSongs = true;
-                    PlaylistDetailsTitle.Text = "Liked Songs";
-                    if (favoriteTracks.Count > 0 && !string.IsNullOrEmpty(favoriteTracks[0].ThumbnailUrl))
-                    {
-                        PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(favoriteTracks[0].ThumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 220 };
-                        PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
-                    }
-                    else
-                    {
-                        PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
-                    }
-                    SetPlaylistViewTracks(favoriteTracks, favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs");
-                    PlaylistDetailsView.Visibility = Visibility.Visible;
-                    PlaylistSlideInStoryboard.Begin();
-                    HookPlaylistSongsScroll();
+                    OpenLikedSongsView();
                     break;
 
                 case "playlist":

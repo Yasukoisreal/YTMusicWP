@@ -1,6 +1,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -844,13 +845,72 @@ namespace YTMusicWP
         public class HomeSpeedDialPage
         {
             public List<YouTubeTrack> Items { get; set; }
-            public HomeSpeedDialPage() { Items = new List<YouTubeTrack>(); }
+            public double PageWidth { get; set; }
+            public HomeSpeedDialPage()
+            {
+                Items = new List<YouTubeTrack>();
+                PageWidth = 360;
+            }
         }
 
-        public class HomeSection
+        public class HomeSection : INotifyPropertyChanged
         {
+            public event PropertyChangedEventHandler PropertyChanged;
+            protected void OnPropertyChanged(string propName)
+            {
+                if (PropertyChanged != null)
+                    PropertyChanged(this, new PropertyChangedEventArgs(propName));
+            }
+
             public string Title { get; set; }
             public string Subtitle { get; set; }
+            public string AvatarUrl { get; set; }
+            public string UserInitial { get; set; }
+
+            public Windows.UI.Xaml.Visibility AvatarImageVisibility
+            {
+                get { return !string.IsNullOrEmpty(AvatarUrl) ? Windows.UI.Xaml.Visibility.Visible : Windows.UI.Xaml.Visibility.Collapsed; }
+            }
+
+            public Windows.UI.Xaml.Visibility AvatarFallbackVisibility
+            {
+                get { return string.IsNullOrEmpty(AvatarUrl) ? Windows.UI.Xaml.Visibility.Visible : Windows.UI.Xaml.Visibility.Collapsed; }
+            }
+
+            private int _activePageIndex = 0;
+            public int ActivePageIndex
+            {
+                get { return _activePageIndex; }
+                set
+                {
+                    if (_activePageIndex != value)
+                    {
+                        _activePageIndex = value;
+                        OnPropertyChanged("ActivePageIndex");
+                        OnPropertyChanged("Page1DotBrush");
+                        OnPropertyChanged("Page2DotBrush");
+                    }
+                }
+            }
+
+            private static readonly Windows.UI.Xaml.Media.SolidColorBrush _activeDotBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
+            private static readonly Windows.UI.Xaml.Media.SolidColorBrush _inactiveDotBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 85, 85, 85));
+
+            public Windows.UI.Xaml.Media.Brush Page1DotBrush
+            {
+                get { return _activePageIndex == 0 ? _activeDotBrush : _inactiveDotBrush; }
+            }
+
+            public Windows.UI.Xaml.Media.Brush Page2DotBrush
+            {
+                get { return _activePageIndex == 1 ? _activeDotBrush : _inactiveDotBrush; }
+            }
+
+            public Windows.UI.Xaml.Visibility PaginationVisibility
+            {
+                get { return (SpeedDialPages != null && SpeedDialPages.Count > 1) ? Windows.UI.Xaml.Visibility.Visible : Windows.UI.Xaml.Visibility.Collapsed; }
+            }
+
             public string CategoryTag { get; set; }
             public string FeaturedCoverUrl { get; set; }
             public string CardBgColor { get; set; }
@@ -871,6 +931,7 @@ namespace YTMusicWP
                 Layout = HomeSectionLayout.Normal;
                 CardBgColor = "#1C1824";
                 CategoryTag = "NỔI BẬT";
+                UserInitial = "Y";
             }
 
             public void PopulateColumns(int chunkSize = 4)
@@ -888,19 +949,22 @@ namespace YTMusicWP
                 }
             }
 
-            public void PopulateSpeedDialPages(int pageSize = 9)
+            public void PopulateSpeedDialPages(int pageSize = 9, double targetPageWidth = 0)
             {
                 if (Tracks == null) return;
                 SpeedDialPages = new List<HomeSpeedDialPage>();
+                double pWidth = targetPageWidth > 0 ? targetPageWidth : 360;
                 for (int i = 0; i < Tracks.Count; i += pageSize)
                 {
-                    var page = new HomeSpeedDialPage();
+                    var page = new HomeSpeedDialPage { PageWidth = pWidth };
                     for (int j = i; j < Math.Min(i + pageSize, Tracks.Count); j++)
                     {
                         page.Items.Add(Tracks[j]);
                     }
                     SpeedDialPages.Add(page);
                 }
+                OnPropertyChanged("PaginationVisibility");
+                OnPropertyChanged("SpeedDialPages");
             }
         }
 
@@ -956,15 +1020,18 @@ namespace YTMusicWP
                 if (carousel != null)
                 {
                     string sectionTitle = "";
+                    string sectionSubtitle = "";
                     var hdr = carousel["header"]?["musicCarouselShelfBasicHeaderRenderer"];
                     if (hdr != null)
                     {
                         sectionTitle = hdr["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
+                        sectionSubtitle = hdr["strapline"]?["runs"]?[0]?["text"]?.ToString()
+                            ?? hdr["subtitle"]?["runs"]?[0]?["text"]?.ToString() ?? "";
                     }
 
                     if (string.IsNullOrEmpty(sectionTitle)) continue;
 
-                    var homeSection = new HomeSection { Title = sectionTitle };
+                    var homeSection = new HomeSection { Title = sectionTitle, Subtitle = sectionSubtitle };
                     string lowerTitle = sectionTitle.ToLowerInvariant();
                     if (lowerTitle.Contains("playlist") || lowerTitle.Contains("danh sách phát") || lowerTitle.Contains("album") || lowerTitle.Contains("đĩa nhạc"))
                         homeSection.Layout = HomeSectionLayout.Normal;

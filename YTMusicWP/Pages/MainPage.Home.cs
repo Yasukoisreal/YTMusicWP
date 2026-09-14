@@ -1025,6 +1025,20 @@ namespace YTMusicWP
             if (sections == null) return;
 
             // 1. Ensure all MultiTrackColumn sections have their columns populated, and SpeedDial has pages populated
+            var localSettings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+            string userName = SafeGetString(localSettings, "GoogleUserName", "");
+            string avatarUrl = SafeGetString(localSettings, "GoogleAvatarUrl", "");
+            double targetPageWidth = 360;
+            try
+            {
+                if (Window.Current != null && Window.Current.Bounds.Width > 0)
+                {
+                    targetPageWidth = Window.Current.Bounds.Width - 24;
+                }
+            }
+            catch { }
+            if (targetPageWidth < 300) targetPageWidth = 360;
+
             foreach (var sec in sections)
             {
                 if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.MultiTrackColumn || sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.QuickPicks)
@@ -1043,8 +1057,27 @@ namespace YTMusicWP
                 }
                 else if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial)
                 {
-                    if (sec.SpeedDialPages == null || sec.SpeedDialPages.Count == 0)
-                        sec.PopulateSpeedDialPages(9);
+                    if (string.IsNullOrEmpty(sec.Subtitle))
+                    {
+                        sec.Subtitle = !string.IsNullOrEmpty(userName) ? userName.ToUpper() : "START RADIO FROM A SONG";
+                    }
+                    if (string.IsNullOrEmpty(sec.AvatarUrl))
+                    {
+                        sec.AvatarUrl = avatarUrl;
+                        sec.UserInitial = !string.IsNullOrEmpty(userName) ? userName.Substring(0, 1).ToUpper() : "Y";
+                    }
+                    if (!sec.Tracks.Any(t => t.IsLikedMusic) && sec.Tracks.Count > 1)
+                    {
+                        sec.Tracks.Insert(1, new YouTubeTrack
+                        {
+                            VideoId = "PLAYLIST:LM",
+                            Title = "Liked Music",
+                            ChannelName = "Auto playlist",
+                            ItemType = "liked",
+                            PlayProgressPercent = 0
+                        });
+                    }
+                    sec.PopulateSpeedDialPages(9, targetPageWidth);
                 }
                 else if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.LandscapeVideo)
                 {
@@ -1101,11 +1134,27 @@ namespace YTMusicWP
                     var speedDial = new YTMusicWP.InnerTubeClient.HomeSection
                     {
                         Title = "Speed dial",
+                        Subtitle = !string.IsNullOrEmpty(userName) ? userName.ToUpper() : "START RADIO FROM A SONG",
+                        AvatarUrl = avatarUrl,
+                        UserInitial = !string.IsNullOrEmpty(userName) ? userName.Substring(0, 1).ToUpper() : "Y",
                         Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial
                     };
                     int dialTake = Math.Min(18, Math.Max(dialTracks.Count, 9));
                     for (int i = 0; i < dialTake; i++)
                     {
+                        if (i == 1)
+                        {
+                            // Insert Liked Music card at position 1 (Row 0, Col 1), matching official YouTube Music
+                            speedDial.Tracks.Add(new YouTubeTrack
+                            {
+                                VideoId = "PLAYLIST:LM",
+                                Title = "Liked Music",
+                                ChannelName = "Auto playlist",
+                                ItemType = "liked",
+                                PlayProgressPercent = 0
+                            });
+                            continue;
+                        }
                         var src = dialTracks[i % dialTracks.Count];
                         var dt = new YouTubeTrack
                         {
@@ -1113,11 +1162,12 @@ namespace YTMusicWP
                             Title = src.Title,
                             ChannelName = src.ChannelName,
                             ThumbnailUrl = src.ThumbnailUrl,
+                            ItemType = src.ItemType,
                             PlayProgressPercent = 0.35 + ((i * 17) % 55) / 100.0
                         };
                         speedDial.Tracks.Add(dt);
                     }
-                    speedDial.PopulateSpeedDialPages(9);
+                    speedDial.PopulateSpeedDialPages(9, targetPageWidth);
                     sections.Insert(0, speedDial);
                 }
             }
@@ -1206,6 +1256,39 @@ namespace YTMusicWP
                     PlayTrack(musicTracks[0]);
                 }
             }
+        }
+
+        private void SpeedDialListView_Loaded(object sender, RoutedEventArgs e)
+        {
+            var lv = sender as ListView;
+            if (lv == null) return;
+
+            var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+            {
+                var sv = GetScrollViewer(lv);
+                if (sv != null)
+                {
+                    try
+                    {
+                        sv.HorizontalSnapPointsType = Windows.UI.Xaml.Controls.SnapPointsType.MandatorySingle;
+                        sv.HorizontalSnapPointsAlignment = Windows.UI.Xaml.Controls.Primitives.SnapPointsAlignment.Near;
+                    }
+                    catch { }
+                    sv.ViewChanged += (s, args) =>
+                    {
+                        var scroller = s as ScrollViewer;
+                        var sec = lv.DataContext as YTMusicWP.InnerTubeClient.HomeSection;
+                        if (scroller != null && sec != null)
+                        {
+                            int newPage = (scroller.HorizontalOffset > 100) ? 1 : 0;
+                            if (sec.ActivePageIndex != newPage)
+                            {
+                                sec.ActivePageIndex = newPage;
+                            }
+                        }
+                    };
+                }
+            });
         }
 
         private void HomeTrackRow_Tapped(object sender, TappedRoutedEventArgs e)

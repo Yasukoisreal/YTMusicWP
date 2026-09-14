@@ -31,6 +31,19 @@ namespace YTMusicWP
                 OpenArtistProfile(track.VideoId.Substring(8), track.Title ?? track.ChannelName, true);
                 return;
             }
+            if (track.IsLikedMusic)
+            {
+                if (favoriteTracks != null && favoriteTracks.Count > 0)
+                {
+                    OpenLikedSongsView();
+                    return;
+                }
+                else
+                {
+                    OpenYouTubePlaylist("LM", track.Title ?? "Liked Music", track.ThumbnailUrl);
+                    return;
+                }
+            }
             if (track.VideoId.StartsWith("PLAYLIST:"))
             {
                 OpenYouTubePlaylist(track.VideoId.Substring(9), track.Title, track.ThumbnailUrl);

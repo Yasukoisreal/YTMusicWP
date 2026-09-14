@@ -121,6 +121,8 @@ namespace YTMusicWP
                     _playProgressPercent = value;
                     OnPropertyChanged("PlayProgressPercent");
                     OnPropertyChanged("ProgressWidth");
+                    OnPropertyChanged("ProgressVisibility");
+                    OnPropertyChanged("SpeedDialProgressWidth");
                 }
             }
         }
@@ -128,6 +130,58 @@ namespace YTMusicWP
         public double ProgressWidth
         {
             get { return System.Math.Max(8, System.Math.Min(100, 100 * (_playProgressPercent > 0 ? _playProgressPercent : 0.45))); }
+        }
+
+        public bool HasChevron
+        {
+            get
+            {
+                return (ItemType == "liked" || ItemType == "playlist" || ItemType == "album" || ItemType == "mix" || ItemType == "radio"
+                    || (VideoId != null && (VideoId.StartsWith("PLAYLIST:") || VideoId.StartsWith("ALBUM:") || VideoId.StartsWith("CHANNEL:") || VideoId == "LIKED_MUSIC")));
+            }
+        }
+
+        public string SpeedDialTitle
+        {
+            get
+            {
+                if (HasChevron && !string.IsNullOrEmpty(Title) && !Title.EndsWith("›"))
+                    return Title + " ›";
+                return Title;
+            }
+        }
+
+        public bool IsLikedMusic
+        {
+            get
+            {
+                return ItemType == "liked" || VideoId == "PLAYLIST:LM" || VideoId == "LIKED_MUSIC"
+                    || (!string.IsNullOrEmpty(Title) && (Title == "Liked Music" || Title == "Nhạc đã thích"));
+            }
+        }
+
+        public Visibility LikedCardVisibility
+        {
+            get { return IsLikedMusic ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public Visibility NormalThumbVisibility
+        {
+            get { return IsLikedMusic ? Visibility.Collapsed : Visibility.Visible; }
+        }
+
+        public Visibility ProgressVisibility
+        {
+            get { return (!IsLikedMusic && PlayProgressPercent > 0) ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public double SpeedDialProgressWidth
+        {
+            get
+            {
+                double p = _playProgressPercent > 0 ? _playProgressPercent : 0.45;
+                return System.Math.Max(8, System.Math.Min(98, 98 * p));
+            }
         }
 
         private string _commentCount;

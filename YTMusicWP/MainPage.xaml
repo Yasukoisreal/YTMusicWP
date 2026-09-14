@@ -774,7 +774,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="SpeedDialCardTemplate">
-            <Grid Width="102" Height="102" Margin="0,0,8,8" Background="#202020" Tapped="HomeTrackRow_Tapped" Holding="SongItem_Holding">
+            <Grid Width="112" Height="112" Margin="0,0,8,8" Background="#1E1E1E" Tapped="HomeTrackRow_Tapped" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
@@ -783,48 +783,116 @@
                         <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
-                <Rectangle Width="102" Height="102" RadiusX="8" RadiusY="8">
+
+                <!-- Normal Album Thumbnail (with 10px rounded corners) -->
+                <Rectangle Width="112" Height="112" RadiusX="10" RadiusY="10" Visibility="{Binding NormalThumbVisibility}">
                     <Rectangle.Fill>
                         <ImageBrush Stretch="UniformToFill">
                             <ImageBrush.ImageSource>
-                                <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="120"/>
+                                <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="130"/>
                             </ImageBrush.ImageSource>
                         </ImageBrush>
                     </Rectangle.Fill>
                 </Rectangle>
-                <Rectangle Height="48" VerticalAlignment="Bottom" RadiusX="8" RadiusY="8">
+
+                <!-- Liked Music Card (Purple gradient + Crisp Thumbs-Up Icon, matches official YTM) -->
+                <Grid Width="112" Height="112" Visibility="{Binding LikedCardVisibility}">
+                    <Rectangle Width="112" Height="112" RadiusX="10" RadiusY="10">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#7B3FF2" Offset="0"/>
+                                <GradientStop Color="#5423B8" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Viewbox Width="44" Height="44" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,16">
+                        <Path Data="M23,10C23,8.89 22.1,8 21,8H14.68L15.64,3.43C15.66,3.33 15.67,3.22 15.67,3.11C15.67,2.7 15.5,2.32 15.23,2.05L14.17,1L7.59,7.59C7.22,7.95 7,8.45 7,9V19A2,2 0 0,0 9,21H18C18.83,21 19.54,20.5 19.84,19.78L22.86,12.73C22.95,12.5 23,12.26 23,12V10M1,21H5V9H1V21Z" Fill="White"/>
+                    </Viewbox>
+                </Grid>
+
+                <!-- Bottom Dark Gradient for Text & Progress Legibility -->
+                <Rectangle Height="52" VerticalAlignment="Bottom" RadiusX="10" RadiusY="10">
                     <Rectangle.Fill>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                             <GradientStop Color="#00000000" Offset="0"/>
-                            <GradientStop Color="#CC000000" Offset="0.6"/>
-                            <GradientStop Color="#EE000000" Offset="1"/>
+                            <GradientStop Color="#66000000" Offset="0.4"/>
+                            <GradientStop Color="#DD000000" Offset="1"/>
                         </LinearGradientBrush>
                     </Rectangle.Fill>
                 </Rectangle>
-                <TextBlock Text="{Binding Title}" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="6,0,6,8" VerticalAlignment="Bottom"/>
-                <Rectangle Height="3" Fill="#1DB954" Width="{Binding ProgressWidth}" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+
+                <!-- Bottom Content: Red Progress Bar (ABOVE Title) + 1-Line Track Title -->
+                <StackPanel VerticalAlignment="Bottom" Margin="7,0,7,8">
+                    <!-- Progress Bar (YouTube Red #FF0000, shown when played) -->
+                    <Grid Height="3" Margin="0,0,0,5" Visibility="{Binding ProgressVisibility}">
+                        <!-- Translucent Track -->
+                        <Rectangle Height="3" Fill="#44FFFFFF" RadiusX="1.5" RadiusY="1.5"/>
+                        <!-- Active Red Bar -->
+                        <Rectangle Height="3" Fill="#FF0000" Width="{Binding SpeedDialProgressWidth}" HorizontalAlignment="Left" RadiusX="1.5" RadiusY="1.5"/>
+                    </Grid>
+                    <!-- 1-Line Title with Ellipsis and optional Chevron › -->
+                    <TextBlock Text="{Binding SpeedDialTitle}" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" MaxLines="1" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
             </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="HomeSectionSpeedDialTemplate">
             <StackPanel Margin="0,0,0,15">
-                <Grid Margin="10,0,10,10">
+                <!-- Speed Dial Header: Left Avatar + Subtitle & Title (matches official YTM) -->
+                <Grid Margin="12,0,12,12">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,4,0">
-                        <Ellipse Width="6" Height="6" Fill="White" Margin="0,0,4,0"/>
-                        <Ellipse Width="6" Height="6" Fill="#555555" Margin="0,0,4,0"/>
-                        <Ellipse Width="6" Height="6" Fill="#555555"/>
+                    <!-- User Profile Avatar -->
+                    <Grid Width="36" Height="36" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <!-- Fallback Letter Avatar -->
+                        <Border Width="36" Height="36" CornerRadius="18" Background="#007ACC" Visibility="{Binding AvatarFallbackVisibility}">
+                            <TextBlock Text="{Binding UserInitial}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <!-- Profile Image (if available) -->
+                        <Ellipse Width="36" Height="36" Visibility="{Binding AvatarImageVisibility}">
+                            <Ellipse.Fill>
+                                <ImageBrush Stretch="UniformToFill">
+                                    <ImageBrush.ImageSource>
+                                        <BitmapImage UriSource="{Binding AvatarUrl}" DecodePixelWidth="72"/>
+                                    </ImageBrush.ImageSource>
+                                </ImageBrush>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                    </Grid>
+                    <!-- Two-line Title -->
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Subtitle}" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#A0A0A0" CharacterSpacing="30" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="15" Margin="0,-2,0,0"/>
                     </StackPanel>
                 </Grid>
-                <ListView ItemsSource="{Binding SpeedDialPages}" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,10">
-                    <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+
+                <!-- Paged 3x3 Grid Carousel -->
+                <ListView ItemsSource="{Binding SpeedDialPages}" 
+                          Loaded="SpeedDialListView_Loaded"
+                          SelectionMode="None" 
+                          IsItemClickEnabled="False" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden" 
+                          ScrollViewer.VerticalScrollBarVisibility="Disabled" 
+                          ScrollViewer.HorizontalScrollMode="Enabled" 
+                          ScrollViewer.VerticalScrollMode="Disabled" 
+                          ScrollViewer.IsHorizontalScrollChainingEnabled="False" 
+                          Margin="12,0,0,0">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource SpeedDialCardTemplate}" Width="330" Margin="0,0,12,0">
+                            <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource SpeedDialCardTemplate}" Width="{Binding PageWidth}" Margin="0,0,24,0">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <WrapGrid Orientation="Horizontal" MaximumRowsOrColumns="3"/>
@@ -834,6 +902,12 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
+
+                <!-- Centered Pagination Dots below 3x3 Grid (matches official YTM) -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10" Visibility="{Binding PaginationVisibility}">
+                    <Ellipse Width="6" Height="6" Fill="{Binding Page1DotBrush}" Margin="0,0,6,0"/>
+                    <Ellipse Width="6" Height="6" Fill="{Binding Page2DotBrush}"/>
+                </StackPanel>
             </StackPanel>
         </DataTemplate>
 
