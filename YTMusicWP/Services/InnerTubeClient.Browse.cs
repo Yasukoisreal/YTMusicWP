@@ -1076,7 +1076,7 @@ namespace YTMusicWP
                 SpeedDialPages = new List<HomeSpeedDialPage>();
                 Layout = HomeSectionLayout.Normal;
                 CardBgColor = "#1C1824";
-                CategoryTag = "NỔI BẬT";
+                CategoryTag = "FEATURED";
                 UserInitial = "Y";
             }
 

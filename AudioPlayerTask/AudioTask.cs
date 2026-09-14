@@ -134,6 +134,11 @@ namespace AudioPlayerTask
                     try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
                     _liveCts = null;
                 }
+                if (_liveMss != null)
+                {
+                    try { _liveMss.Dispose(); } catch { }
+                    _liveMss = null;
+                }
                 await CleanupLiveTempFilesAsync();
                 _httpClient?.Dispose();
             }
@@ -772,102 +777,109 @@ namespace AudioPlayerTask
         // ==========================================
         private async void StartPlaybackAsync()
         {
-            string vidId;
-            string initialTrackUrl;
-            lock (_playlistLock)
+            try
             {
-                if (_currentTrackIndex < 0 || _currentTrackIndex >= _trackList.Count || _currentTrackIndex >= _videoIdList.Count) return;
-                vidId = _videoIdList[_currentTrackIndex];
-                initialTrackUrl = _trackList[_currentTrackIndex];
-            }
-
-            int currentSeq = ++_playbackSequence;
-
-            // Offline track: phát trực tiếp (nếu bài cũ vẫn mở thì tua về 0)
-            if (vidId.StartsWith("LOCAL:"))
-            {
-                if (vidId == _currentLoadedVidId && _mediaPlayer.CurrentState != MediaPlayerState.Closed && _retryCount == 0)
+                string vidId;
+                string initialTrackUrl;
+                lock (_playlistLock)
                 {
-                    try { _mediaPlayer.Position = TimeSpan.Zero; _mediaPlayer.Play(); _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing; UpdateSystemMediaControls(); }
-                    catch { }
-                    return;
+                    if (_currentTrackIndex < 0 || _currentTrackIndex >= _trackList.Count || _currentTrackIndex >= _videoIdList.Count) return;
+                    vidId = _videoIdList[_currentTrackIndex];
+                    initialTrackUrl = _trackList[_currentTrackIndex];
                 }
-                PlayUrl(initialTrackUrl, vidId);
-                return;
-            }
 
-            // Nếu đã có URL resolved (từ retry)
-            // Fetch SponsorBlock segments
-            _skipSegments = new List<YTMusicWP.Models.SponsorBlockSegment>();
-            if (!vidId.StartsWith("LOCAL:"))
-            {
-                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                bool sponsorBlock = ls.ContainsKey("SponsorBlock") ? (bool)ls["SponsorBlock"] : true;
-                if (sponsorBlock)
+                int currentSeq = ++_playbackSequence;
+
+                // Offline track: phát trực tiếp (nếu bài cũ vẫn mở thì tua về 0)
+                if (vidId.StartsWith("LOCAL:"))
                 {
-                    var ignoreTask = System.Threading.Tasks.Task.Run(async () => {
-                        var segs = await YTMusicWP.Services.SponsorBlockApi.GetSkipSegmentsAsync(vidId);
-                        if (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count && _videoIdList[_currentTrackIndex] == vidId) {
-                            _skipSegments = segs;
-                        }
-                    });
-                }
-            }
-            if (!string.IsNullOrEmpty(_resolvedUrl))
-            {
-                string url = _resolvedUrl;
-                _resolvedUrl = null;
-                PlayUrl(url, vidId);
-                return;
-            }
-
-            if (!_innerTubeAttempted)
-            {
-                _innerTubeAttempted = true;
-                UpdateSystemMediaControls();
-
-                // Stop previous audio immediately so old audio doesn't play while loading next track
-                try { if (_mediaPlayer.CurrentState == MediaPlayerState.Playing) _mediaPlayer.Pause(); } catch { }
-
-                string directUrl = await ResolveViaInnerTubeDirectAsync(vidId);
-                if (currentSeq != _playbackSequence) return;
-                if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count || _videoIdList[_currentTrackIndex] != vidId) return;
-
-                if (!string.IsNullOrEmpty(directUrl))
-                {
-                    directUrl = PrepareStreamUrl(directUrl);
-                    lock (_playlistLock)
+                    if (vidId == _currentLoadedVidId && _mediaPlayer.CurrentState != MediaPlayerState.Closed && _retryCount == 0)
                     {
-                        if (_currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count)
-                        {
-                            _trackList[_currentTrackIndex] = directUrl;
-                        }
+                        try { _mediaPlayer.Position = TimeSpan.Zero; _mediaPlayer.Play(); _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing; UpdateSystemMediaControls(); }
+                        catch { }
+                        return;
                     }
-                    PlayUrl(directUrl, vidId);
+                    PlayUrl(initialTrackUrl, vidId);
                     return;
                 }
-            }
 
-            // FALLBACK: URL từ MainPage nếu có sẵn (chỉ resolve nếu chưa thử)
-            string fallbackUrl;
-            lock (_playlistLock)
-            {
-                fallbackUrl = (_currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count) ? _trackList[_currentTrackIndex] : null;
+                // Nếu đã có URL resolved (từ retry)
+                // Fetch SponsorBlock segments
+                _skipSegments = new List<YTMusicWP.Models.SponsorBlockSegment>();
+                if (!vidId.StartsWith("LOCAL:"))
+                {
+                    var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                    bool sponsorBlock = ls.ContainsKey("SponsorBlock") ? (bool)ls["SponsorBlock"] : true;
+                    if (sponsorBlock)
+                    {
+                        var ignoreTask = System.Threading.Tasks.Task.Run(async () => {
+                            var segs = await YTMusicWP.Services.SponsorBlockApi.GetSkipSegmentsAsync(vidId);
+                            if (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count && _videoIdList[_currentTrackIndex] == vidId) {
+                                _skipSegments = segs;
+                            }
+                        });
+                    }
+                }
+                if (!string.IsNullOrEmpty(_resolvedUrl))
+                {
+                    string url = _resolvedUrl;
+                    _resolvedUrl = null;
+                    PlayUrl(url, vidId);
+                    return;
+                }
+
+                if (!_innerTubeAttempted)
+                {
+                    _innerTubeAttempted = true;
+                    UpdateSystemMediaControls();
+
+                    // Stop previous audio immediately so old audio doesn't play while loading next track
+                    try { if (_mediaPlayer.CurrentState == MediaPlayerState.Playing) _mediaPlayer.Pause(); } catch { }
+
+                    string directUrl = await ResolveViaInnerTubeDirectAsync(vidId);
+                    if (currentSeq != _playbackSequence) return;
+                    if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count || _videoIdList[_currentTrackIndex] != vidId) return;
+
+                    if (!string.IsNullOrEmpty(directUrl))
+                    {
+                        directUrl = PrepareStreamUrl(directUrl);
+                        lock (_playlistLock)
+                        {
+                            if (_currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count)
+                            {
+                                _trackList[_currentTrackIndex] = directUrl;
+                            }
+                        }
+                        PlayUrl(directUrl, vidId);
+                        return;
+                    }
+                }
+
+                // FALLBACK: URL từ MainPage nếu có sẵn (chỉ resolve nếu chưa thử)
+                string fallbackUrl;
+                lock (_playlistLock)
+                {
+                    fallbackUrl = (_currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count) ? _trackList[_currentTrackIndex] : null;
+                }
+                if (string.IsNullOrEmpty(fallbackUrl) && !_innerTubeAttempted)
+                {
+                    fallbackUrl = await ResolveViaInnerTubeDirectAsync(vidId);
+                    if (currentSeq != _playbackSequence) return;
+                    if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count || _videoIdList[_currentTrackIndex] != vidId) return;
+                }
+                if (!string.IsNullOrEmpty(fallbackUrl))
+                {
+                    PlayUrl(PrepareStreamUrl(fallbackUrl), vidId);
+                }
+                else
+                {
+                    if (currentSeq == _playbackSequence)
+                        ReportErrorToUI("No stream available: " + _innerTubeDebug);
+                }
             }
-            if (string.IsNullOrEmpty(fallbackUrl) && !_innerTubeAttempted)
+            catch (Exception ex)
             {
-                fallbackUrl = await ResolveViaInnerTubeDirectAsync(vidId);
-                if (currentSeq != _playbackSequence) return;
-                if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count || _videoIdList[_currentTrackIndex] != vidId) return;
-            }
-            if (!string.IsNullOrEmpty(fallbackUrl))
-            {
-                PlayUrl(PrepareStreamUrl(fallbackUrl), vidId);
-            }
-            else
-            {
-                if (currentSeq == _playbackSequence)
-                    ReportErrorToUI("No stream available: " + _innerTubeDebug);
+                ReportErrorToUI("Playback error: " + ex.Message);
             }
         }
 

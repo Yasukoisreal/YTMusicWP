@@ -1047,6 +1047,19 @@ namespace YTMusicWP
 
         private static readonly Dictionary<string, CommentSnippetResult> _commentSnippetCache = new Dictionary<string, CommentSnippetResult>();
 
+        private static void CacheCommentSnippet(string videoId, CommentSnippetResult result)
+        {
+            if (string.IsNullOrEmpty(videoId) || result == null) return;
+            lock (_commentSnippetCache)
+            {
+                if (_commentSnippetCache.Count >= 100)
+                {
+                    _commentSnippetCache.Clear();
+                }
+                _commentSnippetCache[videoId] = result;
+            }
+        }
+
         public static async Task<CommentSnippetResult> GetTopCommentSnippetAsync(string videoId)
         {
             if (string.IsNullOrEmpty(videoId)) return null;
@@ -1135,7 +1148,7 @@ namespace YTMusicWP
                     if (!string.IsNullOrEmpty(countText))
                     {
                         var fallback = new CommentSnippetResult { CommentCountText = countText, Author = "", Text = "" };
-                        lock (_commentSnippetCache) { _commentSnippetCache[videoId] = fallback; }
+                        CacheCommentSnippet(videoId, fallback);
                         return fallback;
                     }
                     return null;
@@ -1215,7 +1228,7 @@ namespace YTMusicWP
                         Author = author,
                         Text = topText
                     };
-                    lock (_commentSnippetCache) { _commentSnippetCache[videoId] = result; }
+                    CacheCommentSnippet(videoId, result);
                     return result;
                 }
             }

@@ -1268,6 +1268,9 @@ namespace YTMusicWP
                 var sv = GetScrollViewer(lv);
                 if (sv != null)
                 {
+                    if (sv.Tag as string == "SpeedDialHooked") return;
+                    sv.Tag = "SpeedDialHooked";
+
                     try
                     {
                         sv.HorizontalSnapPointsType = Windows.UI.Xaml.Controls.SnapPointsType.MandatorySingle;
@@ -1366,38 +1369,41 @@ namespace YTMusicWP
                 try
                 {
                     var snippet = await YTMusicWP.InnerTubeClient.GetTopCommentSnippetAsync(track.VideoId);
-                    if (snippet != null)
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
-                        if (!string.IsNullOrEmpty(snippet.Text))
+                        if (snippet != null)
                         {
-                            track.TopCommentText = snippet.Text;
-                        }
-                        else
-                        {
-                            track.TopCommentText = "Active discussion on YouTube Music.";
-                        }
+                            if (!string.IsNullOrEmpty(snippet.Text))
+                            {
+                                track.TopCommentText = snippet.Text;
+                            }
+                            else
+                            {
+                                track.TopCommentText = "Active discussion on YouTube Music.";
+                            }
 
-                        string cCount = snippet.CommentCountText;
-                        if (!string.IsNullOrEmpty(cCount))
-                        {
-                            track.CommentCount = cCount.IndexOf("comment", StringComparison.OrdinalIgnoreCase) >= 0 
-                                ? cCount 
-                                : (cCount + " comments");
+                            string cCount = snippet.CommentCountText;
+                            if (!string.IsNullOrEmpty(cCount))
+                            {
+                                track.CommentCount = cCount.IndexOf("comment", StringComparison.OrdinalIgnoreCase) >= 0 
+                                    ? cCount 
+                                    : (cCount + " comments");
+                            }
+                            else
+                            {
+                                track.CommentCount = "Top comment";
+                            }
+                            track.TopCommentAuthor = snippet.Author;
                         }
                         else
                         {
-                            track.CommentCount = "Top comment";
+                            if (track.CommentCount == "...")
+                            {
+                                track.CommentCount = "Comments";
+                                track.TopCommentText = "Trending track with active community listeners.";
+                            }
                         }
-                        track.TopCommentAuthor = snippet.Author;
-                    }
-                    else
-                    {
-                        if (track.CommentCount == "...")
-                        {
-                            track.CommentCount = "Comments";
-                            track.TopCommentText = "Trending track with active community listeners.";
-                        }
-                    }
+                    });
                 }
                 catch { }
             }
