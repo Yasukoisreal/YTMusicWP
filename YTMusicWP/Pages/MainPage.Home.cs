@@ -1029,9 +1029,17 @@ namespace YTMusicWP
             {
                 if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.MultiTrackColumn || sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.QuickPicks)
                 {
-                    sec.Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.MultiTrackColumn;
-                    if (sec.TrackColumns == null || sec.TrackColumns.Count == 0)
-                        sec.PopulateColumns(4);
+                    bool hasPlaylistsOrAlbums = sec.Tracks != null && sec.Tracks.Any(t => t.VideoId != null && (t.VideoId.StartsWith("PLAYLIST:") || t.VideoId.StartsWith("CHANNEL:")));
+                    if (hasPlaylistsOrAlbums)
+                    {
+                        sec.Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.Normal;
+                    }
+                    else
+                    {
+                        sec.Layout = YTMusicWP.InnerTubeClient.HomeSectionLayout.MultiTrackColumn;
+                        if (sec.TrackColumns == null || sec.TrackColumns.Count == 0)
+                            sec.PopulateColumns(4);
+                    }
                 }
                 else if (sec.Layout == YTMusicWP.InnerTubeClient.HomeSectionLayout.SpeedDial)
                 {
@@ -1072,6 +1080,20 @@ namespace YTMusicWP
                             dialTracks.Add(t);
                         if (dialTracks.Count >= 18) break;
                     }
+                }
+
+                if (dialTracks.Count == 0)
+                {
+                    // Fallback popular tracks so Speed Dial is ALWAYS generated on fresh install or when feed only has playlists
+                    dialTracks.Add(new YouTubeTrack { VideoId = "JGwWNGJdvx8", Title = "Shape of You", ChannelName = "Ed Sheeran", ThumbnailUrl = "https://i.ytimg.com/vi/JGwWNGJdvx8/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "4NRXx6U8ABQ", Title = "Blinding Lights", ChannelName = "The Weeknd", ThumbnailUrl = "https://i.ytimg.com/vi/4NRXx6U8ABQ/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "kTJczUoc26U", Title = "STAY", ChannelName = "The Kid LAROI, Justin Bieber", ThumbnailUrl = "https://i.ytimg.com/vi/kTJczUoc26U/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "G7KNmW9a75Y", Title = "Flowers", ChannelName = "Miley Cyrus", ThumbnailUrl = "https://i.ytimg.com/vi/G7KNmW9a75Y/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "hT_nvWreIhg", Title = "Counting Stars", ChannelName = "OneRepublic", ThumbnailUrl = "https://i.ytimg.com/vi/hT_nvWreIhg/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "09R8_2nJtjg", Title = "Sugar", ChannelName = "Maroon 5", ThumbnailUrl = "https://i.ytimg.com/vi/09R8_2nJtjg/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "fJ9rUzIMcZQ", Title = "Bohemian Rhapsody", ChannelName = "Queen", ThumbnailUrl = "https://i.ytimg.com/vi/fJ9rUzIMcZQ/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "k2qgadSvNyU", Title = "New Rules", ChannelName = "Dua Lipa", ThumbnailUrl = "https://i.ytimg.com/vi/k2qgadSvNyU/hqdefault.jpg" });
+                    dialTracks.Add(new YouTubeTrack { VideoId = "YQHsXMglC9A", Title = "Hello", ChannelName = "Adele", ThumbnailUrl = "https://i.ytimg.com/vi/YQHsXMglC9A/hqdefault.jpg" });
                 }
 
                 if (dialTracks.Count >= 1)

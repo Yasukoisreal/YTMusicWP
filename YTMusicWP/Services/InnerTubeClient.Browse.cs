@@ -966,7 +966,9 @@ namespace YTMusicWP
 
                     var homeSection = new HomeSection { Title = sectionTitle };
                     string lowerTitle = sectionTitle.ToLowerInvariant();
-                    if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("speed dial"))
+                    if (lowerTitle.Contains("playlist") || lowerTitle.Contains("danh sách phát") || lowerTitle.Contains("album") || lowerTitle.Contains("đĩa nhạc"))
+                        homeSection.Layout = HomeSectionLayout.Normal;
+                    else if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("speed dial"))
                         homeSection.Layout = HomeSectionLayout.SpeedDial;
                     else if (lowerTitle.Contains("bình luận") || lowerTitle.Contains("comment") || lowerTitle.Contains("thảo luận") || lowerTitle.Contains("discussed"))
                         homeSection.Layout = HomeSectionLayout.MostDiscussed;
@@ -1067,8 +1069,16 @@ namespace YTMusicWP
                     {
                         if (homeSection.Layout == HomeSectionLayout.QuickPicks || homeSection.Layout == HomeSectionLayout.MultiTrackColumn)
                         {
-                            homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
-                            homeSection.PopulateColumns(4);
+                            bool hasPlaylistsOrAlbums = homeSection.Tracks.Any(t => t.VideoId != null && (t.VideoId.StartsWith("PLAYLIST:") || t.VideoId.StartsWith("CHANNEL:")));
+                            if (hasPlaylistsOrAlbums)
+                            {
+                                homeSection.Layout = HomeSectionLayout.Normal;
+                            }
+                            else
+                            {
+                                homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
+                                homeSection.PopulateColumns(4);
+                            }
                         }
                         else if (homeSection.Layout == HomeSectionLayout.SpeedDial)
                         {
