@@ -185,48 +185,170 @@ namespace YTMusicWP
                     System.Diagnostics.Debug.WriteLine("[BrowsePlaylist] Title=" + result.Title + " Subtitle=" + result.Subtitle + " ArtistFallback=" + albumArtistFallback);
                 }
 
-                // Parse tracks
-                var allItems = data?.SelectTokens("$..musicResponsiveListItemRenderer");
-                if (allItems != null)
+                // Parse tracks and continuation token scoped strictly to the playlist/album shelf
+                string newToken = null;
+
+                if (string.IsNullOrEmpty(continuationToken))
                 {
-                    foreach (var mrlir in allItems)
+                    // Initial browse: locate the playlist or album shelf
+                    JToken shelf = data?.SelectToken("$..musicPlaylistShelfRenderer") 
+                                ?? data?.SelectToken("$..musicShelfRenderer");
+
+                    if (shelf != null)
                     {
-                        try
+                        var shelfContents = shelf["contents"] as JArray;
+                        if (shelfContents != null)
                         {
-                            var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
-                            var track = ParseMusicListItem(wrapper);
-                            if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                            foreach (var item in shelfContents)
                             {
-                                if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                try
                                 {
-                                    track.ChannelName = albumArtistFallback;
+                                    var mrlir = item["musicResponsiveListItemRenderer"];
+                                    if (mrlir != null)
+                                    {
+                                        var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
+                                        var track = ParseMusicListItem(wrapper);
+                                        if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                        {
+                                            if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                            {
+                                                track.ChannelName = albumArtistFallback;
+                                            }
+                                            if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                                            {
+                                                track.ThumbnailUrl = result.ThumbnailUrl;
+                                            }
+                                            result.Tracks.Add(track);
+                                        }
+                                    }
+                                    else if (item["continuationItemRenderer"] != null)
+                                    {
+                                        var cir = item["continuationItemRenderer"];
+                                        newToken = cir?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                                    }
                                 }
-                                if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
-                                {
-                                    track.ThumbnailUrl = result.ThumbnailUrl;
-                                }
-                                result.Tracks.Add(track);
+                                catch { continue; }
                             }
                         }
-                        catch { continue; }
+
+                        // Also check shelf.continuations if continuationItemRenderer was not found
+                        if (string.IsNullOrEmpty(newToken))
+                        {
+                            var shelfConts = shelf["continuations"] as JArray;
+                            if (shelfConts != null && shelfConts.Count > 0)
+                            {
+                                newToken = shelfConts[0]?["nextContinuationData"]?["continuation"]?.ToString()
+                                        ?? shelfConts[0]?["continuationCommand"]?["token"]?.ToString();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Fallback in case shelf wasn't matched
+                        var allItems = data?.SelectTokens("$..musicResponsiveListItemRenderer");
+                        if (allItems != null)
+                        {
+                            foreach (var mrlir in allItems)
+                            {
+                                try
+                                {
+                                    var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
+                                    var track = ParseMusicListItem(wrapper);
+                                    if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    {
+                                        if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                        {
+                                            track.ChannelName = albumArtistFallback;
+                                        }
+                                        if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                                        {
+                                            track.ThumbnailUrl = result.ThumbnailUrl;
+                                        }
+                                        result.Tracks.Add(track);
+                                    }
+                                }
+                                catch { continue; }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Continuation browse: check appendContinuationItemsAction first, then continuationContents
+                    var actionItems = data?.SelectToken("$..appendContinuationItemsAction.continuationItems") as JArray;
+                    if (actionItems != null)
+                    {
+                        foreach (var item in actionItems)
+                        {
+                            try
+                            {
+                                var mrlir = item["musicResponsiveListItemRenderer"];
+                                if (mrlir != null)
+                                {
+                                    var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
+                                    var track = ParseMusicListItem(wrapper);
+                                    if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    {
+                                        result.Tracks.Add(track);
+                                    }
+                                }
+                                else if (item["continuationItemRenderer"] != null)
+                                {
+                                    var cir = item["continuationItemRenderer"];
+                                    newToken = cir?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                                }
+                            }
+                            catch { continue; }
+                        }
+                    }
+                    else
+                    {
+                        // Check continuationContents -> musicPlaylistShelfContinuation or musicShelfContinuation
+                        var shelfCont = data?.SelectToken("$..musicPlaylistShelfContinuation") 
+                                     ?? data?.SelectToken("$..musicShelfContinuation");
+
+                        if (shelfCont != null)
+                        {
+                            var contContents = shelfCont["contents"] as JArray;
+                            if (contContents != null)
+                            {
+                                foreach (var item in contContents)
+                                {
+                                    try
+                                    {
+                                        var mrlir = item["musicResponsiveListItemRenderer"];
+                                        if (mrlir != null)
+                                        {
+                                            var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
+                                            var track = ParseMusicListItem(wrapper);
+                                            if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                            {
+                                                result.Tracks.Add(track);
+                                            }
+                                        }
+                                        else if (item["continuationItemRenderer"] != null)
+                                        {
+                                            var cir = item["continuationItemRenderer"];
+                                            newToken = cir?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                                        }
+                                    }
+                                    catch { continue; }
+                                }
+                            }
+
+                            if (string.IsNullOrEmpty(newToken))
+                            {
+                                var conts = shelfCont["continuations"] as JArray;
+                                if (conts != null && conts.Count > 0)
+                                {
+                                    newToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString()
+                                            ?? conts[0]?["continuationCommand"]?["token"]?.ToString();
+                                }
+                            }
+                        }
                     }
                 }
 
-                // Look for Continuation Token
-                string newToken = null;
-                var tokens = data?.SelectTokens("$..continuationCommand.token");
-                if (tokens != null)
-                {
-                    newToken = tokens.LastOrDefault()?.ToString();
-                }
-                if (string.IsNullOrEmpty(newToken))
-                {
-                    tokens = data?.SelectTokens("$..nextContinuationData.continuation");
-                    if (tokens != null)
-                    {
-                        newToken = tokens.LastOrDefault()?.ToString();
-                    }
-                }
                 result.ContinuationToken = newToken;
 
             }

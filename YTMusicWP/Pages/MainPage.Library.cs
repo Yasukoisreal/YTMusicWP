@@ -270,6 +270,9 @@ namespace YTMusicWP
                 case "playlist":
                     var pl = item.Tag as UserPlaylist;
                     _currentViewingPlaylist = pl;
+                    _currentViewingYtPlaylistId = null;
+                    _playlistContinuationToken = null;
+                    _isViewingLikedSongs = false;
                     if (pl != null)
                     {
                         PlaylistDetailsTitle.Text = pl.Name;
@@ -348,6 +351,7 @@ namespace YTMusicWP
             if (pl == null) return;
             _currentViewingPlaylist = pl;
             _currentViewingYtPlaylistId = null;
+            _playlistContinuationToken = null;
             _isViewingLikedSongs = false;
             PlaylistDetailsTitle.Text = pl.Name;
             if (pl.Tracks != null && pl.Tracks.Count > 0 && !string.IsNullOrEmpty(pl.Tracks[0].ThumbnailUrl))
@@ -1135,6 +1139,12 @@ namespace YTMusicWP
             // Trigger when within 1500px of the bottom
             if (sv.VerticalOffset >= sv.ScrollableHeight - 1500)
             {
+                // 0. Local playlist check — local user playlists never have online continuation
+                if (_currentViewingPlaylist != null && (string.IsNullOrEmpty(_currentViewingYtPlaylistId) || _currentViewingYtPlaylistId.StartsWith("LOCAL_")))
+                {
+                    return;
+                }
+
                 // 1. Liked Songs Pagination
                 if (_isViewingLikedSongs && HasMoreLikedSongs)
                 {
@@ -1145,7 +1155,7 @@ namespace YTMusicWP
                 // 2. Regular YouTube Playlist Pagination
                 if (!_isViewingLikedSongs && !string.IsNullOrEmpty(_playlistContinuationToken) && !_isLoadingMorePlaylist)
                 {
-                    if (_currentViewingYtPlaylistId == null || _currentViewingYtPlaylistId.StartsWith("LOCAL_")) return;
+                    if (string.IsNullOrEmpty(_currentViewingYtPlaylistId) || _currentViewingYtPlaylistId.StartsWith("LOCAL_")) return;
 
                     _isLoadingMorePlaylist = true;
                     
