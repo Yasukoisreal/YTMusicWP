@@ -23,21 +23,32 @@ namespace YTMusicWP
 
         public static void SetRegion(string regionCode)
         {
-            CurrentRegion = regionCode ?? "US";
-            switch (CurrentRegion)
+            CurrentRegion = !string.IsNullOrEmpty(regionCode) ? regionCode : "US";
+        }
+
+        public static void SetLanguage(string langCode)
+        {
+            CurrentLanguage = !string.IsNullOrEmpty(langCode) ? langCode : "en";
+        }
+
+        public static string DetectLanguageFromRegion(string regionCode)
+        {
+            switch (regionCode)
             {
-                case "VN": CurrentLanguage = "vi"; break;
-                case "KR": CurrentLanguage = "ko"; break;
-                case "JP": CurrentLanguage = "ja"; break;
-                case "TW": CurrentLanguage = "zh-TW"; break;
-                case "TH": CurrentLanguage = "th"; break;
-                case "ID": CurrentLanguage = "id"; break;
-                case "FR": CurrentLanguage = "fr"; break;
-                case "DE": CurrentLanguage = "de"; break;
-                case "ES": CurrentLanguage = "es"; break;
-                case "BR": CurrentLanguage = "pt"; break;
-                case "RU": CurrentLanguage = "ru"; break;
-                default: CurrentLanguage = "en"; break;
+                case "VN": return "vi";
+                case "KR": return "ko";
+                case "JP": return "ja";
+                case "TW": return "zh-TW";
+                case "CN": return "zh-CN";
+                case "TH": return "th";
+                case "ID": return "id";
+                case "FR": return "fr";
+                case "DE": return "de";
+                case "ES": return "es";
+                case "BR":
+                case "PT": return "pt";
+                case "RU": return "ru";
+                default: return "en";
             }
         }
 
@@ -193,6 +204,10 @@ namespace YTMusicWP
             var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+            if (!string.IsNullOrEmpty(CurrentLanguage))
+            {
+                request.Headers.Add("Accept-Language", CurrentLanguage);
+            }
             if (isMusic)
             {
                 request.Headers.Add("Origin", "https://music.youtube.com");

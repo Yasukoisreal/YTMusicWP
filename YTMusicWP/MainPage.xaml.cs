@@ -606,11 +606,22 @@ namespace YTMusicWP
 
             await YTMusicWP.Services.DatabaseHelper.InitializeAsync();
 
-            // Set InnerTube region from settings (affects all API calls)
+            // Set InnerTube region & language from settings (affects all API calls)
             string region = "US";
             if (ApplicationData.Current.LocalSettings.Values.ContainsKey("TrendingRegion"))
                 region = ApplicationData.Current.LocalSettings.Values["TrendingRegion"].ToString();
+            else
+                region = DetectOsRegion();
             InnerTubeClient.SetRegion(region);
+
+            string lang = "AUTO";
+            if (ApplicationData.Current.LocalSettings.Values.ContainsKey("AppLanguage"))
+                lang = ApplicationData.Current.LocalSettings.Values["AppLanguage"].ToString();
+
+            if (lang == "AUTO")
+                InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(region));
+            else
+                InnerTubeClient.SetLanguage(lang);
 
             // Cookie auth is now loaded in the constructor
 

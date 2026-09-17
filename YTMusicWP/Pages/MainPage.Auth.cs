@@ -91,9 +91,11 @@ namespace YTMusicWP
                 ClientIdTextBox.Text = SafeGetString(settings, "GoogleClientId", "");
                 ClientSecretTextBox.Text = SafeGetString(settings, "GoogleClientSecret", "");
 
+                string savedRegion = "US";
                 if (settings.ContainsKey("TrendingRegion"))
                 {
                     string r = settings["TrendingRegion"].ToString();
+                    savedRegion = r;
                     bool found = false;
                     for (int i = 0; i < RegionComboBox.Items.Count; i++)
                     {
@@ -111,8 +113,36 @@ namespace YTMusicWP
                 {
                     string detected = DetectOsRegion();
                     settings["TrendingRegion"] = detected;
+                    savedRegion = detected;
                     RegionComboBox.SelectedIndex = 0;
                 }
+                InnerTubeClient.SetRegion(savedRegion);
+
+                string savedLang = "AUTO";
+                if (settings.ContainsKey("AppLanguage"))
+                {
+                    savedLang = settings["AppLanguage"].ToString();
+                }
+                if (LanguageComboBox != null)
+                {
+                    bool langFound = false;
+                    for (int i = 0; i < LanguageComboBox.Items.Count; i++)
+                    {
+                        var tag = ((ComboBoxItem)LanguageComboBox.Items[i]).Tag;
+                        if (tag != null && tag.ToString() == savedLang)
+                        {
+                            LanguageComboBox.SelectedIndex = i;
+                            langFound = true;
+                            break;
+                        }
+                    }
+                    if (!langFound) LanguageComboBox.SelectedIndex = 0; // Fallback: Auto
+                }
+
+                if (savedLang == "AUTO")
+                    InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(savedRegion));
+                else
+                    InnerTubeClient.SetLanguage(savedLang);
 
                 if (settings.ContainsKey("GoogleAccessToken") || YTMusicWP.InnerTubeClient.HasCookieAuth)
                 {
@@ -181,6 +211,8 @@ namespace YTMusicWP
                 GaplessToggle.Toggled += GaplessToggle_Toggled;
                 NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
                 RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
+                if (LanguageComboBox != null)
+                    LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
                 LiveTileToggle.Toggled += LiveTileToggle_Toggled;
                 LiveTileModeComboBox.SelectionChanged += LiveTileModeComboBox_SelectionChanged;
                 LiveTileSpeedComboBox.SelectionChanged += LiveTileSpeedComboBox_SelectionChanged;
@@ -205,7 +237,49 @@ namespace YTMusicWP
 
             settings["TrendingRegion"] = regionTag;
             InnerTubeClient.SetRegion(regionTag);
-            ShowToast("Region changed!");
+
+            string appLang = settings.ContainsKey("AppLanguage") ? settings["AppLanguage"].ToString() : "AUTO";
+            if (appLang == "AUTO")
+            {
+                InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(regionTag));
+            }
+
+            ShowToast("Location changed!");
+
+            if (IsInternetAvailable())
+            {
+                homeTracks.Clear();
+                HomeDynamicSections.ItemsSource = null;
+                InnerTubeClient.ClearHomeCache();
+                await LoadHomeRecommendations();
+            }
+        }
+
+        private async void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LanguageComboBox == null) return;
+            var selectedLang = LanguageComboBox.SelectedItem as ComboBoxItem;
+            if (selectedLang == null || selectedLang.Tag == null) return;
+
+            string langTag = selectedLang.Tag.ToString();
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            string oldLang = settings.ContainsKey("AppLanguage") ? settings["AppLanguage"].ToString() : "AUTO";
+
+            // Only reload if language actually changed
+            if (langTag == oldLang) return;
+
+            settings["AppLanguage"] = langTag;
+            if (langTag == "AUTO")
+            {
+                string currentRegion = settings.ContainsKey("TrendingRegion") ? settings["TrendingRegion"].ToString() : DetectOsRegion();
+                InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(currentRegion));
+            }
+            else
+            {
+                InnerTubeClient.SetLanguage(langTag);
+            }
+
+            ShowToast("Language changed!");
 
             if (IsInternetAvailable())
             {

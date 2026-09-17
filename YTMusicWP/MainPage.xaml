@@ -2192,10 +2192,10 @@
                                 <Border Background="#3B82F6" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                     <TextBlock Text="🌐" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Region" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                                <TextBlock Text="Language &amp; Location" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <TextBlock Text="Choose your trending music region" Foreground="#777" FontSize="12" Margin="0,0,0,10"/>
-                            <ComboBox x:Name="RegionComboBox" Background="#252525" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Location (affects trending music &amp; charts)" Foreground="#777" FontSize="12" Margin="0,0,0,8"/>
+                            <ComboBox x:Name="RegionComboBox" Background="#252525" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch" Margin="0,0,0,16">
                                 <ComboBoxItem Content="Auto-detect" Tag="AUTO"/>
                                 <ComboBoxItem Content="Worldwide" Tag=""/>
                                 <ComboBoxItem Content="Algeria (DZ)" Tag="DZ"/>
@@ -2287,6 +2287,25 @@
                                 <ComboBoxItem Content="United States (US)" Tag="US"/>
                                 <ComboBoxItem Content="Vietnam (VN)" Tag="VN"/>
                                 <ComboBoxItem Content="Yemen (YE)" Tag="YE"/>
+                            </ComboBox>
+
+                            <TextBlock Text="Language (affects titles &amp; labels)" Foreground="#777" FontSize="12" Margin="0,0,0,8"/>
+                            <ComboBox x:Name="LanguageComboBox" Background="#252525" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch">
+                                <ComboBoxItem Content="Auto (match location)" Tag="AUTO"/>
+                                <ComboBoxItem Content="Tiếng Việt (Vietnamese)" Tag="vi"/>
+                                <ComboBoxItem Content="English (US)" Tag="en"/>
+                                <ComboBoxItem Content="English (UK)" Tag="en-GB"/>
+                                <ComboBoxItem Content="日本語 (Japanese)" Tag="ja"/>
+                                <ComboBoxItem Content="한국어 (Korean)" Tag="ko"/>
+                                <ComboBoxItem Content="Français (French)" Tag="fr"/>
+                                <ComboBoxItem Content="Deutsch (German)" Tag="de"/>
+                                <ComboBoxItem Content="Español (Spanish)" Tag="es"/>
+                                <ComboBoxItem Content="Português (Portuguese)" Tag="pt"/>
+                                <ComboBoxItem Content="Русский (Russian)" Tag="ru"/>
+                                <ComboBoxItem Content="中文 (繁體)" Tag="zh-TW"/>
+                                <ComboBoxItem Content="中文 (简体)" Tag="zh-CN"/>
+                                <ComboBoxItem Content="Bahasa Indonesia" Tag="id"/>
+                                <ComboBoxItem Content="ภาษาไทย (Thai)" Tag="th"/>
                             </ComboBox>
                         </StackPanel>
                     </Border>

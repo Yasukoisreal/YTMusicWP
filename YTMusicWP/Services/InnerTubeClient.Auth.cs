@@ -91,6 +91,10 @@ namespace YTMusicWP
 
             // Headers matching SimpMusic's WEB_REMIX approach
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
+            if (!string.IsNullOrEmpty(CurrentLanguage))
+            {
+                request.Headers.Add("Accept-Language", CurrentLanguage);
+            }
             request.Headers.Add("Origin", "https://music.youtube.com");
             request.Headers.Add("Referer", "https://music.youtube.com/");
             request.Headers.Add("X-Goog-Authuser", "0");
