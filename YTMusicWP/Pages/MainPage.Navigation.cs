@@ -197,15 +197,12 @@ namespace YTMusicWP
 
             NavHomeIcon.Fill = (tab == 0) ? _navActiveBrush : _navInactiveBrush;
             NavHomeText.Foreground = (tab == 0) ? _navActiveBrush : _navInactiveBrush;
-            NavHomeText.FontWeight = (tab == 0) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
 
             NavSearchIcon.Fill = (tab == 1) ? _navActiveBrush : _navInactiveBrush;
             NavSearchText.Foreground = (tab == 1) ? _navActiveBrush : _navInactiveBrush;
-            NavSearchText.FontWeight = (tab == 1) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
 
             NavLibraryIcon.Fill = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
             NavLibraryText.Foreground = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
-            NavLibraryText.FontWeight = (tab == 2) ? Windows.UI.Text.FontWeights.Bold : Windows.UI.Text.FontWeights.Normal;
 
             if (Services.MemoryHelper.IsLowMemoryDevice)
             {

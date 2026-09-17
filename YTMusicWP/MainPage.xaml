@@ -3084,7 +3084,7 @@
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavSearchIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M9.5,2 C5.36,2 2,5.36 2,9.5 C2,13.64 5.36,17 9.5,17 C11.24,17 12.84,16.41 14.12,15.42 L19.35,20.65 L20.65,19.35 L15.42,14.12 C16.41,12.84 17,11.24 17,9.5 C17,5.36 13.64,2 9.5,2 Z M9.5,4.5 C12.26,4.5 14.5,6.74 14.5,9.5 C14.5,12.26 12.26,14.5 9.5,14.5 C6.74,14.5 4.5,12.26 4.5,9.5 C4.5,6.74 6.74,4.5 9.5,4.5 Z"/>
                         </Viewbox>
-                        <TextBlock x:Name="NavSearchText" Text="Search" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavSearchText" Text="Search" FontSize="10" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Library -->
@@ -3093,7 +3093,7 @@
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavLibraryIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M3,21 L3,3 L6,3 L6,21 Z M10,21 L10,3 L13,3 L13,21 Z M17,21 L17,7 L20,7 L20,21 Z"/>
                         </Viewbox>
-                        <TextBlock x:Name="NavLibraryText" Text="Library" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavLibraryText" Text="Library" FontSize="10" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Create -->
@@ -3108,7 +3108,7 @@
                                 <Path x:Name="NavCreateIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z"/>
                             </Viewbox>
                         </Grid>
-                        <TextBlock x:Name="NavCreateText" Text="Create" FontSize="10" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavCreateText" Text="Create" FontSize="10" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
             </Grid>
