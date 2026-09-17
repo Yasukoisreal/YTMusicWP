@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using Windows.Foundation;
 using Windows.UI;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 
 namespace YTMusicWP
@@ -27,8 +28,9 @@ namespace YTMusicWP
                 if (_title != value)
                 {
                     _title = value;
+                    _backgroundBrush = null;
                     OnPropertyChanged("Title");
-                    UpdateBackgroundBrush();
+                    OnPropertyChanged("BackgroundBrush");
                 }
             }
         }
@@ -84,7 +86,6 @@ namespace YTMusicWP
                     {
                         Color = "#" + (_stripeColor & 0x00FFFFFF).ToString("X6");
                     }
-                    UpdateBackgroundBrush();
                     OnPropertyChanged("StripeColor");
                 }
             }
@@ -100,6 +101,7 @@ namespace YTMusicWP
                     _thumbnailUrl = value;
                     OnPropertyChanged("ThumbnailUrl");
                     OnPropertyChanged("HasThumbnail");
+                    OnPropertyChanged("ThumbnailVisibility");
                 }
             }
         }
@@ -107,6 +109,11 @@ namespace YTMusicWP
         public bool HasThumbnail
         {
             get { return !string.IsNullOrEmpty(_thumbnailUrl); }
+        }
+
+        public Visibility ThumbnailVisibility
+        {
+            get { return HasThumbnail ? Visibility.Visible : Visibility.Collapsed; }
         }
 
         public string SectionTitle
@@ -144,32 +151,47 @@ namespace YTMusicWP
 
         private void UpdateBackgroundBrush()
         {
-            Windows.UI.Color c1, c2;
-            if (_stripeColor != 0)
+            try
             {
-                byte a = (byte)((_stripeColor >> 24) & 0xFF);
-                if (a == 0) a = 255;
-                byte r = (byte)((_stripeColor >> 16) & 0xFF);
-                byte g = (byte)((_stripeColor >> 8) & 0xFF);
-                byte b = (byte)(_stripeColor & 0xFF);
-                c1 = Windows.UI.Color.FromArgb(a, r, g, b);
-                c2 = Windows.UI.Color.FromArgb(a, (byte)(r * 0.7), (byte)(g * 0.7), (byte)(b * 0.7));
-            }
-            else
-            {
-                int hash = string.IsNullOrEmpty(_title) ? 0 : _title.GetHashCode();
+                int hash = JavaStringHashCode(_title);
                 float hue1 = ((hash & 0xFF) / 255.0f) * 360.0f;
                 float hue2 = (((hash >> 8) & 0xFF) / 255.0f) * 360.0f;
-                c1 = HsvToRgb(hue1, 0.75f, 0.85f);
-                c2 = HsvToRgb(hue2, 0.75f, 0.65f);
-            }
 
-            var lgb = new LinearGradientBrush();
-            lgb.StartPoint = new Point(0, 0);
-            lgb.EndPoint = new Point(1, 1);
-            lgb.GradientStops.Add(new GradientStop { Color = c1, Offset = 0.0 });
-            lgb.GradientStops.Add(new GradientStop { Color = c2, Offset = 1.0 });
-            BackgroundBrush = lgb;
+                // Ensure distinct 2-color gradient
+                float diff = Math.Abs(hue1 - hue2);
+                if (diff < 35.0f || diff > 325.0f)
+                {
+                    hue2 = (hue2 + 45.0f) % 360.0f;
+                }
+
+                // Rich vibrant colors matching SimpMusic playlistTitleGradient
+                var c1 = HsvToRgb(hue1, 0.72f, 0.90f);
+                var c2 = HsvToRgb(hue2, 0.72f, 0.76f);
+
+                var lgb = new LinearGradientBrush
+                {
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(1, 1)
+                };
+                lgb.GradientStops.Add(new GradientStop { Color = c1, Offset = 0.0 });
+                lgb.GradientStops.Add(new GradientStop { Color = c2, Offset = 1.0 });
+                BackgroundBrush = lgb;
+            }
+            catch
+            {
+                try { BackgroundBrush = new SolidColorBrush(Windows.UI.Colors.DarkSlateGray); } catch { }
+            }
+        }
+
+        private static int JavaStringHashCode(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return 0;
+            int h = 0;
+            for (int i = 0; i < s.Length; i++)
+            {
+                h = 31 * h + s[i];
+            }
+            return h;
         }
 
         private static Windows.UI.Color HsvToRgb(float hue, float saturation, float value)
@@ -191,7 +213,10 @@ namespace YTMusicWP
                 default: r = c; g = 0; b = x; break;
             }
 
-            return Windows.UI.Color.FromArgb(255, (byte)((r + m) * 255), (byte)((g + m) * 255), (byte)((b + m) * 255));
+            return Windows.UI.Color.FromArgb(255, 
+                (byte)Math.Round((r + m) * 255), 
+                (byte)Math.Round((g + m) * 255), 
+                (byte)Math.Round((b + m) * 255));
         }
 
         protected void OnPropertyChanged(string name)
