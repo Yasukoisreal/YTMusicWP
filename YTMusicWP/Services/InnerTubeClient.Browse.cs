@@ -1197,17 +1197,17 @@ namespace YTMusicWP
                     if (string.IsNullOrEmpty(sectionTitle)) continue;
 
                     var homeSection = new HomeSection { Title = sectionTitle, Subtitle = sectionSubtitle };
-                    string lowerTitle = sectionTitle.ToLowerInvariant();
-                    if (lowerTitle.Contains("playlist") || lowerTitle.Contains("danh sách phát") || lowerTitle.Contains("album") || lowerTitle.Contains("đĩa nhạc"))
-                        homeSection.Layout = HomeSectionLayout.Normal;
-                    else if (lowerTitle.Contains("nhanh") || lowerTitle.Contains("speed dial"))
-                        homeSection.Layout = HomeSectionLayout.SpeedDial;
-                    else if (lowerTitle.Contains("bình luận") || lowerTitle.Contains("comment") || lowerTitle.Contains("thảo luận") || lowerTitle.Contains("discussed"))
-                        homeSection.Layout = HomeSectionLayout.MostDiscussed;
-                    else if (lowerTitle.Contains("video") || lowerTitle.Contains("trình diễn") || lowerTitle.Contains("biểu diễn") || lowerTitle.Contains("dần trôi") || lowerTitle.Contains("thước phim"))
-                        homeSection.Layout = HomeSectionLayout.LandscapeVideo;
-                    else if (lowerTitle.Contains("đài phát") || lowerTitle.Contains("quick") || lowerTitle.Contains("phối lại") || lowerTitle.Contains("hát lại") || lowerTitle.Contains("thịnh hành") || lowerTitle.Contains("nghe lâu") || lowerTitle.Contains("trending") || lowerTitle.Contains("remix") || lowerTitle.Contains("cover") || lowerTitle.Contains("radio"))
-                        homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
+                    
+                    string numItemsPerColStr = carousel["numItemsPerColumn"]?.ToString();
+                    int numItemsPerCol = 0;
+                    if (!string.IsNullOrEmpty(numItemsPerColStr))
+                    {
+                        int.TryParse(numItemsPerColStr, out numItemsPerCol);
+                    }
+
+                    bool hasResponsiveListItems = false;
+                    int wideThumbCount = 0;
+                    int totalItemCount = 0;
 
                     var cItems = carousel["contents"];
                     if (cItems != null)
@@ -1220,6 +1220,7 @@ namespace YTMusicWP
                                 var twoRow = cItem["musicTwoRowItemRenderer"];
                                 if (twoRow != null)
                                 {
+                                    totalItemCount++;
                                     string title = twoRow["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
                                     string subtitle = twoRow["subtitle"]?["runs"]?[0]?["text"]?.ToString() ?? "";
                                     var subRuns = twoRow["subtitle"]?["runs"];
@@ -1247,6 +1248,7 @@ namespace YTMusicWP
                                             if (ratio > 1.3) // 16:9 is 1.77, anything > 1.3 is widescreen
                                             {
                                                 coverWidth = 260; // Wide width matching VideoItemTemplate
+                                                wideThumbCount++;
                                             }
                                         }
                                     }
@@ -1289,6 +1291,10 @@ namespace YTMusicWP
                                 }
 
                                 // musicResponsiveListItemRenderer (individual songs)
+                                if (cItem["musicResponsiveListItemRenderer"] != null)
+                                {
+                                    hasResponsiveListItems = true;
+                                }
                                 var track = ParseMusicListItem(cItem);
                                 if (track != null && !string.IsNullOrEmpty(track.VideoId))
                                     homeSection.Tracks.Add(track);
@@ -1299,26 +1305,21 @@ namespace YTMusicWP
 
                     if (homeSection.Tracks.Count > 0)
                     {
-                        if (homeSection.Layout == HomeSectionLayout.QuickPicks || homeSection.Layout == HomeSectionLayout.MultiTrackColumn)
+                        bool hasPlaylistsOrAlbums = homeSection.Tracks.Any(t => t.VideoId != null && (t.VideoId.StartsWith("PLAYLIST:") || t.VideoId.StartsWith("CHANNEL:")));
+                        if (!hasPlaylistsOrAlbums && (numItemsPerCol >= 2 || hasResponsiveListItems))
                         {
-                            bool hasPlaylistsOrAlbums = homeSection.Tracks.Any(t => t.VideoId != null && (t.VideoId.StartsWith("PLAYLIST:") || t.VideoId.StartsWith("CHANNEL:")));
-                            if (hasPlaylistsOrAlbums)
-                            {
-                                homeSection.Layout = HomeSectionLayout.Normal;
-                            }
-                            else
-                            {
-                                homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
-                                homeSection.PopulateColumns(4);
-                            }
+                            homeSection.Layout = HomeSectionLayout.MultiTrackColumn;
+                            int colSize = (numItemsPerCol >= 2) ? numItemsPerCol : 4;
+                            homeSection.PopulateColumns(colSize);
                         }
-                        else if (homeSection.Layout == HomeSectionLayout.SpeedDial)
+                        else if (totalItemCount > 0 && ((double)wideThumbCount / totalItemCount) > 0.5)
                         {
-                            homeSection.PopulateSpeedDialPages(9);
-                        }
-                        else if (homeSection.Layout == HomeSectionLayout.LandscapeVideo)
-                        {
+                            homeSection.Layout = HomeSectionLayout.LandscapeVideo;
                             foreach (var t in homeSection.Tracks) { t.CoverWidth = 260; }
+                        }
+                        else
+                        {
+                            homeSection.Layout = HomeSectionLayout.Normal;
                         }
                         targetList.Add(homeSection);
                     }
