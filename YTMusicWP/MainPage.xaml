@@ -1551,28 +1551,28 @@
                                                             </Border>
 
                                                             <!-- Tilted Cover Art (SimpMusic style) -->
-                                                            <Grid HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-4,-6" Visibility="{Binding ThumbnailVisibility}">
-                                                                <Border Width="58" Height="58" CornerRadius="6" Background="#30000000" Margin="2,2,-2,-2">
+                                                            <Grid HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-10,-12" Visibility="{Binding ThumbnailVisibility}">
+                                                                <Border Width="70" Height="70" CornerRadius="8" Background="#35000000" Margin="2,2,-2,-2">
                                                                     <Border.RenderTransform>
-                                                                        <RotateTransform Angle="18" CenterX="29" CenterY="29"/>
+                                                                        <RotateTransform Angle="18" CenterX="35" CenterY="35"/>
                                                                     </Border.RenderTransform>
                                                                 </Border>
-                                                                <Border Width="58" Height="58" CornerRadius="6">
+                                                                <Border Width="70" Height="70" CornerRadius="8">
                                                                     <Border.Background>
                                                                         <ImageBrush Stretch="UniformToFill">
                                                                             <ImageBrush.ImageSource>
-                                                                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="116"/>
+                                                                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="140"/>
                                                                             </ImageBrush.ImageSource>
                                                                         </ImageBrush>
                                                                     </Border.Background>
                                                                     <Border.RenderTransform>
-                                                                        <RotateTransform Angle="18" CenterX="29" CenterY="29"/>
+                                                                        <RotateTransform Angle="18" CenterX="35" CenterY="35"/>
                                                                     </Border.RenderTransform>
                                                                 </Border>
                                                             </Grid>
 
                                                             <!-- Category Title -->
-                                                            <TextBlock Text="{Binding Title}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" Margin="12,12,50,8" TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Top" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding Title}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" Margin="12,12,62,8" TextWrapping="Wrap" MaxLines="2" VerticalAlignment="Top" TextTrimming="CharacterEllipsis"/>
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
