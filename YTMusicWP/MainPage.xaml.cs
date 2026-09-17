@@ -437,10 +437,46 @@ namespace YTMusicWP
 
         private void UpdateGreetingText()
         {
+            if (GreetingText == null) return;
             int hour = DateTime.Now.Hour;
-            if (hour < 12) GreetingText.Text = "Good morning";
-            else if (hour < 18) GreetingText.Text = "Good afternoon";
-            else GreetingText.Text = "Good evening";
+            if (InnerTubeClient.CurrentLanguage == "vi")
+            {
+                if (hour < 12) GreetingText.Text = "Chào buổi sáng";
+                else if (hour < 18) GreetingText.Text = "Chào buổi chiều";
+                else GreetingText.Text = "Chào buổi tối";
+            }
+            else
+            {
+                if (hour < 12) GreetingText.Text = "Good morning";
+                else if (hour < 18) GreetingText.Text = "Good afternoon";
+                else GreetingText.Text = "Good evening";
+            }
+        }
+
+        public void UpdateLocalizedUI()
+        {
+            try
+            {
+                UpdateGreetingText();
+
+                bool isVi = (InnerTubeClient.CurrentLanguage == "vi");
+
+                // Bottom Nav
+                if (NavHomeText != null) NavHomeText.Text = isVi ? "Trang chủ" : "Home";
+                if (NavSearchText != null) NavSearchText.Text = isVi ? "Tìm kiếm" : "Search";
+                if (NavLibraryText != null) NavLibraryText.Text = isVi ? "Thư viện" : "Library";
+
+                // Home Headers
+                if (HomePullText != null) HomePullText.Text = isVi ? "Kéo để làm mới" : "Pull to refresh";
+                if (HomeHistoryTitleText != null) HomeHistoryTitleText.Text = isVi ? "Nghe lại" : "Jump back in";
+                if (HomeArtistsTitleText != null) HomeArtistsTitleText.Text = isVi ? "Nghệ sĩ nghe gần đây" : "Recently played artists";
+                if (HomeChartsTitleText != null) HomeChartsTitleText.Text = isVi ? "Bảng xếp hạng hàng đầu" : "Top Charts";
+
+                // Chips & Search
+                UpdateDefaultHomeChips();
+                UpdateDefaultSearchChips();
+            }
+            catch { }
         }
 
         private void Current_Suspending(object sender, Windows.ApplicationModel.SuspendingEventArgs e)

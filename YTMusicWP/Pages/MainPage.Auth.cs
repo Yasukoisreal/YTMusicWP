@@ -144,6 +144,8 @@ namespace YTMusicWP
                 else
                     InnerTubeClient.SetLanguage(savedLang);
 
+                UpdateLocalizedUI();
+
                 if (settings.ContainsKey("GoogleAccessToken") || YTMusicWP.InnerTubeClient.HasCookieAuth)
                 {
                     string status = settings.ContainsKey("GoogleCookieString") ? "Logged in (Cookie)" : "Synced";
@@ -242,6 +244,7 @@ namespace YTMusicWP
             if (appLang == "AUTO")
             {
                 InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(regionTag));
+                UpdateLocalizedUI();
             }
 
             ShowToast("Location changed!");
@@ -278,6 +281,8 @@ namespace YTMusicWP
             {
                 InnerTubeClient.SetLanguage(langTag);
             }
+
+            UpdateLocalizedUI();
 
             ShowToast("Language changed!");
 

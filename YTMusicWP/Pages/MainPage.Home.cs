@@ -376,6 +376,7 @@ namespace YTMusicWP
             }
             else
             {
+                string madeForYou = (InnerTubeClient.CurrentLanguage == "vi") ? "Dành cho bạn" : "Made for you";
                 switch (region)
                 {
                     case "VN":
@@ -385,7 +386,7 @@ namespace YTMusicWP
                             "bolero trữ tình chọn lọc",
                             "rap Việt " + year
                         };
-                        fallbackTitles = new[] { "Made for you", "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt" };
+                        fallbackTitles = new[] { madeForYou, "Nhạc trẻ", "Bolero - Trữ tình", "Rap Việt" };
                         break;
                     case "KR":
                         queries = new[] {
@@ -394,7 +395,7 @@ namespace YTMusicWP
                             "K-drama OST " + year,
                             "K-pop boy group hits"
                         };
-                        fallbackTitles = new[] { "Made for you", "Girl Group Hits", "K-Drama OST", "Boy Group Hits" };
+                        fallbackTitles = new[] { madeForYou, "Girl Group Hits", "K-Drama OST", "Boy Group Hits" };
                         break;
                     case "JP":
                         queries = new[] {
@@ -403,7 +404,7 @@ namespace YTMusicWP
                             "J-pop chill vibes",
                             "J-rock hits"
                         };
-                        fallbackTitles = new[] { "Made for you", "Anime OST", "Chill vibes", "J-Rock" };
+                        fallbackTitles = new[] { madeForYou, "Anime OST", "Chill vibes", "J-Rock" };
                         break;
                     default:
                         queries = new[] {
@@ -412,7 +413,7 @@ namespace YTMusicWP
                             "lofi chill beats relax",
                             "workout gym motivation music"
                         };
-                        fallbackTitles = new[] { "Made for you", "Pop Hits", "Chill vibes", "Workout Motivation" };
+                        fallbackTitles = new[] { madeForYou, "Pop Hits", "Chill vibes", "Workout Motivation" };
                         break;
                 }
             }
@@ -537,7 +538,11 @@ namespace YTMusicWP
                 if (chartsData != null && chartsData.Count > 0)
                 {
                     if (HomeChartsTitle != null)
+                    {
+                        if (HomeChartsTitleText != null)
+                            HomeChartsTitleText.Text = (InnerTubeClient.CurrentLanguage == "vi") ? "Bảng xếp hạng hàng đầu" : "Top Charts";
                         HomeChartsTitle.Visibility = Visibility.Visible;
+                    }
                     if (HomeChartsCarousel != null)
                     {
                         HomeChartsCarousel.ItemsSource = chartsData;
@@ -1209,6 +1214,26 @@ namespace YTMusicWP
                     });
                 }
                 catch { }
+            }
+        }
+
+        private void UpdateDefaultHomeChips()
+        {
+            if (HomeChipsPanel == null) return;
+
+            string[] defaultTitlesVi = new[] { "Nạp năng lượng", "Cảm thấy vui vẻ", "Thư giãn", "Tiệc tùng", "Tập luyện", "Đi lại", "Lãng mạn", "Buồn bã", "Tập trung", "Đi ngủ" };
+            string[] defaultTitlesEn = new[] { "Energize", "Feel good", "Relax", "Party", "Workout", "Commute", "Romance", "Sad", "Focus", "Sleep" };
+            var titles = (InnerTubeClient.CurrentLanguage == "vi") ? defaultTitlesVi : defaultTitlesEn;
+
+            int count = Math.Min(HomeChipsPanel.Children.Count, titles.Length);
+            for (int i = 0; i < count; i++)
+            {
+                var border = HomeChipsPanel.Children[i] as Border;
+                var tb = border != null ? border.Child as TextBlock : null;
+                if (tb != null)
+                {
+                    tb.Text = titles[i];
+                }
             }
         }
         #endregion

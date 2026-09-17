@@ -1139,6 +1139,7 @@ namespace YTMusicWP
             _cachedCharts = null;
             _cachedMoods = null;
             _cachedVisitorData = null;
+            try { Windows.Storage.ApplicationData.Current.LocalSettings.Values.Remove("CachedVisitorData"); } catch { }
         }
 
         public class HomeChipItem
@@ -1174,6 +1175,40 @@ namespace YTMusicWP
             }
         }
 
+        public static string LocalizeHomeSectionTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return title;
+            if (CurrentLanguage == "vi")
+            {
+                string t = title.Trim();
+                if (t.Equals("Shorts Featured Section VN", StringComparison.OrdinalIgnoreCase)) return "Shorts nổi bật";
+                if (t.Equals("Shorts Featured Section", StringComparison.OrdinalIgnoreCase)) return "Shorts nổi bật";
+                if (t.Equals("Top Charts", StringComparison.OrdinalIgnoreCase)) return "Bảng xếp hạng hàng đầu";
+                if (t.Equals("Made for you", StringComparison.OrdinalIgnoreCase)) return "Dành cho bạn";
+                if (t.Equals("Mixed for you", StringComparison.OrdinalIgnoreCase)) return "Bản kết hợp dành cho bạn";
+                if (t.Equals("Recently played artists", StringComparison.OrdinalIgnoreCase)) return "Nghệ sĩ nghe gần đây";
+                if (t.Equals("Jump back in", StringComparison.OrdinalIgnoreCase)) return "Nghe lại";
+                if (t.Equals("Trending", StringComparison.OrdinalIgnoreCase)) return "Thịnh hành";
+                if (t.Equals("New releases", StringComparison.OrdinalIgnoreCase)) return "Bản phát hành mới";
+                if (t.Equals("Forgotten favorites", StringComparison.OrdinalIgnoreCase)) return "Bài hát yêu thích";
+                if (t.Equals("Quick picks", StringComparison.OrdinalIgnoreCase)) return "Lựa chọn nhanh";
+                if (t.Equals("Recommended music videos", StringComparison.OrdinalIgnoreCase)) return "Video âm nhạc đề xuất";
+                if (t.Equals("Similar to", StringComparison.OrdinalIgnoreCase)) return "Tương tự";
+                if (t.Equals("Today's Hits", StringComparison.OrdinalIgnoreCase)) return "Bản hit hôm nay";
+                if (t.Equals("Energize", StringComparison.OrdinalIgnoreCase)) return "Nạp năng lượng";
+                if (t.Equals("Feel good", StringComparison.OrdinalIgnoreCase)) return "Cảm thấy vui vẻ";
+                if (t.Equals("Relax", StringComparison.OrdinalIgnoreCase)) return "Thư giãn";
+                if (t.Equals("Party", StringComparison.OrdinalIgnoreCase)) return "Tiệc tùng";
+                if (t.Equals("Workout", StringComparison.OrdinalIgnoreCase)) return "Tập luyện";
+                if (t.Equals("Commute", StringComparison.OrdinalIgnoreCase)) return "Đi lại";
+                if (t.Equals("Romance", StringComparison.OrdinalIgnoreCase)) return "Lãng mạn";
+                if (t.Equals("Sad", StringComparison.OrdinalIgnoreCase)) return "Buồn bã";
+                if (t.Equals("Focus", StringComparison.OrdinalIgnoreCase)) return "Tập trung";
+                if (t.Equals("Sleep", StringComparison.OrdinalIgnoreCase)) return "Đi ngủ";
+            }
+            return title;
+        }
+
         private static void ParseHomeSectionList(JToken secs, List<HomeSection> targetList)
         {
             if (secs == null) return;
@@ -1195,6 +1230,7 @@ namespace YTMusicWP
                     }
 
                     if (string.IsNullOrEmpty(sectionTitle)) continue;
+                    sectionTitle = LocalizeHomeSectionTitle(sectionTitle);
 
                     var homeSection = new HomeSection { Title = sectionTitle, Subtitle = sectionSubtitle };
                     
@@ -1332,7 +1368,8 @@ namespace YTMusicWP
                 {
                     string cardTitle = cardShelf["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
                     string cardSubtitle = cardShelf["subtitle"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                    string strapline = cardShelf["header"]?["musicCardShelfHeaderBasicRenderer"]?["strapline"]?["runs"]?[0]?["text"]?.ToString() ?? "DỰA TRÊN THƯ VIỆN CỦA BẠN";
+                    string defaultStrapline = (CurrentLanguage == "vi") ? "DỰA TRÊN THƯ VIỆN CỦA BẠN" : "BASED ON YOUR LIBRARY";
+                    string strapline = cardShelf["header"]?["musicCardShelfHeaderBasicRenderer"]?["strapline"]?["runs"]?[0]?["text"]?.ToString() ?? defaultStrapline;
                     if (string.IsNullOrEmpty(cardTitle) && cardShelf["header"] != null)
                     {
                         cardTitle = cardShelf["header"]?["musicCardShelfHeaderBasicRenderer"]?["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
@@ -1340,6 +1377,7 @@ namespace YTMusicWP
 
                     if (!string.IsNullOrEmpty(cardTitle))
                     {
+                        cardTitle = LocalizeHomeSectionTitle(cardTitle);
                         var homeSectionCard = new HomeSection
                         {
                             Title = cardTitle,
@@ -1386,6 +1424,7 @@ namespace YTMusicWP
                 {
                     string shelfTitle = shelf["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
                     if (string.IsNullOrEmpty(shelfTitle)) continue;
+                    shelfTitle = LocalizeHomeSectionTitle(shelfTitle);
 
                     var homeSection2 = new HomeSection { Title = shelfTitle };
                     var sItems = shelf["contents"];

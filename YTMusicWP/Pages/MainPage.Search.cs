@@ -747,5 +747,33 @@ namespace YTMusicWP
             }
         }
 
+        private void UpdateDefaultSearchChips()
+        {
+            if (SearchTitleText != null)
+            {
+                SearchTitleText.Text = (InnerTubeClient.CurrentLanguage == "vi") ? "Tìm kiếm" : "Search";
+            }
+            if (SearchBox != null)
+            {
+                SearchBox.PlaceholderText = (InnerTubeClient.CurrentLanguage == "vi") ? "Bạn muốn nghe gì?" : "What do you want to listen to?";
+            }
+
+            if (SearchChipsPanel == null) return;
+
+            string[] defaultTitlesVi = new[] { "Nghệ sĩ", "Bài hát", "Album", "Video", "Danh sách phát cộng đồng", "Tập", "Hồ sơ", "Podcast" };
+            string[] defaultTitlesEn = new[] { "Artists", "Songs", "Albums", "Videos", "Community playlists", "Episodes", "Profiles", "Podcasts" };
+            var titles = (InnerTubeClient.CurrentLanguage == "vi") ? defaultTitlesVi : defaultTitlesEn;
+
+            int count = Math.Min(SearchChipsPanel.Children.Count, titles.Length);
+            for (int i = 0; i < count; i++)
+            {
+                var border = SearchChipsPanel.Children[i] as Border;
+                var tb = border != null ? border.Child as TextBlock : null;
+                if (tb != null)
+                {
+                    tb.Text = titles[i];
+                }
+            }
+        }
     }
 }

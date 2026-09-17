@@ -967,16 +967,34 @@ namespace YTMusicWP
         public static string NormalizeSearchChipTitle(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return text;
-            string lower = text.Trim().ToLowerInvariant();
-            if (lower == "nghệ sĩ" || lower == "nghe si" || lower == "artists" || lower == "artist") return "Artists";
-            if (lower == "bài hát" || lower == "bai hat" || lower == "songs" || lower == "song") return "Songs";
-            if (lower == "đĩa nhạc" || lower == "dia nhac" || lower == "album" || lower == "albums") return "Albums";
-            if (lower == "video" || lower == "videos") return "Videos";
-            if (lower.Contains("danh sách phát") || lower.Contains("community playlists") || lower.Contains("playlists") || lower.Contains("playlist")) return "Community playlists";
-            if (lower.Contains("tập podcast") || lower.Contains("tập") || lower.Contains("episodes") || lower.Contains("episode")) return "Episodes";
-            if (lower == "hồ sơ" || lower == "ho so" || lower == "profiles" || lower == "profile") return "Profiles";
-            if (lower.Contains("podcast")) return "Podcasts";
-            return text;
+            string t = text.Trim();
+            if (CurrentLanguage == "vi")
+            {
+                string lower = t.ToLowerInvariant();
+                if (lower == "nghệ sĩ" || lower == "nghe si" || lower == "artists" || lower == "artist") return "Nghệ sĩ";
+                if (lower == "bài hát" || lower == "bai hat" || lower == "songs" || lower == "song") return "Bài hát";
+                if (lower == "đĩa nhạc" || lower == "dia nhac" || lower == "album" || lower == "albums") return "Album";
+                if (lower == "video" || lower == "videos") return "Video";
+                if (lower.Contains("danh sách phát") || lower.Contains("community playlists") || lower.Contains("playlists") || lower.Contains("playlist")) return "Danh sách phát cộng đồng";
+                if (lower.Contains("tập podcast") || lower.Contains("tập") || lower.Contains("episodes") || lower.Contains("episode")) return "Tập";
+                if (lower == "hồ sơ" || lower == "ho so" || lower == "profiles" || lower == "profile") return "Hồ sơ";
+                if (lower.Contains("podcast")) return "Podcast";
+                return t;
+            }
+            if (CurrentLanguage == "en" || string.IsNullOrEmpty(CurrentLanguage))
+            {
+                string lower = t.ToLowerInvariant();
+                if (lower == "nghệ sĩ" || lower == "nghe si" || lower == "artists" || lower == "artist") return "Artists";
+                if (lower == "bài hát" || lower == "bai hat" || lower == "songs" || lower == "song") return "Songs";
+                if (lower == "đĩa nhạc" || lower == "dia nhac" || lower == "album" || lower == "albums") return "Albums";
+                if (lower == "video" || lower == "videos") return "Videos";
+                if (lower.Contains("danh sách phát") || lower.Contains("community playlists") || lower.Contains("playlists") || lower.Contains("playlist")) return "Community playlists";
+                if (lower.Contains("tập podcast") || lower.Contains("tập") || lower.Contains("episodes") || lower.Contains("episode")) return "Episodes";
+                if (lower == "hồ sơ" || lower == "ho so" || lower == "profiles" || lower == "profile") return "Profiles";
+                if (lower.Contains("podcast")) return "Podcasts";
+                return t;
+            }
+            return t;
         }
     }
 
