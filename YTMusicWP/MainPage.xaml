@@ -2292,20 +2292,88 @@
                             <TextBlock Text="Language (affects titles &amp; labels)" Foreground="#777" FontSize="12" Margin="0,0,0,8"/>
                             <ComboBox x:Name="LanguageComboBox" Background="#252525" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch">
                                 <ComboBoxItem Content="Auto (match location)" Tag="AUTO"/>
-                                <ComboBoxItem Content="Tiếng Việt (Vietnamese)" Tag="vi"/>
+                                <ComboBoxItem Content="Afrikaans" Tag="af"/>
+                                <ComboBoxItem Content="አማርኛ (Amharic)" Tag="am"/>
+                                <ComboBoxItem Content="العربية (Arabic)" Tag="ar"/>
+                                <ComboBoxItem Content="অসমীয়া (Assamese)" Tag="as"/>
+                                <ComboBoxItem Content="Azərbaycan (Azerbaijani)" Tag="az"/>
+                                <ComboBoxItem Content="Беларуская (Belarusian)" Tag="be"/>
+                                <ComboBoxItem Content="Български (Bulgarian)" Tag="bg"/>
+                                <ComboBoxItem Content="বাংলা (Bengali)" Tag="bn"/>
+                                <ComboBoxItem Content="Bosanski (Bosnian)" Tag="bs"/>
+                                <ComboBoxItem Content="Català (Catalan)" Tag="ca"/>
+                                <ComboBoxItem Content="Čeština (Czech)" Tag="cs"/>
+                                <ComboBoxItem Content="Dansk (Danish)" Tag="da"/>
+                                <ComboBoxItem Content="Deutsch (German)" Tag="de"/>
+                                <ComboBoxItem Content="Ελληνικά (Greek)" Tag="el"/>
                                 <ComboBoxItem Content="English (US)" Tag="en"/>
                                 <ComboBoxItem Content="English (UK)" Tag="en-GB"/>
+                                <ComboBoxItem Content="Español (España)" Tag="es"/>
+                                <ComboBoxItem Content="Español (Latinoamérica)" Tag="es-419"/>
+                                <ComboBoxItem Content="Eesti (Estonian)" Tag="et"/>
+                                <ComboBoxItem Content="Euskara (Basque)" Tag="eu"/>
+                                <ComboBoxItem Content="فارسی (Persian)" Tag="fa"/>
+                                <ComboBoxItem Content="Suomi (Finnish)" Tag="fi"/>
+                                <ComboBoxItem Content="Filipino" Tag="fil"/>
+                                <ComboBoxItem Content="Français (France)" Tag="fr"/>
+                                <ComboBoxItem Content="Français (Canada)" Tag="fr-CA"/>
+                                <ComboBoxItem Content="Gaeilge (Irish)" Tag="ga"/>
+                                <ComboBoxItem Content="Galego (Galician)" Tag="gl"/>
+                                <ComboBoxItem Content="ગુજરાતી (Gujarati)" Tag="gu"/>
+                                <ComboBoxItem Content="हिन्दी (Hindi)" Tag="hi"/>
+                                <ComboBoxItem Content="Hrvatski (Croatian)" Tag="hr"/>
+                                <ComboBoxItem Content="Magyar (Hungarian)" Tag="hu"/>
+                                <ComboBoxItem Content="Հայերեն (Armenian)" Tag="hy"/>
+                                <ComboBoxItem Content="Bahasa Indonesia (Indonesian)" Tag="id"/>
+                                <ComboBoxItem Content="Íslenska (Icelandic)" Tag="is"/>
+                                <ComboBoxItem Content="Italiano (Italian)" Tag="it"/>
+                                <ComboBoxItem Content="עברית (Hebrew)" Tag="iw"/>
                                 <ComboBoxItem Content="日本語 (Japanese)" Tag="ja"/>
+                                <ComboBoxItem Content="ქართული (Georgian)" Tag="ka"/>
+                                <ComboBoxItem Content="Қазақ тілі (Kazakh)" Tag="kk"/>
+                                <ComboBoxItem Content="ខ្មែរ (Khmer)" Tag="km"/>
+                                <ComboBoxItem Content="ಕನ್ನಡ (Kannada)" Tag="kn"/>
                                 <ComboBoxItem Content="한국어 (Korean)" Tag="ko"/>
-                                <ComboBoxItem Content="Français (French)" Tag="fr"/>
-                                <ComboBoxItem Content="Deutsch (German)" Tag="de"/>
-                                <ComboBoxItem Content="Español (Spanish)" Tag="es"/>
-                                <ComboBoxItem Content="Português (Portuguese)" Tag="pt"/>
+                                <ComboBoxItem Content="Кыргызча (Kyrgyz)" Tag="ky"/>
+                                <ComboBoxItem Content="ລາວ (Lao)" Tag="lo"/>
+                                <ComboBoxItem Content="Lietuvių (Lithuanian)" Tag="lt"/>
+                                <ComboBoxItem Content="Latviešu (Latvian)" Tag="lv"/>
+                                <ComboBoxItem Content="Македонски (Macedonian)" Tag="mk"/>
+                                <ComboBoxItem Content="മലയാളം (Malayalam)" Tag="ml"/>
+                                <ComboBoxItem Content="Монгол (Mongolian)" Tag="mn"/>
+                                <ComboBoxItem Content="मराठी (Marathi)" Tag="mr"/>
+                                <ComboBoxItem Content="Bahasa Melayu (Malay)" Tag="ms"/>
+                                <ComboBoxItem Content="Malti (Maltese)" Tag="mt"/>
+                                <ComboBoxItem Content="မြန်မာ (Burmese)" Tag="my"/>
+                                <ComboBoxItem Content="नेपाली (Nepali)" Tag="ne"/>
+                                <ComboBoxItem Content="Nederlands (Dutch)" Tag="nl"/>
+                                <ComboBoxItem Content="Norsk (Norwegian)" Tag="no"/>
+                                <ComboBoxItem Content="ଓଡ଼ିଆ (Odia)" Tag="or"/>
+                                <ComboBoxItem Content="ਪੰਜਾਬੀ (Punjabi)" Tag="pa"/>
+                                <ComboBoxItem Content="Polski (Polish)" Tag="pl"/>
+                                <ComboBoxItem Content="Português (Portugal)" Tag="pt"/>
+                                <ComboBoxItem Content="Português (Brasil)" Tag="pt-BR"/>
+                                <ComboBoxItem Content="Română (Romanian)" Tag="ro"/>
                                 <ComboBoxItem Content="Русский (Russian)" Tag="ru"/>
-                                <ComboBoxItem Content="中文 (繁體)" Tag="zh-TW"/>
-                                <ComboBoxItem Content="中文 (简体)" Tag="zh-CN"/>
-                                <ComboBoxItem Content="Bahasa Indonesia" Tag="id"/>
+                                <ComboBoxItem Content="සිංහල (Sinhala)" Tag="si"/>
+                                <ComboBoxItem Content="Slovenčina (Slovak)" Tag="sk"/>
+                                <ComboBoxItem Content="Slovenščina (Slovenian)" Tag="sl"/>
+                                <ComboBoxItem Content="Shqip (Albanian)" Tag="sq"/>
+                                <ComboBoxItem Content="Српски (Serbian)" Tag="sr"/>
+                                <ComboBoxItem Content="Svenska (Swedish)" Tag="sv"/>
+                                <ComboBoxItem Content="Kiswahili (Swahili)" Tag="sw"/>
+                                <ComboBoxItem Content="தமிழ் (Tamil)" Tag="ta"/>
+                                <ComboBoxItem Content="తెలుగు (Telugu)" Tag="te"/>
                                 <ComboBoxItem Content="ภาษาไทย (Thai)" Tag="th"/>
+                                <ComboBoxItem Content="Türkçe (Turkish)" Tag="tr"/>
+                                <ComboBoxItem Content="Українська (Ukrainian)" Tag="uk"/>
+                                <ComboBoxItem Content="اردو (Urdu)" Tag="ur"/>
+                                <ComboBoxItem Content="O‘zbek (Uzbek)" Tag="uz"/>
+                                <ComboBoxItem Content="Tiếng Việt (Vietnamese)" Tag="vi"/>
+                                <ComboBoxItem Content="中文 (简体) - Chinese Simplified" Tag="zh-CN"/>
+                                <ComboBoxItem Content="中文 (繁體) - Chinese Traditional" Tag="zh-TW"/>
+                                <ComboBoxItem Content="中文 (香港) - Chinese Hong Kong" Tag="zh-HK"/>
+                                <ComboBoxItem Content="isiZulu (Zulu)" Tag="zu"/>
                             </ComboBox>
                         </StackPanel>
                     </Border>

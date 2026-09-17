@@ -33,21 +33,87 @@ namespace YTMusicWP
 
         public static string DetectLanguageFromRegion(string regionCode)
         {
+            if (string.IsNullOrEmpty(regionCode)) return "en";
             switch (regionCode)
             {
                 case "VN": return "vi";
                 case "KR": return "ko";
                 case "JP": return "ja";
                 case "TW": return "zh-TW";
+                case "HK": return "zh-HK";
                 case "CN": return "zh-CN";
                 case "TH": return "th";
                 case "ID": return "id";
-                case "FR": return "fr";
-                case "DE": return "de";
+                case "MY": return "ms";
+                case "PH": return "fil";
+                case "FR":
+                case "SN": return "fr";
+                case "DE":
+                case "AT":
+                case "CH": return "de";
                 case "ES": return "es";
-                case "BR":
+                case "MX":
+                case "AR":
+                case "CL":
+                case "CO":
+                case "PE":
+                case "EC":
+                case "GT":
+                case "CR":
+                case "SV":
+                case "HN":
+                case "BO":
+                case "DO":
+                case "PR": return "es-419";
+                case "BR": return "pt-BR";
                 case "PT": return "pt";
-                case "RU": return "ru";
+                case "RU":
+                case "BY":
+                case "KZ": return "ru";
+                case "UA": return "uk";
+                case "IT": return "it";
+                case "PL": return "pl";
+                case "NL": return "nl";
+                case "TR": return "tr";
+                case "SA":
+                case "AE":
+                case "EG":
+                case "IQ":
+                case "KW":
+                case "QA":
+                case "BH":
+                case "OM":
+                case "JO":
+                case "LB":
+                case "YE":
+                case "DZ":
+                case "MA":
+                case "TN": return "ar";
+                case "IL": return "iw";
+                case "IN": return "hi";
+                case "BD": return "bn";
+                case "GR": return "el";
+                case "CZ": return "cs";
+                case "SK": return "sk";
+                case "HU": return "hu";
+                case "RO": return "ro";
+                case "BG": return "bg";
+                case "HR": return "hr";
+                case "BA": return "bs";
+                case "RS":
+                case "ME": return "sr";
+                case "SI": return "sl";
+                case "MK": return "mk";
+                case "SE": return "sv";
+                case "NO": return "no";
+                case "DK": return "da";
+                case "FI": return "fi";
+                case "EE": return "et";
+                case "LV": return "lv";
+                case "LT": return "lt";
+                case "AZ": return "az";
+                case "GE": return "ka";
+                case "GB": return "en-GB";
                 default: return "en";
             }
         }
