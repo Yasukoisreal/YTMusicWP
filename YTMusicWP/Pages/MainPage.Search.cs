@@ -51,6 +51,7 @@ namespace YTMusicWP
             SearchSongList.ItemsSource = null;
             searchResults.Clear();
             if (TopResultCard != null) TopResultCard.Visibility = Visibility.Collapsed;
+            if (SearchFilterScrollViewer != null) SearchFilterScrollViewer.Visibility = Visibility.Visible;
 
             var tracks = await FetchMusicList(query, "", searchFilter: _currentSearchFilterParams);
 
@@ -175,6 +176,7 @@ namespace YTMusicWP
                 SuggestionPopup.Visibility = Visibility.Collapsed;
                 DefaultSearchUI.Visibility = Visibility.Visible;
                 SearchSongList.Visibility = Visibility.Collapsed;
+                if (SearchFilterScrollViewer != null) SearchFilterScrollViewer.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -187,6 +189,7 @@ namespace YTMusicWP
         {
             SearchBox.Text = "";
             SearchBox.Focus(FocusState.Programmatic);
+            if (SearchFilterScrollViewer != null) SearchFilterScrollViewer.Visibility = Visibility.Collapsed;
         }
 
         private void SearchIcon_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
@@ -675,6 +678,8 @@ namespace YTMusicWP
 
         private async void LoadDiscoverSection()
         {
+            EnsureMoodsAndGenresLoaded();
+
             if (_discoverLoaded && DiscoverListView.Items != null && DiscoverListView.Items.Count > 0) return;
             
             try
@@ -692,19 +697,135 @@ namespace YTMusicWP
             catch { }
         }
 
+        // ==========================================
+        // DYNAMIC MOODS & GENRES (YouTube Music / SimpMusic standard)
+        // ==========================================
+        private bool _moodsLoaded = false;
+        private string _loadedMoodsLanguage = null;
+
+        public async void EnsureMoodsAndGenresLoaded()
+        {
+            if (_moodsLoaded && SearchMoodSectionsControl != null && SearchMoodSectionsControl.ItemsSource != null && _loadedMoodsLanguage == InnerTubeClient.CurrentLanguage)
+            {
+                return;
+            }
+
+            try
+            {
+                var sections = await InnerTubeClient.BrowseMoodsAndGenresAsync();
+                if (sections != null && sections.Count > 0)
+                {
+                    if (SearchMoodSectionsControl != null)
+                    {
+                        SearchMoodSectionsControl.ItemsSource = sections;
+                    }
+                    _moodsLoaded = true;
+                    _loadedMoodsLanguage = InnerTubeClient.CurrentLanguage;
+
+                    ResolveMoodCategoryArtworks(sections);
+                }
+            }
+            catch { }
+        }
+
+        private async void ResolveMoodCategoryArtworks(List<MoodCategory> categories)
+        {
+            if (categories == null || categories.Count == 0) return;
+
+            var missingItems = categories.SelectMany(c => c.Items)
+                .Where(i => string.IsNullOrEmpty(i.ThumbnailUrl) && !string.IsNullOrEmpty(i.Params))
+                .ToList();
+
+            if (missingItems.Count == 0) return;
+
+            await Task.Run(async () =>
+            {
+                var sem = new System.Threading.SemaphoreSlim(2, 2);
+                var tasks = new List<Task>();
+
+                foreach (var item in missingItems)
+                {
+                    var targetItem = item;
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        await sem.WaitAsync();
+                        try
+                        {
+                            string thumb = await InnerTubeClient.GetMoodCategoryArtworkAsync(targetItem.Params);
+                            if (!string.IsNullOrEmpty(thumb))
+                            {
+                                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
+                                {
+                                    targetItem.ThumbnailUrl = thumb;
+                                });
+                            }
+                        }
+                        catch { }
+                        finally
+                        {
+                            sem.Release();
+                        }
+                    }));
+                }
+
+                try { await Task.WhenAll(tasks); } catch { }
+            });
+        }
+
+        private void MoodsSubGridView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            var gv = sender as GridView;
+            if (gv != null && e.NewSize.Width > 0)
+            {
+                var wrapGrid = gv.ItemsPanelRoot as ItemsWrapGrid;
+                if (wrapGrid != null)
+                {
+                    double halfWidth = Math.Floor(e.NewSize.Width / 2.0);
+                    if (halfWidth > 60)
+                    {
+                        wrapGrid.ItemWidth = halfWidth;
+                        wrapGrid.ItemHeight = Math.Floor(halfWidth * 0.52);
+                    }
+                }
+            }
+        }
+
         private async void MoodItem_Click(object sender, ItemClickEventArgs e)
         {
-            var item = e.ClickedItem as YTMusicWP.MoodItem;
-            if (item == null) return;
+            string title = "";
+            string browseId = "FEmusic_moods_and_genres_category";
+            string paramsStr = "";
+
+            var catItem = e.ClickedItem as MoodCategoryItem;
+            if (catItem != null)
+            {
+                title = catItem.Title;
+                paramsStr = catItem.Params;
+                if (!string.IsNullOrEmpty(catItem.BrowseId)) browseId = catItem.BrowseId;
+            }
+            else
+            {
+                var moodItem = e.ClickedItem as MoodItem;
+                if (moodItem != null)
+                {
+                    title = moodItem.Title;
+                    paramsStr = moodItem.Params;
+                    if (!string.IsNullOrEmpty(moodItem.BrowseId)) browseId = moodItem.BrowseId;
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             MoodCategoryView.Visibility = Visibility.Visible;
-            MoodCategoryTitle.Text = item.Title;
+            MoodCategoryTitle.Text = title;
             MoodCategoryLoading.Visibility = Visibility.Visible;
             MoodCategorySectionList.ItemsSource = null;
 
             try
             {
-                var sections = await InnerTubeClient.BrowseMoodCategoryAsync(item.BrowseId, item.Params);
+                var sections = await InnerTubeClient.BrowseMoodCategoryAsync(browseId, paramsStr);
                 if (sections != null && sections.Count > 0)
                 {
                     MoodCategorySectionList.ItemsSource = sections;

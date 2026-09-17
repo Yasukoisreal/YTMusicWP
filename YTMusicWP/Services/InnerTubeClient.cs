@@ -356,6 +356,6 @@ namespace YTMusicWP
     public class MoodCategory
     {
         public string Title { get; set; } = "";
-        public List<MoodItem> Items { get; set; } = new List<MoodItem>();
+        public List<MoodCategoryItem> Items { get; set; } = new List<MoodCategoryItem>();
     }
 }

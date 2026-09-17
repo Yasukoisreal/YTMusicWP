@@ -134,6 +134,8 @@
     <Compile Include="Models\SponsorBlockSegment.cs" />
     <Compile Include="Services\SponsorBlockApi.cs" />
     <Compile Include="Services\AppleMusicLyricsApi.cs" />
+    <Compile Include="Services\InnerTubeClient.Moods.cs" />
+    <Compile Include="Models\MoodCategoryItem.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
