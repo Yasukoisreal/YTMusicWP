@@ -10,7 +10,7 @@ namespace YTMusicWP
 {
     public static partial class InnerTubeClient
     {
-        public static async Task<PlaylistResult> BrowsePlaylistAsync(string playlistId, string continuationToken = null)
+        public static async Task<PlaylistResult> BrowsePlaylistAsync(string playlistId, string continuationToken = null, string accessToken = null)
         {
             var result = new PlaylistResult();
             try
@@ -38,8 +38,9 @@ namespace YTMusicWP
                     }
                     body["browseId"] = browseId;
                     
-                    // wAEB params often needed for full playlist track list in YouTube Music
-                    if (!isAlbum)
+                    // wAEB params often needed for full playlist track list in YouTube Music, but breaks system playlists like Liked Music (VLLM)
+                    bool isSystemPlaylist = playlistId == "LM" || playlistId == "VLLM" || browseId == "VLLM" || playlistId == "VLLL" || browseId == "VLLL";
+                    if (!isAlbum && !isSystemPlaylist)
                     {
                         body["params"] = "wAEB";
                     }
@@ -57,6 +58,15 @@ namespace YTMusicWP
                         if (prop.Name != "context") extraBody[prop.Name] = prop.Value;
                     }
                     data = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
+                }
+                else if (!string.IsNullOrEmpty(accessToken))
+                {
+                    var extraBody = new JObject();
+                    foreach (var prop in body.Properties())
+                    {
+                        if (prop.Name != "context") extraBody[prop.Name] = prop.Value;
+                    }
+                    data = await AuthInnerTubePostAsync("browse", extraBody, accessToken, "WEB_REMIX", "1.20260304.03.00");
                 }
                 else
                 {

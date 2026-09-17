@@ -47,7 +47,8 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    var plResult = await InnerTubeClient.BrowsePlaylistAsync(playlistId);
+                    string token = await GetAccessTokenAsync();
+                    var plResult = await InnerTubeClient.BrowsePlaylistAsync(playlistId, null, token);
                     if (!string.IsNullOrEmpty(plResult.Title))
                         PlaylistDetailsTitle.Text = plResult.Title;
 

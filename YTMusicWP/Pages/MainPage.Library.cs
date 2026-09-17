@@ -1159,7 +1159,8 @@ namespace YTMusicWP
 
                     _isLoadingMorePlaylist = true;
                     
-                    var plResult = await InnerTubeClient.BrowsePlaylistAsync(_currentViewingYtPlaylistId, _playlistContinuationToken);
+                    string token = await GetAccessTokenAsync();
+                    var plResult = await InnerTubeClient.BrowsePlaylistAsync(_currentViewingYtPlaylistId, _playlistContinuationToken, token);
 
                     if (plResult != null)
                     {

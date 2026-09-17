@@ -31,22 +31,24 @@ namespace YTMusicWP
                 OpenArtistProfile(track.VideoId.Substring(8), track.Title ?? track.ChannelName, true);
                 return;
             }
-            if (track.IsLikedMusic)
+            if (track.VideoId == "LIKED_MUSIC")
             {
-                if (favoriteTracks != null && favoriteTracks.Count > 0)
-                {
-                    OpenLikedSongsView();
-                    return;
-                }
-                else
-                {
-                    OpenYouTubePlaylist("LM", track.Title ?? "Liked Music", track.ThumbnailUrl);
-                    return;
-                }
+                OpenLikedSongsView();
+                return;
+            }
+            if (track.VideoId == "LM" || track.VideoId == "VLLM")
+            {
+                OpenYouTubePlaylist("LM", track.Title ?? "Liked Music", track.ThumbnailUrl);
+                return;
             }
             if (track.VideoId.StartsWith("PLAYLIST:"))
             {
                 OpenYouTubePlaylist(track.VideoId.Substring(9), track.Title, track.ThumbnailUrl);
+                return;
+            }
+            if (track.VideoId.StartsWith("ALBUM:"))
+            {
+                OpenYouTubePlaylist(track.VideoId.Substring(6), track.Title, track.ThumbnailUrl);
                 return;
             }
 
