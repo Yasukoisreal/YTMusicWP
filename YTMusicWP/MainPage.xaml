@@ -1838,9 +1838,9 @@
                 <StackPanel Orientation="Horizontal">
                     <Button x:Name="LibChipAll" Content="All" Click="LibChip_Click" Tag="all" Style="{StaticResource ChipButtonStyle}" Background="#1DB954" Foreground="Black" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
                     <Button x:Name="LibChipPlaylists" Content="Playlists" Click="LibChip_Click" Tag="playlists" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipSongs" Content="Songs" Click="LibChip_Click" Tag="songs" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
                     <Button x:Name="LibChipArtists" Content="Artists" Click="LibChip_Click" Tag="artists" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
-                    <Button x:Name="LibChipDownloads" Content="Downloads" Click="LibChip_Click" Tag="downloads" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
-                    <Button x:Name="LibChipRecent" Content="Recent" Click="LibChip_Click" Tag="recent" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,15,0"/>
+                    <Button x:Name="LibChipDownloads" Content="Downloads" Click="LibChip_Click" Tag="downloads" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,15,0"/>
                 </StackPanel>
             </ScrollViewer>
 
@@ -1949,9 +1949,26 @@
                             </ListView>
                         </StackPanel>
 
-                        <!-- Section Title -->
+                        <!-- Section Title & Sort Dropdown -->
                         <Grid Margin="0,0,0,8">
-                            <TextBlock x:Name="LibSectionTitle" Text="Recently Added" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="LibSectionTitle" Grid.Column="0" Text="Recently Added" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                            <Button x:Name="LibSortBtn" Grid.Column="1" Style="{StaticResource IconButtonStyle}" Padding="6,2" MinHeight="0" MinWidth="0" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock x:Name="LibSortLabel" Text="Recent activity" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#CCCCCC" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                    <TextBlock Text="▾" FontSize="11" Foreground="#CCCCCC" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem x:Name="LibSortItemActivity" Text="✓ Recent activity" Click="LibSortOption_Click" Tag="activity"/>
+                                        <MenuFlyoutItem x:Name="LibSortItemAdded" Text="  Recently added" Click="LibSortOption_Click" Tag="added"/>
+                                        <MenuFlyoutItem x:Name="LibSortItemPlayed" Text="  Recently played" Click="LibSortOption_Click" Tag="played"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
                         </Grid>
                     </StackPanel>
                 </ListView.Header>

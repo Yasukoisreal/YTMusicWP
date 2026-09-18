@@ -20,6 +20,7 @@ namespace YTMusicWP
     public sealed partial class MainPage
     {
         private string _libraryFilter = "all";
+        private string _librarySortMode = "activity";
         private ObservableCollection<LibraryItem> _libraryItems = new ObservableCollection<LibraryItem>();
         private bool _isViewingLikedSongs = false;
         private List<YouTubeTrack> _currentPlaylistFullTracks;
@@ -35,7 +36,7 @@ namespace YTMusicWP
             _libraryFilter = btn.Tag as string ?? "all";
 
             // Reset all chips to inactive
-            var chips = new[] { LibChipAll, LibChipPlaylists, LibChipArtists, LibChipDownloads, LibChipRecent };
+            var chips = new[] { LibChipAll, LibChipPlaylists, LibChipSongs, LibChipArtists, LibChipDownloads };
             foreach (var chip in chips)
             {
                 chip.Background = _chipInactiveBrush;
@@ -73,17 +74,18 @@ namespace YTMusicWP
                     case "playlists":
                         LibSectionTitle.Text = "Playlists";
                         break;
+                    case "songs":
+                        LibSectionTitle.Text = "Songs";
+                        break;
                     case "artists":
                         LibSectionTitle.Text = "Artists";
                         break;
                     case "downloads":
                         LibSectionTitle.Text = "Downloads";
                         break;
-                    case "recent":
-                        LibSectionTitle.Text = "Recently Played";
-                        break;
                     default:
-                        LibSectionTitle.Text = "Recently Added";
+                        LibSectionTitle.Text = (_librarySortMode == "activity") ? "Recent activity" :
+                                              (_librarySortMode == "played") ? "Recently played" : "Recently added";
                         break;
                 }
             }
@@ -93,7 +95,25 @@ namespace YTMusicWP
                 var ignored = LoadMostPlayedShelfAsync();
             }
 
-            // Liked Songs
+            // 1. Recently Played (if sort is "played")
+            if (_librarySortMode == "played")
+            {
+                if (historyTracks.Count > 0 && (showAll || _libraryFilter == "playlists"))
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = "Recently Played",
+                        Subtitle = "Playlist • " + historyTracks.Count + " songs",
+                        IconGlyph = "🕐",
+                        ThumbnailUrl = null,
+                        IsCircle = false,
+                        ItemType = "recent",
+                        Tag = null
+                    });
+                }
+            }
+
+            // 2. Liked Songs
             if ((showAll || _libraryFilter == "playlists") && !YTMusicWP.InnerTubeClient.HasCookieAuth)
             {
                 _libraryItems.Add(new LibraryItem
@@ -108,9 +128,70 @@ namespace YTMusicWP
                 });
             }
 
-            // (Local playlists removed — all playlists are now YouTube-synced)
+            // 3. Songs filter chip
+            if (_libraryFilter == "songs")
+            {
+                var songs = new List<YouTubeTrack>();
+                if (favoriteTracks != null) songs.AddRange(favoriteTracks);
+                if (downloadedTracks != null)
+                {
+                    foreach (var d in downloadedTracks)
+                    {
+                        if (!songs.Any(s => s.VideoId == d.VideoId))
+                            songs.Add(d);
+                    }
+                }
 
-            // Downloads
+                if (_librarySortMode == "played" && historyTracks != null && historyTracks.Count > 0)
+                {
+                    var playedMap = historyTracks.Select((t, idx) => new { t.VideoId, idx }).ToDictionary(x => x.VideoId, x => x.idx);
+                    songs = songs.OrderBy(s => playedMap.ContainsKey(s.VideoId) ? playedMap[s.VideoId] : 9999).ToList();
+                }
+
+                foreach (var track in songs)
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = track.Title,
+                        Subtitle = track.ChannelName,
+                        ThumbnailUrl = track.ThumbnailUrl,
+                        IconGlyph = "🎵",
+                        IsCircle = false,
+                        ItemType = "song",
+                        Tag = track
+                    });
+                }
+            }
+
+            // 4. YT Playlists
+            if (showAll || _libraryFilter == "playlists")
+            {
+                IEnumerable<YouTubePlaylistInfo> sortedPlaylists = _youtubeUserPlaylists;
+                if (_librarySortMode == "played")
+                {
+                    sortedPlaylists = _youtubeUserPlaylists.OrderByDescending(p => p.PlaylistId == "LM" ? 1 : 0);
+                }
+                else
+                {
+                    sortedPlaylists = _youtubeUserPlaylists.OrderByDescending(p => p.PlaylistId == "LM" ? 1 : 0);
+                }
+
+                foreach (var ytpl in sortedPlaylists)
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = ytpl.Title,
+                        Subtitle = "Playlist • " + ytpl.TrackCount + " tracks",
+                        ThumbnailUrl = ytpl.ThumbnailUrl,
+                        IconGlyph = null,
+                        IsCircle = false,
+                        ItemType = "ytplaylist",
+                        Tag = ytpl
+                    });
+                }
+            }
+
+            // 5. Downloads
             if (showAll || _libraryFilter == "downloads")
             {
                 if (downloadedTracks.Count > 0)
@@ -128,8 +209,32 @@ namespace YTMusicWP
                 }
             }
 
-            // Recent History
-            if (showAll || _libraryFilter == "recent")
+            // 6. Subscriptions (artists)
+            if (showAll || _libraryFilter == "artists")
+            {
+                IEnumerable<YouTubeSubscription> subs = _youtubeSubscriptions;
+                if (_librarySortMode == "added")
+                {
+                    subs = _youtubeSubscriptions.Reverse();
+                }
+
+                foreach (var sub in subs)
+                {
+                    _libraryItems.Add(new LibraryItem
+                    {
+                        Title = sub.Title,
+                        Subtitle = "Artist",
+                        ThumbnailUrl = sub.ThumbnailUrl,
+                        IconGlyph = null,
+                        IsCircle = true,
+                        ItemType = "artist",
+                        Tag = sub
+                    });
+                }
+            }
+
+            // 7. Recently Played (if showAll and not already added at top)
+            if (_librarySortMode != "played" && showAll)
             {
                 if (historyTracks.Count > 0)
                 {
@@ -142,42 +247,6 @@ namespace YTMusicWP
                         IsCircle = false,
                         ItemType = "recent",
                         Tag = null
-                    });
-                }
-            }
-
-            // YT Playlists
-            if (showAll || _libraryFilter == "playlists")
-            {
-                foreach (var ytpl in _youtubeUserPlaylists.OrderByDescending(p => p.PlaylistId == "LM" ? 1 : 0))
-                {
-                    _libraryItems.Add(new LibraryItem
-                    {
-                        Title = ytpl.Title,
-                        Subtitle = "Playlist • " + ytpl.TrackCount + " tracks",
-                        ThumbnailUrl = ytpl.ThumbnailUrl,
-                        IconGlyph = null,
-                        IsCircle = false,
-                        ItemType = "ytplaylist",
-                        Tag = ytpl
-                    });
-                }
-            }
-
-            // Subscriptions (artists)
-            if (showAll || _libraryFilter == "artists")
-            {
-                foreach (var sub in _youtubeSubscriptions)
-                {
-                    _libraryItems.Add(new LibraryItem
-                    {
-                        Title = sub.Title,
-                        Subtitle = "Artist",
-                        ThumbnailUrl = sub.ThumbnailUrl,
-                        IconGlyph = null,
-                        IsCircle = true,
-                        ItemType = "artist",
-                        Tag = sub
                     });
                 }
             }
@@ -359,7 +428,43 @@ namespace YTMusicWP
                     if (sub != null)
                         OpenArtistProfile(sub.ChannelId, sub.Title, true);
                     break;
+
+                case "song":
+                    var song = item.Tag as YouTubeTrack;
+                    if (song != null)
+                        PlayTrack(song);
+                    break;
             }
+        }
+
+        private void LibSortOption_Click(object sender, RoutedEventArgs e)
+        {
+            var item = sender as MenuFlyoutItem;
+            if (item == null) return;
+            string tag = item.Tag as string ?? "activity";
+            _librarySortMode = tag;
+
+            if (LibSortLabel != null)
+            {
+                switch (tag)
+                {
+                    case "added":
+                        LibSortLabel.Text = "Recently added";
+                        break;
+                    case "played":
+                        LibSortLabel.Text = "Recently played";
+                        break;
+                    default:
+                        LibSortLabel.Text = "Recent activity";
+                        break;
+                }
+            }
+
+            if (LibSortItemActivity != null) LibSortItemActivity.Text = (tag == "activity" ? "✓ " : "  ") + "Recent activity";
+            if (LibSortItemAdded != null) LibSortItemAdded.Text = (tag == "added" ? "✓ " : "  ") + "Recently added";
+            if (LibSortItemPlayed != null) LibSortItemPlayed.Text = (tag == "played" ? "✓ " : "  ") + "Recently played";
+
+            RefreshLibraryList();
         }
 
         private void LibTileFavorite_Click(object sender, RoutedEventArgs e)
