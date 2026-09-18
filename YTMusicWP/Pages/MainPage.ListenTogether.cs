@@ -7,6 +7,7 @@ using Windows.Media.Playback;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using YTMusicWP.Services.ListenTogether;
 
@@ -25,6 +26,7 @@ namespace YTMusicWP
             mgr.RemotePlaybackActionReceived += OnRemotePlaybackActionReceived;
             mgr.RemoteTrackChanged += OnRemoteTrackChanged;
 
+            LoadListenTogetherSettings();
             UpdateListenTogetherUI();
         }
 
@@ -51,6 +53,7 @@ namespace YTMusicWP
 
         private void CloseListenTogetherView_Click(object sender, RoutedEventArgs e)
         {
+            if (LtSettingsPanel != null) LtSettingsPanel.Visibility = Visibility.Collapsed;
             if (ListenTogetherView != null)
             {
                 ListenTogetherView.Visibility = Visibility.Collapsed;
@@ -526,6 +529,15 @@ namespace YTMusicWP
                         _appMediaPlayer.Position = TimeSpan.FromMilliseconds(corrected);
                     }
                 }
+
+                if (mgr.SyncVolume && act.Volume > 0 && act.Volume <= 1.0f)
+                {
+                    try
+                    {
+                        Windows.Media.Playback.BackgroundMediaPlayer.Current.Volume = act.Volume;
+                    }
+                    catch { }
+                }
             }
             catch (Exception ex)
             {
@@ -579,6 +591,241 @@ namespace YTMusicWP
             {
                 _isApplyingRemoteAction = false;
             }
+        }
+
+        #endregion
+
+        #region Listen Together Settings
+
+        private void LoadListenTogetherSettings()
+        {
+            try
+            {
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                var mgr = ListenTogetherManager.Instance;
+
+                if (settings.ContainsKey("LtDisplayName"))
+                {
+                    string name = settings["LtDisplayName"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        mgr.SelfUsername = name;
+                        if (LtDisplayNameBox != null) LtDisplayNameBox.Text = name;
+                    }
+                }
+
+                if (settings.ContainsKey("LtAutoApprove"))
+                {
+                    bool autoApprove = (bool)settings["LtAutoApprove"];
+                    mgr.AutoApproveJoins = autoApprove;
+                    if (LtAutoApproveToggle != null) LtAutoApproveToggle.IsOn = autoApprove;
+                }
+
+                if (settings.ContainsKey("LtAutoApproveSuggestions"))
+                {
+                    bool autoSug = (bool)settings["LtAutoApproveSuggestions"];
+                    mgr.AutoApproveSuggestions = autoSug;
+                    if (LtAutoApproveSuggestionsToggle != null) LtAutoApproveSuggestionsToggle.IsOn = autoSug;
+                }
+
+                if (settings.ContainsKey("LtSyncVolume"))
+                {
+                    bool syncVol = (bool)settings["LtSyncVolume"];
+                    mgr.SyncVolume = syncVol;
+                    if (LtSyncVolumeToggle != null) LtSyncVolumeToggle.IsOn = syncVol;
+                }
+
+                if (settings.ContainsKey("LtServerUrl"))
+                {
+                    string sUrl = settings["LtServerUrl"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(sUrl))
+                    {
+                        mgr.Client.ServerUrl = sUrl.Trim();
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void LtOpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            if (LtSettingsPanel == null) return;
+            var mgr = ListenTogetherManager.Instance;
+
+            if (LtSettingsNicknameBox != null)
+            {
+                LtSettingsNicknameBox.Text = string.IsNullOrWhiteSpace(LtDisplayNameBox?.Text) ? mgr.SelfUsername : LtDisplayNameBox.Text;
+            }
+
+            if (LtSettingsServerUrlBox != null)
+            {
+                LtSettingsServerUrlBox.Text = mgr.Client.ServerUrl;
+            }
+
+            if (LtAutoApproveToggle != null)
+            {
+                LtAutoApproveToggle.IsOn = mgr.AutoApproveJoins;
+            }
+
+            if (LtAutoApproveSuggestionsToggle != null)
+            {
+                LtAutoApproveSuggestionsToggle.IsOn = mgr.AutoApproveSuggestions;
+            }
+
+            if (LtSyncVolumeToggle != null)
+            {
+                LtSyncVolumeToggle.IsOn = mgr.SyncVolume;
+            }
+
+            if (LtSettingsActiveServerText != null)
+            {
+                string sUrl = mgr.Client.ServerUrl;
+                if (string.Equals(sUrl, ListenTogetherClient.DefaultServerUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    LtSettingsActiveServerText.Text = "The Meowery · Poland (Default)";
+                    LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
+                }
+                else
+                {
+                    LtSettingsActiveServerText.Text = sUrl;
+                    LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 229, 255));
+                }
+            }
+
+            LtSettingsPanel.Visibility = Visibility.Visible;
+        }
+
+        private void LtCloseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            if (LtSettingsPanel != null)
+            {
+                LtSettingsPanel.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void LtSettingsCard_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            LtOpenSettings_Click(sender, null);
+        }
+
+        private void LtAutoApproveToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (LtAutoApproveToggle == null) return;
+            var mgr = ListenTogetherManager.Instance;
+            mgr.AutoApproveJoins = LtAutoApproveToggle.IsOn;
+            try
+            {
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtAutoApprove"] = LtAutoApproveToggle.IsOn;
+            }
+            catch { }
+        }
+
+        private void LtAutoApproveSuggestionsToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (LtAutoApproveSuggestionsToggle == null) return;
+            var mgr = ListenTogetherManager.Instance;
+            mgr.AutoApproveSuggestions = LtAutoApproveSuggestionsToggle.IsOn;
+            try
+            {
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtAutoApproveSuggestions"] = LtAutoApproveSuggestionsToggle.IsOn;
+            }
+            catch { }
+        }
+
+        private void LtSyncVolumeToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (LtSyncVolumeToggle == null) return;
+            var mgr = ListenTogetherManager.Instance;
+            mgr.SyncVolume = LtSyncVolumeToggle.IsOn;
+            try
+            {
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtSyncVolume"] = LtSyncVolumeToggle.IsOn;
+            }
+            catch { }
+        }
+
+        private void LtSaveNickname_Click(object sender, RoutedEventArgs e)
+        {
+            if (LtSettingsNicknameBox == null) return;
+            string name = LtSettingsNicknameBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                ShowToast("Name cannot be empty");
+                return;
+            }
+
+            var mgr = ListenTogetherManager.Instance;
+            mgr.SelfUsername = name;
+            if (LtDisplayNameBox != null) LtDisplayNameBox.Text = name;
+
+            try
+            {
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtDisplayName"] = name;
+            }
+            catch { }
+
+            ShowToast("Display name saved: " + name);
+        }
+
+        private async void LtSettingsApplyServer_Click(object sender, RoutedEventArgs e)
+        {
+            if (LtSettingsServerUrlBox == null) return;
+            string newUrl = LtSettingsServerUrlBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(newUrl) || (!newUrl.StartsWith("ws://") && !newUrl.StartsWith("wss://")))
+            {
+                ShowToast("Enter a valid ws:// or wss:// URL");
+                return;
+            }
+
+            var mgr = ListenTogetherManager.Instance;
+            mgr.Client.ServerUrl = newUrl;
+            try
+            {
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtServerUrl"] = newUrl;
+            }
+            catch { }
+
+            if (LtSettingsActiveServerText != null)
+            {
+                LtSettingsActiveServerText.Text = newUrl;
+                LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 229, 255));
+            }
+
+            if (mgr.Connection == ConnectionState.Connected || mgr.Connection == ConnectionState.Connecting)
+            {
+                mgr.Disconnect();
+                await mgr.ConnectAsync();
+            }
+
+            ShowToast("Server updated!");
+        }
+
+        private async void LtSettingsResetServer_Click(object sender, RoutedEventArgs e)
+        {
+            var mgr = ListenTogetherManager.Instance;
+            string defaultUrl = ListenTogetherClient.DefaultServerUrl;
+            mgr.Client.ServerUrl = defaultUrl;
+            if (LtSettingsServerUrlBox != null) LtSettingsServerUrlBox.Text = defaultUrl;
+
+            try
+            {
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtServerUrl"] = defaultUrl;
+            }
+            catch { }
+
+            if (LtSettingsActiveServerText != null)
+            {
+                LtSettingsActiveServerText.Text = "The Meowery · Poland (Default)";
+                LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
+            }
+
+            if (mgr.Connection == ConnectionState.Connected || mgr.Connection == ConnectionState.Connecting)
+            {
+                mgr.Disconnect();
+                await mgr.ConnectAsync();
+            }
+
+            ShowToast("Reset to default server!");
         }
 
         #endregion

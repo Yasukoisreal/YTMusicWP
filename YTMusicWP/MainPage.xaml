@@ -2446,6 +2446,28 @@
                     </Border>
 
 
+                    <!-- ═══════ LISTEN TOGETHER ═══════ -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <Border Background="#00E5FF" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                    <TextBlock Text="👥" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="Sync playback in real-time with friends across WP8.1, Android, and PC." Foreground="#777" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                            <Button Click="OpenListenTogether_Click" Style="{StaticResource CategoryButtonStyle}" Height="42">
+                                <Border Background="#252525" CornerRadius="12">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <SymbolIcon Symbol="People" Foreground="#00E5FF" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Open Listen Together" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+
                     <!-- ═══════ LIVE TILE (START SCREEN) ═══════ -->
                     <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
                         <StackPanel>
@@ -2645,12 +2667,15 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Top Header Back Button -->
+            <!-- Top Header (Back + Settings) -->
             <Grid Grid.Row="0" Margin="10,15,10,0">
                 <Button Click="CloseListenTogetherView_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" HorizontalAlignment="Left" AutomationProperties.Name="Back">
                     <Viewbox Width="18" Height="18">
                         <Path Data="M20,11V13H8L13.5,18.5 12.08,19.92 4.16,12 12.08,4.08 13.5,5.5 8,11H20Z" Fill="White"/>
                     </Viewbox>
+                </Button>
+                <Button Click="LtOpenSettings_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" HorizontalAlignment="Right" AutomationProperties.Name="Settings">
+                    <SymbolIcon Symbol="Setting" Foreground="White"/>
                 </Button>
             </Grid>
 
@@ -2774,6 +2799,25 @@
                         <!-- Join Room Button -->
                         <Button x:Name="LtJoinRoomBtn" Content="Join room" Click="LtJoinRoom_Click" Style="{StaticResource ChipButtonStyle}" Background="#1C212B" Foreground="White" BorderBrush="#2B3242" BorderThickness="1" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Height="46" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
 
+                        <!-- Settings Link Card -->
+                        <Border Background="#1C212B" CornerRadius="12" Padding="14,12" Margin="0,0,0,16" Tapped="LtSettingsCard_Tapped">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Width="36" Height="36" CornerRadius="18" Background="#2B3242" Margin="0,0,12,0">
+                                    <SymbolIcon Symbol="Setting" Foreground="#00E5FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Settings" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White"/>
+                                    <TextBlock Text="Server URL, Auto-approval &amp; Sync" FontSize="11" Foreground="#888888"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="#666666" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
                         <!-- Warning Notice -->
                         <TextBlock Text="Leaving the app or switching away for too long will disconnect you from the room." FontSize="11" Foreground="#666666" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -2862,6 +2906,125 @@
                     </StackPanel>
                 </StackPanel>
             </ScrollViewer>
+
+            <!-- ── SETTINGS OVERLAY PANEL ── -->
+            <Grid x:Name="LtSettingsPanel" Grid.Row="0" Grid.RowSpan="2" Canvas.ZIndex="10" Visibility="Collapsed" Background="#0C0F14">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Settings Header -->
+                <Grid Grid.Row="0" Margin="10,15,10,10">
+                    <Button Click="LtCloseSettings_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" HorizontalAlignment="Left" AutomationProperties.Name="Back">
+                        <Viewbox Width="18" Height="18">
+                            <Path Data="M20,11V13H8L13.5,18.5 12.08,19.92 4.16,12 12.08,4.08 13.5,5.5 8,11H20Z" Fill="White"/>
+                        </Viewbox>
+                    </Button>
+                    <TextBlock Text="Settings" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="55,0,0,0"/>
+                </Grid>
+
+                <!-- Settings Content -->
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="20,0,20,30">
+                    <StackPanel>
+                        <!-- PROFILE / NICKNAME -->
+                        <TextBlock Text="PROFILE" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                        <Border Background="#1C212B" CornerRadius="12" Padding="14,14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Default Display Name" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock Text="The name others see in room lobby and member list" Foreground="#666666" FontSize="11" Margin="0,2,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="LtSettingsNicknameBox" PlaceholderText="Enter nickname" Background="#2B3242" Foreground="White" BorderThickness="0" Height="40" Padding="10,6" Margin="0,0,8,0"/>
+                                    <Button Grid.Column="1" Content="Save" Click="LtSaveNickname_Click" Style="{StaticResource ChipButtonStyle}" Background="#1DB954" Foreground="Black" FontWeight="Bold" Height="40" Padding="14,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- HOST PREFERENCES -->
+                        <TextBlock Text="HOST OPTIONS" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                        <Border Background="#1C212B" CornerRadius="12" Padding="14,12" Margin="0,0,0,16">
+                            <StackPanel>
+                                <!-- Auto-approve Joins -->
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                        <TextBlock Text="Auto-approve joins" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                        <TextBlock Text="Automatically accept join requests from friends" Foreground="#666666" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="LtAutoApproveToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center" Toggled="LtAutoApproveToggle_Toggled"/>
+                                </Grid>
+                                <Rectangle Height="1" Fill="#2B3242" Margin="0,10,0,10"/>
+
+                                <!-- Auto-approve Suggestions -->
+                                <Grid Margin="0,0,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                        <TextBlock Text="Auto-approve suggestions" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                        <TextBlock Text="Allow members to queue recommended songs" Foreground="#666666" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="LtAutoApproveSuggestionsToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center" Toggled="LtAutoApproveSuggestionsToggle_Toggled"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- PLAYBACK SYNC -->
+                        <TextBlock Text="PLAYBACK SYNC" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                        <Border Background="#1C212B" CornerRadius="12" Padding="14,12" Margin="0,0,0,16">
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="Sync host volume" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Keep device volume synchronized with host" Foreground="#666666" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="LtSyncVolumeToggle" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center" Toggled="LtSyncVolumeToggle_Toggled"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- SERVER CONFIGURATION -->
+                        <TextBlock Text="SERVER CONFIGURATION" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                        <Border Background="#1C212B" CornerRadius="12" Padding="14,14" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Active Server" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Name="LtSettingsActiveServerText" Text="The Meowery · Poland (Default)" Foreground="#1DB954" FontSize="12" Margin="0,2,0,10"/>
+
+                                <TextBlock Text="Custom Server URL" Foreground="#A0A0A0" FontSize="12" Margin="0,0,0,6"/>
+                                <TextBox x:Name="LtSettingsServerUrlBox" PlaceholderText="wss://..." Background="#2B3242" Foreground="White" BorderThickness="0" Height="40" Padding="10,6" Margin="0,0,0,10"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button x:Name="LtSettingsApplyServerBtn" Grid.Column="0" Content="Apply URL" Click="LtSettingsApplyServer_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="#00E5FF" Height="38" HorizontalAlignment="Stretch"/>
+                                    <Button x:Name="LtSettingsResetServerBtn" Grid.Column="2" Content="Reset Default" Click="LtSettingsResetServer_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="#A0A0A0" Height="38" HorizontalAlignment="Stretch"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- PROTOCOL INFO -->
+                        <Border Background="#141820" CornerRadius="12" Padding="14,12" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Compatible with MetroList &amp; SimpMusic" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                                <TextBlock Text="Protocol: metroproto v1 (Binary Proto3 over WebSocket)" FontSize="11" Foreground="#666666" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
         </Grid>
 
         <!-- ═══════════════════════════════════ PLAYLIST DETAILS ═══════════════════════════════════ -->

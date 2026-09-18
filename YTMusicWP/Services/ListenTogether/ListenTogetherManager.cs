@@ -74,6 +74,8 @@ namespace YTMusicWP.Services.ListenTogether
         public string PendingJoinCode { get; private set; }
         public string ErrorMessage { get; private set; }
         public bool AutoApproveJoins { get; set; } = false;
+        public bool AutoApproveSuggestions { get; set; } = false;
+        public bool SyncVolume { get; set; } = true;
 
         public ObservableCollection<RoomMember> Members { get; } = new ObservableCollection<RoomMember>();
         public ObservableCollection<PendingJoinRequest> JoinRequests { get; } = new ObservableCollection<PendingJoinRequest>();
