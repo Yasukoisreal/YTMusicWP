@@ -16,6 +16,9 @@ namespace YTMusicWP
     public sealed partial class MainPage
     {
         private bool _isApplyingRemoteAction;
+        private bool _isBufferingRemoteTrack;
+        private bool _pendingRemotePlay;
+        private long _pendingRemotePosition;
         private string _lastRemoteTrackId;
         private string _shareRoomCode;
 
@@ -499,6 +502,12 @@ namespace YTMusicWP
 
         private void OnRemotePlaybackActionReceived(PlaybackActionPayload act)
         {
+            if (!Dispatcher.HasThreadAccess)
+            {
+                var ign = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => OnRemotePlaybackActionReceived(act));
+                return;
+            }
+
             var mgr = ListenTogetherManager.Instance;
             if (!mgr.InRoom || mgr.IsHost || act == null) return;
 
@@ -507,26 +516,54 @@ namespace YTMusicWP
             {
                 if (act.Action == PlaybackActions.Play)
                 {
-                    if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing)
+                    _pendingRemotePlay = true;
+                    _pendingRemotePosition = act.Position;
+                    if (!_isBufferingRemoteTrack && _appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                     {
-                        _appMediaPlayer.Play();
+                        if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing)
+                        {
+                            _appMediaPlayer.Play();
+                        }
+                        long corrected = mgr.PositionAt(act.Position, true);
+                        double currentMs = _appMediaPlayer.Position.TotalMilliseconds;
+                        if (Math.Abs(currentMs - corrected) > 750)
+                        {
+                            _appMediaPlayer.Position = TimeSpan.FromMilliseconds(corrected);
+                        }
+                        SetPlayPauseIcon(true);
                     }
                 }
                 else if (act.Action == PlaybackActions.Pause)
                 {
-                    if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                    _pendingRemotePlay = false;
+                    _pendingRemotePosition = act.Position;
+                    if (!_isBufferingRemoteTrack && _appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing)
                     {
                         _appMediaPlayer.Pause();
+                        SetPlayPauseIcon(false);
                     }
                 }
-
-                if (act.Action == PlaybackActions.Seek || act.Action == PlaybackActions.Play)
+                else if (act.Action == PlaybackActions.Seek)
                 {
-                    long corrected = mgr.PositionAt(act.Position, true);
-                    double currentMs = _appMediaPlayer.Position.TotalMilliseconds;
-                    if (Math.Abs(currentMs - corrected) > 750)
+                    _pendingRemotePosition = act.Position;
+                    if (!_isBufferingRemoteTrack && _appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                     {
+                        long corrected = mgr.PositionAt(act.Position, mgr.IsPlaying);
                         _appMediaPlayer.Position = TimeSpan.FromMilliseconds(corrected);
+                    }
+                }
+                else if (act.Action == PlaybackActions.SyncQueue)
+                {
+                    if (act.Queue != null && act.Queue.Count > 0)
+                    {
+                        QueueListView.ItemsSource = null;
+                        currentQueueTracks.Clear();
+                        foreach (var q in act.Queue)
+                        {
+                            currentQueueTracks.Add(TrackInfoToYouTubeTrack(q));
+                        }
+                        QueueListView.ItemsSource = currentQueueTracks;
+                        UpdateQueueActiveState();
                     }
                 }
 
@@ -534,7 +571,10 @@ namespace YTMusicWP
                 {
                     try
                     {
-                        Windows.Media.Playback.BackgroundMediaPlayer.Current.Volume = act.Volume;
+                        if (_appMediaPlayer != null)
+                        {
+                            _appMediaPlayer.Volume = act.Volume;
+                        }
                     }
                     catch { }
                 }
@@ -551,46 +591,229 @@ namespace YTMusicWP
 
         private void OnRemoteTrackChanged(TrackInfo remoteTrack)
         {
+            if (!Dispatcher.HasThreadAccess)
+            {
+                var ign = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => OnRemoteTrackChanged(remoteTrack));
+                return;
+            }
+
             var mgr = ListenTogetherManager.Instance;
             if (!mgr.InRoom || mgr.IsHost || remoteTrack == null) return;
 
             if (currentTrack != null && currentTrack.VideoId == remoteTrack.Id)
             {
-                return; // Already playing this track
+                return; // Already playing/buffering this track
             }
 
+            _lastRemoteTrackId = remoteTrack.Id;
+            PlayRemoteTrack(remoteTrack);
+        }
+
+        private async void PlayRemoteTrack(TrackInfo remoteTrack)
+        {
+            if (remoteTrack == null || string.IsNullOrEmpty(remoteTrack.Id)) return;
+
+            var mgr = ListenTogetherManager.Instance;
+            _isBufferingRemoteTrack = true;
+            _pendingRemotePlay = mgr.IsPlaying;
+            _pendingRemotePosition = mgr.Position;
             _isApplyingRemoteAction = true;
+
             try
             {
-                _lastRemoteTrackId = remoteTrack.Id;
-                var ytTrack = new YouTubeTrack
+                var ytTrack = TrackInfoToYouTubeTrack(remoteTrack);
+                currentTrack = ytTrack;
+
+                // 1. Update queue from host if available
+                if (mgr.Queue != null && mgr.Queue.Count > 0)
                 {
-                    VideoId = remoteTrack.Id,
-                    Title = remoteTrack.Title,
-                    ChannelName = remoteTrack.Artist,
-                    ThumbnailUrl = remoteTrack.Thumbnail,
-                    Duration = (remoteTrack.Duration > 0)
-                        ? string.Format("{0}:{1:D2}", (int)(remoteTrack.Duration / 60000), (int)((remoteTrack.Duration % 60000) / 1000))
-                        : ""
+                    QueueListView.ItemsSource = null;
+                    currentQueueTracks.Clear();
+                    foreach (var q in mgr.Queue)
+                    {
+                        currentQueueTracks.Add(TrackInfoToYouTubeTrack(q));
+                    }
+                    QueueListView.ItemsSource = currentQueueTracks;
+                }
+                else if (!currentQueueTracks.Any(t => t.VideoId == ytTrack.VideoId))
+                {
+                    QueueListView.ItemsSource = null;
+                    currentQueueTracks.Clear();
+                    currentQueueTracks.Add(ytTrack);
+                    QueueListView.ItemsSource = currentQueueTracks;
+                }
+
+                // 2. Update UI metadata
+                MiniTitle.Text = ytTrack.Title;
+                BigTitle.Text = ytTrack.Title;
+                MiniArtist.Text = ytTrack.ChannelName;
+                BigArtist.Text = ytTrack.ChannelName;
+                MenuTitle.Text = ytTrack.Title;
+                MenuArtist.Text = ytTrack.ChannelName;
+
+                if (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
+                {
+                    var ignored2 = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
+                }
+
+                SetPlayPauseIcon(_pendingRemotePlay);
+
+                if (!string.IsNullOrEmpty(ytTrack.ThumbnailUrl))
+                {
+                    try
+                    {
+                        var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetNowPlayingThumbnail(ytTrack.ThumbnailUrl), UriKind.Absolute));
+                        bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                        BigCoverImage.ImageSource = bigBmp;
+                        if (AlbumArtEntranceStoryboard != null) AlbumArtEntranceStoryboard.Begin();
+                        MenuCoverImage.ImageSource = bigBmp;
+
+                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(ytTrack.ThumbnailUrl), UriKind.Absolute));
+                        miniBmp.DecodePixelWidth = 100;
+                        MiniCoverImage.ImageSource = miniBmp;
+                    }
+                    catch { }
+                }
+
+                bool isFav = favoriteTracks.Any(t => t.VideoId == ytTrack.VideoId);
+                BigHeartBtn.Content = isFav ? "♥" : "♡";
+                BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+
+                var ignoredLyrics = UpdateLyricsAsync(ytTrack.Title, ytTrack.ChannelName);
+                UpdateNowPlayingGradient(ytTrack.Title, ytTrack.ChannelName, ytTrack.ThumbnailUrl);
+                if (_isAppleMusicStyle)
+                {
+                    UpdateAppleMusicCompactHeaders();
+                }
+
+                if (MusicSlider != null) MusicSlider.Value = 0;
+                if (AppleMusicSlider != null) AppleMusicSlider.Value = 0;
+
+                // 3. Resolve stream URL
+                string resolvedUrl = "";
+                try
+                {
+                    resolvedUrl = await InnerTubeClient.ResolveStreamUrlAsync(ytTrack.VideoId) ?? "";
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("[ListenTogether] ResolveStreamUrlAsync error: " + ex.Message);
+                }
+
+                // 4. Prepare IPC slice for BackgroundTask (capped to 100 items around current)
+                var activeList = currentQueueTracks;
+                int trackIdx = -1;
+                for (int i = 0; i < activeList.Count; i++)
+                {
+                    if (activeList[i].VideoId == ytTrack.VideoId) { trackIdx = i; break; }
+                }
+                if (trackIdx < 0) trackIdx = 0;
+
+                int maxItems = 100;
+                int half = maxItems / 2;
+                int sliceStart = Math.Max(0, trackIdx - half);
+                int sliceEnd = Math.Min(activeList.Count - 1, trackIdx + half);
+                int count = sliceEnd - sliceStart + 1;
+                int relativeStartIndex = trackIdx - sliceStart;
+                if (relativeStartIndex < 0) relativeStartIndex = 0;
+
+                string[] urls = new string[count];
+                string[] titles = new string[count];
+                string[] artists = new string[count];
+                string[] videoIds = new string[count];
+                string[] thumbnails = new string[count];
+
+                for (int i = 0; i < count; i++)
+                {
+                    var t = activeList[sliceStart + i];
+                    if (i == relativeStartIndex && !string.IsNullOrEmpty(resolvedUrl))
+                        urls[i] = resolvedUrl;
+                    else
+                        urls[i] = t.VideoId.StartsWith("LOCAL:")
+                            ? "ms-appdata:///local/" + t.VideoId.Substring(6)
+                            : "";
+                    titles[i] = t.Title ?? "";
+                    artists[i] = t.ChannelName ?? "";
+                    videoIds[i] = t.VideoId ?? "";
+                    thumbnails[i] = t.ThumbnailUrl ?? "";
+                }
+
+                bool shouldStartPaused = !_pendingRemotePlay && !mgr.IsPlaying;
+                var message = new Windows.Foundation.Collections.ValueSet {
+                    { "UpdatePlaylist", "" },
+                    { "Urls", urls },
+                    { "Titles", titles },
+                    { "Artists", artists },
+                    { "VideoIds", videoIds },
+                    { "Thumbnails", thumbnails },
+                    { "StartIndex", relativeStartIndex },
+                    { "FastUrl", urls[relativeStartIndex] },
+                    { "StartPaused", shouldStartPaused }
                 };
 
-                PlayTrack(ytTrack);
-
-                // Report buffer ready to barrier once stream starts
-                var ignored = Task.Run(async () =>
+                try
                 {
-                    await Task.Delay(1500);
-                    await mgr.ReportBufferReadyAsync(remoteTrack.Id);
-                });
+                    BackgroundMediaPlayer.SendMessageToBackground(message);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("[ListenTogether] SendMessageToBackground error: " + ex.Message);
+                }
+
+                UpdateQueueActiveState();
+
+                // 5. Notify server that buffer is ready
+                await mgr.ReportBufferReadyAsync(remoteTrack.Id);
+                _isBufferingRemoteTrack = false;
+
+                // 6. If playback should now be running
+                if (_pendingRemotePlay || mgr.IsPlaying)
+                {
+                    await Task.Delay(250);
+                    try
+                    {
+                        if (_pendingRemotePosition > 0)
+                        {
+                            long targetPos = mgr.PositionAt(_pendingRemotePosition, true);
+                            _appMediaPlayer.Position = TimeSpan.FromMilliseconds(targetPos);
+                        }
+                        if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing)
+                        {
+                            _appMediaPlayer.Play();
+                        }
+                        SetPlayPauseIcon(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("[ListenTogether] Post-buffer play error: " + ex.Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("[ListenTogether] OnRemoteTrackChanged error: " + ex.Message);
+                Debug.WriteLine("[ListenTogether] PlayRemoteTrack error: " + ex.Message);
+                _isBufferingRemoteTrack = false;
             }
             finally
             {
                 _isApplyingRemoteAction = false;
             }
+        }
+
+        private YouTubeTrack TrackInfoToYouTubeTrack(TrackInfo info)
+        {
+            if (info == null) return null;
+            return new YouTubeTrack
+            {
+                VideoId = info.Id,
+                Title = info.Title ?? "",
+                ChannelName = info.Artist ?? "",
+                AlbumName = info.Album ?? "",
+                ThumbnailUrl = info.Thumbnail ?? "",
+                Duration = (info.Duration > 0)
+                    ? string.Format("{0}:{1:D2}", (int)(info.Duration / 60000), (int)((info.Duration % 60000) / 1000))
+                    : ""
+            };
         }
 
         #endregion

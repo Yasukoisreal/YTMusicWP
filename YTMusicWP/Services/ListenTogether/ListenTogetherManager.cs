@@ -335,6 +335,20 @@ namespace YTMusicWP.Services.ListenTogether
                             IsPlaying = ja.State.IsPlaying;
                             Position = ja.State.Position;
                             Queue = ja.State.Queue ?? new List<TrackInfo>();
+
+                            if (CurrentTrack != null)
+                            {
+                                RemoteTrackChanged?.Invoke(CurrentTrack);
+                            }
+                            if (IsPlaying)
+                            {
+                                RemotePlaybackActionReceived?.Invoke(new PlaybackActionPayload
+                                {
+                                    Action = PlaybackActions.Play,
+                                    Position = Position,
+                                    TrackInfo = CurrentTrack
+                                });
+                            }
                         }
                     });
                     var ignored = RequestSyncAsync();
@@ -473,6 +487,20 @@ namespace YTMusicWP.Services.ListenTogether
                         {
                             Queue = ss.Queue;
                         }
+                        if (ss.CurrentTrack != null)
+                        {
+                            RemoteTrackChanged?.Invoke(ss.CurrentTrack);
+                        }
+                        if (ss.IsPlaying)
+                        {
+                            RemotePlaybackActionReceived?.Invoke(new PlaybackActionPayload
+                            {
+                                Action = PlaybackActions.Play,
+                                Position = ss.Position,
+                                TrackInfo = ss.CurrentTrack,
+                                CapturedAtServerTime = ss.LastUpdate
+                            });
+                        }
                     });
                     break;
 
@@ -494,12 +522,13 @@ namespace YTMusicWP.Services.ListenTogether
                             Queue = act.Queue;
                         }
                         LastActionServerTime = act.CapturedAtServerTime;
+
+                        RemotePlaybackActionReceived?.Invoke(act);
+                        if (act.TrackInfo != null)
+                        {
+                            RemoteTrackChanged?.Invoke(act.TrackInfo);
+                        }
                     });
-                    RemotePlaybackActionReceived?.Invoke(act);
-                    if (act.TrackInfo != null)
-                    {
-                        RemoteTrackChanged?.Invoke(act.TrackInfo);
-                    }
                     break;
 
                 case MessageTypes.Error:
@@ -522,14 +551,28 @@ namespace YTMusicWP.Services.ListenTogether
             {
                 await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                 {
-                    action();
-                    StateChanged?.Invoke();
+                    try
+                    {
+                        action();
+                        StateChanged?.Invoke();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("[ListenTogetherManager] SetState error: " + ex.Message);
+                    }
                 });
             }
             else
             {
-                action();
-                StateChanged?.Invoke();
+                try
+                {
+                    action();
+                    StateChanged?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("[ListenTogetherManager] SetState error: " + ex.Message);
+                }
             }
         }
     }

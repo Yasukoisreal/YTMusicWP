@@ -50,6 +50,7 @@ namespace AudioPlayerTask
         private double _playbackRate = 1.0;
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
         private volatile bool _isUserPaused = false;
+        private volatile bool _startPaused = false;
         private bool _isCurrentTrackLive = false;
         private LiveMediaStreamSource _liveMss = null;
         private string _currentLiveBaseUrl = null;
@@ -178,6 +179,7 @@ namespace AudioPlayerTask
                 ResetRetryState();
                 if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
                 _currentLoadedVidId = "";
+                _startPaused = e.Data.ContainsKey("StartPaused") && Convert.ToBoolean(e.Data["StartPaused"]);
                 StartPlaybackAsync();
             }
             else if (e.Data.ContainsKey("UpdateQueueOnly"))
@@ -1572,8 +1574,20 @@ namespace AudioPlayerTask
                 _mediaPlayer.SetUriSource(new Uri(trackUrl));
                 try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                 _currentLoadedVidId = vidId;
-                _mediaPlayer.Play();
-                _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+
+                if (_startPaused)
+                {
+                    _startPaused = false;
+                    _mediaPlayer.AutoPlay = false;
+                    _mediaPlayer.Pause();
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
+                }
+                else
+                {
+                    _mediaPlayer.AutoPlay = true;
+                    _mediaPlayer.Play();
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                }
 
                 // Start crossfade monitoring (gapless pre-resolve triggers near end of track)
                 StartPlaybackMonitor();
@@ -2360,7 +2374,7 @@ namespace AudioPlayerTask
         {
             try
             {
-                if (sender.AutoPlay || sender.CurrentState != MediaPlayerState.Playing)
+                if (sender.AutoPlay && sender.CurrentState != MediaPlayerState.Playing)
                 {
                     sender.Play();
                 }
