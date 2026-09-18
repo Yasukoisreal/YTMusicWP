@@ -60,6 +60,7 @@ namespace YTMusicWP.Services.ListenTogether
             {
                 _webSocket = new MessageWebSocket();
                 _webSocket.Control.MessageType = SocketMessageType.Binary;
+                _webSocket.SetRequestHeader("User-Agent", "com.metrolist.music");
                 _webSocket.MessageReceived += OnWebSocketMessageReceived;
                 _webSocket.Closed += OnWebSocketClosed;
 
@@ -74,21 +75,26 @@ namespace YTMusicWP.Services.ListenTogether
                 {
                     SupportsProtobuf = true,
                     SupportsCompression = false,
-                    ClientVersion = "YTMusicWP-2.2"
+                    ClientVersion = "13.7.0"
                 };
                 byte[] capsPayload = ProtobufCodec.EncodeClientCapabilities(clientCaps);
                 await SendRawAsync(MessageTypes.ClientCapabilities, capsPayload);
 
-                // 2. Await server capabilities with 10-second timeout
-                var timeoutTask = Task.Delay(10000, _cts.Token);
+                // 2. Await server capabilities with 5-second timeout (fallback if server does not respond)
+                var timeoutTask = Task.Delay(5000, _cts.Token);
                 var completedTask = await Task.WhenAny(_handshakeTcs.Task, timeoutTask);
-                if (completedTask == timeoutTask)
+                ServerCapabilities serverCaps;
+                if (completedTask == _handshakeTcs.Task)
                 {
-                    throw new TimeoutException("Listen Together handshake timed out after 10 seconds");
+                    serverCaps = await _handshakeTcs.Task;
+                    Debug.WriteLine("[ListenTogetherClient] Handshake complete! Server version: " + serverCaps.ServerVersion);
                 }
-
-                var serverCaps = await _handshakeTcs.Task;
-                Debug.WriteLine("[ListenTogetherClient] Handshake complete! Server version: " + serverCaps.ServerVersion);
+                else
+                {
+                    Debug.WriteLine("[ListenTogetherClient] ServerCapabilities timeout or not sent, proceeding anyway");
+                    serverCaps = new ServerCapabilities { SupportsProtobuf = true, ServerVersion = "unknown" };
+                    _handshakeTcs.TrySetResult(serverCaps);
+                }
 
                 // 3. If resuming a session, send reconnect
                 if (!string.IsNullOrEmpty(_sessionToken))
