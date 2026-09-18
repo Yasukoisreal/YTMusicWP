@@ -56,6 +56,43 @@ namespace YTMusicWP
 
             bool showAll = _libraryFilter == "all";
 
+            if (LibQuickSection != null)
+            {
+                LibQuickSection.Visibility = showAll ? Visibility.Visible : Visibility.Collapsed;
+            }
+
+            if (LibMostPlayedSection != null && !showAll)
+            {
+                LibMostPlayedSection.Visibility = Visibility.Collapsed;
+            }
+
+            if (LibSectionTitle != null)
+            {
+                switch (_libraryFilter)
+                {
+                    case "playlists":
+                        LibSectionTitle.Text = "Danh sách phát";
+                        break;
+                    case "artists":
+                        LibSectionTitle.Text = "Nghệ sĩ";
+                        break;
+                    case "downloads":
+                        LibSectionTitle.Text = "Đã tải xuống";
+                        break;
+                    case "recent":
+                        LibSectionTitle.Text = "Gần đây";
+                        break;
+                    default:
+                        LibSectionTitle.Text = "Đã thêm gần đây";
+                        break;
+                }
+            }
+
+            if (showAll)
+            {
+                var ignored = LoadMostPlayedShelfAsync();
+            }
+
             // Liked Songs
             if ((showAll || _libraryFilter == "playlists") && !YTMusicWP.InnerTubeClient.HasCookieAuth)
             {
@@ -322,6 +359,79 @@ namespace YTMusicWP
                     if (sub != null)
                         OpenArtistProfile(sub.ChannelId, sub.Title, true);
                     break;
+            }
+        }
+
+        private void LibTileFavorite_Click(object sender, RoutedEventArgs e)
+        {
+            OpenLikedSongsView();
+        }
+
+        private void LibTileFollowed_Click(object sender, RoutedEventArgs e)
+        {
+            LibChip_Click(LibChipArtists, null);
+        }
+
+        private async void LibTileMostPlayed_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var mostPlayed = await Services.DatabaseHelper.GetMostPlayedAsync(50);
+                if (mostPlayed != null && mostPlayed.Count > 0)
+                {
+                    _currentViewingPlaylist = null;
+                    _currentViewingYtPlaylistId = null;
+                    _playlistContinuationToken = null;
+                    _isViewingLikedSongs = false;
+                    PlaylistDetailsTitle.Text = "Phát nhiều nhất";
+                    PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+                    SetPlaylistViewTracks(mostPlayed, mostPlayed.Count + " tracks");
+                    PlaylistDetailsView.Visibility = Visibility.Visible;
+                    PlaylistSlideInStoryboard.Begin();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LibTileMostPlayed_Click error: " + ex.Message);
+            }
+        }
+
+        private void LibTileDownloaded_Click(object sender, RoutedEventArgs e)
+        {
+            _currentViewingPlaylist = null;
+            _currentViewingYtPlaylistId = null;
+            _playlistContinuationToken = null;
+            _isViewingLikedSongs = false;
+            PlaylistDetailsTitle.Text = "Đã tải xuống";
+            PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
+            SetPlaylistViewTracks(downloadedTracks, downloadedTracks.Count + " tracks");
+            PlaylistDetailsView.Visibility = Visibility.Visible;
+            PlaylistSlideInStoryboard.Begin();
+        }
+
+        private async Task LoadMostPlayedShelfAsync()
+        {
+            if (LibMostPlayedSection == null || LibMostPlayedCarousel == null) return;
+            try
+            {
+                var mostPlayed = await Services.DatabaseHelper.GetMostPlayedAsync(10);
+                if (mostPlayed != null && mostPlayed.Count > 0)
+                {
+                    LibMostPlayedCarousel.ItemsSource = mostPlayed;
+                    if (_libraryFilter == "all")
+                    {
+                        LibMostPlayedSection.Visibility = Visibility.Visible;
+                    }
+                }
+                else
+                {
+                    LibMostPlayedSection.Visibility = Visibility.Collapsed;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("LoadMostPlayedShelfAsync Error: " + ex.Message);
+                LibMostPlayedSection.Visibility = Visibility.Collapsed;
             }
         }
 

@@ -99,6 +99,31 @@ namespace YTMusicWP.Services
             return results;
         }
 
+        public static async Task<List<YouTubeTrack>> GetMostPlayedAsync(int limit = 10)
+        {
+            var results = new List<YouTubeTrack>();
+            if (_db == null) return results;
+
+            try
+            {
+                var entities = await _db.Table<HistoryEntity>()
+                    .Where(x => x.PlayCount > 0)
+                    .OrderByDescending(x => x.PlayCount)
+                    .Take(limit)
+                    .ToListAsync();
+
+                foreach (var e in entities)
+                {
+                    results.Add(e.ToYouTubeTrack());
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("GetMostPlayedAsync Error: " + ex.Message);
+            }
+            return results;
+        }
+
         public static async Task ClearHistoryAsync()
         {
             if (_db != null) await _db.DropTableAsync<HistoryEntity>();

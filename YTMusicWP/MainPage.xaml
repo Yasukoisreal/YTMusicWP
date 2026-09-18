@@ -1782,7 +1782,6 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -1806,7 +1805,7 @@
                         </Ellipse.Fill>
                     </Ellipse>
                 </Grid>
-                <TextBlock Grid.Column="1" Text="Your Library" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="Thư viện" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
                 <Button x:Name="LibrarySyncBtn" Grid.Column="2" Click="LibrarySync_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
                     <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="18" Foreground="White"/>
                 </Button>
@@ -1840,13 +1839,117 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- Sort Row -->
-            <Grid Grid.Row="2" Margin="15,0,15,6">
-                <TextBlock Text="Recents" FontSize="13" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratSemiBold}" VerticalAlignment="Center"/>
-            </Grid>
-
             <!-- Unified Library List -->
-            <ListView x:Name="LibraryUnifiedList" Grid.Row="3" IsItemClickEnabled="True" ItemClick="LibraryUnified_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="15,0,15,0">
+            <ListView x:Name="LibraryUnifiedList" Grid.Row="2" IsItemClickEnabled="True" ItemClick="LibraryUnified_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False" Margin="15,0,15,0">
+                <ListView.Header>
+                    <StackPanel Margin="0,4,0,8">
+                        <!-- 4 Quick-access cards (SimpMusic style) -->
+                        <Grid x:Name="LibQuickSection" Margin="0,4,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="50"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="50"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- 1. Yêu thích (Favorite) -->
+                            <Button x:Name="LibTileFavorite" Grid.Row="0" Grid.Column="0" Click="LibTileFavorite_Click" Style="{StaticResource CategoryButtonStyle}">
+                                <Border Background="#FF99AE" CornerRadius="8" Padding="12,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Viewbox Width="20" Height="20" Margin="0,0,8,0">
+                                            <Path Fill="#D10000" Data="M12,21.35L10.55,20.03C5.4,15.36 2,12.28 2,8.5C2,5.42 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.09C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.42 22,8.5C22,12.28 18.6,15.36 13.45,20.04L12,21.35Z"/>
+                                        </Viewbox>
+                                        <TextBlock Text="Yêu thích" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- 2. Đã theo dõi (Followed) -->
+                            <Button x:Name="LibTileFollowed" Grid.Row="0" Grid.Column="2" Click="LibTileFollowed_Click" Style="{StaticResource CategoryButtonStyle}">
+                                <Border Background="#FFEB3B" CornerRadius="8" Padding="12,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Viewbox Width="20" Height="20" Margin="0,0,8,0">
+                                            <Path Fill="Black" Data="M5,9.2h3V19H5V9.2z M10.6,5h2.8v14h-2.8V5z M16.2,13H19v6h-2.8V13z"/>
+                                        </Viewbox>
+                                        <TextBlock Text="Đã theo dõi" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- 3. Phát nhiều nhất (Most Played) -->
+                            <Button x:Name="LibTileMostPlayed" Grid.Row="2" Grid.Column="0" Click="LibTileMostPlayed_Click" Style="{StaticResource CategoryButtonStyle}">
+                                <Border Background="#00BCD4" CornerRadius="8" Padding="12,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Viewbox Width="20" Height="20" Margin="0,0,8,0">
+                                            <Path Fill="Black" Data="M16,6l2.29,2.29-4.88,4.88-4-4L2,16.59 3.41,18l6-6 4,4 6.3-6.29L22,12V6z"/>
+                                        </Viewbox>
+                                        <TextBlock Text="Phát nhiều nhất" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <!-- 4. Đã tải xuống (Downloaded) -->
+                            <Button x:Name="LibTileDownloaded" Grid.Row="2" Grid.Column="2" Click="LibTileDownloaded_Click" Style="{StaticResource CategoryButtonStyle}">
+                                <Border Background="#4CAF50" CornerRadius="8" Padding="12,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Viewbox Width="20" Height="20" Margin="0,0,8,0">
+                                            <Path Fill="Black" Data="M19,9h-4V3H9v6H5l7,7 7-7z M5,18v2h14v-2H5z"/>
+                                        </Viewbox>
+                                        <TextBlock Text="Đã tải xuống" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </Grid>
+
+                        <!-- Most Played Shelf -->
+                        <StackPanel x:Name="LibMostPlayedSection" Visibility="Collapsed" Margin="0,0,0,16">
+                            <TextBlock Text="Phát nhiều nhất" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+                            <ListView x:Name="LibMostPlayedCarousel" Height="175" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False">
+                                <ListView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ListView.ItemsPanel>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Width="110" Margin="0,0,12,0" Background="Transparent" Holding="SongItem_Holding">
+                                            <FlyoutBase.AttachedFlyout>
+                                                <MenuFlyout>
+                                                    <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                                                    <MenuFlyoutItem Text="♡ Favorite" Click="MenuFavorite_Click"/>
+                                                    <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                                                    <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                                                </MenuFlyout>
+                                            </FlyoutBase.AttachedFlyout>
+                                            <StackPanel>
+                                                <Rectangle Width="110" Height="110" RadiusX="8" RadiusY="8" Margin="0,0,0,6">
+                                                    <Rectangle.Fill>
+                                                        <ImageBrush Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center">
+                                                            <ImageBrush.ImageSource>
+                                                                <BitmapImage UriSource="{Binding ThumbnailUrl, Converter={StaticResource SquareThumbConverter}}" DecodePixelWidth="120"/>
+                                                            </ImageBrush.ImageSource>
+                                                        </ImageBrush>
+                                                    </Rectangle.Fill>
+                                                </Rectangle>
+                                                <TextBlock Text="{Binding Title}" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding ChannelName}" FontSize="11" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </StackPanel>
+
+                        <!-- Section Title -->
+                        <Grid Margin="0,0,0,8">
+                            <TextBlock x:Name="LibSectionTitle" Text="Đã thêm gần đây" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </ListView.Header>
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Margin="0,5,0,5" Background="Transparent">
@@ -1882,7 +1985,7 @@
             </ListView>
 
             <!-- Empty State -->
-            <StackPanel x:Name="LibraryEmptyState" Grid.Row="3" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <StackPanel x:Name="LibraryEmptyState" Grid.Row="2" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <TextBlock Text="🎵" FontSize="48" HorizontalAlignment="Center"/>
                 <TextBlock Text="No items yet" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,8,0,0"/>
             </StackPanel>
