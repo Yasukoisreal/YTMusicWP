@@ -38,8 +38,6 @@ namespace YTMusicWP
             if (historyTracks.Count > 0)
             {
                 HomeHistorySection.Visibility = Visibility.Visible;
-                HomeQuickGrid.ItemsSource = null;
-                HomeQuickGrid.Visibility = Visibility.Collapsed;
                 HomeHistoryCarousel.ItemsSource = null;
 
                 historyQuickGridTracks.Clear();
@@ -47,6 +45,12 @@ namespace YTMusicWP
                 for (int i = 0; i < countGrid; i++)
                 {
                     historyQuickGridTracks.Add(historyTracks[i]);
+                }
+
+                if (HomeQuickGrid != null)
+                {
+                    HomeQuickGrid.ItemsSource = historyQuickGridTracks;
+                    HomeQuickGrid.Visibility = (historyQuickGridTracks.Count > 0) ? Visibility.Visible : Visibility.Collapsed;
                 }
 
                 homeHistoryCarouselTracks.Clear();
@@ -63,6 +67,11 @@ namespace YTMusicWP
             }
             else
             {
+                if (HomeQuickGrid != null)
+                {
+                    HomeQuickGrid.ItemsSource = null;
+                    HomeQuickGrid.Visibility = Visibility.Collapsed;
+                }
                 HomeHistorySection.Visibility = Visibility.Collapsed;
                 HomeArtistsSection.Visibility = Visibility.Collapsed;
             }
@@ -267,6 +276,7 @@ namespace YTMusicWP
             // When a filter is selected, hide personal history and artists shelves since filter feeds only contain mood/activity content
             if (!string.IsNullOrEmpty(filterParams))
             {
+                if (HomeQuickGrid != null) HomeQuickGrid.Visibility = Visibility.Collapsed;
                 if (HomeHistorySection != null) HomeHistorySection.Visibility = Visibility.Collapsed;
                 if (HomeArtistsSection != null) HomeArtistsSection.Visibility = Visibility.Collapsed;
             }

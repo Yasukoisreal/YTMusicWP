@@ -228,6 +228,7 @@ namespace YTMusicWP
             SearchSongList.ItemsSource = searchResults;
 
             HomeHistoryCarousel.ItemsSource = homeHistoryCarouselTracks;
+            HomeQuickGrid.ItemsSource = historyQuickGridTracks;
             HomeQuickGrid.Visibility = Visibility.Collapsed;
 
             FavoriteSongList.ItemsSource = favoriteTracks;
@@ -432,6 +433,7 @@ namespace YTMusicWP
             if (wrapGrid != null && e.NewSize.Width > 0)
             {
                 wrapGrid.ItemWidth = Math.Max(0, e.NewSize.Width / 2);
+                wrapGrid.ItemHeight = 66;
             }
         }
 
