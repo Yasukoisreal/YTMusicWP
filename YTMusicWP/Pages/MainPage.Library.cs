@@ -35,17 +35,17 @@ namespace YTMusicWP
             if (btn == null) return;
             _libraryFilter = btn.Tag as string ?? "all";
 
-            // Reset all chips to inactive
+            // Reset all chips to inactive (YouTube Music style)
             var chips = new[] { LibChipAll, LibChipPlaylists, LibChipSongs, LibChipArtists, LibChipDownloads };
             foreach (var chip in chips)
             {
-                chip.Background = _chipInactiveBrush;
-                chip.Foreground = _whiteBrush;
+                chip.Background = _ytmChipInactiveBgBrush;
+                chip.Foreground = _ytmChipInactiveFgBrush;
             }
 
-            // Set active chip
-            btn.Background = _chipActiveBrush;
-            btn.Foreground = _libChipActiveTextBrush;
+            // Set active chip (YouTube Music style)
+            btn.Background = _ytmChipActiveBgBrush;
+            btn.Foreground = _ytmChipActiveFgBrush;
 
             RefreshLibraryList();
         }

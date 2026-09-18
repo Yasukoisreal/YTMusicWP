@@ -151,7 +151,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="16" Padding="{TemplateBinding Padding}">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
@@ -1836,11 +1836,11 @@
             <!-- Filter Chips -->
             <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="15,0,0,8">
                 <StackPanel Orientation="Horizontal">
-                    <Button x:Name="LibChipAll" Content="All" Click="LibChip_Click" Tag="all" Style="{StaticResource ChipButtonStyle}" Background="#1DB954" Foreground="Black" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
-                    <Button x:Name="LibChipPlaylists" Content="Playlists" Click="LibChip_Click" Tag="playlists" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
-                    <Button x:Name="LibChipSongs" Content="Songs" Click="LibChip_Click" Tag="songs" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
-                    <Button x:Name="LibChipArtists" Content="Artists" Click="LibChip_Click" Tag="artists" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,8,0"/>
-                    <Button x:Name="LibChipDownloads" Content="Downloads" Click="LibChip_Click" Tag="downloads" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="16,8" Margin="0,0,15,0"/>
+                    <Button x:Name="LibChipAll" Content="All" Click="LibChip_Click" Tag="all" Style="{StaticResource ChipButtonStyle}" Background="White" Foreground="#0F0F0F" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipPlaylists" Content="Playlists" Click="LibChip_Click" Tag="playlists" Style="{StaticResource ChipButtonStyle}" Background="#262626" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipSongs" Content="Songs" Click="LibChip_Click" Tag="songs" Style="{StaticResource ChipButtonStyle}" Background="#262626" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipArtists" Content="Artists" Click="LibChip_Click" Tag="artists" Style="{StaticResource ChipButtonStyle}" Background="#262626" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                    <Button x:Name="LibChipDownloads" Content="Downloads" Click="LibChip_Click" Tag="downloads" Style="{StaticResource ChipButtonStyle}" Background="#262626" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,15,0"/>
                 </StackPanel>
             </ScrollViewer>
 
