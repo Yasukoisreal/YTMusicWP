@@ -112,6 +112,11 @@
     <Compile Include="Pages\MainPage.Storage.cs" />
     <Compile Include="Pages\MainPage.Navigation.cs" />
     <Compile Include="Pages\MainPage.Shorts.cs" />
+    <Compile Include="Pages\MainPage.ListenTogether.cs" />
+    <Compile Include="Services\ListenTogether\ProtobufCodec.cs" />
+    <Compile Include="Services\ListenTogether\ServerClock.cs" />
+    <Compile Include="Services\ListenTogether\ListenTogetherClient.cs" />
+    <Compile Include="Services\ListenTogether\ListenTogetherManager.cs" />
     <Compile Include="Services\InnerTubeClient.cs" />
 
     <Compile Include="Services\InnerTubeClient.Auth.cs" />

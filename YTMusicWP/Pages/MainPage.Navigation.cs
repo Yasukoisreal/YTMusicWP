@@ -83,6 +83,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseShortsView();
             }
+            else if (ListenTogetherView != null && ListenTogetherView.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseListenTogetherView_Click(null, null);
+            }
             else if (SettingsPanel.Visibility == Visibility.Visible)
             {
                 e.Handled = true;

@@ -874,6 +874,14 @@ namespace YTMusicWP
 
         private void MainPage_DataRequested(DataTransferManager sender, DataRequestedEventArgs args)
         {
+            if (!string.IsNullOrEmpty(_shareRoomCode))
+            {
+                args.Request.Data.Properties.Title = "Join my music room";
+                args.Request.Data.SetText("Join my music room with code " + _shareRoomCode + " on YTMusicWP, SimpMusic or Metrolist!");
+                _shareRoomCode = null;
+                return;
+            }
+
             if (LiveDebugDialog != null && LiveDebugDialog.Visibility == Visibility.Visible)
             {
                 args.Request.Data.Properties.Title = "Live Stream Logs - YTMusicWP";

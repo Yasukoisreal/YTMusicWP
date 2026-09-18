@@ -57,6 +57,7 @@ namespace YTMusicWP
             if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast("No Internet connection"); return; }
 
             currentTrack = track;
+            OnTrackStartedAsHost(track);
             MiniTitle.Text = track.Title; BigTitle.Text = track.Title;
             // Start marquee only if NowPlaying is already open (otherwise it starts when panel opens)
             if (NowPlayingView.Visibility == Visibility.Visible)
@@ -669,6 +670,7 @@ namespace YTMusicWP
                         var slider = (sender as Slider) ?? MusicSlider;
                         _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(slider.Value, Math.Max(0, totalSec - 2)));
                         if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                        OnSeekOccurredAsHost((long)_appMediaPlayer.Position.TotalMilliseconds);
                     }
                 }
             }
@@ -687,10 +689,12 @@ namespace YTMusicWP
                 else if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
                 {
                     _appMediaPlayer.Pause();
+                    OnPlayPauseChangedAsHost(false);
                 }
                 else
                 {
                     _appMediaPlayer.Play();
+                    OnPlayPauseChangedAsHost(true);
                 }
             }
             catch { }
@@ -936,6 +940,7 @@ namespace YTMusicWP
                     if (!string.IsNullOrEmpty(vid))
                     {
                         currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
+                        OnTrackStartedAsHost(currentTrack);
 
                         bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
                         BigHeartBtn.Content = isFav ? "♥" : "♡";

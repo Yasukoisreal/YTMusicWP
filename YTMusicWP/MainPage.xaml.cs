@@ -261,6 +261,7 @@ namespace YTMusicWP
             InitializeStartupSplash();
             InitializeHomePullToRefresh();
             CleanupTempLiveFiles();
+            InitializeListenTogether();
         }
 
         private async void CleanupTempLiveFiles()

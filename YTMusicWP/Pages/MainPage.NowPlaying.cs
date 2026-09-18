@@ -1362,6 +1362,7 @@ namespace YTMusicWP
                         {
                             _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(AppleMusicSlider.Value, Math.Max(0, totalSec - 2)));
                             if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                            OnSeekOccurredAsHost((long)_appMediaPlayer.Position.TotalMilliseconds);
                         }
                     }
                 }
