@@ -71,19 +71,19 @@ namespace YTMusicWP
                 switch (_libraryFilter)
                 {
                     case "playlists":
-                        LibSectionTitle.Text = "Danh sách phát";
+                        LibSectionTitle.Text = "Playlists";
                         break;
                     case "artists":
-                        LibSectionTitle.Text = "Nghệ sĩ";
+                        LibSectionTitle.Text = "Artists";
                         break;
                     case "downloads":
-                        LibSectionTitle.Text = "Đã tải xuống";
+                        LibSectionTitle.Text = "Downloads";
                         break;
                     case "recent":
-                        LibSectionTitle.Text = "Gần đây";
+                        LibSectionTitle.Text = "Recently Played";
                         break;
                     default:
-                        LibSectionTitle.Text = "Đã thêm gần đây";
+                        LibSectionTitle.Text = "Recently Added";
                         break;
                 }
             }
@@ -383,7 +383,7 @@ namespace YTMusicWP
                     _currentViewingYtPlaylistId = null;
                     _playlistContinuationToken = null;
                     _isViewingLikedSongs = false;
-                    PlaylistDetailsTitle.Text = "Phát nhiều nhất";
+                    PlaylistDetailsTitle.Text = "Most Played";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     SetPlaylistViewTracks(mostPlayed, mostPlayed.Count + " tracks");
                     PlaylistDetailsView.Visibility = Visibility.Visible;
@@ -402,7 +402,7 @@ namespace YTMusicWP
             _currentViewingYtPlaylistId = null;
             _playlistContinuationToken = null;
             _isViewingLikedSongs = false;
-            PlaylistDetailsTitle.Text = "Đã tải xuống";
+            PlaylistDetailsTitle.Text = "Downloaded Songs";
             PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             SetPlaylistViewTracks(downloadedTracks, downloadedTracks.Count + " tracks");
             PlaylistDetailsView.Visibility = Visibility.Visible;
