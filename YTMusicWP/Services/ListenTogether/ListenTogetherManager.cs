@@ -509,11 +509,21 @@ namespace YTMusicWP.Services.ListenTogether
                     var act = ProtobufCodec.DecodePlaybackAction(payload);
                     SetState(() =>
                     {
-                        CurrentTrack = act.TrackInfo ?? CurrentTrack;
-                        if (act.Action == PlaybackActions.Play) IsPlaying = true;
-                        else if (act.Action == PlaybackActions.Pause) IsPlaying = false;
+                        var trackToUse = act.TrackInfo;
+                        if (trackToUse == null && !string.IsNullOrEmpty(act.TrackId))
+                        {
+                            trackToUse = Queue.FirstOrDefault(t => t.Id == act.TrackId);
+                            if (trackToUse == null)
+                            {
+                                trackToUse = new TrackInfo { Id = act.TrackId, Title = "Loading track..." };
+                            }
+                        }
 
-                        if (act.Action != PlaybackActions.SyncQueue)
+                        CurrentTrack = trackToUse ?? CurrentTrack;
+                        if (string.Equals(act.Action, PlaybackActions.Play, StringComparison.OrdinalIgnoreCase)) IsPlaying = true;
+                        else if (string.Equals(act.Action, PlaybackActions.Pause, StringComparison.OrdinalIgnoreCase)) IsPlaying = false;
+
+                        if (!string.Equals(act.Action, PlaybackActions.SyncQueue, StringComparison.OrdinalIgnoreCase))
                         {
                             Position = act.Position;
                         }
@@ -524,9 +534,9 @@ namespace YTMusicWP.Services.ListenTogether
                         LastActionServerTime = act.CapturedAtServerTime;
 
                         RemotePlaybackActionReceived?.Invoke(act);
-                        if (act.TrackInfo != null)
+                        if (trackToUse != null)
                         {
-                            RemoteTrackChanged?.Invoke(act.TrackInfo);
+                            RemoteTrackChanged?.Invoke(trackToUse);
                         }
                     });
                     break;

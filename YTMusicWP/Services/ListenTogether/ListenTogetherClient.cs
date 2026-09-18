@@ -74,7 +74,7 @@ namespace YTMusicWP.Services.ListenTogether
                 var clientCaps = new ClientCapabilities
                 {
                     SupportsProtobuf = true,
-                    SupportsCompression = false,
+                    SupportsCompression = true,
                     ClientVersion = "13.7.0"
                 };
                 byte[] capsPayload = ProtobufCodec.EncodeClientCapabilities(clientCaps);

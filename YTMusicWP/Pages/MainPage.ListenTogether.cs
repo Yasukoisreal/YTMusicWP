@@ -514,7 +514,28 @@ namespace YTMusicWP
             _isApplyingRemoteAction = true;
             try
             {
-                if (act.Action == PlaybackActions.Play)
+                // Check if the action targets a track that is DIFFERENT from current track
+                string targetTrackId = !string.IsNullOrEmpty(act.TrackId) ? act.TrackId : act.TrackInfo?.Id;
+                bool isChangeTrack = string.Equals(act.Action, PlaybackActions.ChangeTrack, StringComparison.OrdinalIgnoreCase);
+
+                if (isChangeTrack || (!string.IsNullOrEmpty(targetTrackId) && (currentTrack == null || currentTrack.VideoId != targetTrackId)))
+                {
+                    var trackToSwitch = act.TrackInfo;
+                    if (trackToSwitch == null && !string.IsNullOrEmpty(targetTrackId))
+                    {
+                        trackToSwitch = mgr.Queue.FirstOrDefault(t => t.Id == targetTrackId)
+                                     ?? (mgr.CurrentTrack?.Id == targetTrackId ? mgr.CurrentTrack : null)
+                                     ?? new TrackInfo { Id = targetTrackId, Title = "Loading track..." };
+                    }
+
+                    if (trackToSwitch != null)
+                    {
+                        PlayRemoteTrack(trackToSwitch);
+                        return;
+                    }
+                }
+
+                if (string.Equals(act.Action, PlaybackActions.Play, StringComparison.OrdinalIgnoreCase))
                 {
                     _pendingRemotePlay = true;
                     _pendingRemotePosition = act.Position;
@@ -533,7 +554,7 @@ namespace YTMusicWP
                         SetPlayPauseIcon(true);
                     }
                 }
-                else if (act.Action == PlaybackActions.Pause)
+                else if (string.Equals(act.Action, PlaybackActions.Pause, StringComparison.OrdinalIgnoreCase))
                 {
                     _pendingRemotePlay = false;
                     _pendingRemotePosition = act.Position;
@@ -543,7 +564,7 @@ namespace YTMusicWP
                         SetPlayPauseIcon(false);
                     }
                 }
-                else if (act.Action == PlaybackActions.Seek)
+                else if (string.Equals(act.Action, PlaybackActions.Seek, StringComparison.OrdinalIgnoreCase))
                 {
                     _pendingRemotePosition = act.Position;
                     if (!_isBufferingRemoteTrack && _appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Closed)
@@ -552,7 +573,7 @@ namespace YTMusicWP
                         _appMediaPlayer.Position = TimeSpan.FromMilliseconds(corrected);
                     }
                 }
-                else if (act.Action == PlaybackActions.SyncQueue)
+                else if (string.Equals(act.Action, PlaybackActions.SyncQueue, StringComparison.OrdinalIgnoreCase))
                 {
                     if (act.Queue != null && act.Queue.Count > 0)
                     {
@@ -602,6 +623,19 @@ namespace YTMusicWP
 
             if (currentTrack != null && currentTrack.VideoId == remoteTrack.Id)
             {
+                if (string.IsNullOrEmpty(currentTrack.Title) || currentTrack.Title == "Loading track...")
+                {
+                    if (!string.IsNullOrEmpty(remoteTrack.Title) && remoteTrack.Title != "Loading track...")
+                    {
+                        currentTrack.Title = remoteTrack.Title;
+                        currentTrack.ChannelName = remoteTrack.Artist ?? "";
+                        if (!string.IsNullOrEmpty(remoteTrack.Thumbnail)) currentTrack.ThumbnailUrl = remoteTrack.Thumbnail;
+                        MiniTitle.Text = currentTrack.Title;
+                        BigTitle.Text = currentTrack.Title;
+                        MiniArtist.Text = currentTrack.ChannelName;
+                        BigArtist.Text = currentTrack.ChannelName;
+                    }
+                }
                 return; // Already playing/buffering this track
             }
 
@@ -641,6 +675,22 @@ namespace YTMusicWP
                     currentQueueTracks.Clear();
                     currentQueueTracks.Add(ytTrack);
                     QueueListView.ItemsSource = currentQueueTracks;
+                }
+
+                // If title is missing or generic, fetch metadata from YouTube
+                if (string.IsNullOrEmpty(ytTrack.Title) || ytTrack.Title == "Loading track...")
+                {
+                    try
+                    {
+                        var meta = await InnerTubeClient.GetVideoMetadataAsync(ytTrack.VideoId);
+                        if (meta != null && !string.IsNullOrEmpty(meta.Item1))
+                        {
+                            ytTrack.Title = meta.Item1;
+                            ytTrack.ChannelName = meta.Item2;
+                            if (string.IsNullOrEmpty(ytTrack.ThumbnailUrl)) ytTrack.ThumbnailUrl = meta.Item3;
+                        }
+                    }
+                    catch { }
                 }
 
                 // 2. Update UI metadata
@@ -769,19 +819,27 @@ namespace YTMusicWP
                 // 6. If playback should now be running
                 if (_pendingRemotePlay || mgr.IsPlaying)
                 {
-                    await Task.Delay(250);
                     try
                     {
-                        if (_pendingRemotePosition > 0)
-                        {
-                            long targetPos = mgr.PositionAt(_pendingRemotePosition, true);
-                            _appMediaPlayer.Position = TimeSpan.FromMilliseconds(targetPos);
-                        }
-                        if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing)
+                        if (_appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Playing && _appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                         {
                             _appMediaPlayer.Play();
                         }
                         SetPlayPauseIcon(true);
+
+                        if (_pendingRemotePosition > 0)
+                        {
+                            for (int retry = 0; retry < 15; retry++)
+                            {
+                                await Task.Delay(200);
+                                if (_appMediaPlayer != null && (_appMediaPlayer.CurrentState == MediaPlayerState.Playing || _appMediaPlayer.CurrentState == MediaPlayerState.Paused))
+                                {
+                                    long targetPos = mgr.PositionAt(_pendingRemotePosition, true);
+                                    _appMediaPlayer.Position = TimeSpan.FromMilliseconds(targetPos);
+                                    break;
+                                }
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -792,10 +850,10 @@ namespace YTMusicWP
             catch (Exception ex)
             {
                 Debug.WriteLine("[ListenTogether] PlayRemoteTrack error: " + ex.Message);
-                _isBufferingRemoteTrack = false;
             }
             finally
             {
+                _isBufferingRemoteTrack = false;
                 _isApplyingRemoteAction = false;
             }
         }

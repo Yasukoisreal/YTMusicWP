@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace YTMusicWP.Services.ListenTogether
@@ -459,7 +460,33 @@ namespace YTMusicWP.Services.ListenTogether
                     }
                 }
             }
+
+            if (env.Compressed && env.Payload != null && env.Payload.Length > 0)
+            {
+                env.Payload = DecompressGzip(env.Payload);
+            }
+
             return env;
+        }
+
+        public static byte[] DecompressGzip(byte[] data)
+        {
+            if (data == null || data.Length == 0) return data;
+            try
+            {
+                using (var input = new MemoryStream(data))
+                using (var gzip = new GZipStream(input, CompressionMode.Decompress))
+                using (var output = new MemoryStream())
+                {
+                    gzip.CopyTo(output);
+                    return output.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[ProtobufCodec] Decompress gzip error: " + ex.Message);
+                return data;
+            }
         }
 
         public static byte[] EncodeClientCapabilities(ClientCapabilities caps)
@@ -887,6 +914,7 @@ namespace YTMusicWP.Services.ListenTogether
 
         public static TrackInfo DecodeTrackInfo(byte[] data)
         {
+            if (data == null || data.Length == 0) return null;
             var t = new TrackInfo();
             using (var ms = new MemoryStream(data))
             {
@@ -908,6 +936,7 @@ namespace YTMusicWP.Services.ListenTogether
                     }
                 }
             }
+            if (string.IsNullOrEmpty(t.Id) && string.IsNullOrEmpty(t.Title)) return null;
             return t;
         }
 
