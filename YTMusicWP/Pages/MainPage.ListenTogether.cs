@@ -463,6 +463,47 @@ namespace YTMusicWP
         }
 
         /// <summary>
+        /// Update host track duration once NaturalDuration is loaded by MediaPlayer,
+        /// ensuring metroserver and guests (like MetroList) know the true duration and do not clamp playback/seek to 180s.
+        /// </summary>
+        public async void UpdateHostTrackDuration(long realDurationMs)
+        {
+            var mgr = ListenTogetherManager.Instance;
+            if (!mgr.InRoom || !mgr.IsHost || mgr.CurrentTrack == null) return;
+            if (realDurationMs <= 0) return;
+            // Only update if duration was unknown (<= 0) and we are within the first 4 seconds of playback
+            if (mgr.CurrentTrack.Duration > 0) return;
+
+            long currentPos = 0;
+            try { if (_appMediaPlayer != null) currentPos = (long)_appMediaPlayer.Position.TotalMilliseconds; } catch { }
+            if (currentPos > 4000) return;
+
+            Debug.WriteLine(string.Format("[ListenTogether] Updating host track duration from {0}ms to {1}ms", mgr.CurrentTrack.Duration, realDurationMs));
+            mgr.CurrentTrack.Duration = realDurationMs;
+
+            try
+            {
+                var queue = currentQueueTracks.Take(50).Select(t => new TrackInfo
+                {
+                    Id = t.VideoId,
+                    Title = t.Title ?? "",
+                    Artist = t.ChannelName ?? "",
+                    Thumbnail = t.ThumbnailUrl ?? ""
+                }).ToList();
+
+                await mgr.SendPlaybackActionAsync(PlaybackActions.ChangeTrack, mgr.CurrentTrack.Id, currentPos, mgr.CurrentTrack, queue, "Queue");
+                if (_appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                {
+                    await mgr.SendPlaybackActionAsync(PlaybackActions.Play, mgr.CurrentTrack.Id, currentPos, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[ListenTogether] UpdateHostTrackDuration error: " + ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Called when Play/Pause is toggled as Host.
         /// </summary>
         public async void OnPlayPauseChangedAsHost(bool isPlaying)
@@ -511,6 +552,43 @@ namespace YTMusicWP
             var mgr = ListenTogetherManager.Instance;
             if (!mgr.InRoom || mgr.IsHost || act == null) return;
 
+            double localPosMs = 0;
+            double naturalDurMs = 0;
+            try
+            {
+                if (_appMediaPlayer != null)
+                {
+                    localPosMs = _appMediaPlayer.Position.TotalMilliseconds;
+                    naturalDurMs = _appMediaPlayer.NaturalDuration.TotalMilliseconds;
+                }
+            }
+            catch { }
+
+            Debug.WriteLine(string.Format("[ListenTogether RECV] Action={0}, Pos={1}ms, LocalPos={2:F0}ms, NatDur={3:F0}ms, RoomDur={4}ms",
+                act.Action, act.Position, localPosMs, naturalDurMs, mgr.CurrentTrack != null ? mgr.CurrentTrack.Duration : 0));
+
+            // MetroList / MetroServer 3-minute clamp detection:
+            // When MetroList host doesn't have track duration, it falls back to 180,000ms (3 minutes).
+            // MetroServer then clamps any heartbeat or sync position >= 180,000ms down to 180,000ms.
+            // If our actual local media is longer than 3 minutes and local playback is already at or beyond 3:00,
+            // ignore incoming Play heartbeat actions clamped at 180,000ms to avoid repeatedly yanking playback back to 3:01.
+            bool isClampedHeartbeat = string.Equals(act.Action, PlaybackActions.Play, StringComparison.OrdinalIgnoreCase)
+                && (mgr.CurrentTrack == null || mgr.CurrentTrack.Duration <= 180000)
+                && act.Position >= 179000 && act.Position <= 181000
+                && naturalDurMs > 185000 && localPosMs >= 179000;
+
+            if (isClampedHeartbeat)
+            {
+                Debug.WriteLine("[ListenTogether] Ignored 180s clamped heartbeat to maintain smooth playback past 3:00");
+                _pendingRemotePlay = true;
+                if (_appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Playing && !_isBufferingRemoteTrack)
+                {
+                    _appMediaPlayer.Play();
+                }
+                SetPlayPauseIcon(true);
+                return;
+            }
+
             _isApplyingRemoteAction = true;
             try
             {
@@ -537,9 +615,28 @@ namespace YTMusicWP
                 {
                     _pendingRemotePlay = false;
                     _pendingRemotePosition = act.Position;
-                    if (!_isBufferingRemoteTrack && _appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                    if (!_isBufferingRemoteTrack && _appMediaPlayer != null)
                     {
-                        _appMediaPlayer.Pause();
+                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                        {
+                            _appMediaPlayer.Pause();
+                        }
+                        if (act.Position > 0)
+                        {
+                            bool isClampedPause = (mgr.CurrentTrack == null || mgr.CurrentTrack.Duration <= 180000)
+                                && act.Position >= 179000 && act.Position <= 181000
+                                && naturalDurMs > 185000 && localPosMs >= 179000;
+
+                            if (!isClampedPause)
+                            {
+                                long corrected = mgr.PositionAt(act.Position, false);
+                                double currentMs = _appMediaPlayer.Position.TotalMilliseconds;
+                                if (Math.Abs(currentMs - corrected) > 750)
+                                {
+                                    _appMediaPlayer.Position = TimeSpan.FromMilliseconds(corrected);
+                                }
+                            }
+                        }
                         SetPlayPauseIcon(false);
                     }
                 }
@@ -549,6 +646,7 @@ namespace YTMusicWP
                     if (!_isBufferingRemoteTrack && _appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                     {
                         long corrected = mgr.PositionAt(act.Position, mgr.IsPlaying);
+                        Debug.WriteLine(string.Format("[ListenTogether] Applying SEEK to {0}ms (raw pos={1}ms)", corrected, act.Position));
                         _appMediaPlayer.Position = TimeSpan.FromMilliseconds(corrected);
                     }
                 }

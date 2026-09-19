@@ -471,6 +471,15 @@ namespace YTMusicWP
 
             TimeSpan pos, dur;
             try { pos = session.Position; dur = session.NaturalDuration; } catch { return; }
+
+            if (dur.TotalMilliseconds > 0 && YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.InRoom && YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.IsHost)
+            {
+                var curTrack = YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.CurrentTrack;
+                if (curTrack != null && curTrack.Duration <= 0)
+                {
+                    UpdateHostTrackDuration((long)dur.TotalMilliseconds);
+                }
+            }
             bool isCurrentLive = false;
             try
             {
