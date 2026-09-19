@@ -18,6 +18,7 @@
     <AppxBundlePlatforms>arm</AppxBundlePlatforms>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
     <AppxBundle>Never</AppxBundle>
+    <AppxPackage>true</AppxPackage>
     <PackageCertificateKeyFile>YTMusicWP_Certificate.pfx</PackageCertificateKeyFile>
     <PackageCertificateThumbprint>9FEF997F87ED036822C9B954380A15757AE182D4</PackageCertificateThumbprint>
   </PropertyGroup>

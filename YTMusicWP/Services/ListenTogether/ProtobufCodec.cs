@@ -67,7 +67,7 @@ namespace YTMusicWP.Services.ListenTogether
     {
         public bool SupportsProtobuf { get; set; } = true;
         public bool SupportsCompression { get; set; } = false;
-        public string ClientVersion { get; set; } = "YTMusicWP-2.2";
+        public string ClientVersion { get; set; } = "YTMusicWP-2.3";
     }
 
     public class ServerCapabilities
