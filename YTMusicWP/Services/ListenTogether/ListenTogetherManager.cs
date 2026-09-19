@@ -510,7 +510,7 @@ namespace YTMusicWP.Services.ListenTogether
                     SetState(() =>
                     {
                         var trackToUse = act.TrackInfo;
-                        if (trackToUse == null && !string.IsNullOrEmpty(act.TrackId))
+                        if (trackToUse == null && !string.IsNullOrEmpty(act.TrackId) && (CurrentTrack == null || CurrentTrack.Id != act.TrackId))
                         {
                             trackToUse = Queue.FirstOrDefault(t => t.Id == act.TrackId);
                             if (trackToUse == null)
@@ -519,7 +519,10 @@ namespace YTMusicWP.Services.ListenTogether
                             }
                         }
 
-                        CurrentTrack = trackToUse ?? CurrentTrack;
+                        if (trackToUse != null)
+                        {
+                            CurrentTrack = trackToUse;
+                        }
                         if (string.Equals(act.Action, PlaybackActions.Play, StringComparison.OrdinalIgnoreCase)) IsPlaying = true;
                         else if (string.Equals(act.Action, PlaybackActions.Pause, StringComparison.OrdinalIgnoreCase)) IsPlaying = false;
 
