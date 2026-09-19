@@ -431,21 +431,66 @@ namespace YTMusicWP
             UpdateLyricsVisualState();
         }
 
-        private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
+        private async void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var line = e.ClickedItem as LyricLine;
-            if (line != null && line.Text != "♪" && line.Text != "")
+            if (line == null || line.Time >= TimeSpan.FromHours(1)) return;
+
+            try
             {
-                try
+                if (_appMediaPlayer == null || _appMediaPlayer.CurrentState == MediaPlayerState.Closed)
+                    return;
+
+                var mgr = YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance;
+                if (mgr.InRoom && !mgr.IsHost)
                 {
-                    if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
-                    {
-                        _appMediaPlayer.Position = line.Time;
-                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
-                        OnSeekOccurredAsHost((long)line.Time.TotalMilliseconds);
-                    }
+                    // In Listen Together, only the host can control playback position
+                    return;
                 }
-                catch { }
+
+                // Suppress timer ticks from reverting UI while IPC seek settles
+                _isSliderManipulating = true;
+
+                _appMediaPlayer.Position = line.Time;
+                if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused)
+                {
+                    _appMediaPlayer.Play();
+                    OnPlayPauseChangedAsHost(true);
+                }
+                OnSeekOccurredAsHost((long)line.Time.TotalMilliseconds);
+
+                // Immediate UI feedback for sliders & time
+                double sec = line.Time.TotalSeconds;
+                if (MusicSlider != null) MusicSlider.Value = sec;
+                if (AppleMusicSlider != null) AppleMusicSlider.Value = sec;
+                if (MiniProgressBar != null) MiniProgressBar.Value = sec;
+
+                string curText = line.Time.ToString(@"m\:ss");
+                if (CurrentTimeText != null) CurrentTimeText.Text = curText;
+                if (AppleMusicCurrentTime != null) AppleMusicCurrentTime.Text = curText;
+
+                double totalSec = 0;
+                try { totalSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
+                if (AppleMusicRemainingTime != null && totalSec > 0)
+                {
+                    var remain = Math.Max(0, totalSec - sec);
+                    AppleMusicRemainingTime.Text = "-" + string.Format("{0}:{1:D2}", (int)remain / 60, (int)remain % 60);
+                }
+
+                // Immediately highlight and center the clicked lyric
+                int targetIndex = currentLyrics.IndexOf(line);
+                if (targetIndex >= 0)
+                {
+                    currentLyricIndex = targetIndex;
+                    ForceUpdateLyricUI();
+                }
+
+                await Task.Delay(400);
+                _isSliderManipulating = false;
+            }
+            catch
+            {
+                _isSliderManipulating = false;
             }
         }
         private void LyricsListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)

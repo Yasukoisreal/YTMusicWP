@@ -23,6 +23,35 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        private static int FindTrackIndex(IEnumerable<YouTubeTrack> list, YouTubeTrack track)
+        {
+            if (list == null || track == null) return -1;
+            int index = 0;
+            // First pass: reference equality
+            foreach (var item in list)
+            {
+                if (object.ReferenceEquals(item, track)) return index;
+                index++;
+            }
+            // Second pass: VideoId equality
+            if (!string.IsNullOrEmpty(track.VideoId))
+            {
+                index = 0;
+                foreach (var item in list)
+                {
+                    if (item != null && item.VideoId == track.VideoId)
+                        return index;
+                    index++;
+                }
+            }
+            return -1;
+        }
+
+        private static bool ContainsTrack(IEnumerable<YouTubeTrack> list, YouTubeTrack track)
+        {
+            return FindTrackIndex(list, track) >= 0;
+        }
+
         private async void PlayTrack(YouTubeTrack track)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
@@ -102,36 +131,43 @@ namespace YTMusicWP
             // Nếu detect sau khi insert, historyTracks.Contains(track) sẽ luôn true,
             // gây mất nguồn context thực sự (search, playlist, favorites...).
             ObservableCollection<YouTubeTrack> activeList = homeTracks;
-            if (currentQueueTracks.Contains(track)) activeList = currentQueueTracks;
-            else if (searchResults.Contains(track)) activeList = searchResults;
-            else if (favoriteTracks.Contains(track)) activeList = favoriteTracks;
-            else if (downloadedTracks.Contains(track)) activeList = downloadedTracks;
-            else if (homeHistoryCarouselTracks.Contains(track)) activeList = homeHistoryCarouselTracks;
-            else if (historyQuickGridTracks.Contains(track)) activeList = historyQuickGridTracks;
-            else if (podcastTracks.Contains(track)) activeList = podcastTracks;
-            else if (audiobookTracks.Contains(track)) activeList = audiobookTracks;
-            else if (PlaylistDetailsView != null && PlaylistDetailsView.Visibility == Visibility.Visible && PlaylistSongsList != null && PlaylistSongsList.ItemsSource != null && ((IEnumerable<YouTubeTrack>)PlaylistSongsList.ItemsSource).Contains(track))
+            if (ContainsTrack(currentQueueTracks, track)) activeList = currentQueueTracks;
+            else if (ContainsTrack(searchResults, track)) activeList = searchResults;
+            else if (ContainsTrack(favoriteTracks, track)) activeList = favoriteTracks;
+            else if (ContainsTrack(downloadedTracks, track)) activeList = downloadedTracks;
+            else if (ContainsTrack(homeHistoryCarouselTracks, track)) activeList = homeHistoryCarouselTracks;
+            else if (ContainsTrack(historyQuickGridTracks, track)) activeList = historyQuickGridTracks;
+            else if (ContainsTrack(podcastTracks, track)) activeList = podcastTracks;
+            else if (ContainsTrack(audiobookTracks, track)) activeList = audiobookTracks;
+            else if (PlaylistDetailsView != null && PlaylistDetailsView.Visibility == Visibility.Visible && PlaylistSongsList != null && PlaylistSongsList.ItemsSource != null && ContainsTrack(PlaylistSongsList.ItemsSource as IEnumerable<YouTubeTrack>, track))
             {
-                activeList = new ObservableCollection<YouTubeTrack>((IEnumerable<YouTubeTrack>)PlaylistSongsList.ItemsSource);
+                var playlistItems = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
+                activeList = playlistItems ?? new ObservableCollection<YouTubeTrack>((IEnumerable<YouTubeTrack>)PlaylistSongsList.ItemsSource);
             }
-            else if (historyTracks.Contains(track)) activeList = historyTracks;
-            else if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Contains(track)) activeList = _currentViewingPlaylist.Tracks;
-            else if (ArtistSongsList.ItemsSource != null) { var artistList = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>; if (artistList != null && artistList.Contains(track)) activeList = artistList; }
+            else if (ContainsTrack(historyTracks, track)) activeList = historyTracks;
+            else if (_currentViewingPlaylist != null && ContainsTrack(_currentViewingPlaylist.Tracks, track)) activeList = _currentViewingPlaylist.Tracks;
+            else if (ArtistSongsList.ItemsSource != null && ContainsTrack(ArtistSongsList.ItemsSource as IEnumerable<YouTubeTrack>, track))
+            {
+                var artistList = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
+                activeList = artistList ?? new ObservableCollection<YouTubeTrack>((IEnumerable<YouTubeTrack>)ArtistSongsList.ItemsSource);
+            }
             else if (HomeDynamicSections.ItemsSource != null)
             {
                 var sections = HomeDynamicSections.ItemsSource as System.Collections.Generic.IEnumerable<YTMusicWP.InnerTubeClient.HomeSection>;
                 if (sections != null)
                 {
-                    var foundSection = System.Linq.Enumerable.FirstOrDefault(sections, s => s.Tracks.Contains(track));
+                    var foundSection = System.Linq.Enumerable.FirstOrDefault(sections, s => ContainsTrack(s.Tracks, track));
                     if (foundSection != null)
                         activeList = new ObservableCollection<YouTubeTrack>(foundSection.Tracks);
                 }
             }
 
+            int trackIdx = FindTrackIndex(activeList, track);
             // SAFETY FALLBACK: Prevents IndexOutOfRangeException if track is not in activeList
-            if (activeList == null || !activeList.Contains(track))
+            if (activeList == null || trackIdx < 0)
             {
                 activeList = new ObservableCollection<YouTubeTrack> { track };
+                trackIdx = 0;
             }
 
             // Cập nhật lịch sử SAU khi đã chọn activeList
@@ -156,10 +192,10 @@ namespace YTMusicWP
             // OPTIMIZATION: Giới hạn mảng gửi sang BackgroundTask để tránh lỗi IPC Payload quá tải (RAM 512MB)
             int maxItems = 100;
             int half = maxItems / 2;
-            int sliceStart = Math.Max(0, activeList.IndexOf(track) - half);
-            int sliceEnd = Math.Min(activeList.Count - 1, activeList.IndexOf(track) + half);
+            int sliceStart = Math.Max(0, trackIdx - half);
+            int sliceEnd = Math.Min(activeList.Count - 1, trackIdx + half);
             int count = sliceEnd - sliceStart + 1;
-            int relativeStartIndex = activeList.IndexOf(track) - sliceStart;
+            int relativeStartIndex = trackIdx - sliceStart;
             if (relativeStartIndex < 0) relativeStartIndex = 0;
 
             string[] urls = new string[count];
@@ -192,7 +228,7 @@ namespace YTMusicWP
             }
 
             // Update Live Tile with upcoming queue
-            YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, activeList.Skip(activeList.IndexOf(track) + 1));
+            YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, activeList.Skip(trackIdx + 1));
 
             var message = new ValueSet {
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
@@ -682,14 +718,45 @@ namespace YTMusicWP
             {
                 if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                 {
+                    var mgr = YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance;
+                    if (mgr.InRoom && !mgr.IsHost)
+                    {
+                        double curSec = 0;
+                        try { curSec = _appMediaPlayer.Position.TotalSeconds; } catch { }
+                        if (MusicSlider != null) MusicSlider.Value = curSec;
+                        return;
+                    }
+
                     double totalSec = 0;
                     try { totalSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
                     if (totalSec > 0)
                     {
                         var slider = (sender as Slider) ?? MusicSlider;
-                        _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(slider.Value, Math.Max(0, totalSec - 2)));
-                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                        double seekVal = Math.Min(slider.Value, Math.Max(0, totalSec - 2));
+                        _appMediaPlayer.Position = TimeSpan.FromSeconds(seekVal);
+                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused)
+                        {
+                            _appMediaPlayer.Play();
+                            OnPlayPauseChangedAsHost(true);
+                        }
                         OnSeekOccurredAsHost((long)_appMediaPlayer.Position.TotalMilliseconds);
+
+                        // Immediate lyrics sync on seek
+                        if (currentLyrics != null && currentLyrics.Count > 0)
+                        {
+                            var seekTime = TimeSpan.FromSeconds(seekVal);
+                            int newIdx = -1;
+                            for (int i = 0; i < currentLyrics.Count; i++)
+                            {
+                                if (seekTime >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIdx = i;
+                                else break;
+                            }
+                            if (newIdx >= 0 && newIdx < currentLyrics.Count)
+                            {
+                                currentLyricIndex = newIdx;
+                                ForceUpdateLyricUI();
+                            }
+                        }
                     }
                 }
             }

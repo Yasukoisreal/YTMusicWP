@@ -664,6 +664,28 @@ namespace YTMusicWP
                         double sec = corrected / 1000.0;
                         if (MusicSlider != null && !_isSliderManipulating) MusicSlider.Value = sec;
                         if (AppleMusicSlider != null && !_isSliderManipulating) AppleMusicSlider.Value = sec;
+                        if (MiniProgressBar != null && !_isSliderManipulating) MiniProgressBar.Value = sec;
+
+                        // Immediate lyrics sync on remote seek
+                        var seekTime = TimeSpan.FromMilliseconds(corrected);
+                        string curText = seekTime.ToString(@"m\:ss");
+                        if (CurrentTimeText != null) CurrentTimeText.Text = curText;
+                        if (AppleMusicCurrentTime != null) AppleMusicCurrentTime.Text = curText;
+
+                        if (currentLyrics != null && currentLyrics.Count > 0)
+                        {
+                            int newIdx = -1;
+                            for (int i = 0; i < currentLyrics.Count; i++)
+                            {
+                                if (seekTime >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIdx = i;
+                                else break;
+                            }
+                            if (newIdx >= 0 && newIdx < currentLyrics.Count)
+                            {
+                                currentLyricIndex = newIdx;
+                                ForceUpdateLyricUI();
+                            }
+                        }
                     }
                 }
                 else if (act.Action == PlaybackActions.SyncQueue)

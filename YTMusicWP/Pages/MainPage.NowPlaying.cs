@@ -1375,13 +1375,44 @@ namespace YTMusicWP
                 {
                     if (_appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                     {
+                        var mgr = YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance;
+                        if (mgr.InRoom && !mgr.IsHost)
+                        {
+                            double curSec = 0;
+                            try { curSec = _appMediaPlayer.Position.TotalSeconds; } catch { }
+                            if (AppleMusicSlider != null) AppleMusicSlider.Value = curSec;
+                            return;
+                        }
+
                         double totalSec = 0;
                         try { totalSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
                         if (totalSec > 0)
                         {
-                            _appMediaPlayer.Position = TimeSpan.FromSeconds(Math.Min(AppleMusicSlider.Value, Math.Max(0, totalSec - 2)));
-                            if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                            double seekVal = Math.Min(AppleMusicSlider.Value, Math.Max(0, totalSec - 2));
+                            _appMediaPlayer.Position = TimeSpan.FromSeconds(seekVal);
+                            if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused)
+                            {
+                                _appMediaPlayer.Play();
+                                OnPlayPauseChangedAsHost(true);
+                            }
                             OnSeekOccurredAsHost((long)_appMediaPlayer.Position.TotalMilliseconds);
+
+                            // Immediate lyrics sync on seek
+                            if (currentLyrics != null && currentLyrics.Count > 0)
+                            {
+                                var seekTime = TimeSpan.FromSeconds(seekVal);
+                                int newIdx = -1;
+                                for (int i = 0; i < currentLyrics.Count; i++)
+                                {
+                                    if (seekTime >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIdx = i;
+                                    else break;
+                                }
+                                if (newIdx >= 0 && newIdx < currentLyrics.Count)
+                                {
+                                    currentLyricIndex = newIdx;
+                                    ForceUpdateLyricUI();
+                                }
+                            }
                         }
                     }
                 }
