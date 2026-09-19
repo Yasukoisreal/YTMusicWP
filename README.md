@@ -22,15 +22,17 @@
 ## Features ✨️    
 - Play music from YouTube Music for free, without ads and in the background
 - High-quality streaming directly from YouTube with multi-client fallback engine
+- Zero-gap continuous YouTube Live audio streaming with low-latency rolling buffer and live telemetry
 - Listen Together: Real-time room music synchronization (compatible with Metrolist and SimpMusic) with live queue, synchronized playback, and guest seek
 - Customizable Now Playing Experience: Switch between classic Spotify dark aesthetic and modern Apple Music style with hardware-accelerated blurred backdrop (Lumia Imaging SDK 2.0), edge-to-edge transparent UI, and spring elasticity animations
 - Control your music using volume buttons, from the lock screen, or with your headset
 - Smart Queue with shuffle, repeat, and automatic infinite song radio recommendations
 - Real-time synchronized scrolling lyrics with Apple Music defocus blur effect, distance falloff, adjustable text size, and multi-source fallback (YouTube, LRCLIB, TTML)
 - Mini Lyric on Now Playing with smooth fade and infinite marquee animation
+- YouTube Comments: Read real comments and threaded discussions directly within the app
 - SponsorBlock integration: Automatically skip sponsor segments, intros, music video interludes, and outros
-- Dynamic Home Tab: Live YouTube carousels (Quick Picks, Moods & Genres, 16:9 videos) with smooth incremental loading
-- Top Charts & Music Exploration: Explore trending songs, top charts, and curated genres directly in Search and Home with tilted artwork cards
+- Official Speed Dial 3x3 Grid & Dynamic Home Feed with 60fps native pull-to-refresh
+- Rich YouTube Music search query suggestions, entity suggestions, and tilted Moods & Genres exploration cards
 - Multi-Method Google Login: Easy QR Code device scan or direct Cookie-based authentication (SAPISIDHASH)
 - Redesigned SimpMusic Library: 4 quick-access tiles, dynamic YouTube filter pills, sort dropdown, and full cloud/local sync
 - Mini Player Gestures: Swipe horizontally to skip tracks or swipe to dismiss
@@ -106,28 +108,47 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 ## Changelog
 
 ### v2.3.0 (Latest)
-- 📻 **Listen Together (Real-Time Synchronized Rooms):**
+- 🔴 **Continuous YouTube Live Audio Streaming Engine:**
+  - Zero-gap continuous live audio streaming powered by custom `LiveMediaStreamSource` and double-buffered fMP4 chunk streaming.
+  - Smooth 20s–40s paced rolling buffer with automated pre-emptive buffer swap to eliminate stutter.
+  - Proactive and reactive BaseURL refresh on 30s expiry to eliminate HTTP 403 Forbidden playback stalls.
+  - Streaming DASH manifest parsing directly into audio streams, eliminating Large Object Heap (LOH) OutOfMemory crashes in background audio task.
+  - Live stream detection with `liveBadgeRenderer` for LIVE badges in search and now playing views.
+  - Built-in **Live Stream Logs** telemetry dialog with Save, Share, and Select All.
+- 📻 **Listen Together (Real-Time Room Synchronization):**
   - Host and join live music listening rooms compatible with Metrolist and SimpMusic server protocols (`metroproto` via WebSockets).
   - Synchronized play/pause, seeking, queue broadcast, and lyrics tap-to-seek alignment.
   - High-resolution 1080x1080 album artwork broadcasting to room guests.
-  - Gzip decompression, 180s clamp defense, and queue size capped for low-bandwidth / low-memory stability.
-  - Dedicated Listen Together settings, quick header bar icon, and room controls.
+  - Gzip decompression, 180s clamp defense, 50-item queue cap, and thread-safe serialized WebSocket writes for 512MB RAM stability.
+  - Dedicated Listen Together settings screen, quick header bar icon, and room controls.
+- 💬 **YouTube Comments:**
+  - Real YouTube comments sheet with full threaded viewer, reply counts, and author information.
+- 🏠 **Official Speed Dial 3x3 Grid & Dynamic Home Feed:**
+  - 3x3 Speed Dial grid matching official YouTube Music and SimpMusic design with 120x120 album art cards, liked music quick card, red playback progress bar, and centered pagination.
+  - 4-track column shelves, horizontal community playlist carousels, Featured Cards, Most Discussed carousels, and 16:9 video cards.
+  - Native smooth pull-to-refresh with floating capsule pill and 60fps vector spinner.
+- 🔍 **YouTube Music Search Suggestions & Moods/Genres:**
+  - Instant YouTube Music query suggestions and rich entity suggestions (artists, albums, playlists).
+  - Dynamic Moods & Genres exploration with 70x70 tilted album artwork cards, SimpMusic gradients, and category badges.
+  - 100% English filter chips and dynamic API browse filtering.
 - 💾 **Smart Downloads & M4A Metadata Tagging:**
   - Native MP4 atom metadata injection: embeds song title, artist, album, and high-quality artwork directly into downloaded `.m4a` files.
   - Offline library playback with local artwork cache persistence and smart download state detection.
 - 📚 **Redesigned Library Tab (SimpMusic Style):**
-  - 4 quick-access tiles (Liked Music, Downloaded, Playlists, Artists) with album art mosaics and smooth corner clipping.
+  - 4 quick-access tiles (Liked Music, Downloaded, Playlists, Artists) with album art mosaics and smooth 8px corner clipping.
   - YouTube Music dynamic filter chips (Playlists, Songs, Albums, Artists) with active white pill design.
   - Sort dropdown menu (Recently added, Recently played, A to Z) and dynamic playback activity sorting.
-- 🎨 **Search & Moods / Genres Polish:**
-  - Dynamic Moods & Genres categories with tilted artwork cards, SimpMusic gradient overlays, and category badges.
-  - Restored Home Quick Grid (2x3 recent shortcuts grid).
-  - Complete list of 82 official YouTube languages added to Settings.
+- 🌐 **Complete Localization & Settings:**
+  - Added complete list of 82 official YouTube languages in Settings.
+  - Independent Language and Location settings.
+  - Localized search chips, greetings, home shelves, and fixed Burmese font rendering.
 - 🛠️ **Reliability & 512MB RAM Performance:**
   - Fixed playlist loading failure for `OLAK5...` chart playlists, algorithmic radio mixes, and curated YouTube mixes.
   - Fixed lyrics tap-to-seek synchronization with Now Playing progress slider and remote room guests.
-  - Prevented queue destruction when tapping `PlayTrack` on an already active playlist.
-  - Aggressive LOH allocation reduction, background task COM/IPC exception guarding, and automatic temporary file cleanup.
+  - Prevented queue destruction and active list wipeout when tapping `PlayTrack`.
+  - SQLite corrupt database auto-recovery, direct stream caching for tile images, LRU blur cache.
+  - Virtualization recycling on HomeDynamicSections and MoodsGenresListView.
+  - Aggressive LOH allocation reduction, background task COM/IPC exception guarding, and automatic temporary file cleanup (`temp_play_*`).
 
 ### v2.2.0
 - 🍎 **Apple Music Now Playing UI:**
