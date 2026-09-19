@@ -386,13 +386,13 @@ namespace YTMusicWP
                 {
                     TopCardArtistThumb.Visibility = Visibility.Visible;
                     TopCardSquareThumb.Visibility = Visibility.Collapsed;
-                    TopCardArtistThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetArtistAvatar(card.ThumbnailUrl)));
+                    TopCardArtistThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetArtistAvatar(card.ThumbnailUrl))) { DecodePixelWidth = 120 };
                 }
                 else
                 {
                     TopCardArtistThumb.Visibility = Visibility.Collapsed;
                     TopCardSquareThumb.Visibility = Visibility.Visible;
-                    TopCardSquareThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(card.ThumbnailUrl)));
+                    TopCardSquareThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(card.ThumbnailUrl))) { DecodePixelWidth = 120 };
                 }
             }
             else
@@ -420,7 +420,7 @@ namespace YTMusicWP
                     TopCardSong1Title.Text = s1.Title ?? "";
                     TopCardSong1Sub.Text = s1.DisplaySubtitle ?? "";
                     if (!string.IsNullOrEmpty(s1.ThumbnailUrl))
-                        TopCardSong1Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s1.ThumbnailUrl)));
+                        TopCardSong1Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s1.ThumbnailUrl))) { DecodePixelWidth = 80 };
                 }
                 else TopCardSong1.Visibility = Visibility.Collapsed;
 
@@ -432,7 +432,7 @@ namespace YTMusicWP
                     TopCardSong2Title.Text = s2.Title ?? "";
                     TopCardSong2Sub.Text = s2.DisplaySubtitle ?? "";
                     if (!string.IsNullOrEmpty(s2.ThumbnailUrl))
-                        TopCardSong2Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s2.ThumbnailUrl)));
+                        TopCardSong2Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s2.ThumbnailUrl))) { DecodePixelWidth = 80 };
                 }
                 else TopCardSong2.Visibility = Visibility.Collapsed;
 
@@ -444,7 +444,7 @@ namespace YTMusicWP
                     TopCardSong3Title.Text = s3.Title ?? "";
                     TopCardSong3Sub.Text = s3.DisplaySubtitle ?? "";
                     if (!string.IsNullOrEmpty(s3.ThumbnailUrl))
-                        TopCardSong3Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s3.ThumbnailUrl)));
+                        TopCardSong3Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s3.ThumbnailUrl))) { DecodePixelWidth = 80 };
                 }
                 else TopCardSong3.Visibility = Visibility.Collapsed;
             }

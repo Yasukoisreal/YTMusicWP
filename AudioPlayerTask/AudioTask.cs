@@ -152,80 +152,87 @@ namespace AudioPlayerTask
 
         private void BackgroundMediaPlayer_MessageReceivedFromForeground(object sender, MediaPlayerDataReceivedEventArgs e)
         {
-            if (e.Data.ContainsKey("UpdatePlaylist"))
+            try
             {
-                lock (_playlistLock)
+                if (e.Data.ContainsKey("UpdatePlaylist"))
                 {
-                    _trackList = new List<string>((string[])e.Data["Urls"]);
-                    _titleList = new List<string>((string[])e.Data["Titles"]);
-                    _artistList = new List<string>((string[])e.Data["Artists"]);
-                    _videoIdList = new List<string>((string[])e.Data["VideoIds"]);
-                    _thumbnailList = new List<string>((string[])e.Data["Thumbnails"]);
-                    _currentTrackIndex = (int)e.Data["StartIndex"];
-
-                    if (e.Data.ContainsKey("FastUrl"))
+                    lock (_playlistLock)
                     {
-                        string fastUrl = e.Data["FastUrl"].ToString();
-                        if (!string.IsNullOrEmpty(fastUrl) && _currentTrackIndex < _trackList.Count)
+                        _trackList = new List<string>((string[])e.Data["Urls"]);
+                        _titleList = new List<string>((string[])e.Data["Titles"]);
+                        _artistList = new List<string>((string[])e.Data["Artists"]);
+                        _videoIdList = new List<string>((string[])e.Data["VideoIds"]);
+                        _thumbnailList = new List<string>((string[])e.Data["Thumbnails"]);
+                        _currentTrackIndex = (int)e.Data["StartIndex"];
+
+                        if (e.Data.ContainsKey("FastUrl"))
                         {
-                            _trackList[_currentTrackIndex] = fastUrl;
-                            // Foreground đã resolve → skip InnerTube trong AudioTask
-                            _innerTubeAttempted = true;
+                            string fastUrl = e.Data["FastUrl"].ToString();
+                            if (!string.IsNullOrEmpty(fastUrl) && _currentTrackIndex < _trackList.Count)
+                            {
+                                _trackList[_currentTrackIndex] = fastUrl;
+                                // Foreground đã resolve → skip InnerTube trong AudioTask
+                                _innerTubeAttempted = true;
+                            }
                         }
                     }
-                }
 
-                bool hasFastUrl = _innerTubeAttempted; // set true bởi FastUrl ở trên
-                ResetRetryState();
-                if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
-                _currentLoadedVidId = "";
-                _startPaused = e.Data.ContainsKey("StartPaused") && Convert.ToBoolean(e.Data["StartPaused"]);
-                StartPlaybackAsync();
-            }
-            else if (e.Data.ContainsKey("UpdateQueueOnly"))
-            {
-                lock (_playlistLock)
-                {
-                    _trackList = new List<string>((string[])e.Data["Urls"]);
-                    _titleList = new List<string>((string[])e.Data["Titles"]);
-                    _artistList = new List<string>((string[])e.Data["Artists"]);
-                    _videoIdList = new List<string>((string[])e.Data["VideoIds"]);
-                    _thumbnailList = new List<string>((string[])e.Data["Thumbnails"]);
-                    if (e.Data.ContainsKey("CurrentIndex"))
-                    {
-                        _currentTrackIndex = (int)e.Data["CurrentIndex"];
-                    }
+                    bool hasFastUrl = _innerTubeAttempted; // set true bởi FastUrl ở trên
+                    ResetRetryState();
+                    if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
+                    _currentLoadedVidId = "";
+                    _startPaused = e.Data.ContainsKey("StartPaused") && Convert.ToBoolean(e.Data["StartPaused"]);
+                    StartPlaybackAsync();
                 }
-                ClearPreResolvedState();
-                PreResolveNextTrack();
-            }
-            else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext();
-            else if (e.Data.ContainsKey("PrevTrackMessage")) MovePrevious();
-            else if (e.Data.ContainsKey("SetPlaybackRate"))
-            {
-                try
+                else if (e.Data.ContainsKey("UpdateQueueOnly"))
                 {
-                    _playbackRate = (double)e.Data["SetPlaybackRate"];
-                    _mediaPlayer.PlaybackRate = _playbackRate;
-                    Windows.Storage.ApplicationData.Current.LocalSettings.Values["PlaybackRate"] = _playbackRate;
+                    lock (_playlistLock)
+                    {
+                        _trackList = new List<string>((string[])e.Data["Urls"]);
+                        _titleList = new List<string>((string[])e.Data["Titles"]);
+                        _artistList = new List<string>((string[])e.Data["Artists"]);
+                        _videoIdList = new List<string>((string[])e.Data["VideoIds"]);
+                        _thumbnailList = new List<string>((string[])e.Data["Thumbnails"]);
+                        if (e.Data.ContainsKey("CurrentIndex"))
+                        {
+                            _currentTrackIndex = (int)e.Data["CurrentIndex"];
+                        }
+                    }
+                    ClearPreResolvedState();
+                    PreResolveNextTrack();
                 }
-                catch { }
-            }
-            else if (e.Data.ContainsKey("SetSleepTimer"))
-            {
-                try
+                else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext();
+                else if (e.Data.ContainsKey("PrevTrackMessage")) MovePrevious();
+                else if (e.Data.ContainsKey("SetPlaybackRate"))
                 {
-                    int minutes = Convert.ToInt32(e.Data["SetSleepTimer"]);
-                    if (minutes <= 0)
+                    try
                     {
-                        _sleepTimerExpiry = DateTime.MaxValue;
+                        _playbackRate = (double)e.Data["SetPlaybackRate"];
+                        _mediaPlayer.PlaybackRate = _playbackRate;
+                        Windows.Storage.ApplicationData.Current.LocalSettings.Values["PlaybackRate"] = _playbackRate;
                     }
-                    else
-                    {
-                        _sleepTimerExpiry = DateTime.UtcNow.AddMinutes(minutes);
-                    }
+                    catch { }
                 }
-                catch { }
+                else if (e.Data.ContainsKey("SetSleepTimer"))
+                {
+                    try
+                    {
+                        int minutes = Convert.ToInt32(e.Data["SetSleepTimer"]);
+                        if (minutes <= 0)
+                        {
+                            _sleepTimerExpiry = DateTime.MaxValue;
+                        }
+                        else
+                        {
+                            _sleepTimerExpiry = DateTime.UtcNow.AddMinutes(minutes);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[AudioTask] MessageReceived error: " + ex.Message);
             }
         }
 
@@ -1571,6 +1578,7 @@ namespace AudioPlayerTask
                 _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
 
                 UpdateSystemMediaControls();
+                _mediaPlayer.AutoPlay = !_startPaused;
                 _mediaPlayer.SetUriSource(new Uri(trackUrl));
                 try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                 _currentLoadedVidId = vidId;
@@ -1578,13 +1586,11 @@ namespace AudioPlayerTask
                 if (_startPaused)
                 {
                     _startPaused = false;
-                    _mediaPlayer.AutoPlay = false;
                     _mediaPlayer.Pause();
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
                 }
                 else
                 {
-                    _mediaPlayer.AutoPlay = true;
                     _mediaPlayer.Play();
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
                 }
@@ -2151,7 +2157,16 @@ namespace AudioPlayerTask
             lock (_playlistLock)
             {
                 if (_trackList.Count == 0) return;
-                if (_mediaPlayer.Position.TotalSeconds > 3) { _mediaPlayer.Position = TimeSpan.Zero; _mediaPlayer.Play(); return; }
+                try
+                {
+                    if (_mediaPlayer != null && _mediaPlayer.CurrentState != MediaPlayerState.Closed && _mediaPlayer.Position.TotalSeconds > 3)
+                    {
+                        _mediaPlayer.Position = TimeSpan.Zero;
+                        _mediaPlayer.Play();
+                        return;
+                    }
+                }
+                catch { }
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 bool shuffle = ls.ContainsKey("ShuffleMode") ? (bool)ls["ShuffleMode"] : false;
                 int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;

@@ -11,6 +11,7 @@ namespace YTMusicWP.Models
         public string Title { get; set; }
         public string ChannelName { get; set; }
         public string ThumbnailUrl { get; set; }
+        [Indexed]
         public DateTime LastPlayedAt { get; set; }
         public int PlayCount { get; set; }
 
@@ -47,6 +48,7 @@ namespace YTMusicWP.Models
         public string Title { get; set; }
         public string ChannelName { get; set; }
         public string ThumbnailUrl { get; set; }
+        [Indexed]
         public DateTime AddedAt { get; set; }
 
         public YouTubeTrack ToYouTubeTrack()

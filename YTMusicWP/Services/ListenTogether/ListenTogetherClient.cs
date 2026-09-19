@@ -14,6 +14,7 @@ namespace YTMusicWP.Services.ListenTogether
 
         private MessageWebSocket _webSocket;
         private readonly ServerClock _serverClock = new ServerClock();
+        private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _cts;
 
         private TaskCompletionSource<ServerCapabilities> _handshakeTcs;
@@ -144,8 +145,10 @@ namespace YTMusicWP.Services.ListenTogether
         public async Task<bool> SendRawAsync(string msgType, byte[] payload)
         {
             if (_webSocket == null) return false;
+            await _sendLock.WaitAsync();
             try
             {
+                if (_webSocket == null) return false;
                 byte[] envelopeBytes = ProtobufCodec.EncodeEnvelope(msgType, payload, false);
                 using (var writer = new DataWriter(_webSocket.OutputStream))
                 {
@@ -159,6 +162,10 @@ namespace YTMusicWP.Services.ListenTogether
             {
                 Debug.WriteLine("[ListenTogetherClient] SendRawAsync failed for " + msgType + ": " + ex.Message);
                 return false;
+            }
+            finally
+            {
+                _sendLock.Release();
             }
         }
 
@@ -300,6 +307,7 @@ namespace YTMusicWP.Services.ListenTogether
             if (_isDisposed) return;
             _isDisposed = true;
             Disconnect();
+            try { _sendLock.Dispose(); } catch { }
         }
     }
 }

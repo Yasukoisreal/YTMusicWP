@@ -260,11 +260,11 @@ namespace YTMusicWP
             UpdateStatusBarColor(false, animate: false);
             InitializeStartupSplash();
             InitializeHomePullToRefresh();
-            CleanupTempLiveFiles();
+            CleanupOrphanedTempFilesAsync();
             InitializeListenTogether();
         }
 
-        private async void CleanupTempLiveFiles()
+        private async void CleanupOrphanedTempFilesAsync()
         {
             try
             {
@@ -272,10 +272,22 @@ namespace YTMusicWP
                 var files = await localFolder.GetFilesAsync();
                 foreach (var file in files)
                 {
-                    if (file.Name.StartsWith("temp_live_buf_") && file.Name.EndsWith(".mp4"))
+                    string name = file.Name.ToLowerInvariant();
+                    if (name.StartsWith("temp_play_") || name.StartsWith("temp_live_buf_") || name.EndsWith(".tmp"))
                     {
                         try { await file.DeleteAsync(StorageDeleteOption.PermanentDelete); } catch { }
                     }
+                }
+            }
+            catch { }
+
+            try
+            {
+                var tempFolder = ApplicationData.Current.TemporaryFolder;
+                var tempFiles = await tempFolder.GetFilesAsync();
+                foreach (var file in tempFiles)
+                {
+                    try { await file.DeleteAsync(StorageDeleteOption.PermanentDelete); } catch { }
                 }
             }
             catch { }
@@ -524,6 +536,11 @@ namespace YTMusicWP
                 bool npVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
                                || (FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible);
                 UpdateStatusBarColor(npVisible, animate: false);
+
+                if (YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.InRoom)
+                {
+                    var ignoredSync = YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.RequestSyncAsync();
+                }
             }
             catch { }
 
