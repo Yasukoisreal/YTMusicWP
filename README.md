@@ -29,9 +29,8 @@
 - Smart Queue with shuffle, repeat, and automatic infinite song radio recommendations
 - Real-time synchronized scrolling lyrics with Apple Music defocus blur effect, distance falloff, adjustable text size, and multi-source fallback (YouTube, LRCLIB, TTML)
 - Mini Lyric on Now Playing with smooth fade and infinite marquee animation
-- YouTube Comments: Read real comments and threaded discussions directly within the app
 - SponsorBlock integration: Automatically skip sponsor segments, intros, music video interludes, and outros
-- Official Speed Dial 3x3 Grid & Dynamic Home Feed with 60fps native pull-to-refresh
+- Dynamic Home Feed: Live YouTube carousels (4-track columns, horizontal carousels, 16:9 videos) with 60fps native pull-to-refresh
 - Rich YouTube Music search query suggestions, entity suggestions, and tilted Moods & Genres exploration cards
 - Multi-Method Google Login: Easy QR Code device scan or direct Cookie-based authentication (SAPISIDHASH)
 - Redesigned SimpMusic Library: 4 quick-access tiles, dynamic YouTube filter pills, sort dropdown, and full cloud/local sync
@@ -121,11 +120,8 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
   - High-resolution 1080x1080 album artwork broadcasting to room guests.
   - Gzip decompression, 180s clamp defense, 50-item queue cap, and thread-safe serialized WebSocket writes for 512MB RAM stability.
   - Dedicated Listen Together settings screen, quick header bar icon, and room controls.
-- 💬 **YouTube Comments:**
-  - Real YouTube comments sheet with full threaded viewer, reply counts, and author information.
-- 🏠 **Official Speed Dial 3x3 Grid & Dynamic Home Feed:**
-  - 3x3 Speed Dial grid matching official YouTube Music and SimpMusic design with 120x120 album art cards, liked music quick card, red playback progress bar, and centered pagination.
-  - 4-track column shelves, horizontal community playlist carousels, Featured Cards, Most Discussed carousels, and 16:9 video cards.
+- 🏠 **Dynamic Home Feed & 60fps Pull-to-Refresh:**
+  - Dynamic YouTube Music Home shelves: 4-track column layouts, horizontal community playlist carousels, Featured Cards, Most Discussed carousels, and 16:9 video cards.
   - Native smooth pull-to-refresh with floating capsule pill and 60fps vector spinner.
 - 🔍 **YouTube Music Search Suggestions & Moods/Genres:**
   - Instant YouTube Music query suggestions and rich entity suggestions (artists, albums, playlists).
