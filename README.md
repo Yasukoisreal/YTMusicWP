@@ -30,7 +30,7 @@
 - Real-time synchronized scrolling lyrics with Apple Music defocus blur effect, distance falloff, adjustable text size, and multi-source fallback (YouTube, LRCLIB, TTML)
 - Mini Lyric on Now Playing with smooth fade and infinite marquee animation
 - SponsorBlock integration: Automatically skip sponsor segments, intros, music video interludes, and outros
-- Dynamic Home Feed: Live YouTube carousels (4-track columns, horizontal carousels, 16:9 videos) with 60fps native pull-to-refresh
+- Dynamic Home Tab: Live YouTube carousels (Quick Picks, Moods & Genres, 16:9 videos) with smooth incremental loading and native pull-to-refresh
 - Rich YouTube Music search query suggestions, entity suggestions, and tilted Moods & Genres exploration cards
 - Multi-Method Google Login: Easy QR Code device scan or direct Cookie-based authentication (SAPISIDHASH)
 - Redesigned SimpMusic Library: 4 quick-access tiles, dynamic YouTube filter pills, sort dropdown, and full cloud/local sync
@@ -120,9 +120,10 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
   - High-resolution 1080x1080 album artwork broadcasting to room guests.
   - Gzip decompression, 180s clamp defense, 50-item queue cap, and thread-safe serialized WebSocket writes for 512MB RAM stability.
   - Dedicated Listen Together settings screen, quick header bar icon, and room controls.
-- 🏠 **Dynamic Home Feed & 60fps Pull-to-Refresh:**
-  - Dynamic YouTube Music Home shelves: 4-track column layouts, horizontal community playlist carousels, Featured Cards, Most Discussed carousels, and 16:9 video cards.
-  - Native smooth pull-to-refresh with floating capsule pill and 60fps vector spinner.
+- 🔄 **Native Pull-to-Refresh & Home Polish:**
+  - Smooth native pull-to-refresh on Home feed with floating capsule pill and 60fps vector spinner.
+  - Restored Home 2x3 quick shortcuts grid (`HomeQuickGrid`) for recently played tracks.
+  - Enabled virtualization recycling on `HomeDynamicSections` to ensure smooth scrolling on 512MB RAM devices.
 - 🔍 **YouTube Music Search Suggestions & Moods/Genres:**
   - Instant YouTube Music query suggestions and rich entity suggestions (artists, albums, playlists).
   - Dynamic Moods & Genres exploration with 70x70 tilted album artwork cards, SimpMusic gradients, and category badges.
