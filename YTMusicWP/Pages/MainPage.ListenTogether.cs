@@ -519,7 +519,8 @@ namespace YTMusicWP
             {
                 string action = isPlaying ? PlaybackActions.Play : PlaybackActions.Pause;
                 long pos = (long)_appMediaPlayer.Position.TotalMilliseconds;
-                await mgr.SendPlaybackActionAsync(action, "", pos, null);
+                string trackId = (currentTrack != null) ? currentTrack.VideoId : "";
+                await mgr.SendPlaybackActionAsync(action, trackId, pos, null);
             }
             catch (Exception ex)
             {
@@ -537,7 +538,8 @@ namespace YTMusicWP
 
             try
             {
-                await mgr.SendPlaybackActionAsync(PlaybackActions.Seek, "", positionMs, null);
+                string trackId = (currentTrack != null) ? currentTrack.VideoId : "";
+                await mgr.SendPlaybackActionAsync(PlaybackActions.Seek, trackId, positionMs, null);
             }
             catch (Exception ex)
             {

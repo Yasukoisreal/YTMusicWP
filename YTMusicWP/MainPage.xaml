@@ -4085,7 +4085,7 @@
                     <TextBlock x:Name="FullscreenLyricsArtist" Text="" FontSize="14" Foreground="#B3B3B3" TextAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
                 <!-- Lyrics content -->
-                <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging" VirtualizingStackPanel.VirtualizationMode="Recycling">
+                <ListView x:Name="FullscreenLyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" ShowsScrollingPlaceholders="False" ContainerContentChanging="FullscreenLyricsListView_ContainerContentChanging" VirtualizingStackPanel.VirtualizationMode="Recycling">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="5,16" HorizontalAlignment="Center" UseLayoutRounding="True">

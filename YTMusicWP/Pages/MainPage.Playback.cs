@@ -717,6 +717,7 @@ namespace YTMusicWP
                 {
                     _appMediaPlayer.Position = TimeSpan.Zero;
                     _appMediaPlayer.Play();
+                    OnSeekOccurredAsHost(0);
                 }
                 else
                 {

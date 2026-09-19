@@ -442,6 +442,7 @@ namespace YTMusicWP
                     {
                         _appMediaPlayer.Position = line.Time;
                         if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused) _appMediaPlayer.Play();
+                        OnSeekOccurredAsHost((long)line.Time.TotalMilliseconds);
                     }
                 }
                 catch { }
