@@ -22,6 +22,7 @@
 ## Features ✨️    
 - Play music from YouTube Music for free, without ads and in the background
 - High-quality streaming directly from YouTube with multi-client fallback engine
+- Listen Together: Real-time room music synchronization (compatible with Metrolist and SimpMusic) with live queue, synchronized playback, and guest seek
 - Customizable Now Playing Experience: Switch between classic Spotify dark aesthetic and modern Apple Music style with hardware-accelerated blurred backdrop (Lumia Imaging SDK 2.0), edge-to-edge transparent UI, and spring elasticity animations
 - Control your music using volume buttons, from the lock screen, or with your headset
 - Smart Queue with shuffle, repeat, and automatic infinite song radio recommendations
@@ -29,12 +30,12 @@
 - Mini Lyric on Now Playing with smooth fade and infinite marquee animation
 - SponsorBlock integration: Automatically skip sponsor segments, intros, music video interludes, and outros
 - Dynamic Home Tab: Live YouTube carousels (Quick Picks, Moods & Genres, 16:9 videos) with smooth incremental loading
-- Top Charts & Music Exploration: Explore trending songs, top charts, and curated genres directly in Search and Home
+- Top Charts & Music Exploration: Explore trending songs, top charts, and curated genres directly in Search and Home with tilted artwork cards
 - Multi-Method Google Login: Easy QR Code device scan or direct Cookie-based authentication (SAPISIDHASH)
-- Full Cloud & Local Library: Sync Liked Music, create/edit cloud YouTube playlists, follow artists, plus local M3U playlist import/export
+- Redesigned SimpMusic Library: 4 quick-access tiles, dynamic YouTube filter pills, sort dropdown, and full cloud/local sync
 - Mini Player Gestures: Swipe horizontally to skip tracks or swipe to dismiss
 - Playback Speed Control (0.5x – 2.0x) and detailed song credits dialog
-- Offline support: Download songs directly to your phone to enjoy music without internet
+- Offline support & Smart Downloads: Download songs directly to your phone with native M4A metadata tagging and embedded artwork
 - Iconic Metro Live Tiles (Now Playing Flip Tile, People Hub Style Mosaic)
 - Pin your favorite artists, albums, or playlists directly to your Start Screen
 - Highly optimized for low-end hardware: runs smoothly even on older phones with just 512MB RAM like the Nokia Lumia 520
@@ -104,7 +105,31 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 
 ## Changelog
 
-### v2.2.0 (Latest)
+### v2.3.0 (Latest)
+- 📻 **Listen Together (Real-Time Synchronized Rooms):**
+  - Host and join live music listening rooms compatible with Metrolist and SimpMusic server protocols (`metroproto` via WebSockets).
+  - Synchronized play/pause, seeking, queue broadcast, and lyrics tap-to-seek alignment.
+  - High-resolution 1080x1080 album artwork broadcasting to room guests.
+  - Gzip decompression, 180s clamp defense, and queue size capped for low-bandwidth / low-memory stability.
+  - Dedicated Listen Together settings, quick header bar icon, and room controls.
+- 💾 **Smart Downloads & M4A Metadata Tagging:**
+  - Native MP4 atom metadata injection: embeds song title, artist, album, and high-quality artwork directly into downloaded `.m4a` files.
+  - Offline library playback with local artwork cache persistence and smart download state detection.
+- 📚 **Redesigned Library Tab (SimpMusic Style):**
+  - 4 quick-access tiles (Liked Music, Downloaded, Playlists, Artists) with album art mosaics and smooth corner clipping.
+  - YouTube Music dynamic filter chips (Playlists, Songs, Albums, Artists) with active white pill design.
+  - Sort dropdown menu (Recently added, Recently played, A to Z) and dynamic playback activity sorting.
+- 🎨 **Search & Moods / Genres Polish:**
+  - Dynamic Moods & Genres categories with tilted artwork cards, SimpMusic gradient overlays, and category badges.
+  - Restored Home Quick Grid (2x3 recent shortcuts grid).
+  - Complete list of 82 official YouTube languages added to Settings.
+- 🛠️ **Reliability & 512MB RAM Performance:**
+  - Fixed playlist loading failure for `OLAK5...` chart playlists, algorithmic radio mixes, and curated YouTube mixes.
+  - Fixed lyrics tap-to-seek synchronization with Now Playing progress slider and remote room guests.
+  - Prevented queue destruction when tapping `PlayTrack` on an already active playlist.
+  - Aggressive LOH allocation reduction, background task COM/IPC exception guarding, and automatic temporary file cleanup.
+
+### v2.2.0
 - 🍎 **Apple Music Now Playing UI:**
   - Full Apple Music visual overhaul with real-time hardware-accelerated blurred backdrop powered by **Lumia Imaging SDK 2.0** (dual-pass blur, custom downsampling, and deep color wash).
   - True edge-to-edge transparent StatusBar integration (`ApplicationViewBoundsMode.UseCoreWindow`) with top scrim protection.
