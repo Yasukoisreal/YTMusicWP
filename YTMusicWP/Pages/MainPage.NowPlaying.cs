@@ -1389,6 +1389,8 @@ namespace YTMusicWP
                         if (totalSec > 0)
                         {
                             double seekVal = Math.Min(AppleMusicSlider.Value, Math.Max(0, totalSec - 2));
+                            _lastSeekTarget = TimeSpan.FromSeconds(seekVal);
+                            _lastSeekTimestamp = DateTime.UtcNow;
                             _appMediaPlayer.Position = TimeSpan.FromSeconds(seekVal);
                             if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused)
                             {

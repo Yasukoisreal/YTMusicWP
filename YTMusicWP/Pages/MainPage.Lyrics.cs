@@ -448,8 +448,13 @@ namespace YTMusicWP
                     return;
                 }
 
+                int targetIndex = currentLyrics.IndexOf(line);
+                if (targetIndex < 0 || targetIndex == currentLyricIndex) return;
+
                 // Suppress timer ticks from reverting UI while IPC seek settles
                 _isSliderManipulating = true;
+                _lastSeekTarget = line.Time;
+                _lastSeekTimestamp = DateTime.UtcNow;
 
                 _appMediaPlayer.Position = line.Time;
                 if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused)
@@ -478,12 +483,8 @@ namespace YTMusicWP
                 }
 
                 // Immediately highlight and center the clicked lyric
-                int targetIndex = currentLyrics.IndexOf(line);
-                if (targetIndex >= 0)
-                {
-                    currentLyricIndex = targetIndex;
-                    ForceUpdateLyricUI();
-                }
+                currentLyricIndex = targetIndex;
+                ForceUpdateLyricUI();
 
                 await Task.Delay(400);
                 _isSliderManipulating = false;
@@ -735,7 +736,7 @@ namespace YTMusicWP
             }
             else
             {
-                if (oldIndex >= 0)
+                if (oldIndex >= 0 && Math.Abs(currentLyricIndex - oldIndex) == 1)
                 {
                     if (oldIndex < currentLyrics.Count)
                     {
