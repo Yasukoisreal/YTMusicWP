@@ -445,7 +445,7 @@ namespace YTMusicWP
                     Thumbnail = track.ThumbnailUrl ?? ""
                 };
 
-                var queue = currentQueueTracks.Select(t => new TrackInfo
+                var queue = currentQueueTracks.Take(50).Select(t => new TrackInfo
                 {
                     Id = t.VideoId,
                     Title = t.Title ?? "",
@@ -562,7 +562,7 @@ namespace YTMusicWP
                         {
                             currentQueueTracks.Add(currentTrack);
                         }
-                        foreach (var q in act.Queue)
+                        foreach (var q in act.Queue.Take(50))
                         {
                             if (q != null && !string.IsNullOrEmpty(q.Id) && (currentTrack == null || q.Id != currentTrack.VideoId))
                             {
@@ -637,7 +637,7 @@ namespace YTMusicWP
                 currentQueueTracks.Add(ytTrack);
                 if (mgr.Queue != null && mgr.Queue.Count > 0)
                 {
-                    foreach (var q in mgr.Queue)
+                    foreach (var q in mgr.Queue.Take(50))
                     {
                         if (q != null && !string.IsNullOrEmpty(q.Id) && q.Id != ytTrack.VideoId)
                         {
