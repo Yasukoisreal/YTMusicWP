@@ -10,360 +10,469 @@ namespace YTMusicWP
 {
     public static partial class InnerTubeClient
     {
+        private static async Task<JObject> FetchBrowseJsonAsync(JObject body, string accessToken)
+        {
+            string apiUrl = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+            if (HasCookieAuth)
+            {
+                var extraBody = new JObject();
+                foreach (var prop in body.Properties())
+                {
+                    if (prop.Name != "context") extraBody[prop.Name] = prop.Value;
+                }
+                try
+                {
+                    var cookieData = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
+                    if (cookieData != null && cookieData["error"] == null) return cookieData;
+                }
+                catch { }
+            }
+
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                var extraBody = new JObject();
+                foreach (var prop in body.Properties())
+                {
+                    if (prop.Name != "context") extraBody[prop.Name] = prop.Value;
+                }
+                try
+                {
+                    var authData = await AuthInnerTubePostAsync("browse", extraBody, accessToken, "WEB_REMIX", "1.20260304.03.00");
+                    if (authData != null && authData["error"] == null) return authData;
+                }
+                catch { }
+            }
+
+            try
+            {
+                return await PostInnerTubeAsync(apiUrl, body, true);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public static async Task<PlaylistResult> BrowsePlaylistAsync(string playlistId, string continuationToken = null, string accessToken = null)
         {
             var result = new PlaylistResult();
+            if (string.IsNullOrEmpty(playlistId) && string.IsNullOrEmpty(continuationToken)) return result;
+
             try
             {
-                string vd = await GetVisitorDataAsync();
+                // 1. Radio playlist interception (RDAMVM..., RDAMPL..., or RD... not RDCLAK)
+                // Radio mixes cannot be browsed via /browse (returns no tracks). They are dynamic watch queues fetched from /next.
+                if (string.IsNullOrEmpty(continuationToken) && !string.IsNullOrEmpty(playlistId))
+                {
+                    if (playlistId.StartsWith("RDAMVM") || playlistId.StartsWith("VLRDAMVM") ||
+                        playlistId.StartsWith("RDAMPL") || playlistId.StartsWith("VLRDAMPL") ||
+                        (playlistId.StartsWith("RD") && !playlistId.StartsWith("RDCLAK") && !playlistId.StartsWith("VLRDCLAK")))
+                    {
+                        string radioVideoId = playlistId.Replace("VLRDAMVM", "").Replace("RDAMVM", "")
+                                                        .Replace("VLRDAMPL", "").Replace("RDAMPL", "")
+                                                        .Replace("VLRD", "").Replace("RD", "");
+                        var radioTracks = await GetRadioTracksAsync(radioVideoId);
+                        if (radioTracks != null && radioTracks.Count > 0)
+                        {
+                            result.Title = "Radio";
+                            result.Subtitle = radioTracks.Count + " tracks";
+                            result.ThumbnailUrl = radioTracks[0].ThumbnailUrl;
+                            result.Tracks = radioTracks;
+                            return result;
+                        }
+                    }
+                }
 
-                // Build request body for WEB_REMIX (YouTube Music)
+                string vd = await GetVisitorDataAsync();
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd)
                 };
 
-                if (!string.IsNullOrEmpty(continuationToken))
+                bool isContinuation = !string.IsNullOrEmpty(continuationToken);
+                bool isRawBrowseId = false;
+                bool isSystemPlaylist = false;
+                string browseId = playlistId ?? "";
+
+                if (isContinuation)
                 {
                     body["continuation"] = continuationToken;
                 }
                 else
                 {
-                    // Prefix with VL for regular playlists, unless it's already an album/mix prefix
-                    bool isAlbum = playlistId.StartsWith("MPREb_") || playlistId.StartsWith("OLAK5");
-                    string browseId = playlistId;
-                    if (!isAlbum && !playlistId.StartsWith("VL"))
+                    // Only raw browse endpoints (MPREb_ for album browse, FEmusic_ for charts/explore) do not take VL prefix.
+                    // All other playlists (PL..., OLAK5uy_..., RDCLAK5uy_..., LM, etc.) MUST be prefixed with VL for YouTube Music WEB_REMIX browse!
+                    isRawBrowseId = playlistId.StartsWith("MPREb_") || playlistId.StartsWith("FEmusic_");
+                    if (!isRawBrowseId && !playlistId.StartsWith("VL"))
                     {
                         browseId = "VL" + playlistId;
                     }
                     body["browseId"] = browseId;
-                    
-                    // wAEB params often needed for full playlist track list in YouTube Music, but breaks system playlists like Liked Music (VLLM)
-                    bool isSystemPlaylist = playlistId == "LM" || playlistId == "VLLM" || browseId == "VLLM" || playlistId == "VLLL" || browseId == "VLLL";
-                    if (!isAlbum && !isSystemPlaylist)
+
+                    isSystemPlaylist = playlistId == "LM" || playlistId == "VLLM" || browseId == "VLLM" || playlistId == "VLLL" || browseId == "VLLL";
+                    if (!isRawBrowseId && !isSystemPlaylist)
                     {
                         body["params"] = "wAEB";
                     }
                 }
 
-                string apiUrl = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
-                
-                JObject data = null;
-                if (HasCookieAuth)
-                {
-                    // Use authenticated WEB_REMIX if cookie is available (needed for private playlists)
-                    var extraBody = new JObject();
-                    foreach (var prop in body.Properties())
-                    {
-                        if (prop.Name != "context") extraBody[prop.Name] = prop.Value;
-                    }
-                    data = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
-                }
-                else if (!string.IsNullOrEmpty(accessToken))
-                {
-                    var extraBody = new JObject();
-                    foreach (var prop in body.Properties())
-                    {
-                        if (prop.Name != "context") extraBody[prop.Name] = prop.Value;
-                    }
-                    data = await AuthInnerTubePostAsync("browse", extraBody, accessToken, "WEB_REMIX", "1.20260304.03.00");
-                }
-                else
-                {
-                    var dataStr = await PostInnerTubeAsync(apiUrl, body, true);
-                    data = dataStr;
-                }
+                JObject data = await FetchBrowseJsonAsync(body, accessToken);
+                ExtractPlaylistTracksAndMetadata(data, result, isContinuation);
 
-                // If not continuation, parse Title, Thumbnail, Subtitle, Artist
-                string albumArtistFallback = "";
-                if (string.IsNullOrEmpty(continuationToken))
+                // Fallback strategies if 0 tracks were returned on initial browse:
+                if (!isContinuation && result.Tracks.Count == 0)
                 {
-                    result.Title = data?["header"]?.SelectToken("$..title.runs[0].text")?.ToString() 
-                        ?? data?["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString()
-                        ?? data?.SelectToken("$..musicResponsiveHeaderRenderer.title.runs[0].text")?.ToString()
+                    // Fallback 1: Toggle params (retry without wAEB if params was used, or with wAEB if params was omitted)
+                    if (body["params"] != null)
+                    {
+                        body.Remove("params");
+                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        ExtractPlaylistTracksAndMetadata(data, result, false);
+                    }
+                    else if (!isSystemPlaylist && !isRawBrowseId)
+                    {
+                        body["params"] = "wAEB";
+                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        ExtractPlaylistTracksAndMetadata(data, result, false);
+                    }
+
+                    // Fallback 2: If still 0 tracks and browseId started with VL, try without VL (or vice-versa)
+                    if (result.Tracks.Count == 0 && browseId.StartsWith("VL") && browseId.Length > 2)
+                    {
+                        body["browseId"] = browseId.Substring(2);
+                        body.Remove("params");
+                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        ExtractPlaylistTracksAndMetadata(data, result, false);
+                    }
+                    else if (result.Tracks.Count == 0 && !browseId.StartsWith("VL"))
+                    {
+                        body["browseId"] = "VL" + browseId;
+                        body.Remove("params");
+                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        ExtractPlaylistTracksAndMetadata(data, result, false);
+                    }
+
+                    // Fallback 3: If still 0 tracks and user was using auth/cookie, try raw unauthenticated request
+                    if (result.Tracks.Count == 0 && (HasCookieAuth || !string.IsNullOrEmpty(accessToken)))
+                    {
+                        string apiUrl = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+                        try
+                        {
+                            var publicData = await PostInnerTubeAsync(apiUrl, body, true);
+                            ExtractPlaylistTracksAndMetadata(publicData, result, false);
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+            return result;
+        }
+
+        private static void ExtractPlaylistTracksAndMetadata(JObject data, PlaylistResult result, bool isContinuation)
+        {
+            if (data == null || data["error"] != null) return;
+
+            string albumArtistFallback = "";
+
+            if (!isContinuation)
+            {
+                // Title
+                if (string.IsNullOrEmpty(result.Title))
+                {
+                    result.Title = data.SelectToken("$..musicResponsiveHeaderRenderer.title.runs[0].text")?.ToString()
+                        ?? data["header"]?.SelectToken("$..title.runs[0].text")?.ToString()
+                        ?? data["metadata"]?["playlistMetadataRenderer"]?["title"]?.ToString()
+                        ?? data.SelectToken("$..microformatDataRenderer.title")?.ToString()
                         ?? "";
+                }
 
-                    result.ThumbnailUrl = data?["header"]?.SelectToken("$..thumbnails[0].url")?.ToString() 
-                        ?? data?["microformat"]?.SelectToken("$..thumbnails[0].url")?.ToString() 
+                // Thumbnail
+                if (string.IsNullOrEmpty(result.ThumbnailUrl))
+                {
+                    result.ThumbnailUrl = data.SelectToken("$..musicResponsiveHeaderRenderer..thumbnails[0].url")?.ToString()
+                        ?? data["header"]?.SelectToken("$..thumbnails[0].url")?.ToString()
+                        ?? data["microformat"]?.SelectToken("$..thumbnails[0].url")?.ToString()
                         ?? "";
-
-                    // === Extract subtitle + artist from multiple header formats ===
-                    JToken subtitleRuns = null;
-
-                    // 1) musicDetailHeaderRenderer (album old format)
-                    var mdhr = data?["header"]?["musicDetailHeaderRenderer"];
-                    if (mdhr != null)
-                    {
-                        subtitleRuns = mdhr["subtitle"]?["runs"];
-                    }
-
-                    // 2) musicEditablePlaylistDetailHeaderRenderer (editable playlists)
-                    if (subtitleRuns == null)
-                    {
-                        var editable = data?["header"]?["musicEditablePlaylistDetailHeaderRenderer"];
-                        if (editable != null)
-                        {
-                            subtitleRuns = editable["header"]?["musicDetailHeaderRenderer"]?["subtitle"]?["runs"];
-                            if (subtitleRuns == null)
-                                subtitleRuns = editable["header"]?["musicResponsiveHeaderRenderer"]?["subtitle"]?["runs"];
-                        }
-                    }
-
-                    // 3) musicImmersiveHeaderRenderer (artist page, some playlists)
-                    if (subtitleRuns == null)
-                    {
-                        subtitleRuns = data?["header"]?["musicImmersiveHeaderRenderer"]?["subtitle"]?["runs"];
-                    }
-
-                    // 4) musicVisualHeaderRenderer
-                    if (subtitleRuns == null)
-                    {
-                        subtitleRuns = data?["header"]?["musicVisualHeaderRenderer"]?["subtitle"]?["runs"];
-                    }
-
-                    // 5) Generic deep-search fallback on header, contents, and entire data
-                    if (subtitleRuns == null)
-                    {
-                        subtitleRuns = data?["header"]?.SelectToken("$..subtitle.runs");
-                    }
-                    if (subtitleRuns == null)
-                    {
-                        subtitleRuns = data?["contents"]?.SelectToken("$..musicDetailHeaderRenderer.subtitle.runs");
-                    }
-                    if (subtitleRuns == null)
-                    {
-                        subtitleRuns = data?["contents"]?.SelectToken("$..musicResponsiveHeaderRenderer.subtitle.runs");
-                    }
-
-                    JToken secondSubtitleRuns = mdhr?["secondSubtitle"]?["runs"] 
-                        ?? data?["header"]?.SelectToken("$..secondSubtitle.runs") 
-                        ?? data?["contents"]?.SelectToken("$..secondSubtitle.runs");
-
-                    // First try explicit artist from new API format
-                    var strapline = data?.SelectToken("$..straplineTextOne.runs");
-                    if (strapline != null && strapline.HasValues)
-                    {
-                        albumArtistFallback = InnerTubeClient.ExtractArtistFromRuns(strapline);
-                        if (string.IsNullOrEmpty(albumArtistFallback))
-                        {
-                            albumArtistFallback = strapline[0]?["text"]?.ToString() ?? "";
-                        }
-                    }
-
-                    if (subtitleRuns != null && subtitleRuns.HasValues)
-                    {
-                        string subtitle = "";
-                        foreach(var r in subtitleRuns) subtitle += r["text"]?.ToString();
-                        result.Subtitle = subtitle;
-                        
-                        // If we didn't get artist from strapline, try extracting from subtitle
-                        if (string.IsNullOrEmpty(albumArtistFallback))
-                        {
-                            albumArtistFallback = InnerTubeClient.ExtractArtistFromRuns(subtitleRuns);
-                        }
-                    }
-
-                    // If still no artist, try secondSubtitle
-                    if (string.IsNullOrEmpty(albumArtistFallback) && secondSubtitleRuns != null && secondSubtitleRuns.HasValues)
-                    {
-                        albumArtistFallback = InnerTubeClient.ExtractArtistFromRuns(secondSubtitleRuns);
-                    }
-
-                    // Append artist to subtitle if it was missing from the main subtitle but we found it
-                    if (!string.IsNullOrEmpty(albumArtistFallback) && !string.IsNullOrEmpty(result.Subtitle) && !result.Subtitle.Contains(albumArtistFallback))
-                    {
-                        result.Subtitle = result.Subtitle + " • " + albumArtistFallback;
-                    }
-                    
-                    // Also append secondSubtitle if it exists (for track count / duration)
-                    if (secondSubtitleRuns != null && secondSubtitleRuns.HasValues)
-                    {
-                        string secondSub = "";
-                        foreach (var r in secondSubtitleRuns) secondSub += r["text"]?.ToString();
-                        if (!string.IsNullOrEmpty(secondSub))
-                        {
-                            result.Subtitle = result.Subtitle + " • " + secondSub;
-                        }
-                    }
-
-                    // 7) Fallback: metadata.playlistMetadataRenderer.description for subtitle
-                    if (string.IsNullOrEmpty(result.Subtitle))
-                    {
-                        result.Subtitle = data?["metadata"]?["playlistMetadataRenderer"]?["description"]?.ToString() ?? "";
-                    }
-
-                    System.Diagnostics.Debug.WriteLine("[BrowsePlaylist] Title=" + result.Title + " Subtitle=" + result.Subtitle + " ArtistFallback=" + albumArtistFallback);
                 }
 
-                // Parse tracks and continuation token scoped strictly to the playlist/album shelf
-                string newToken = null;
+                // Subtitle + Artist extraction from multiple header formats
+                JToken subtitleRuns = data.SelectToken("$..musicResponsiveHeaderRenderer.subtitle.runs")
+                                   ?? data["header"]?["musicDetailHeaderRenderer"]?["subtitle"]?["runs"]
+                                   ?? data.SelectToken("$..musicEditablePlaylistDetailHeaderRenderer..subtitle.runs")
+                                   ?? data.SelectToken("$..musicImmersiveHeaderRenderer.subtitle.runs")
+                                   ?? data.SelectToken("$..musicVisualHeaderRenderer.subtitle.runs")
+                                   ?? data["header"]?.SelectToken("$..subtitle.runs")
+                                   ?? data["contents"]?.SelectToken("$..subtitle.runs");
 
-                if (string.IsNullOrEmpty(continuationToken))
+                JToken secondSubtitleRuns = data.SelectToken("$..musicResponsiveHeaderRenderer.secondSubtitle.runs")
+                                         ?? data["header"]?.SelectToken("$..secondSubtitle.runs")
+                                         ?? data["contents"]?.SelectToken("$..secondSubtitle.runs");
+
+                var strapline = data.SelectToken("$..straplineTextOne.runs");
+                if (strapline != null && strapline.HasValues)
                 {
-                    // Initial browse: locate the playlist or album shelf
-                    JToken shelf = data?.SelectToken("$..musicPlaylistShelfRenderer") 
-                                ?? data?.SelectToken("$..musicShelfRenderer");
-
-                    if (shelf != null)
-                    {
-                        var shelfContents = shelf["contents"] as JArray;
-                        if (shelfContents != null)
-                        {
-                            foreach (var item in shelfContents)
-                            {
-                                try
-                                {
-                                    var mrlir = item["musicResponsiveListItemRenderer"];
-                                    if (mrlir != null)
-                                    {
-                                        var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
-                                        var track = ParseMusicListItem(wrapper);
-                                        if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                        {
-                                            if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
-                                            {
-                                                track.ChannelName = albumArtistFallback;
-                                            }
-                                            if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
-                                            {
-                                                track.ThumbnailUrl = result.ThumbnailUrl;
-                                            }
-                                            result.Tracks.Add(track);
-                                        }
-                                    }
-                                    else if (item["continuationItemRenderer"] != null)
-                                    {
-                                        var cir = item["continuationItemRenderer"];
-                                        newToken = cir?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
-                                    }
-                                }
-                                catch { continue; }
-                            }
-                        }
-
-                        // Also check shelf.continuations if continuationItemRenderer was not found
-                        if (string.IsNullOrEmpty(newToken))
-                        {
-                            var shelfConts = shelf["continuations"] as JArray;
-                            if (shelfConts != null && shelfConts.Count > 0)
-                            {
-                                newToken = shelfConts[0]?["nextContinuationData"]?["continuation"]?.ToString()
-                                        ?? shelfConts[0]?["continuationCommand"]?["token"]?.ToString();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Fallback in case shelf wasn't matched
-                        var allItems = data?.SelectTokens("$..musicResponsiveListItemRenderer");
-                        if (allItems != null)
-                        {
-                            foreach (var mrlir in allItems)
-                            {
-                                try
-                                {
-                                    var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
-                                    var track = ParseMusicListItem(wrapper);
-                                    if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                    {
-                                        if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
-                                        {
-                                            track.ChannelName = albumArtistFallback;
-                                        }
-                                        if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
-                                        {
-                                            track.ThumbnailUrl = result.ThumbnailUrl;
-                                        }
-                                        result.Tracks.Add(track);
-                                    }
-                                }
-                                catch { continue; }
-                            }
-                        }
-                    }
+                    albumArtistFallback = ExtractArtistFromRuns(strapline);
+                    if (string.IsNullOrEmpty(albumArtistFallback))
+                        albumArtistFallback = strapline[0]?["text"]?.ToString() ?? "";
                 }
-                else
+
+                if (subtitleRuns != null && subtitleRuns.HasValues)
                 {
-                    // Continuation browse: check appendContinuationItemsAction first, then continuationContents
-                    var actionItems = data?.SelectToken("$..appendContinuationItemsAction.continuationItems") as JArray;
-                    if (actionItems != null)
+                    string subtitle = "";
+                    foreach (var r in subtitleRuns) subtitle += r["text"]?.ToString();
+                    result.Subtitle = subtitle;
+                    if (string.IsNullOrEmpty(albumArtistFallback))
+                        albumArtistFallback = ExtractArtistFromRuns(subtitleRuns);
+                }
+
+                if (string.IsNullOrEmpty(albumArtistFallback) && secondSubtitleRuns != null && secondSubtitleRuns.HasValues)
+                {
+                    albumArtistFallback = ExtractArtistFromRuns(secondSubtitleRuns);
+                }
+
+                if (!string.IsNullOrEmpty(albumArtistFallback) && !string.IsNullOrEmpty(result.Subtitle) && !result.Subtitle.Contains(albumArtistFallback))
+                {
+                    result.Subtitle = result.Subtitle + " • " + albumArtistFallback;
+                }
+
+                if (secondSubtitleRuns != null && secondSubtitleRuns.HasValues)
+                {
+                    string secondSub = "";
+                    foreach (var r in secondSubtitleRuns) secondSub += r["text"]?.ToString();
+                    if (!string.IsNullOrEmpty(secondSub))
+                        result.Subtitle = result.Subtitle + " • " + secondSub;
+                }
+
+                if (string.IsNullOrEmpty(result.Subtitle))
+                {
+                    result.Subtitle = data["metadata"]?["playlistMetadataRenderer"]?["description"]?.ToString()
+                                   ?? data.SelectToken("$..microformatDataRenderer.description")?.ToString()
+                                   ?? "";
+                }
+            }
+
+            string newToken = null;
+
+            if (!isContinuation)
+            {
+                var shelves = new List<JToken>();
+                var plShelves = data.SelectTokens("$..musicPlaylistShelfRenderer");
+                if (plShelves != null) shelves.AddRange(plShelves);
+                var regShelves = data.SelectTokens("$..musicShelfRenderer");
+                if (regShelves != null) shelves.AddRange(regShelves);
+
+                foreach (var shelf in shelves)
+                {
+                    var shelfContents = shelf["contents"] as JArray;
+                    if (shelfContents != null)
                     {
-                        foreach (var item in actionItems)
+                        foreach (var item in shelfContents)
                         {
                             try
                             {
                                 var mrlir = item["musicResponsiveListItemRenderer"];
                                 if (mrlir != null)
                                 {
-                                    var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
-                                    var track = ParseMusicListItem(wrapper);
+                                    var track = ParseMusicListItem(new JObject { ["musicResponsiveListItemRenderer"] = mrlir });
                                     if (track != null && !string.IsNullOrEmpty(track.VideoId))
                                     {
+                                        if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                            track.ChannelName = albumArtistFallback;
+                                        if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                                            track.ThumbnailUrl = result.ThumbnailUrl;
+                                        result.Tracks.Add(track);
+                                    }
+                                }
+                                else if (item["lockupViewModel"] != null)
+                                {
+                                    var track = ParseLockupViewModel(item);
+                                    if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    {
+                                        if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                            track.ChannelName = albumArtistFallback;
+                                        if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                                            track.ThumbnailUrl = result.ThumbnailUrl;
                                         result.Tracks.Add(track);
                                     }
                                 }
                                 else if (item["continuationItemRenderer"] != null)
                                 {
-                                    var cir = item["continuationItemRenderer"];
-                                    newToken = cir?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                                    newToken = item["continuationItemRenderer"]?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
                                 }
                             }
                             catch { continue; }
                         }
                     }
-                    else
-                    {
-                        // Check continuationContents -> musicPlaylistShelfContinuation or musicShelfContinuation
-                        var shelfCont = data?.SelectToken("$..musicPlaylistShelfContinuation") 
-                                     ?? data?.SelectToken("$..musicShelfContinuation");
 
-                        if (shelfCont != null)
+                    if (string.IsNullOrEmpty(newToken))
+                    {
+                        var shelfConts = shelf["continuations"] as JArray;
+                        if (shelfConts != null && shelfConts.Count > 0)
                         {
-                            var contContents = shelfCont["contents"] as JArray;
-                            if (contContents != null)
+                            newToken = shelfConts[0]?["nextContinuationData"]?["continuation"]?.ToString()
+                                    ?? shelfConts[0]?["continuationCommand"]?["token"]?.ToString();
+                        }
+                    }
+                }
+
+                // Fallback: If 0 tracks found from shelves, search all items in data
+                if (result.Tracks.Count == 0)
+                {
+                    var allItems = data.SelectTokens("$..musicResponsiveListItemRenderer");
+                    if (allItems != null)
+                    {
+                        foreach (var mrlir in allItems)
+                        {
+                            try
                             {
-                                foreach (var item in contContents)
+                                var track = ParseMusicListItem(new JObject { ["musicResponsiveListItemRenderer"] = mrlir });
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
                                 {
-                                    try
-                                    {
-                                        var mrlir = item["musicResponsiveListItemRenderer"];
-                                        if (mrlir != null)
-                                        {
-                                            var wrapper = new JObject { ["musicResponsiveListItemRenderer"] = mrlir };
-                                            var track = ParseMusicListItem(wrapper);
-                                            if (track != null && !string.IsNullOrEmpty(track.VideoId))
-                                            {
-                                                result.Tracks.Add(track);
-                                            }
-                                        }
-                                        else if (item["continuationItemRenderer"] != null)
-                                        {
-                                            var cir = item["continuationItemRenderer"];
-                                            newToken = cir?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
-                                        }
-                                    }
-                                    catch { continue; }
+                                    if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                        track.ChannelName = albumArtistFallback;
+                                    if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                                        track.ThumbnailUrl = result.ThumbnailUrl;
+                                    result.Tracks.Add(track);
                                 }
                             }
+                            catch { continue; }
+                        }
+                    }
 
-                            if (string.IsNullOrEmpty(newToken))
+                    var allLockups = data.SelectTokens("$..lockupViewModel");
+                    if (allLockups != null)
+                    {
+                        foreach (var lvm in allLockups)
+                        {
+                            try
                             {
-                                var conts = shelfCont["continuations"] as JArray;
-                                if (conts != null && conts.Count > 0)
+                                var track = ParseLockupViewModel(new JObject { ["lockupViewModel"] = lvm });
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
                                 {
-                                    newToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString()
-                                            ?? conts[0]?["continuationCommand"]?["token"]?.ToString();
+                                    if (string.IsNullOrEmpty(track.ChannelName) && !string.IsNullOrEmpty(albumArtistFallback))
+                                        track.ChannelName = albumArtistFallback;
+                                    if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
+                                        track.ThumbnailUrl = result.ThumbnailUrl;
+                                    result.Tracks.Add(track);
                                 }
+                            }
+                            catch { continue; }
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(newToken))
+                {
+                    newToken = data.SelectToken("$..continuationItemRenderer.continuationEndpoint.continuationCommand.token")?.ToString();
+                }
+            }
+            else
+            {
+                // Continuation parsing
+                var actionItems = data.SelectToken("$..appendContinuationItemsAction.continuationItems") as JArray;
+                if (actionItems != null)
+                {
+                    foreach (var item in actionItems)
+                    {
+                        try
+                        {
+                            var mrlir = item["musicResponsiveListItemRenderer"];
+                            if (mrlir != null)
+                            {
+                                var track = ParseMusicListItem(new JObject { ["musicResponsiveListItemRenderer"] = mrlir });
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    result.Tracks.Add(track);
+                            }
+                            else if (item["lockupViewModel"] != null)
+                            {
+                                var track = ParseLockupViewModel(item);
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    result.Tracks.Add(track);
+                            }
+                            else if (item["continuationItemRenderer"] != null)
+                            {
+                                newToken = item["continuationItemRenderer"]?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                            }
+                        }
+                        catch { continue; }
+                    }
+                }
+                else
+                {
+                    var shelfCont = data.SelectToken("$..musicPlaylistShelfContinuation") 
+                                 ?? data.SelectToken("$..musicShelfContinuation");
+                    if (shelfCont != null)
+                    {
+                        var contContents = shelfCont["contents"] as JArray;
+                        if (contContents != null)
+                        {
+                            foreach (var item in contContents)
+                            {
+                                try
+                                {
+                                    var mrlir = item["musicResponsiveListItemRenderer"];
+                                    if (mrlir != null)
+                                    {
+                                        var track = ParseMusicListItem(new JObject { ["musicResponsiveListItemRenderer"] = mrlir });
+                                        if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                            result.Tracks.Add(track);
+                                    }
+                                    else if (item["lockupViewModel"] != null)
+                                    {
+                                        var track = ParseLockupViewModel(item);
+                                        if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                            result.Tracks.Add(track);
+                                    }
+                                    else if (item["continuationItemRenderer"] != null)
+                                    {
+                                        newToken = item["continuationItemRenderer"]?["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                                    }
+                                }
+                                catch { continue; }
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(newToken))
+                        {
+                            var conts = shelfCont["continuations"] as JArray;
+                            if (conts != null && conts.Count > 0)
+                            {
+                                newToken = conts[0]?["nextContinuationData"]?["continuation"]?.ToString()
+                                        ?? conts[0]?["continuationCommand"]?["token"]?.ToString();
                             }
                         }
                     }
                 }
 
-                result.ContinuationToken = newToken;
+                if (result.Tracks.Count == 0)
+                {
+                    var allItems = data.SelectTokens("$..musicResponsiveListItemRenderer");
+                    if (allItems != null)
+                    {
+                        foreach (var mrlir in allItems)
+                        {
+                            try
+                            {
+                                var track = ParseMusicListItem(new JObject { ["musicResponsiveListItemRenderer"] = mrlir });
+                                if (track != null && !string.IsNullOrEmpty(track.VideoId))
+                                    result.Tracks.Add(track);
+                            }
+                            catch { continue; }
+                        }
+                    }
+                }
 
+                if (string.IsNullOrEmpty(newToken))
+                {
+                    newToken = data.SelectToken("$..continuationItemRenderer.continuationEndpoint.continuationCommand.token")?.ToString();
+                }
             }
-            catch { }
-            return result;
+
+            if (!string.IsNullOrEmpty(newToken))
+            {
+                result.ContinuationToken = newToken;
+            }
         }
 
         /// <summary>

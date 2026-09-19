@@ -627,6 +627,19 @@ namespace YTMusicWP
             {
                 videoId = mr["navigationEndpoint"]?["watchEndpoint"]?["videoId"]?.ToString();
             }
+            if (string.IsNullOrEmpty(videoId) && cols != null && cols.Count() > 0)
+            {
+                videoId = cols[0]?["musicResponsiveListItemFlexColumnRenderer"]
+                    ?["text"]?["runs"]?[0]?["navigationEndpoint"]?["watchEndpoint"]?["videoId"]?.ToString();
+            }
+            if (string.IsNullOrEmpty(videoId))
+            {
+                videoId = mr["menu"]?.SelectToken("$..likeButtonRenderer.target.videoId")?.ToString();
+            }
+            if (string.IsNullOrEmpty(videoId))
+            {
+                videoId = mr.SelectToken("$..watchEndpoint.videoId")?.ToString();
+            }
 
             // BrowseId (for artist/playlist items)
             string browseId = mr["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
