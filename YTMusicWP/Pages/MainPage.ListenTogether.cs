@@ -442,7 +442,7 @@ namespace YTMusicWP
                     Artist = track.ChannelName ?? "",
                     Album = track.AlbumName ?? "",
                     Duration = durMs,
-                    Thumbnail = track.ThumbnailUrl ?? ""
+                    Thumbnail = GetHighResListenTogetherThumbnail(track.ThumbnailUrl, track.VideoId)
                 };
 
                 var queue = currentQueueTracks.Take(50).Select(t => new TrackInfo
@@ -450,7 +450,7 @@ namespace YTMusicWP
                     Id = t.VideoId,
                     Title = t.Title ?? "",
                     Artist = t.ChannelName ?? "",
-                    Thumbnail = t.ThumbnailUrl ?? ""
+                    Thumbnail = GetHighResListenTogetherThumbnail(t.ThumbnailUrl, t.VideoId)
                 }).ToList();
 
                 await mgr.SendPlaybackActionAsync(PlaybackActions.ChangeTrack, track.VideoId, 0, trackInfo, queue, "Queue");
@@ -480,6 +480,10 @@ namespace YTMusicWP
 
             Debug.WriteLine(string.Format("[ListenTogether] Updating host track duration from {0}ms to {1}ms", mgr.CurrentTrack.Duration, realDurationMs));
             mgr.CurrentTrack.Duration = realDurationMs;
+            if (!string.IsNullOrEmpty(mgr.CurrentTrack.Thumbnail))
+            {
+                mgr.CurrentTrack.Thumbnail = GetHighResListenTogetherThumbnail(mgr.CurrentTrack.Thumbnail, mgr.CurrentTrack.Id);
+            }
 
             try
             {
@@ -488,7 +492,7 @@ namespace YTMusicWP
                     Id = t.VideoId,
                     Title = t.Title ?? "",
                     Artist = t.ChannelName ?? "",
-                    Thumbnail = t.ThumbnailUrl ?? ""
+                    Thumbnail = GetHighResListenTogetherThumbnail(t.ThumbnailUrl, t.VideoId)
                 }).ToList();
 
                 await mgr.SendPlaybackActionAsync(PlaybackActions.ChangeTrack, mgr.CurrentTrack.Id, currentPos, mgr.CurrentTrack, queue, "Queue");

@@ -242,6 +242,54 @@ namespace YTMusicWP
             return url;
         }
 
+        /// <summary>
+        /// Produces a high-resolution square thumbnail URL (1080x1080) for Listen Together
+        /// so remote clients (e.g. MetroList on Android with high-DPI screens) display sharp, unblurred album art.
+        /// </summary>
+        public static string GetHighResListenTogetherThumbnail(string url, string videoId = null)
+        {
+            if (string.IsNullOrWhiteSpace(url) || url.StartsWith("ms-appx:") || url.StartsWith("ms-appdata:"))
+            {
+                if (!string.IsNullOrEmpty(videoId) && !videoId.StartsWith("LOCAL:") && !videoId.StartsWith("CHANNEL:") && !videoId.StartsWith("PLAYLIST:"))
+                {
+                    return "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
+                }
+                return "";
+            }
+
+            // Google CDN images (YouTube Music albums, singles, artist covers)
+            if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
+            {
+                int eqIdx = url.LastIndexOf('=');
+                if (eqIdx > 0)
+                {
+                    return url.Substring(0, eqIdx) + "=w1080-h1080-l90-rj";
+                }
+                return url + "=w1080-h1080-l90-rj";
+            }
+
+            // Standard YouTube video thumbnails
+            if (url.Contains("ytimg.com") || url.Contains("img.youtube.com"))
+            {
+                int viIdx = url.IndexOf("/vi/");
+                if (viIdx > 0)
+                {
+                    int endIdx = url.IndexOf('/', viIdx + 4);
+                    if (endIdx > 0)
+                    {
+                        string vidId = url.Substring(viIdx + 4, endIdx - (viIdx + 4));
+                        return "https://i.ytimg.com/vi/" + vidId + "/hqdefault.jpg";
+                    }
+                }
+                if (url.Contains("mqdefault.jpg")) return url.Replace("mqdefault.jpg", "hqdefault.jpg");
+                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "hqdefault.jpg");
+                if (url.Contains("default.jpg") && !url.Contains("hqdefault.jpg") && !url.Contains("maxresdefault.jpg"))
+                    return url.Replace("default.jpg", "hqdefault.jpg");
+            }
+
+            return url;
+        }
+
         public async Task<List<YouTubeTrack>> FetchMusicList(string query, string pageToken = "", string searchFilter = null)
         {
             var list = new List<YouTubeTrack>(20);
