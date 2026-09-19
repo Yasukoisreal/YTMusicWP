@@ -74,4 +74,28 @@ namespace YTMusicWP.Models
             };
         }
     }
+
+    [Table("Downloads")]
+    public class DownloadedEntity
+    {
+        [PrimaryKey]
+        public string FileName { get; set; }
+        public string VideoId { get; set; }
+        public string Title { get; set; }
+        public string ChannelName { get; set; }
+        public string ThumbnailUrl { get; set; }
+        [Indexed]
+        public DateTime DownloadedAt { get; set; }
+
+        public YouTubeTrack ToYouTubeTrack()
+        {
+            return new YouTubeTrack
+            {
+                VideoId = "LOCAL:" + this.FileName,
+                Title = this.Title,
+                ChannelName = this.ChannelName,
+                ThumbnailUrl = this.ThumbnailUrl
+            };
+        }
+    }
 }

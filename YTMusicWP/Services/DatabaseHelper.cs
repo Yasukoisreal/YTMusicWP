@@ -23,6 +23,7 @@ namespace YTMusicWP.Services
                 // Create tables
                 await _db.CreateTableAsync<HistoryEntity>();
                 await _db.CreateTableAsync<FavoriteEntity>();
+                await _db.CreateTableAsync<DownloadedEntity>();
             }
             catch (Exception ex)
             {
@@ -35,6 +36,7 @@ namespace YTMusicWP.Services
                     _db = new SQLiteAsyncConnection(dbPath);
                     await _db.CreateTableAsync<HistoryEntity>();
                     await _db.CreateTableAsync<FavoriteEntity>();
+                    await _db.CreateTableAsync<DownloadedEntity>();
                 }
                 catch (Exception retryEx)
                 {
@@ -212,6 +214,82 @@ namespace YTMusicWP.Services
         {
             if (_db != null) await _db.DropTableAsync<FavoriteEntity>();
             if (_db != null) await _db.CreateTableAsync<FavoriteEntity>();
+        }
+
+        // ==========================================
+        // DOWNLOADS
+        // ==========================================
+        public static async Task AddOrUpdateDownloadedAsync(string fileName, YouTubeTrack track, string localThumbPath)
+        {
+            if (_db == null || string.IsNullOrEmpty(fileName) || track == null) return;
+            try
+            {
+                var existing = await _db.Table<DownloadedEntity>().Where(x => x.FileName == fileName).FirstOrDefaultAsync();
+                if (existing != null)
+                {
+                    existing.Title = track.Title;
+                    existing.ChannelName = track.ChannelName;
+                    existing.ThumbnailUrl = localThumbPath ?? track.ThumbnailUrl;
+                    existing.DownloadedAt = DateTime.Now;
+                    await _db.UpdateAsync(existing);
+                }
+                else
+                {
+                    var entity = new DownloadedEntity
+                    {
+                        FileName = fileName,
+                        VideoId = track.VideoId,
+                        Title = track.Title,
+                        ChannelName = track.ChannelName,
+                        ThumbnailUrl = localThumbPath ?? track.ThumbnailUrl,
+                        DownloadedAt = DateTime.Now
+                    };
+                    await _db.InsertAsync(entity);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("AddOrUpdateDownloadedAsync Error: " + ex.Message);
+            }
+        }
+
+        public static async Task<Dictionary<string, DownloadedEntity>> GetDownloadedMapAsync()
+        {
+            var map = new Dictionary<string, DownloadedEntity>(StringComparer.OrdinalIgnoreCase);
+            if (_db == null) return map;
+            try
+            {
+                var list = await _db.Table<DownloadedEntity>().ToListAsync();
+                foreach (var item in list)
+                {
+                    if (!string.IsNullOrEmpty(item.FileName))
+                    {
+                        map[item.FileName] = item;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("GetDownloadedMapAsync Error: " + ex.Message);
+            }
+            return map;
+        }
+
+        public static async Task RemoveDownloadedAsync(string fileName)
+        {
+            if (_db == null || string.IsNullOrEmpty(fileName)) return;
+            try
+            {
+                var existing = await _db.Table<DownloadedEntity>().Where(x => x.FileName == fileName).FirstOrDefaultAsync();
+                if (existing != null)
+                {
+                    await _db.DeleteAsync(existing);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("RemoveDownloadedAsync Error: " + ex.Message);
+            }
         }
     }
 }

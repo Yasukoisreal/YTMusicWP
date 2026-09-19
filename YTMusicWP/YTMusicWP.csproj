@@ -128,6 +128,7 @@
     <Compile Include="Services\TileService.cs" />
     <Compile Include="Services\LumiaBlurHelper.cs" />
     <Compile Include="Services\MemoryHelper.cs" />
+    <Compile Include="Services\M4aMetadataWriter.cs" />
     <Compile Include="Models\YouTubeTrack.cs" />
     <Compile Include="Models\SongCredits.cs" />
     <Compile Include="Models\DatabaseEntities.cs" />

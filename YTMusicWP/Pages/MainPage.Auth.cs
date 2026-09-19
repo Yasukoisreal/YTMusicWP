@@ -206,6 +206,12 @@ namespace YTMusicWP
                     SplashAnimationToggle.Toggled += SplashAnimationToggle_Toggled;
                 }
 
+                if (SmartDownloadsToggle != null)
+                {
+                    SmartDownloadsToggle.IsOn = SafeGetBool(settings, "SmartDownloads", false);
+                    SmartDownloadsToggle.Toggled += SmartDownloadsToggle_Toggled;
+                }
+
                 // Now attach handlers  changes will save & apply immediately
                 // Quality handler removed
 
@@ -320,6 +326,17 @@ namespace YTMusicWP
             if (SplashAnimationToggle == null) return;
             var settings = ApplicationData.Current.LocalSettings.Values;
             settings["EnableSplashAnimation"] = SplashAnimationToggle.IsOn;
+        }
+
+        private async void SmartDownloadsToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (SmartDownloadsToggle == null) return;
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            settings["SmartDownloads"] = SmartDownloadsToggle.IsOn;
+            if (SmartDownloadsToggle.IsOn)
+            {
+                await TriggerSmartDownloadsAsync();
+            }
         }
 
         private void LiveTileToggle_Toggled(object sender, RoutedEventArgs e)

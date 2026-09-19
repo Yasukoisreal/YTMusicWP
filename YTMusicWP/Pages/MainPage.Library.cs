@@ -14,6 +14,8 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using YTMusicWP.Models;
+using YTMusicWP.Services;
 
 namespace YTMusicWP
 {
@@ -1072,8 +1074,19 @@ namespace YTMusicWP
             {
                 try
                 {
-                    StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(track.VideoId.Substring(6));
+                    string fileName = track.VideoId.Substring(6);
+                    StorageFile file = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
                     await file.DeleteAsync();
+
+                    string thumbName = "thumb_" + System.IO.Path.GetFileNameWithoutExtension(fileName) + ".jpg";
+                    try
+                    {
+                        var thumbFile = await ApplicationData.Current.LocalFolder.GetFileAsync(thumbName);
+                        if (thumbFile != null) await thumbFile.DeleteAsync();
+                    }
+                    catch { }
+
+                    await YTMusicWP.Services.DatabaseHelper.RemoveDownloadedAsync(fileName);
 
                     downloadedTracks.Remove(track);
 
@@ -1111,6 +1124,52 @@ namespace YTMusicWP
             }
         }
 
+        private async void MenuExportToMusic_Click(object sender, RoutedEventArgs e)
+        {
+            var track = (sender as MenuFlyoutItem)?.DataContext as YouTubeTrack;
+            if (track == null || string.IsNullOrEmpty(track.VideoId) || !track.VideoId.StartsWith("LOCAL:")) return;
+
+            string fileName = track.VideoId.Substring(6);
+            try
+            {
+                var localFile = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
+                var musicFolder = KnownFolders.MusicLibrary;
+                await localFile.CopyAsync(musicFolder, fileName, NameCollisionOption.ReplaceExisting);
+                ShowToast("Exported to Music folder: " + track.Title);
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Failed to export: " + ex.Message);
+            }
+        }
+
+        private async void ExportAllToMusicFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var files = await ApplicationData.Current.LocalFolder.GetFilesAsync();
+                var musicFolder = KnownFolders.MusicLibrary;
+                int count = 0;
+                foreach (var file in files)
+                {
+                    if (file.Name.EndsWith(".m4a", StringComparison.OrdinalIgnoreCase) && !file.Name.StartsWith("temp_play_"))
+                    {
+                        try
+                        {
+                            await file.CopyAsync(musicFolder, file.Name, NameCollisionOption.ReplaceExisting);
+                            count++;
+                        }
+                        catch { }
+                    }
+                }
+                ShowToast(count > 0 ? "Exported " + count + " song(s) to Music folder" : "No downloaded songs found");
+            }
+            catch (Exception ex)
+            {
+                ShowToast("Export failed: " + ex.Message);
+            }
+        }
+
         private async void DownloadButton_Click(object sender, RoutedEventArgs e) { if (currentTrack != null) await DownloadTrackAsync(currentTrack); }
 
         public async Task CleanStaleDownloadsAsync()
@@ -1139,25 +1198,35 @@ namespace YTMusicWP
             catch { }
         }
 
-        private async Task DownloadTrackAsync(YouTubeTrack track)
+        private async Task DownloadTrackAsync(YouTubeTrack track, bool isSilent = false)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
-            if (!IsInternetAvailable()) { ShowToast("Internet required to download"); return; }
+            if (!IsInternetAvailable())
+            {
+                if (!isSilent) ShowToast("Internet required to download");
+                return;
+            }
 
             StorageFile destinationFile = null;
             try
             {
-                DownloadStatusBar.Visibility = Visibility.Visible;
-                DownloadStatusText.Text = "Resolving: " + track.Title;
-                DownloadProgressBar.Value = 0;
-                DownloadProgressBar.IsIndeterminate = true;
+                if (!isSilent)
+                {
+                    DownloadStatusBar.Visibility = Visibility.Visible;
+                    DownloadStatusText.Text = "Resolving: " + track.Title;
+                    DownloadProgressBar.Value = 0;
+                    DownloadProgressBar.IsIndeterminate = true;
+                }
 
                 // Dùng InnerTube để lấy stream URL thay vì proxy (proxy đã bị chặn)
                 string streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId);
                 if (string.IsNullOrEmpty(streamUrl))
                 {
-                    DownloadStatusBar.Visibility = Visibility.Collapsed;
-                    ShowToast("Cannot resolve audio URL for this track");
+                    if (!isSilent)
+                    {
+                        DownloadStatusBar.Visibility = Visibility.Collapsed;
+                        ShowToast("Cannot resolve audio URL for this track");
+                    }
                     return;
                 }
 
@@ -1168,11 +1237,14 @@ namespace YTMusicWP
                 BackgroundDownloader downloader = new BackgroundDownloader();
                 DownloadOperation download = downloader.CreateDownload(new Uri(streamUrl), destinationFile);
 
-                DownloadStatusText.Text = "Downloading: " + track.Title;
+                if (!isSilent)
+                {
+                    DownloadStatusText.Text = "Downloading: " + track.Title;
+                }
 
                 var progressCallback = new Progress<DownloadOperation>(op =>
                 {
-                    if (op.Progress.TotalBytesToReceive > 0)
+                    if (!isSilent && op.Progress.TotalBytesToReceive > 0)
                     {
                         DownloadProgressBar.IsIndeterminate = false;
                         double progress = (double)op.Progress.BytesReceived / op.Progress.TotalBytesToReceive * 100;
@@ -1183,21 +1255,143 @@ namespace YTMusicWP
 
                 await download.StartAsync().AsTask(progressCallback);
 
-                DownloadProgressBar.IsIndeterminate = false;
-                DownloadProgressBar.Value = 100;
+                if (!isSilent)
+                {
+                    DownloadProgressBar.IsIndeterminate = true;
+                    DownloadStatusText.Text = "Saving tags & artwork: " + track.Title;
+                }
 
-                DownloadStatusText.Text = "Download complete: " + track.Title;
+                // 1. Download & persist cover artwork offline
+                byte[] coverBytes = null;
+                string localThumbUri = null;
+                if (!string.IsNullOrEmpty(track.ThumbnailUrl))
+                {
+                    try
+                    {
+                        string cleanUrl = GetSquareThumbnail(track.ThumbnailUrl);
+                        coverBytes = await _apiClient.GetByteArrayAsync(cleanUrl);
+                        if (coverBytes != null && coverBytes.Length > 0)
+                        {
+                            string thumbFileName = "thumb_" + safeTitle + ".jpg";
+                            var thumbFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(thumbFileName, CreationCollisionOption.ReplaceExisting);
+                            await FileIO.WriteBytesAsync(thumbFile, coverBytes);
+                            localThumbUri = "ms-appdata:///local/" + thumbFileName;
+                        }
+                    }
+                    catch { }
+                }
+
+                // 2. Tag M4A metadata (Title, Artist, Album, Cover Art)
+                try
+                {
+                    await Services.M4aMetadataWriter.WriteMetadataAsync(destinationFile, track.Title, track.ChannelName, track.AlbumName, coverBytes);
+                }
+                catch { }
+
+                // 3. Persist to SQLite DownloadedEntity
+                await Services.DatabaseHelper.AddOrUpdateDownloadedAsync(destinationFile.Name, track, localThumbUri);
+
+                if (!isSilent)
+                {
+                    DownloadProgressBar.IsIndeterminate = false;
+                    DownloadProgressBar.Value = 100;
+                    DownloadStatusText.Text = "Download complete: " + track.Title;
+                }
 
                 await LoadDownloadsAsync();
 
-                await Task.Delay(3000);
-                DownloadStatusBar.Visibility = Visibility.Collapsed;
+                if (!isSilent)
+                {
+                    await Task.Delay(3000);
+                    DownloadStatusBar.Visibility = Visibility.Collapsed;
+                }
             }
             catch
             {
                 try { if (destinationFile != null) await destinationFile.DeleteAsync(); } catch { }
-                DownloadStatusBar.Visibility = Visibility.Collapsed;
-                ShowToast("Download failed or cancelled.");
+                if (!isSilent)
+                {
+                    DownloadStatusBar.Visibility = Visibility.Collapsed;
+                    ShowToast("Download failed or cancelled.");
+                }
+            }
+        }
+
+        private bool IsWifiConnected()
+        {
+            try
+            {
+                var profile = Windows.Networking.Connectivity.NetworkInformation.GetInternetConnectionProfile();
+                if (profile != null && profile.GetNetworkConnectivityLevel() == Windows.Networking.Connectivity.NetworkConnectivityLevel.InternetAccess)
+                {
+                    if (profile.IsWlanConnectionProfile) return true;
+                    if (profile.NetworkAdapter != null && profile.NetworkAdapter.IanaInterfaceType == 71) return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private bool _isSmartDownloading = false;
+
+        public async Task TriggerSmartDownloadsAsync()
+        {
+            if (_isSmartDownloading) return;
+
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            bool enabled = SafeGetBool(settings, "SmartDownloads", false);
+            if (!enabled || !IsWifiConnected()) return;
+
+            _isSmartDownloading = true;
+            try
+            {
+                List<YouTubeTrack> favsToDownload;
+                lock (favoriteTracks)
+                {
+                    favsToDownload = favoriteTracks.Where(t => t != null && !string.IsNullOrEmpty(t.VideoId) && !t.VideoId.StartsWith("LOCAL:")).ToList();
+                }
+
+                if (favsToDownload.Count == 0) return;
+
+                var downloadedMap = await Services.DatabaseHelper.GetDownloadedMapAsync();
+                var downloadedIds = new HashSet<string>(downloadedMap.Values.Select(v => v.VideoId).Where(id => !string.IsNullOrEmpty(id)));
+
+                int downloadedCount = 0;
+                foreach (var track in favsToDownload)
+                {
+                    if (!SafeGetBool(settings, "SmartDownloads", false) || !IsWifiConnected())
+                        break;
+
+                    if (downloadedIds.Contains(track.VideoId)) continue;
+
+                    string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars())).Trim();
+                    if (string.IsNullOrEmpty(safeTitle)) safeTitle = track.VideoId;
+                    string targetFileName = safeTitle + ".m4a";
+
+                    if (downloadedMap.ContainsKey(targetFileName))
+                    {
+                        downloadedIds.Add(track.VideoId);
+                        continue;
+                    }
+
+                    await DownloadTrackAsync(track, isSilent: true);
+                    downloadedIds.Add(track.VideoId);
+                    downloadedCount++;
+
+                    await Task.Delay(1500);
+
+                    if (downloadedCount >= 25) break;
+                }
+
+                if (downloadedCount > 0)
+                {
+                    ShowToast("Smart Downloads: " + downloadedCount + " new song(s) downloaded");
+                }
+            }
+            catch { }
+            finally
+            {
+                _isSmartDownloading = false;
             }
         }
 

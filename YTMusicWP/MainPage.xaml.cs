@@ -637,9 +637,16 @@ namespace YTMusicWP
             {
                 await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                 {
-                    if (IsInternetAvailable() && homeTracks.Count == 0)
+                    if (IsInternetAvailable())
                     {
-                        var ignored = LoadHomeRecommendations();
+                        if (homeTracks.Count == 0)
+                        {
+                            var ignored = LoadHomeRecommendations();
+                        }
+                        if (IsWifiConnected())
+                        {
+                            var ignoredSmart = TriggerSmartDownloadsAsync();
+                        }
                     }
                 });
             }
@@ -709,6 +716,12 @@ namespace YTMusicWP
 
                 // Auto-sync YouTube data in background if logged in
                 AutoSyncYouTubeAsync();
+
+                // Trigger smart downloads on Wi-Fi if enabled
+                if (IsWifiConnected())
+                {
+                    var ignoredSmart = TriggerSmartDownloadsAsync();
+                }
             }
 
             // Handle Secondary Tile deep link
@@ -766,6 +779,10 @@ namespace YTMusicWP
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
                         RefreshLibraryList();
+                        if (IsWifiConnected())
+                        {
+                            var ignoredSmart = TriggerSmartDownloadsAsync();
+                        }
                     });
                 }
             }

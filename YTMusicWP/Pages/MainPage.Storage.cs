@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using YTMusicWP.Models;
 using YTMusicWP.Services;
 
 namespace YTMusicWP
@@ -61,6 +62,11 @@ namespace YTMusicWP
                     {
                         stats.DownloadedBytes += size;
                         stats.DownloadedCount++;
+                    }
+                    else if (nameLower.StartsWith("thumb_"))
+                    {
+                        // Group offline cover artwork with downloaded songs
+                        stats.DownloadedBytes += size;
                     }
                     else if (nameLower.EndsWith(".jpg") || nameLower.EndsWith(".jpeg") || nameLower.EndsWith(".png") || nameLower.EndsWith(".webp"))
                     {
@@ -158,6 +164,7 @@ namespace YTMusicWP
                 foreach (var file in files)
                 {
                     string name = file.Name.ToLowerInvariant();
+                    if (name.StartsWith("thumb_")) continue; // Preserve offline downloaded covers
                     if (name.EndsWith(".jpg") || name.EndsWith(".jpeg") || name.EndsWith(".png") || name.EndsWith(".webp"))
                     {
                         try { await file.DeleteAsync(); count++; } catch { }
@@ -354,12 +361,13 @@ namespace YTMusicWP
             try
             {
                 var files = await ApplicationData.Current.LocalFolder.GetFilesAsync();
+                var downloadedMap = await DatabaseHelper.GetDownloadedMapAsync();
 
                 // FIX #4: Smart diff — chỉ thêm/xóa item thay đổi, tránh UI flicker
                 var currentFileNames = new HashSet<string>();
                 // [OPT] Build existing-ID set once → O(1) lookup instead of O(n) .Any()
-                var existingIds = new HashSet<string>();
-                foreach (var t in downloadedTracks) existingIds.Add(t.VideoId);
+                var existingMap = new Dictionary<string, YouTubeTrack>(StringComparer.OrdinalIgnoreCase);
+                foreach (var t in downloadedTracks) existingMap[t.VideoId] = t;
 
                 foreach (var file in files)
                 {
@@ -374,15 +382,38 @@ namespace YTMusicWP
 
                         currentFileNames.Add(file.Name);
                         string localId = "LOCAL:" + file.Name;
-                        if (!existingIds.Contains(localId))
+                        YouTubeTrack existingTrack;
+                        if (!existingMap.TryGetValue(localId, out existingTrack))
                         {
-                            downloadedTracks.Add(new YouTubeTrack
+                            DownloadedEntity meta;
+                            if (downloadedMap.TryGetValue(file.Name, out meta))
                             {
-                                VideoId = localId,
-                                Title = file.Name.Replace(".m4a", ""),
-                                ChannelName = "Offline Track",
-                                ThumbnailUrl = "ms-appx:///Assets/Square71x71Logo.scale-240.png"
-                            });
+                                downloadedTracks.Add(meta.ToYouTubeTrack());
+                            }
+                            else
+                            {
+                                downloadedTracks.Add(new YouTubeTrack
+                                {
+                                    VideoId = localId,
+                                    Title = file.Name.Replace(".m4a", ""),
+                                    ChannelName = "Offline Track",
+                                    ThumbnailUrl = "ms-appx:///Assets/Square71x71Logo.scale-240.png"
+                                });
+                            }
+                        }
+                        else
+                        {
+                            // Backfill metadata if existing item had placeholder metadata
+                            DownloadedEntity meta;
+                            if (downloadedMap.TryGetValue(file.Name, out meta))
+                            {
+                                if (existingTrack.ChannelName == "Offline Track" && !string.IsNullOrEmpty(meta.ChannelName))
+                                {
+                                    existingTrack.ChannelName = meta.ChannelName;
+                                    existingTrack.Title = meta.Title;
+                                    existingTrack.ThumbnailUrl = meta.ThumbnailUrl;
+                                }
+                            }
                         }
                     }
                 }
@@ -395,6 +426,7 @@ namespace YTMusicWP
                     if (!currentFileNames.Contains(fileName))
                     {
                         downloadedTracks.RemoveAt(i);
+                        var ignored = DatabaseHelper.RemoveDownloadedAsync(fileName);
                     }
                 }
             }

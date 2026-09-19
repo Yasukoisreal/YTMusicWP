@@ -254,6 +254,7 @@
                         <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
                         <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                         <MenuFlyoutItem Text="✛ Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem Text="📤 Export to Music folder" Click="MenuExportToMusic_Click" Visibility="{Binding DeleteVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -290,6 +291,7 @@
                         <MenuFlyoutItem Text="🔗 Share" Click="MenuShare_Click"/>
                         <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                         <MenuFlyoutItem Text="✛ Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem Text="📤 Export to Music folder" Click="MenuExportToMusic_Click" Visibility="{Binding DeleteVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -2595,9 +2597,36 @@
                                         <TextBlock Text="📄" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="App Data &amp; Playlists" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                    <TextBlock x:Name="StorageDataSizeText" Text="-- KB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                     <TextBlock x:Name="StorageDataSizeText" Text="-- KB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
                             </StackPanel>
+
+                            <!-- Smart Downloads Setting -->
+                            <Border Background="#252525" CornerRadius="12" Padding="14,10" Margin="0,0,0,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="Smart Downloads" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                                        <TextBlock Text="Auto-download liked songs on Wi-Fi" Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <ToggleSwitch x:Name="SmartDownloadsToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Export All Downloads to Music Folder -->
+                            <Button Click="ExportAllToMusicFolder_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,10" Height="40">
+                                <Border Background="#252525" CornerRadius="10">
+                                    <Grid Margin="16,0">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="📁" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Export Downloads to Music folder" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Button>
 
                             <!-- Primary Action: Clean All Cache (Safe) -->
                             <Button Click="CleanAllCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="44">
