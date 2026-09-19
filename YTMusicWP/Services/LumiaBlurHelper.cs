@@ -190,42 +190,44 @@ namespace YTMusicWP.Services
             {
                 using (var pixelStream = bitmap.PixelBuffer.AsStream())
                 {
-                    int totalBytes = targetWidth * targetHeight * 4;
-                    byte[] pixels = new byte[totalBytes];
-                    int read = 0;
-                    while (read < totalBytes)
-                    {
-                        int r = pixelStream.Read(pixels, read, totalBytes - read);
-                        if (r <= 0) break;
-                        read += r;
-                    }
+                    int rowBytes = targetWidth * 4;
+                    byte[] rowBuffer = new byte[rowBytes];
+                    int fadeStartY = Math.Max(0, targetHeight - fadeHeight);
 
-                    if (read == totalBytes)
+                    for (int y = fadeStartY; y < targetHeight; y++)
                     {
-                        int fadeStartY = Math.Max(0, targetHeight - fadeHeight);
-                        for (int y = fadeStartY; y < targetHeight; y++)
+                        long rowOffset = (long)y * rowBytes;
+                        pixelStream.Seek(rowOffset, SeekOrigin.Begin);
+                        int read = 0;
+                        while (read < rowBytes)
+                        {
+                            int r = pixelStream.Read(rowBuffer, read, rowBytes - read);
+                            if (r <= 0) break;
+                            read += r;
+                        }
+
+                        if (read == rowBytes)
                         {
                             double progress = (double)(y - fadeStartY) / fadeHeight;
                             // Cosine ease: starts flat at 1.0, ends flat at 0.0 with 0 derivative at edges
                             double alpha = 0.5 * (1.0 + Math.Cos(progress * Math.PI));
                             int alphaI = (int)(alpha * 256.0);
 
-                            int rowStart = y * targetWidth * 4;
                             for (int x = 0; x < targetWidth; x++)
                             {
-                                int idx = rowStart + (x * 4);
+                                int idx = x * 4;
                                 // BGRA premultiplied alpha with integer shift
-                                pixels[idx]     = (byte)((pixels[idx] * alphaI) >> 8);     // B
-                                pixels[idx + 1] = (byte)((pixels[idx + 1] * alphaI) >> 8); // G
-                                pixels[idx + 2] = (byte)((pixels[idx + 2] * alphaI) >> 8); // R
-                                pixels[idx + 3] = (byte)((pixels[idx + 3] * alphaI) >> 8); // A
+                                rowBuffer[idx]     = (byte)((rowBuffer[idx] * alphaI) >> 8);     // B
+                                rowBuffer[idx + 1] = (byte)((rowBuffer[idx + 1] * alphaI) >> 8); // G
+                                rowBuffer[idx + 2] = (byte)((rowBuffer[idx + 2] * alphaI) >> 8); // R
+                                rowBuffer[idx + 3] = (byte)((rowBuffer[idx + 3] * alphaI) >> 8); // A
                             }
-                        }
 
-                        pixelStream.Seek(0, SeekOrigin.Begin);
-                        pixelStream.Write(pixels, 0, totalBytes);
-                        pixelStream.Flush();
+                            pixelStream.Seek(rowOffset, SeekOrigin.Begin);
+                            pixelStream.Write(rowBuffer, 0, rowBytes);
+                        }
                     }
+                    pixelStream.Flush();
                 }
                 bitmap.Invalidate();
             }

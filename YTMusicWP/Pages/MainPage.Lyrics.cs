@@ -595,27 +595,18 @@ namespace YTMusicWP
 
             if (_isAppleMusicStyle)
             {
-                List<int> affectedIndices = null;
+                int startIdx = 0;
+                int endIdx = currentLyrics.Count - 1;
                 if (oldIndex >= 0)
                 {
-                    affectedIndices = new List<int>();
-                    for (int k = Math.Max(0, oldIndex - 3); k <= Math.Min(currentLyrics.Count - 1, oldIndex + 3); k++)
-                    {
-                        affectedIndices.Add(k);
-                    }
-                    if (currentLyricIndex >= 0)
-                    {
-                        for (int k = Math.Max(0, currentLyricIndex - 3); k <= Math.Min(currentLyrics.Count - 1, currentLyricIndex + 3); k++)
-                        {
-                            if (!affectedIndices.Contains(k)) affectedIndices.Add(k);
-                        }
-                    }
+                    int minCandidate = (currentLyricIndex >= 0) ? Math.Min(oldIndex, currentLyricIndex) : oldIndex;
+                    int maxCandidate = (currentLyricIndex >= 0) ? Math.Max(oldIndex, currentLyricIndex) : oldIndex;
+                    startIdx = Math.Max(0, minCandidate - 3);
+                    endIdx = Math.Min(currentLyrics.Count - 1, maxCandidate + 3);
                 }
 
-                int count = affectedIndices != null ? affectedIndices.Count : currentLyrics.Count;
-                for (int idx = 0; idx < count; idx++)
+                for (int i = startIdx; i <= endIdx; i++)
                 {
-                    int i = affectedIndices != null ? affectedIndices[idx] : idx;
 
                     if (currentLyricIndex < 0)
                     {
@@ -780,15 +771,7 @@ namespace YTMusicWP
             }
             else
             {
-                for (int i = 0; i < currentLyrics.Count; i++)
-                {
-                    var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
-                    if (container != null)
-                    {
-                        container.RenderTransform = null;
-                        container.Opacity = 1.0;
-                    }
-                }
+                // In Apple Music style, ContainerContentChanging already ensures RenderTransform = null and Opacity = 1.0.
             }
 
             // Scroll to current lyric (center it)

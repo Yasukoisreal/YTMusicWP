@@ -822,10 +822,14 @@ namespace AudioPlayerTask
                     if (sponsorBlock)
                     {
                         var ignoreTask = System.Threading.Tasks.Task.Run(async () => {
-                            var segs = await YTMusicWP.Services.SponsorBlockApi.GetSkipSegmentsAsync(vidId);
-                            if (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count && _videoIdList[_currentTrackIndex] == vidId) {
-                                _skipSegments = segs;
+                            try
+                            {
+                                var segs = await YTMusicWP.Services.SponsorBlockApi.GetSkipSegmentsAsync(vidId);
+                                if (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count && _videoIdList[_currentTrackIndex] == vidId) {
+                                    _skipSegments = segs;
+                                }
                             }
+                            catch { }
                         });
                     }
                 }

@@ -22,6 +22,11 @@ namespace YTMusicWP
         private string _lastRemoteTrackId;
         private string _shareRoomCode;
 
+        private static readonly SolidColorBrush _ltDotGreenBrush = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
+        private static readonly SolidColorBrush _ltDotAmberBrush = new SolidColorBrush(Color.FromArgb(255, 255, 170, 0));
+        private static readonly SolidColorBrush _ltDotRedBrush = new SolidColorBrush(Color.FromArgb(255, 255, 59, 48));
+        private static readonly SolidColorBrush _ltDotGreyBrush = new SolidColorBrush(Color.FromArgb(255, 128, 128, 128));
+
         private void InitializeListenTogether()
         {
             var mgr = ListenTogetherManager.Instance;
@@ -87,28 +92,28 @@ namespace YTMusicWP
             // 2. Server connection status
             if (LtConnectionDot != null)
             {
-                Color dotColor;
+                SolidColorBrush dotBrush;
                 string statusText;
                 switch (mgr.Connection)
                 {
                     case ConnectionState.Connected:
-                        dotColor = Color.FromArgb(255, 29, 185, 84); // Green
+                        dotBrush = _ltDotGreenBrush;
                         statusText = "Connected";
                         break;
                     case ConnectionState.Connecting:
-                        dotColor = Color.FromArgb(255, 255, 170, 0); // Amber
+                        dotBrush = _ltDotAmberBrush;
                         statusText = "Connecting…";
                         break;
                     case ConnectionState.Failed:
-                        dotColor = Color.FromArgb(255, 255, 59, 48); // Red
+                        dotBrush = _ltDotRedBrush;
                         statusText = mgr.ErrorMessage ?? "Connection failed";
                         break;
                     default:
-                        dotColor = Color.FromArgb(255, 128, 128, 128); // Grey
+                        dotBrush = _ltDotGreyBrush;
                         statusText = "Not connected";
                         break;
                 }
-                LtConnectionDot.Fill = new SolidColorBrush(dotColor);
+                LtConnectionDot.Fill = dotBrush;
                 if (LtConnectionStatusText != null) LtConnectionStatusText.Text = statusText;
                 if (LtConnectBtn != null)
                 {
@@ -654,6 +659,11 @@ namespace YTMusicWP
                         long corrected = mgr.PositionAt(act.Position, mgr.IsPlaying);
                         Debug.WriteLine(string.Format("[ListenTogether] Applying SEEK to {0}ms (raw pos={1}ms)", corrected, act.Position));
                         _appMediaPlayer.Position = TimeSpan.FromMilliseconds(corrected);
+
+                        // Snappy UI feedback: update seek sliders immediately
+                        double sec = corrected / 1000.0;
+                        if (MusicSlider != null && !_isSliderManipulating) MusicSlider.Value = sec;
+                        if (AppleMusicSlider != null && !_isSliderManipulating) AppleMusicSlider.Value = sec;
                     }
                 }
                 else if (act.Action == PlaybackActions.SyncQueue)

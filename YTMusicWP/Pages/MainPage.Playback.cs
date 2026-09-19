@@ -57,6 +57,8 @@ namespace YTMusicWP
             if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast("No Internet connection"); return; }
 
             currentTrack = track;
+            _lastLiveCheck = DateTime.MinValue;
+            _isCurrentLiveCached = false;
             OnTrackStartedAsHost(track);
             MiniTitle.Text = track.Title; BigTitle.Text = track.Title;
             // Start marquee only if NowPlaying is already open (otherwise it starts when panel opens)
@@ -437,6 +439,9 @@ namespace YTMusicWP
             }
         }
 
+        private bool _isCurrentLiveCached = false;
+        private DateTime _lastLiveCheck = DateTime.MinValue;
+
         private void SetupTimer()
         {
             try { _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged; } catch { }
@@ -480,13 +485,18 @@ namespace YTMusicWP
                     UpdateHostTrackDuration((long)dur.TotalMilliseconds);
                 }
             }
-            bool isCurrentLive = false;
-            try
+            bool isCurrentLive = _isCurrentLiveCached;
+            if ((DateTime.UtcNow - _lastLiveCheck).TotalSeconds > 2)
             {
-                var ls = ApplicationData.Current.LocalSettings.Values;
-                if (ls.ContainsKey("IsCurrentLive") && (bool)ls["IsCurrentLive"]) isCurrentLive = true;
+                _lastLiveCheck = DateTime.UtcNow;
+                try
+                {
+                    var ls = ApplicationData.Current.LocalSettings.Values;
+                    _isCurrentLiveCached = ls.ContainsKey("IsCurrentLive") && (bool)ls["IsCurrentLive"];
+                    isCurrentLive = _isCurrentLiveCached;
+                }
+                catch { }
             }
-            catch { }
 
             if (dur.TotalSeconds <= 0 || isCurrentLive)
             {

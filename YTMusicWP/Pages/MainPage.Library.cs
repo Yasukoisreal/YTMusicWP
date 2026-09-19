@@ -146,7 +146,15 @@ namespace YTMusicWP
 
                 if (_librarySortMode == "played" && historyTracks != null && historyTracks.Count > 0)
                 {
-                    var playedMap = historyTracks.Select((t, idx) => new { t.VideoId, idx }).ToDictionary(x => x.VideoId, x => x.idx);
+                    var playedMap = new Dictionary<string, int>();
+                    for (int i = 0; i < historyTracks.Count; i++)
+                    {
+                        var vid = historyTracks[i].VideoId;
+                        if (!string.IsNullOrEmpty(vid) && !playedMap.ContainsKey(vid))
+                        {
+                            playedMap[vid] = i;
+                        }
+                    }
                     songs = songs.OrderBy(s => playedMap.ContainsKey(s.VideoId) ? playedMap[s.VideoId] : 9999).ToList();
                 }
 

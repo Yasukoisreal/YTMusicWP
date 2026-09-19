@@ -1152,6 +1152,9 @@ namespace YTMusicWP
             }
         }
 
+        private static readonly SolidColorBrush _dockInactiveBg = new SolidColorBrush(Windows.UI.Colors.Transparent);
+        private static readonly SolidColorBrush _dockInactiveIcon = new SolidColorBrush(Windows.UI.Color.FromArgb(0xD9, 0xFF, 0xFF, 0xFF));
+
         private void UpdateDockActiveState(int viewIndex)
         {
             if (!_isAppleMusicStyle) return;
@@ -1160,23 +1163,21 @@ namespace YTMusicWP
             var black = Windows.UI.Colors.Black;
             var activeBg = new SolidColorBrush(LerpColor(_currentGradientColor, white, 0.75));
             var activeIcon = new SolidColorBrush(LerpColor(_currentGradientColor, black, 0.6));
-            var inactiveBg = new SolidColorBrush(Windows.UI.Colors.Transparent);
-            var inactiveIcon = new SolidColorBrush(Windows.UI.Color.FromArgb(0xD9, 0xFF, 0xFF, 0xFF));
 
             if (DockLyricsBtn != null)
             {
-                DockLyricsBtn.Background = viewIndex == 1 ? activeBg : inactiveBg;
-                if (DockLyricsPath != null) DockLyricsPath.Fill = viewIndex == 1 ? activeIcon : inactiveIcon;
+                DockLyricsBtn.Background = viewIndex == 1 ? activeBg : _dockInactiveBg;
+                if (DockLyricsPath != null) DockLyricsPath.Fill = viewIndex == 1 ? activeIcon : _dockInactiveIcon;
             }
             if (DockCastBtn != null)
             {
-                DockCastBtn.Background = inactiveBg;
-                if (DockCastPath != null) DockCastPath.Fill = inactiveIcon;
+                DockCastBtn.Background = _dockInactiveBg;
+                if (DockCastPath != null) DockCastPath.Fill = _dockInactiveIcon;
             }
             if (DockQueueBtn != null)
             {
-                DockQueueBtn.Background = viewIndex == 2 ? activeBg : inactiveBg;
-                if (DockQueuePath != null) DockQueuePath.Fill = viewIndex == 2 ? activeIcon : inactiveIcon;
+                DockQueueBtn.Background = viewIndex == 2 ? activeBg : _dockInactiveBg;
+                if (DockQueuePath != null) DockQueuePath.Fill = viewIndex == 2 ? activeIcon : _dockInactiveIcon;
             }
         }
 
@@ -1284,13 +1285,30 @@ namespace YTMusicWP
         }
 
         // ---------- Apple Music Slider Inflate Animation ----------
+        private Windows.UI.Xaml.Shapes.Rectangle _amTrackRect;
+        private Windows.UI.Xaml.Shapes.Rectangle _amDecreaseRect;
+        private Windows.UI.Xaml.Shapes.Rectangle _amVolTrackRect;
+        private Windows.UI.Xaml.Shapes.Rectangle _amVolDecreaseRect;
 
         private void AnimateSliderInflate(Slider slider, bool inflate)
         {
             try
             {
-                var trackRect = FindChildByName(slider, "HorizontalTrackRect") as Windows.UI.Xaml.Shapes.Rectangle;
-                var decreaseRect = FindChildByName(slider, "HorizontalDecreaseRect") as Windows.UI.Xaml.Shapes.Rectangle;
+                Windows.UI.Xaml.Shapes.Rectangle trackRect, decreaseRect;
+                if (slider == AppleMusicSlider)
+                {
+                    if (_amTrackRect == null) _amTrackRect = FindChildByName(slider, "HorizontalTrackRect") as Windows.UI.Xaml.Shapes.Rectangle;
+                    if (_amDecreaseRect == null) _amDecreaseRect = FindChildByName(slider, "HorizontalDecreaseRect") as Windows.UI.Xaml.Shapes.Rectangle;
+                    trackRect = _amTrackRect;
+                    decreaseRect = _amDecreaseRect;
+                }
+                else
+                {
+                    if (_amVolTrackRect == null) _amVolTrackRect = FindChildByName(slider, "HorizontalTrackRect") as Windows.UI.Xaml.Shapes.Rectangle;
+                    if (_amVolDecreaseRect == null) _amVolDecreaseRect = FindChildByName(slider, "HorizontalDecreaseRect") as Windows.UI.Xaml.Shapes.Rectangle;
+                    trackRect = _amVolTrackRect;
+                    decreaseRect = _amVolDecreaseRect;
+                }
                 if (trackRect == null || decreaseRect == null) return;
 
                 double targetH = inflate ? 14 : 7;
@@ -1351,10 +1369,11 @@ namespace YTMusicWP
             // Seek logic — only for the seek slider, not the volume slider
             if (sender == AppleMusicSlider)
             {
+                if (!_isSliderManipulating) return;
                 _isSliderManipulating = false;
                 try
                 {
-                    if (_appMediaPlayer.CurrentState != MediaPlayerState.Closed)
+                    if (_appMediaPlayer != null && _appMediaPlayer.CurrentState != MediaPlayerState.Closed)
                     {
                         double totalSec = 0;
                         try { totalSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
