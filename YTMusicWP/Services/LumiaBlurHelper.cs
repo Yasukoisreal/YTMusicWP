@@ -166,6 +166,7 @@ namespace YTMusicWP.Services
                 {
                     await renderer.RenderAsync();
                 }
+                filterEffect.Filters = null;
             }
             bitmap.Invalidate();
             return bitmap;

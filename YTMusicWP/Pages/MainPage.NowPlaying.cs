@@ -1208,14 +1208,16 @@ namespace YTMusicWP
         {
             try
             {
+                double vol = e.NewValue / 100.0;
                 if (_appMediaPlayer != null)
                 {
-                    _appMediaPlayer.Volume = e.NewValue / 100.0;
+                    _appMediaPlayer.Volume = vol;
                 }
                 else
                 {
-                    Windows.Media.Playback.BackgroundMediaPlayer.Current.Volume = e.NewValue / 100.0;
+                    Windows.Media.Playback.BackgroundMediaPlayer.Current.Volume = vol;
                 }
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["UserVolume"] = vol;
             }
             catch { }
         }
@@ -1417,11 +1419,6 @@ namespace YTMusicWP
                             _lastSeekTarget = TimeSpan.FromSeconds(seekVal);
                             _lastSeekTimestamp = DateTime.UtcNow;
                             _appMediaPlayer.Position = TimeSpan.FromSeconds(seekVal);
-                            if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused)
-                            {
-                                _appMediaPlayer.Play();
-                                OnPlayPauseChangedAsHost(true);
-                            }
                             OnSeekOccurredAsHost((long)_appMediaPlayer.Position.TotalMilliseconds);
 
                             // Immediate lyrics sync on seek

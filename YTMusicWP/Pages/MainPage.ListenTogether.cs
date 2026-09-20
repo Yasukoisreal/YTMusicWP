@@ -473,43 +473,46 @@ namespace YTMusicWP
         /// </summary>
         public async void UpdateHostTrackDuration(long realDurationMs)
         {
-            var mgr = ListenTogetherManager.Instance;
-            if (!mgr.InRoom || !mgr.IsHost || mgr.CurrentTrack == null) return;
-            if (realDurationMs <= 0) return;
-            // Only update if duration was unknown (<= 0) and we are within the first 4 seconds of playback
-            if (mgr.CurrentTrack.Duration > 0) return;
-
-            long currentPos = 0;
-            try { if (_appMediaPlayer != null) currentPos = (long)_appMediaPlayer.Position.TotalMilliseconds; } catch { }
-            if (currentPos > 4000) return;
-
-            Debug.WriteLine(string.Format("[ListenTogether] Updating host track duration from {0}ms to {1}ms", mgr.CurrentTrack.Duration, realDurationMs));
-            mgr.CurrentTrack.Duration = realDurationMs;
-            if (!string.IsNullOrEmpty(mgr.CurrentTrack.Thumbnail))
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
             {
-                mgr.CurrentTrack.Thumbnail = GetHighResListenTogetherThumbnail(mgr.CurrentTrack.Thumbnail, mgr.CurrentTrack.Id);
-            }
+                var mgr = ListenTogetherManager.Instance;
+                if (!mgr.InRoom || !mgr.IsHost || mgr.CurrentTrack == null) return;
+                if (realDurationMs <= 0) return;
+                // Only update if duration was unknown (<= 0) and we are within the first 4 seconds of playback
+                if (mgr.CurrentTrack.Duration > 0) return;
 
-            try
-            {
-                var queue = currentQueueTracks.Take(50).Select(t => new TrackInfo
-                {
-                    Id = t.VideoId,
-                    Title = t.Title ?? "",
-                    Artist = t.ChannelName ?? "",
-                    Thumbnail = GetHighResListenTogetherThumbnail(t.ThumbnailUrl, t.VideoId)
-                }).ToList();
+                long currentPos = 0;
+                try { if (_appMediaPlayer != null) currentPos = (long)_appMediaPlayer.Position.TotalMilliseconds; } catch { }
+                if (currentPos > 4000) return;
 
-                await mgr.SendPlaybackActionAsync(PlaybackActions.ChangeTrack, mgr.CurrentTrack.Id, currentPos, mgr.CurrentTrack, queue, "Queue");
-                if (_appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                Debug.WriteLine(string.Format("[ListenTogether] Updating host track duration from {0}ms to {1}ms", mgr.CurrentTrack.Duration, realDurationMs));
+                mgr.CurrentTrack.Duration = realDurationMs;
+                if (!string.IsNullOrEmpty(mgr.CurrentTrack.Thumbnail))
                 {
-                    await mgr.SendPlaybackActionAsync(PlaybackActions.Play, mgr.CurrentTrack.Id, currentPos, null);
+                    mgr.CurrentTrack.Thumbnail = GetHighResListenTogetherThumbnail(mgr.CurrentTrack.Thumbnail, mgr.CurrentTrack.Id);
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("[ListenTogether] UpdateHostTrackDuration error: " + ex.Message);
-            }
+
+                try
+                {
+                    var queue = currentQueueTracks.Take(50).Select(t => new TrackInfo
+                    {
+                        Id = t.VideoId,
+                        Title = t.Title ?? "",
+                        Artist = t.ChannelName ?? "",
+                        Thumbnail = GetHighResListenTogetherThumbnail(t.ThumbnailUrl, t.VideoId)
+                    }).ToList();
+
+                    await mgr.SendPlaybackActionAsync(PlaybackActions.ChangeTrack, mgr.CurrentTrack.Id, currentPos, mgr.CurrentTrack, queue, "Queue");
+                    if (_appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                    {
+                        await mgr.SendPlaybackActionAsync(PlaybackActions.Play, mgr.CurrentTrack.Id, currentPos, null);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("[ListenTogether] UpdateHostTrackDuration error: " + ex.Message);
+                }
+            });
         }
 
         /// <summary>

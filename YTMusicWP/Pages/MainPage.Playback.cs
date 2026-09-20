@@ -52,9 +52,12 @@ namespace YTMusicWP
             return FindTrackIndex(list, track) >= 0;
         }
 
+        private int _playTrackSequence = 0;
+
         private async void PlayTrack(YouTubeTrack track)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
+            int mySeq = ++_playTrackSequence;
             if (track.VideoId.StartsWith("CHANNEL:"))
             {
                 OpenArtistProfile(track.VideoId.Substring(8), track.Title ?? track.ChannelName, true);
@@ -190,6 +193,8 @@ namespace YTMusicWP
                 }
                 catch { resolvedUrl = ""; }
             }
+
+            if (mySeq != _playTrackSequence || currentTrack != track) return;
 
             // OPTIMIZATION: Giới hạn mảng gửi sang BackgroundTask để tránh lỗi IPC Payload quá tải (RAM 512MB)
             int maxItems = 100;
@@ -794,11 +799,6 @@ namespace YTMusicWP
                         _lastSeekTarget = TimeSpan.FromSeconds(seekVal);
                         _lastSeekTimestamp = DateTime.UtcNow;
                         _appMediaPlayer.Position = TimeSpan.FromSeconds(seekVal);
-                        if (_appMediaPlayer.CurrentState == MediaPlayerState.Paused)
-                        {
-                            _appMediaPlayer.Play();
-                            OnPlayPauseChangedAsHost(true);
-                        }
                         OnSeekOccurredAsHost((long)_appMediaPlayer.Position.TotalMilliseconds);
 
                         // Immediate lyrics sync on seek

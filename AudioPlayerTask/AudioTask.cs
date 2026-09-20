@@ -188,14 +188,72 @@ namespace AudioPlayerTask
                 {
                     lock (_playlistLock)
                     {
-                        _trackList = new List<string>((string[])e.Data["Urls"]);
-                        _titleList = new List<string>((string[])e.Data["Titles"]);
-                        _artistList = new List<string>((string[])e.Data["Artists"]);
-                        _videoIdList = new List<string>((string[])e.Data["VideoIds"]);
-                        _thumbnailList = new List<string>((string[])e.Data["Thumbnails"]);
-                        if (e.Data.ContainsKey("CurrentIndex"))
+                        var newUrls = (string[])e.Data["Urls"];
+                        var newTitles = (string[])e.Data["Titles"];
+                        var newArtists = (string[])e.Data["Artists"];
+                        var newVideoIds = (string[])e.Data["VideoIds"];
+                        var newThumbnails = (string[])e.Data["Thumbnails"];
+
+                        // Preserve previously resolved URLs across queue updates
+                        var oldUrlLookup = new Dictionary<string, string>();
+                        if (_videoIdList != null && _trackList != null)
                         {
-                            _currentTrackIndex = (int)e.Data["CurrentIndex"];
+                            for (int i = 0; i < _videoIdList.Count && i < _trackList.Count; i++)
+                            {
+                                string v = _videoIdList[i];
+                                string u = _trackList[i];
+                                if (!string.IsNullOrEmpty(v) && !string.IsNullOrEmpty(u) && !oldUrlLookup.ContainsKey(v))
+                                {
+                                    oldUrlLookup[v] = u;
+                                }
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(_currentLoadedVidId) && !string.IsNullOrEmpty(_resolvedUrl) && !oldUrlLookup.ContainsKey(_currentLoadedVidId))
+                        {
+                            oldUrlLookup[_currentLoadedVidId] = _resolvedUrl;
+                        }
+
+                        var mergedTrackList = new List<string>(newUrls.Length);
+                        for (int i = 0; i < newUrls.Length; i++)
+                        {
+                            string url = newUrls[i];
+                            string vid = (newVideoIds != null && i < newVideoIds.Length) ? newVideoIds[i] : null;
+                            if (string.IsNullOrEmpty(url) && !string.IsNullOrEmpty(vid) && oldUrlLookup.ContainsKey(vid))
+                            {
+                                url = oldUrlLookup[vid];
+                            }
+                            mergedTrackList.Add(url ?? "");
+                        }
+
+                        _trackList = mergedTrackList;
+                        _titleList = new List<string>(newTitles);
+                        _artistList = new List<string>(newArtists);
+                        _videoIdList = new List<string>(newVideoIds);
+                        _thumbnailList = new List<string>(newThumbnails);
+
+                        // Preserve track index of actively playing track
+                        string activeVid = !string.IsNullOrEmpty(_currentLoadedVidId)
+                            ? _currentLoadedVidId
+                            : (_videoIdList != null && _currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count ? _videoIdList[_currentTrackIndex] : null);
+
+                        int foundIndex = -1;
+                        if (!string.IsNullOrEmpty(activeVid) && _videoIdList != null)
+                        {
+                            foundIndex = _videoIdList.IndexOf(activeVid);
+                        }
+
+                        if (foundIndex >= 0)
+                        {
+                            _currentTrackIndex = foundIndex;
+                        }
+                        else if (e.Data.ContainsKey("CurrentIndex"))
+                        {
+                            int idx = (int)e.Data["CurrentIndex"];
+                            if (idx >= 0 && idx < _trackList.Count)
+                            {
+                                _currentTrackIndex = idx;
+                            }
                         }
                     }
                     ClearPreResolvedState();
@@ -1387,8 +1445,20 @@ namespace AudioPlayerTask
                 catch { }
 
                 var ls = ApplicationData.Current.LocalSettings.Values;
-                bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
-                _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
+                if (ls.ContainsKey("UserVolume"))
+                {
+                    try
+                    {
+                        double uVol = Convert.ToDouble(ls["UserVolume"]);
+                        if (uVol >= 0.0 && uVol <= 1.0) _mediaPlayer.Volume = uVol;
+                    }
+                    catch { }
+                }
+                else
+                {
+                    bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
+                    _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
+                }
                 UpdateSystemMediaControls();
 
                 while (!ct.IsCancellationRequested && _liveReconnectCount < 3)
@@ -1576,10 +1646,22 @@ namespace AudioPlayerTask
                     return;
                 }
 
-                // Normalize Volume: set consistent volume level
+                // Volume preservation / Normalize Volume
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
-                _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
+                if (ls.ContainsKey("UserVolume"))
+                {
+                    try
+                    {
+                        double uVol = Convert.ToDouble(ls["UserVolume"]);
+                        if (uVol >= 0.0 && uVol <= 1.0) _mediaPlayer.Volume = uVol;
+                    }
+                    catch { }
+                }
+                else
+                {
+                    bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
+                    _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
+                }
 
                 UpdateSystemMediaControls();
                 _mediaPlayer.AutoPlay = !_startPaused;
@@ -1660,7 +1742,6 @@ namespace AudioPlayerTask
             if (_retryCount <= 2)
             {
                 await Task.Delay(800);
-                _isRetrying = false; // Allow next failure to re-enter
                 _cachedVisitorData = null;
                 string freshUrl = await ResolveViaInnerTubeDirectAsync(vidId);
                 if (!string.IsNullOrEmpty(freshUrl))
@@ -1668,6 +1749,7 @@ namespace AudioPlayerTask
                     freshUrl = PrepareStreamUrl(freshUrl);
                     _resolvedUrl = freshUrl;
                     _innerTubeAttempted = true;
+                    _isRetrying = false;
                     StartPlaybackAsync();
                     return;
                 }
@@ -1675,7 +1757,6 @@ namespace AudioPlayerTask
 
             // Retry 3-4: Dùng URL từ MainPage hoặc resolve lại nếu chưa có
             await Task.Delay(800);
-            _isRetrying = false; // Allow next failure to re-enter
             _resolvedUrl = null;
             bool hasTrackUrl = false;
             lock (_playlistLock)
@@ -1693,6 +1774,7 @@ namespace AudioPlayerTask
             {
                 _innerTubeAttempted = false;
             }
+            _isRetrying = false;
             StartPlaybackAsync();
         }
 
