@@ -518,29 +518,21 @@ namespace YTMusicWP
                 return;
             }
 
-            // If browseId looks like a playlist or artist, open it
-            if (!string.IsNullOrEmpty(album.BrowseId))
+            // If browseId looks like an artist profile, open artist
+            if (!string.IsNullOrEmpty(album.BrowseId) && (album.BrowseId.StartsWith("UC") || album.BrowseId.StartsWith("FEmusic_library_privately_owned_artist")))
             {
-                string id = album.BrowseId;
-                if (id.StartsWith("UC") || id.StartsWith("FEmusic_library_privately_owned_artist"))
-                {
-                    // It's an artist! Open Artist profile
-                    OpenArtistProfile(id, album.Title, true);
-                }
-                else if (id.StartsWith("MPREb_"))
-                {
-                    // Album browseId — browse as playlist
-                    OpenYouTubePlaylist(id, album.Title, album.ThumbnailUrl);
-                }
-                else if (id.StartsWith("VL") || id.StartsWith("PL"))
-                {
-                    OpenYouTubePlaylist(id.Replace("VL", ""), album.Title, album.ThumbnailUrl);
-                }
+                OpenArtistProfile(album.BrowseId, album.Title, true);
+                return;
+            }
+
+            // Open album, single, or playlist
+            string targetId = !string.IsNullOrEmpty(album.BrowseId) ? album.BrowseId : album.PlaylistId;
+            if (!string.IsNullOrEmpty(targetId))
+            {
+                if (targetId.StartsWith("VL") || targetId.StartsWith("PL"))
+                    OpenYouTubePlaylist(targetId.Replace("VL", ""), album.Title, album.ThumbnailUrl);
                 else
-                {
-                    // Try to browse as playlist anyway  
-                    OpenYouTubePlaylist(id, album.Title, album.ThumbnailUrl);
-                }
+                    OpenYouTubePlaylist(targetId, album.Title, album.ThumbnailUrl);
             }
         }
         private void ArtistAbout_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)

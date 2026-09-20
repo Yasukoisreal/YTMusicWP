@@ -662,6 +662,23 @@ namespace YTMusicWP
                     }
                 }
             }
+
+            // Fixed columns (often contains track duration like "3:45" or "5:27")
+            var fixedCols = mr["fixedColumns"];
+            if (fixedCols != null && fixedCols.HasValues)
+            {
+                foreach (var fc in fixedCols)
+                {
+                    var fRuns = fc?["musicResponsiveListItemFixedColumnRenderer"]?["text"]?["runs"];
+                    if (fRuns != null && fRuns.HasValues)
+                    {
+                        string fText = string.Join("", fRuns.Select(r => r["text"]?.ToString() ?? "")).Trim(' ', '•', '·');
+                        if (!string.IsNullOrWhiteSpace(fText) && !subParts.Contains(fText))
+                            subParts.Add(fText);
+                    }
+                }
+            }
+
             string fullSubtitle = string.Join(" • ", subParts);
 
             // Thumbnail

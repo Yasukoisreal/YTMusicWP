@@ -13,6 +13,9 @@ namespace YTMusicWP
         private static async Task<JObject> FetchBrowseJsonAsync(JObject body, string accessToken)
         {
             string apiUrl = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+            string browseId = body["browseId"]?.ToString() ?? "";
+            bool isRawBrowseId = browseId.StartsWith("MPREb_") || browseId.StartsWith("FEmusic_");
+
             if (HasCookieAuth)
             {
                 var extraBody = new JObject();
@@ -23,12 +26,13 @@ namespace YTMusicWP
                 try
                 {
                     var cookieData = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
-                    if (cookieData != null && cookieData["error"] == null) return cookieData;
+                    if (cookieData != null && cookieData["error"] == null && cookieData["_error"] == null) return cookieData;
                 }
                 catch { }
             }
 
-            if (!string.IsNullOrEmpty(accessToken))
+            // Raw browse endpoints (albums MPREb_ and explore FEmusic_) do not support OAuth Bearer tokens with WEB_REMIX (returns 401).
+            if (!isRawBrowseId && !string.IsNullOrEmpty(accessToken))
             {
                 var extraBody = new JObject();
                 foreach (var prop in body.Properties())
@@ -38,7 +42,7 @@ namespace YTMusicWP
                 try
                 {
                     var authData = await AuthInnerTubePostAsync("browse", extraBody, accessToken, "WEB_REMIX", "1.20260304.03.00");
-                    if (authData != null && authData["error"] == null) return authData;
+                    if (authData != null && authData["error"] == null && authData["_error"] == null) return authData;
                 }
                 catch { }
             }
@@ -116,7 +120,7 @@ namespace YTMusicWP
                     }
                 }
 
-                JObject data = await FetchBrowseJsonAsync(body, accessToken);
+                JObject data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken);
                 ExtractPlaylistTracksAndMetadata(data, result, isContinuation);
 
                 // Fallback strategies if 0 tracks were returned on initial browse:
@@ -126,7 +130,7 @@ namespace YTMusicWP
                     if (body["params"] != null)
                     {
                         body.Remove("params");
-                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken);
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
                     else if (!isSystemPlaylist && !isRawBrowseId)
@@ -136,15 +140,15 @@ namespace YTMusicWP
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
 
-                    // Fallback 2: If still 0 tracks and browseId started with VL, try without VL (or vice-versa)
+                    // Fallback 2: If still 0 tracks and browseId started with VL, try without VL (or vice-versa, but NEVER for raw browse IDs like MPREb_ or FEmusic_)
                     if (result.Tracks.Count == 0 && browseId.StartsWith("VL") && browseId.Length > 2)
                     {
                         body["browseId"] = browseId.Substring(2);
                         body.Remove("params");
-                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken);
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
-                    else if (result.Tracks.Count == 0 && !browseId.StartsWith("VL"))
+                    else if (result.Tracks.Count == 0 && !browseId.StartsWith("VL") && !isRawBrowseId)
                     {
                         body["browseId"] = "VL" + browseId;
                         body.Remove("params");
@@ -152,16 +156,46 @@ namespace YTMusicWP
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
 
-                    // Fallback 3: If still 0 tracks and user was using auth/cookie, try raw unauthenticated request
-                    if (result.Tracks.Count == 0 && (HasCookieAuth || !string.IsNullOrEmpty(accessToken)))
+                    // Fallback 3: If still 0 tracks, try clean raw unauthenticated request with original clean browseId
+                    if (result.Tracks.Count == 0)
                     {
                         string apiUrl = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
                         try
                         {
-                            var publicData = await PostInnerTubeAsync(apiUrl, body, true);
+                            var publicBody = new JObject
+                            {
+                                ["context"] = BuildMusicContext(vd),
+                                ["browseId"] = isRawBrowseId ? playlistId : (playlistId.StartsWith("VL") ? playlistId : "VL" + playlistId)
+                            };
+                            var publicData = await PostInnerTubeAsync(apiUrl, publicBody, true);
                             ExtractPlaylistTracksAndMetadata(publicData, result, false);
                         }
                         catch { }
+                    }
+
+                    // Fallback 4: If still 0 tracks for an MPREb_ album, check if response had canonical playlist URL (?list=OLAK5uy_...) and browse it
+                    if (result.Tracks.Count == 0 && isRawBrowseId && playlistId.StartsWith("MPREb_"))
+                    {
+                        string canonicalUrl = data?.SelectToken("$..microformatDataRenderer.urlCanonical")?.ToString();
+                        string plId = null;
+                        if (!string.IsNullOrEmpty(canonicalUrl) && canonicalUrl.Contains("list="))
+                        {
+                            plId = canonicalUrl.Substring(canonicalUrl.IndexOf("list=") + 5);
+                            int ampIdx = plId.IndexOf('&');
+                            if (ampIdx > 0) plId = plId.Substring(0, ampIdx);
+                        }
+                        if (!string.IsNullOrEmpty(plId))
+                        {
+                            var altResult = await BrowsePlaylistAsync(plId, null, null);
+                            if (altResult != null && altResult.Tracks.Count > 0)
+                            {
+                                if (string.IsNullOrEmpty(result.Title)) result.Title = altResult.Title;
+                                if (string.IsNullOrEmpty(result.ThumbnailUrl)) result.ThumbnailUrl = altResult.ThumbnailUrl;
+                                if (string.IsNullOrEmpty(result.Subtitle)) result.Subtitle = altResult.Subtitle;
+                                result.Tracks = altResult.Tracks;
+                                result.ContinuationToken = altResult.ContinuationToken;
+                            }
+                        }
                     }
                 }
             }
@@ -171,7 +205,7 @@ namespace YTMusicWP
 
         private static void ExtractPlaylistTracksAndMetadata(JObject data, PlaylistResult result, bool isContinuation)
         {
-            if (data == null || data["error"] != null) return;
+            if (data == null || data["error"] != null || data["_error"] != null) return;
 
             string albumArtistFallback = "";
 
@@ -190,10 +224,18 @@ namespace YTMusicWP
                 // Thumbnail
                 if (string.IsNullOrEmpty(result.ThumbnailUrl))
                 {
-                    result.ThumbnailUrl = data.SelectToken("$..musicResponsiveHeaderRenderer..thumbnails[0].url")?.ToString()
-                        ?? data["header"]?.SelectToken("$..thumbnails[0].url")?.ToString()
-                        ?? data["microformat"]?.SelectToken("$..thumbnails[0].url")?.ToString()
-                        ?? "";
+                    var headerThumbs = data.SelectTokens("$..musicResponsiveHeaderRenderer..thumbnails[*].url").Select(t => t?.ToString()).Where(u => !string.IsNullOrEmpty(u)).ToList();
+                    if (headerThumbs != null && headerThumbs.Count > 0)
+                    {
+                        result.ThumbnailUrl = headerThumbs.Last();
+                    }
+                    else
+                    {
+                        result.ThumbnailUrl = data.SelectToken("$..musicResponsiveHeaderRenderer..thumbnails[0].url")?.ToString()
+                            ?? data["header"]?.SelectToken("$..thumbnails[0].url")?.ToString()
+                            ?? data["microformat"]?.SelectToken("$..thumbnails[0].url")?.ToString()
+                            ?? "";
+                    }
                 }
 
                 // Subtitle + Artist extraction from multiple header formats
@@ -281,6 +323,8 @@ namespace YTMusicWP
                                             track.ChannelName = albumArtistFallback;
                                         if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
                                             track.ThumbnailUrl = result.ThumbnailUrl;
+                                        if (string.IsNullOrEmpty(track.AlbumName) && !string.IsNullOrEmpty(result.Title))
+                                            track.AlbumName = result.Title;
                                         result.Tracks.Add(track);
                                     }
                                 }
@@ -293,6 +337,8 @@ namespace YTMusicWP
                                             track.ChannelName = albumArtistFallback;
                                         if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
                                             track.ThumbnailUrl = result.ThumbnailUrl;
+                                        if (string.IsNullOrEmpty(track.AlbumName) && !string.IsNullOrEmpty(result.Title))
+                                            track.AlbumName = result.Title;
                                         result.Tracks.Add(track);
                                     }
                                 }
@@ -333,6 +379,8 @@ namespace YTMusicWP
                                         track.ChannelName = albumArtistFallback;
                                     if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
                                         track.ThumbnailUrl = result.ThumbnailUrl;
+                                    if (string.IsNullOrEmpty(track.AlbumName) && !string.IsNullOrEmpty(result.Title))
+                                        track.AlbumName = result.Title;
                                     result.Tracks.Add(track);
                                 }
                             }
@@ -354,6 +402,8 @@ namespace YTMusicWP
                                         track.ChannelName = albumArtistFallback;
                                     if (string.IsNullOrEmpty(track.ThumbnailUrl) && !string.IsNullOrEmpty(result.ThumbnailUrl))
                                         track.ThumbnailUrl = result.ThumbnailUrl;
+                                    if (string.IsNullOrEmpty(track.AlbumName) && !string.IsNullOrEmpty(result.Title))
+                                        track.AlbumName = result.Title;
                                     result.Tracks.Add(track);
                                 }
                             }
@@ -674,8 +724,9 @@ namespace YTMusicWP
                                             string videoId = twoRow["navigationEndpoint"]
                                                 ?["watchEndpoint"]?["videoId"]?.ToString() ?? "";
                                                 
-                                            string playlistId = twoRow["navigationEndpoint"]
-                                                ?["watchEndpoint"]?["playlistId"]?.ToString() ?? "";
+                                            string playlistId = twoRow["thumbnailOverlay"]?.SelectToken("$..playlistId")?.ToString()
+                                                ?? twoRow["menu"]?.SelectToken("$..target.playlistId")?.ToString()
+                                                ?? twoRow["navigationEndpoint"]?["watchEndpoint"]?["playlistId"]?.ToString() ?? "";
 
                                             result.Albums.Add(new ArtistAlbum
                                             {
