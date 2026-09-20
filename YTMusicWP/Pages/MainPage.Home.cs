@@ -140,6 +140,18 @@ namespace YTMusicWP
                     localSettings["AvatarCacheVer"] = 2;
                 }
 
+                // Cap avatar cache in LocalSettings to prevent quota overflow
+                var avatarKeys = localSettings.Keys.Where(k => k.StartsWith("AvatarCache_")).ToList();
+                if (avatarKeys.Count > 60)
+                {
+                    foreach (var k in avatarKeys.Skip(40))
+                    {
+                        localSettings.Remove(k);
+                        string chKey = "AvatarChId_" + k.Substring("AvatarCache_".Length);
+                        if (localSettings.ContainsKey(chKey)) localSettings.Remove(chKey);
+                    }
+                }
+
                 foreach (var track in historyTracks)
                 {
                     if (string.IsNullOrEmpty(track.ChannelName) || track.ChannelName == "Unknown") continue;

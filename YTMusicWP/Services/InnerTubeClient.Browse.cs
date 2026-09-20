@@ -1542,7 +1542,7 @@ namespace YTMusicWP
                 string vd = await GetVisitorDataAsync();
                 JObject data = null;
 
-                if (HasCookieAuth)
+                if (HasCookieAuth || !string.IsNullOrEmpty(accessToken))
                 {
                     var extraParams = new JObject
                     {
@@ -1552,7 +1552,14 @@ namespace YTMusicWP
                     {
                         extraParams["params"] = filterParams;
                     }
-                    data = await CookieInnerTubePostAsync("browse", extraParams);
+                    if (HasCookieAuth)
+                    {
+                        data = await CookieInnerTubePostAsync("browse", extraParams);
+                    }
+                    else
+                    {
+                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20231214.00.00");
+                    }
                 }
                 else
                 {
@@ -1635,13 +1642,20 @@ namespace YTMusicWP
                 string vd = await GetVisitorDataAsync();
                 JObject data = null;
 
-                if (HasCookieAuth)
+                if (HasCookieAuth || !string.IsNullOrEmpty(accessToken))
                 {
                     var extraParams = new JObject
                     {
                         ["continuation"] = continuationToken
                     };
-                    data = await CookieInnerTubePostAsync("browse", extraParams);
+                    if (HasCookieAuth)
+                    {
+                        data = await CookieInnerTubePostAsync("browse", extraParams);
+                    }
+                    else
+                    {
+                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20231214.00.00");
+                    }
                 }
                 else
                 {

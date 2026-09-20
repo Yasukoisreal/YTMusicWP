@@ -100,20 +100,24 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseSettings_Click(null, null);
             }
-            else if (PlaylistDetailsView.Visibility == Visibility.Visible)
+            else if (PlaylistDetailsView.Visibility == Visibility.Visible || ArtistProfileView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
-                ClosePlaylistDetails_Click(null, null);
+                bool isArtistTop = ArtistProfileView.Visibility == Visibility.Visible &&
+                    (PlaylistDetailsView.Visibility != Visibility.Visible || Canvas.GetZIndex(ArtistProfileView) >= Canvas.GetZIndex(PlaylistDetailsView));
+                if (isArtistTop)
+                {
+                    CloseArtistProfile_Click(null, null);
+                }
+                else
+                {
+                    ClosePlaylistDetails_Click(null, null);
+                }
             }
             else if (MoodCategoryView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 CloseMoodCategory_Click(null, null);
-            }
-            else if (ArtistProfileView.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CloseArtistProfile_Click(null, null);
             }
             else if (SuggestionPopup.Visibility == Visibility.Visible)
             {

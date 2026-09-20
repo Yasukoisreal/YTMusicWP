@@ -286,14 +286,27 @@ namespace YTMusicWP
             string nextToken = null;
             try
             {
-                string vd = await GetVisitorDataAsync();
-                var body = new JObject
+                JObject data;
+                if (HasCookieAuth)
                 {
-                    ["context"] = BuildMusicContext(vd)
-                };
+                    var extraParams = new JObject
+                    {
+                        ["continuation"] = continuationToken,
+                        ["ctoken"] = continuationToken
+                    };
+                    data = await CookieInnerTubePostAsync("search", extraParams);
+                }
+                else
+                {
+                    string vd = await GetVisitorDataAsync();
+                    var body = new JObject
+                    {
+                        ["context"] = BuildMusicContext(vd)
+                    };
 
-                var data = await PostInnerTubeAsync(
-                    "https://music.youtube.com/youtubei/v1/search?ctoken=" + Uri.EscapeDataString(continuationToken) + "&continuation=" + Uri.EscapeDataString(continuationToken) + "&prettyPrint=false", body, true);
+                    data = await PostInnerTubeAsync(
+                        "https://music.youtube.com/youtubei/v1/search?ctoken=" + Uri.EscapeDataString(continuationToken) + "&continuation=" + Uri.EscapeDataString(continuationToken) + "&prettyPrint=false", body, true);
+                }
 
                 System.Diagnostics.Debug.WriteLine("[InnerTube Continue] Response keys: " + (data != null ? string.Join(",", ((JObject)data).Properties().Select(p => p.Name)) : "null"));
 
@@ -755,11 +768,11 @@ namespace YTMusicWP
             }
 
             // Use browseId as videoId marker if needed
-            if (type == "artist" && !string.IsNullOrEmpty(browseId) && string.IsNullOrEmpty(videoId))
+            if (type == "artist" && !string.IsNullOrEmpty(browseId))
             {
                 videoId = "CHANNEL:" + browseId;
             }
-            else if ((type == "playlist" || type == "album") && !string.IsNullOrEmpty(browseId) && string.IsNullOrEmpty(videoId))
+            else if ((type == "playlist" || type == "album") && !string.IsNullOrEmpty(browseId))
             {
                 videoId = "PLAYLIST:" + (browseId.StartsWith("VL") ? browseId.Substring(2) : browseId);
             }

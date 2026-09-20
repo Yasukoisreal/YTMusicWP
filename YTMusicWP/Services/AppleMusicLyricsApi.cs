@@ -30,17 +30,19 @@ namespace YTMusicWP.Services
                     url += "&d=" + duration;
                 }
 
-                var response = await _httpClient.GetAsync(url);
-                if (response.IsSuccessStatusCode)
+                using (var response = await _httpClient.GetAsync(url))
                 {
-                    string jsonStr = await response.Content.ReadAsStringAsync();
-                    JsonObject jsonObj;
-                    if (JsonObject.TryParse(jsonStr, out jsonObj))
+                    if (response.IsSuccessStatusCode)
                     {
-                        if (jsonObj.ContainsKey("ttml") && jsonObj["ttml"].ValueType == JsonValueType.String)
+                        string jsonStr = await response.Content.ReadAsStringAsync();
+                        JsonObject jsonObj;
+                        if (JsonObject.TryParse(jsonStr, out jsonObj))
                         {
-                            string ttml = jsonObj["ttml"].GetString();
-                            return ParseTTML(ttml);
+                            if (jsonObj.ContainsKey("ttml") && jsonObj["ttml"].ValueType == JsonValueType.String)
+                            {
+                                string ttml = jsonObj["ttml"].GetString();
+                                return ParseTTML(ttml);
+                            }
                         }
                     }
                 }

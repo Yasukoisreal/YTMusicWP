@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace YTMusicWP
@@ -384,9 +385,10 @@ namespace YTMusicWP
             try
             {
                 LastResolveDebug += " PIPED";
-                string pipedUrl = "https://pipedapi.kavin.rocks/streams/" + videoId;
-                var req = new HttpRequestMessage(HttpMethod.Get, pipedUrl);
-                using (var resp = await _client.SendAsync(req))
+                string pipedUrl = "https://pipedapi.adminforge.de/streams/" + videoId;
+                using (var req = new HttpRequestMessage(HttpMethod.Get, pipedUrl))
+                using (var cts = new CancellationTokenSource(4000))
+                using (var resp = await _client.SendAsync(req, cts.Token))
                 {
                     if (resp.IsSuccessStatusCode)
                     {
@@ -734,7 +736,6 @@ namespace YTMusicWP
             try
             {
                 string query = string.IsNullOrEmpty(artist) ? title : (title + " " + artist);
-                var req = new HttpRequestMessage(HttpMethod.Post, "https://music.youtube.com/youtubei/v1/search?prettyPrint=false");
                 var bodyObj = new JObject
                 {
                     ["context"] = new JObject
@@ -750,29 +751,32 @@ namespace YTMusicWP
                     ["query"] = query
                 };
 
-                req.Content = new StringContent(bodyObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
-                req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                req.Headers.Add("Origin", "https://music.youtube.com");
-                req.Headers.Add("Referer", "https://music.youtube.com/");
+                using (var req = new HttpRequestMessage(HttpMethod.Post, "https://music.youtube.com/youtubei/v1/search?prettyPrint=false"))
+                {
+                    req.Content = new StringContent(bodyObj.ToString(Newtonsoft.Json.Formatting.None), Encoding.UTF8, "application/json");
+                    req.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                    req.Headers.Add("Origin", "https://music.youtube.com");
+                    req.Headers.Add("Referer", "https://music.youtube.com/");
 
-                string json;
-                using (var resp = await _client.SendAsync(req))
-                {
-                    if (!resp.IsSuccessStatusCode) return fallbackUrl;
-                    json = await resp.Content.ReadAsStringAsync();
-                }
-                int idx = json.IndexOf("googleusercontent.com");
-                if (idx != -1)
-                {
-                    int start = json.LastIndexOf("http", idx);
-                    int end = json.IndexOf("\"", idx);
-                    if (start != -1 && end != -1)
+                    string json;
+                    using (var resp = await _client.SendAsync(req))
                     {
-                        string u = json.Substring(start, end - start);
-                        int eq = u.LastIndexOf("=");
-                        if (eq > 0)
-                            return u.Substring(0, eq) + "=w480-h480-l90-rj";
-                        return u + "=w480-h480-l90-rj";
+                        if (!resp.IsSuccessStatusCode) return fallbackUrl;
+                        json = await resp.Content.ReadAsStringAsync();
+                    }
+                    int idx = json.IndexOf("googleusercontent.com");
+                    if (idx != -1)
+                    {
+                        int start = json.LastIndexOf("http", idx);
+                        int end = json.IndexOf("\"", idx);
+                        if (start != -1 && end != -1)
+                        {
+                            string u = json.Substring(start, end - start).Replace("\\/", "/").Replace("\\u0026", "&");
+                            int eq = u.LastIndexOf("=");
+                            if (eq > 0)
+                                return u.Substring(0, eq) + "=w480-h480-l90-rj";
+                            return u + "=w480-h480-l90-rj";
+                        }
                     }
                 }
             }
@@ -813,7 +817,8 @@ namespace YTMusicWP
                         if (renderer != null)
                         {
                             string vid = renderer["videoId"]?.ToString();
-                            string title = renderer.SelectToken("title.runs[0].text")?.ToString() ?? "";
+                            string title = renderer.SelectToken("title.runs[0].text")?.ToString()
+                                        ?? renderer.SelectToken("title.simpleText")?.ToString() ?? "";
 
                             string artist = "";
                             var bylineRuns = renderer.SelectToken("shortBylineText.runs") as JArray
@@ -830,6 +835,11 @@ namespace YTMusicWP
                                     }
                                 }
                                 artist = artistList.Count > 0 ? string.Join(", ", artistList) : bylineRuns[0]["text"]?.ToString() ?? "";
+                            }
+                            else
+                            {
+                                artist = renderer.SelectToken("shortBylineText.simpleText")?.ToString()
+                                      ?? renderer.SelectToken("longBylineText.simpleText")?.ToString() ?? "";
                             }
 
                             string thumb = "";

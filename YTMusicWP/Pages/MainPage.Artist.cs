@@ -16,11 +16,13 @@ namespace YTMusicWP
         private string _currentArtistChannelId;
         private string _currentArtistAvatarUrl;
         private bool _isFollowingArtist;
+        private bool _isClosingArtistProfile;
 
         public async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
         {
             try
             {
+                Canvas.SetZIndex(PlaylistDetailsView, Math.Max(Canvas.GetZIndex(PlaylistDetailsView), Canvas.GetZIndex(ArtistProfileView) + 1));
                 PlaylistDetailsTitle.Text = playlistName;
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                 if (!string.IsNullOrEmpty(coverUrl))
@@ -157,6 +159,9 @@ namespace YTMusicWP
 
         private async void OpenArtistProfile(string channelId, string channelName, bool trustChannelId = false)
         {
+            _isClosingArtistProfile = false;
+            try { ArtistSlideOutStoryboard.Stop(); } catch { }
+            Canvas.SetZIndex(ArtistProfileView, Math.Max(Canvas.GetZIndex(ArtistProfileView), Canvas.GetZIndex(PlaylistDetailsView) + 1));
             _currentArtistChannelId = channelId;
             _currentArtistAvatarUrl = "";
             _isFollowingArtist = _youtubeSubscriptions.Any(s => s.ChannelId == channelId);
@@ -507,11 +512,15 @@ namespace YTMusicWP
 
         private void CloseArtistProfile_Click(object sender, RoutedEventArgs e)
         {
+            if (_isClosingArtistProfile) return;
+            _isClosingArtistProfile = true;
             ArtistSlideOutStoryboard.Begin();
         }
 
         private void ArtistSlideOutStoryboard_Completed(object sender, object e)
         {
+            if (!_isClosingArtistProfile) return;
+            _isClosingArtistProfile = false;
             ArtistProfileView.Visibility = Visibility.Collapsed;
             // [OPT-M9] Giải phóng ảnh khi đóng — tiết kiệm RAM
             ArtistProfileCover.Source = null;

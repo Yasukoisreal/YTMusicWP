@@ -21,36 +21,40 @@ namespace YTMusicWP.Services
                 string url = $"https://sponsor.ajay.app/api/skipSegments?videoID={videoId}" +
                              "&category=sponsor&category=interaction&category=selfpromo&category=music_offtopic";
 
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("User-Agent", "YTMusicWP/1.0");
-                
-                var response = await _client.SendAsync(request);
-                if (response.IsSuccessStatusCode)
+                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
-                    var jsonStr = await response.Content.ReadAsStringAsync();
-                    JsonArray jsonArray;
-                    if (JsonArray.TryParse(jsonStr, out jsonArray))
+                    request.Headers.Add("User-Agent", "YTMusicWP/1.0");
+                    
+                    using (var response = await _client.SendAsync(request))
                     {
-                        foreach (var itemVal in jsonArray)
+                        if (response.IsSuccessStatusCode)
                         {
-                            if (itemVal.ValueType != JsonValueType.Object) continue;
-                            var item = itemVal.GetObject();
-                            
-                            var segment = new SponsorBlockSegment();
-                            if (item.ContainsKey("actionType") && item["actionType"].ValueType == JsonValueType.String)
-                                segment.ActionType = item["actionType"].GetString();
-                            
-                            if (item.ContainsKey("category") && item["category"].ValueType == JsonValueType.String)
-                                segment.Category = item["category"].GetString();
-                            
-                            if (item.ContainsKey("segment") && item["segment"].ValueType == JsonValueType.Array)
+                            var jsonStr = await response.Content.ReadAsStringAsync();
+                            JsonArray jsonArray;
+                            if (JsonArray.TryParse(jsonStr, out jsonArray))
                             {
-                                var segArr = item["segment"].GetArray();
-                                if (segArr.Count >= 2 && segArr[0].ValueType == JsonValueType.Number && segArr[1].ValueType == JsonValueType.Number)
+                                foreach (var itemVal in jsonArray)
                                 {
-                                    segment.Start = segArr[0].GetNumber();
-                                    segment.End = segArr[1].GetNumber();
-                                    segments.Add(segment);
+                                    if (itemVal.ValueType != JsonValueType.Object) continue;
+                                    var item = itemVal.GetObject();
+                                    
+                                    var segment = new SponsorBlockSegment();
+                                    if (item.ContainsKey("actionType") && item["actionType"].ValueType == JsonValueType.String)
+                                        segment.ActionType = item["actionType"].GetString();
+                                    
+                                    if (item.ContainsKey("category") && item["category"].ValueType == JsonValueType.String)
+                                        segment.Category = item["category"].GetString();
+                                    
+                                    if (item.ContainsKey("segment") && item["segment"].ValueType == JsonValueType.Array)
+                                    {
+                                        var segArr = item["segment"].GetArray();
+                                        if (segArr.Count >= 2 && segArr[0].ValueType == JsonValueType.Number && segArr[1].ValueType == JsonValueType.Number)
+                                        {
+                                            segment.Start = segArr[0].GetNumber();
+                                            segment.End = segArr[1].GetNumber();
+                                            segments.Add(segment);
+                                        }
+                                    }
                                 }
                             }
                         }

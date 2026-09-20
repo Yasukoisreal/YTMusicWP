@@ -62,7 +62,6 @@ namespace YTMusicWP
                     _isPlaying = value;
                     OnPropertyChanged("IsPlaying");
                     OnPropertyChanged("PlayingBadgeVisibility");
-                    OnPropertyChanged("TitleColor");
                 }
             }
         }

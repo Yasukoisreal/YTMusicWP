@@ -269,11 +269,23 @@ namespace YTMusicWP
         {
             try
             {
+                bool isPlaying = false;
+                try
+                {
+                    isPlaying = Windows.Media.Playback.BackgroundMediaPlayer.Current.CurrentState == Windows.Media.Playback.MediaPlayerState.Playing;
+                }
+                catch { }
+
                 var localFolder = ApplicationData.Current.LocalFolder;
                 var files = await localFolder.GetFilesAsync();
                 foreach (var file in files)
                 {
                     string name = file.Name.ToLowerInvariant();
+                    if (isPlaying && (name.StartsWith("temp_live_buf_") || name.StartsWith("temp_play_")))
+                    {
+                        continue;
+                    }
+
                     if (name.StartsWith("temp_play_") || name.StartsWith("temp_live_buf_") || name.EndsWith(".tmp") || name.EndsWith(".tagging"))
                     {
                         try { await file.DeleteAsync(StorageDeleteOption.PermanentDelete); } catch { }

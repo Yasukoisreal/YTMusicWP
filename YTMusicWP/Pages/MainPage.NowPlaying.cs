@@ -15,7 +15,7 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
-        
+        private bool _isClosingNowPlaying = false;
 
         private void MenuShareNowPlaying_Click(object sender, RoutedEventArgs e)
         {
@@ -140,6 +140,12 @@ namespace YTMusicWP
 
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
         {
+            _isClosingNowPlaying = false;
+            if (this.Resources.ContainsKey("SlideDownStoryboard"))
+            {
+                try { ((Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"]).Stop(); } catch { }
+            }
+
             NowPlayingView.Visibility = Visibility.Visible;
             ApplyNowPlayingStyle();
             if (_isAppleMusicStyle)
@@ -194,12 +200,14 @@ namespace YTMusicWP
 
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {
+                _isClosingNowPlaying = true;
                 UpdateStatusBarColor(false, animate: true, durationMs: 300);
                 var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"];
                 storyboard.Begin();
             }
             else
             {
+                _isClosingNowPlaying = false;
                 NowPlayingView.Visibility = Visibility.Collapsed;
                 UpdateStatusBarColor(false, animate: false);
                 RestoreSearchBoxFocus();
@@ -333,6 +341,8 @@ namespace YTMusicWP
 
         private void SlideDownStoryboard_Completed(object sender, object e)
         {
+            if (!_isClosingNowPlaying) return;
+            _isClosingNowPlaying = false;
             NowPlayingView.Visibility = Visibility.Collapsed;
             UpdateStatusBarColor(false, animate: false);
             RestoreSearchBoxFocus();

@@ -406,7 +406,8 @@ namespace YTMusicWP
 
         private async void HeartButton_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTrack == null) return;
+            var track = currentTrack;
+            if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
 
             // Require login to like songs
             string token = await GetAccessTokenAsync();
@@ -416,7 +417,9 @@ namespace YTMusicWP
                 return;
             }
 
-            var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == currentTrack.VideoId);
+            if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
+
+            var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
             bool isAdding = (existing == null);
 
             if (existing != null) 
@@ -427,25 +430,25 @@ namespace YTMusicWP
                 if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "☆"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
                 if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♡"; AppleMusicLyricsHeartBtn.Foreground = _whiteBrush; }
                 if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♡"; AppleMusicQueueHeartBtn.Foreground = _whiteBrush; }
-                var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(currentTrack.VideoId);
+                var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
             }
             else 
             { 
-                favoriteTracks.Insert(0, currentTrack); 
+                favoriteTracks.Insert(0, track); 
                 BigHeartBtn.Content = "♥"; 
                 BigHeartBtn.Foreground = _greenBrush; 
                 if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "★"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
                 if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♥"; AppleMusicLyricsHeartBtn.Foreground = _greenBrush; }
                 if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♥"; AppleMusicQueueHeartBtn.Foreground = _greenBrush; }
-                var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(currentTrack);
+                var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }
             SaveFavoritesAsync();
 
             // Sync to YouTube (skip LOCAL tracks that can't be rated)
-            if (!currentTrack.VideoId.StartsWith("LOCAL:"))
+            if (!track.VideoId.StartsWith("LOCAL:"))
             {
                 string rating = isAdding ? "like" : "none";
-                await RateVideoAsync(currentTrack.VideoId, rating);
+                await RateVideoAsync(track.VideoId, rating);
             }
         }
 
@@ -1047,7 +1050,8 @@ namespace YTMusicWP
                             }
 
                             var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            bigBmp.DecodePixelWidth = isWide ? 540 : 480;
+                            int targetW = Services.MemoryHelper.IsLowMemoryDevice ? (isWide ? 360 : 320) : (isWide ? 540 : 480);
+                            bigBmp.DecodePixelWidth = targetW;
                             bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
                             if (AppleMusicArtwork != null)
@@ -1922,9 +1926,10 @@ namespace YTMusicWP
         {
             if (currentLyricIndex < 0 || currentLyricIndex >= currentLyrics.Count) return;
             
-            bool isFullscreen = FullscreenLyricsView.Visibility == Visibility.Visible;
-            bool isLyricsUIVisible = isFullscreen || (NowPlayingPivot.SelectedIndex == 1 && LyricsListView.Visibility == Visibility.Visible);
-            bool isMainScreenVisible = (!isFullscreen && NowPlayingPivot.SelectedIndex == 0);
+            bool isFullscreen = FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible;
+            int pivotIndex = NowPlayingPivot != null ? NowPlayingPivot.SelectedIndex : -1;
+            bool isLyricsUIVisible = isFullscreen || (pivotIndex == 1 && LyricsListView != null && LyricsListView.Visibility == Visibility.Visible);
+            bool isMainScreenVisible = (!isFullscreen && pivotIndex == 0);
             
             if (isLyricsUIVisible)
             {
@@ -2096,9 +2101,9 @@ namespace YTMusicWP
             sbOut.Children.Add(fadeOut);
             
             var tcsOut = new System.Threading.Tasks.TaskCompletionSource<bool>();
-            sbOut.Completed += (s, e) => tcsOut.SetResult(true);
+            sbOut.Completed += (s, e) => tcsOut.TrySetResult(true);
             sbOut.Begin();
-            await tcsOut.Task;
+            await Task.WhenAny(tcsOut.Task, Task.Delay(300));
 
             MiniLyricText.Text = newLyric;
             

@@ -267,26 +267,28 @@ namespace YTMusicWP
 
         public static async Task<JObject> PostInnerTubeAsync(string url, JObject body, bool isMusic = true)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-            if (!string.IsNullOrEmpty(CurrentLanguage))
+            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
             {
-                request.Headers.Add("Accept-Language", CurrentLanguage);
-            }
-            if (isMusic)
-            {
-                request.Headers.Add("Origin", "https://music.youtube.com");
-                request.Headers.Add("Referer", "https://music.youtube.com/");
-            }
-
-            using (var resp = await _client.SendAsync(request))
-            {
-                using (var stream = await resp.Content.ReadAsStreamAsync())
-                using (var reader = new System.IO.StreamReader(stream))
-                using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
+                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
+                if (!string.IsNullOrEmpty(CurrentLanguage))
                 {
-                    return JObject.Load(jsonReader);
+                    request.Headers.Add("Accept-Language", CurrentLanguage);
+                }
+                if (isMusic)
+                {
+                    request.Headers.Add("Origin", "https://music.youtube.com");
+                    request.Headers.Add("Referer", "https://music.youtube.com/");
+                }
+
+                using (var resp = await _client.SendAsync(request))
+                {
+                    using (var stream = await resp.Content.ReadAsStreamAsync())
+                    using (var reader = new System.IO.StreamReader(stream))
+                    using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
+                    {
+                        return JObject.Load(jsonReader);
+                    }
                 }
             }
         }

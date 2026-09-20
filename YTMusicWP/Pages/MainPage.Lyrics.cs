@@ -16,8 +16,13 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
-        private TimeSpan ParseLrcTime(string timeStr)
+        private bool TryParseLrcTime(string timeStr, out TimeSpan result)
         {
+            result = TimeSpan.Zero;
+            if (string.IsNullOrWhiteSpace(timeStr)) return false;
+            timeStr = timeStr.Trim();
+            if (!char.IsDigit(timeStr[0])) return false;
+
             try
             {
                 int colonIdx = timeStr.IndexOf(':');
@@ -25,26 +30,35 @@ namespace YTMusicWP
 
                 if (colonIdx > 0)
                 {
-                    int min = int.Parse(timeStr.Substring(0, colonIdx));
+                    int min;
+                    if (!int.TryParse(timeStr.Substring(0, colonIdx), out min)) return false;
                     int sec = 0;
                     int ms = 0;
 
                     if (dotIdx > 0)
                     {
-                        sec = int.Parse(timeStr.Substring(colonIdx + 1, dotIdx - colonIdx - 1));
+                        if (!int.TryParse(timeStr.Substring(colonIdx + 1, dotIdx - colonIdx - 1), out sec)) return false;
                         string msStr = timeStr.Substring(dotIdx + 1).PadRight(3, '0');
                         if (msStr.Length > 3) msStr = msStr.Substring(0, 3);
-                        ms = int.Parse(msStr);
+                        int.TryParse(msStr, out ms);
                     }
                     else
                     {
-                        sec = int.Parse(timeStr.Substring(colonIdx + 1));
+                        if (!int.TryParse(timeStr.Substring(colonIdx + 1), out sec)) return false;
                     }
-                    return new TimeSpan(0, 0, min, sec, ms);
+                    result = new TimeSpan(0, 0, min, sec, ms);
+                    return true;
                 }
             }
             catch { }
-            return TimeSpan.Zero;
+            return false;
+        }
+
+        private TimeSpan ParseLrcTime(string timeStr)
+        {
+            TimeSpan res;
+            TryParseLrcTime(timeStr, out res);
+            return res;
         }
         private class LyricsCacheEntry
         {
@@ -71,7 +85,10 @@ namespace YTMusicWP
         {
             var oldLyricsCts = _lyricsCts;
             _lyricsCts = new CancellationTokenSource();
-            if (oldLyricsCts != null) { oldLyricsCts.Cancel(); oldLyricsCts.Dispose(); }
+            if (oldLyricsCts != null)
+            {
+                try { oldLyricsCts.Cancel(); } catch { }
+            }
             var token = _lyricsCts.Token;
 
             currentLyrics.Clear();
@@ -410,7 +427,11 @@ namespace YTMusicWP
                 {
                     int bracketEnd = tempLine.IndexOf(']');
                     string timeStr = tempLine.Substring(1, bracketEnd - 1);
-                    times.Add(ParseLrcTime(timeStr));
+                    TimeSpan parsedTime;
+                    if (TryParseLrcTime(timeStr, out parsedTime))
+                    {
+                        times.Add(parsedTime);
+                    }
                     tempLine = tempLine.Substring(bracketEnd + 1).Trim();
                 }
 
