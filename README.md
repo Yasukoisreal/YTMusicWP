@@ -107,81 +107,22 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 ## Changelog
 
 ### v2.3.0 (Latest)
-- 🔴 **Continuous YouTube Live Audio Streaming Engine:**
-  - Zero-gap continuous live audio streaming powered by custom `LiveMediaStreamSource` and double-buffered fMP4 chunk streaming.
-  - Smooth 20s–40s paced rolling buffer with automated pre-emptive buffer swap to eliminate stutter.
-  - Proactive and reactive BaseURL refresh on 30s expiry to eliminate HTTP 403 Forbidden playback stalls.
-  - Streaming DASH manifest parsing directly into audio streams, eliminating Large Object Heap (LOH) OutOfMemory crashes in background audio task.
-  - Live stream detection with `liveBadgeRenderer` for LIVE badges in search and now playing views.
-  - Built-in **Live Stream Logs** telemetry dialog with Save, Share, and Select All.
-- 📻 **Listen Together (Real-Time Room Synchronization):**
-  - Host and join live music listening rooms compatible with Metrolist and SimpMusic server protocols (`metroproto` via WebSockets).
-  - Synchronized play/pause, seeking, queue broadcast, and lyrics tap-to-seek alignment.
-  - High-resolution 1080x1080 album artwork broadcasting to room guests.
-  - Gzip decompression, 180s clamp defense, 50-item queue cap, and thread-safe serialized WebSocket writes for 512MB RAM stability.
-  - Dedicated Listen Together settings screen, quick header bar icon, and room controls.
-- 🔄 **Native Pull-to-Refresh & Home Polish:**
-  - Smooth native pull-to-refresh on Home feed with floating capsule pill and 60fps vector spinner.
-  - Restored Home 2x3 quick shortcuts grid (`HomeQuickGrid`) for recently played tracks.
-  - Enabled virtualization recycling on `HomeDynamicSections` to ensure smooth scrolling on 512MB RAM devices.
-- 🔍 **YouTube Music Search Suggestions & Moods/Genres:**
-  - Instant YouTube Music query suggestions and rich entity suggestions (artists, albums, playlists).
-  - Dynamic Moods & Genres exploration with 70x70 tilted album artwork cards, SimpMusic gradients, and category badges.
-  - 100% English filter chips and dynamic API browse filtering.
-- 💾 **Smart Downloads & M4A Metadata Tagging:**
-  - Native MP4 atom metadata injection: embeds song title, artist, album, and high-quality artwork directly into downloaded `.m4a` files.
-  - Offline library playback with local artwork cache persistence and smart download state detection.
-- 📚 **Redesigned Library Tab (SimpMusic Style):**
-  - 4 quick-access tiles (Liked Music, Downloaded, Playlists, Artists) with album art mosaics and smooth 8px corner clipping.
-  - YouTube Music dynamic filter chips (Playlists, Songs, Albums, Artists) with active white pill design.
-  - Sort dropdown menu (Recently added, Recently played, A to Z) and dynamic playback activity sorting.
-- 🌐 **Complete Localization & Settings:**
-  - Added complete list of 82 official YouTube languages in Settings.
-  - Independent Language and Location settings.
-  - Localized search chips, greetings, home shelves, and fixed Burmese font rendering.
-- 🛠️ **Comprehensive Codebase Audit & 512MB RAM Optimization Overhaul:**
-  - **30–80MB RAM Freed on 512MB Devices:** Fixed WinRT `BitmapImage` decoding bug across 30+ locations by enforcing `DecodePixelWidth` before `UriSource` in parameterless constructors, eliminating accidental full-resolution uncompressed BGRA decoding.
-  - **Hardware-Adaptive Scaling:** Intelligent decode bounds (320px on 512MB vs 480–540px on 1GB+ devices) and dynamic in-memory blur and lyrics cache trimming under OS memory pressure (`MemoryManager.AppMemoryUsageIncreased`).
-  - **Playback & Queue Stability:** Preserved resolved streaming URLs during background sync; eliminated `_currentTrackIndex` desynchronization during queue edits; added cancellation sequence tokens to `PlayTrack` to eliminate queue hijacking when skipping rapidly; fixed seek bar resuming automatically while paused; preserved user volume across track transitions.
-  - **Data Integrity & Dual-Sync:** Non-destructive SQLite corrupt auto-recovery (atomic history purge and timestamped `.bak` backups instead of deleting database); synchronous dual-storage (SQLite + JSON) for Favorites; safe snapshot before enumeration preventing collection modified crashes; safe stream disposal before M4A tag renaming; safe ID prefix stripping.
-  - **UI Race Conditions & Edge Cases:** Added re-entrancy locks (`_isClosingArtistProfile`, `_isClosingNowPlaying`) preventing race conditions during slide animations; intelligent Back button Z-order stack navigation; LRC metadata header filtering (`[ar:...]`, `[ti:...]`); and Live Tile XML compliance (`TileSquare310x310ImageAndText01`).
-  - **Resource Leak Prevention:** Wrapped HTTP responses in `using` blocks across OAuth polling, InnerTube, SponsorBlock, and Apple Music Lyrics clients; startup cleanup of orphaned `.tagging` and `.tmp` files.
+- 🔴 **Continuous YouTube Live Streaming:** Zero-gap continuous live audio streaming engine with low-latency rolling buffer and live telemetry.
+- 📻 **Listen Together:** Real-time synchronized listening rooms compatible with Metrolist & SimpMusic (synced queue, playback, and tap-to-seek).
+- 🔄 **Home & Pull-to-Refresh:** Smooth native pull-to-refresh on Home feed and restored 2x3 quick shortcuts grid for recently played tracks.
+- 🔍 **Search Suggestions & Moods/Genres:** Instant YouTube Music search suggestions, entity matching, and dynamic tilted exploration cards.
+- 💾 **Smart Downloads & M4A Tagging:** Native atom metadata and high-res artwork injection directly into downloaded `.m4a` files for offline playback.
+- 📚 **Redesigned Library:** 4 SimpMusic-style quick-access tiles with album art mosaics, dynamic filter pills, and sort dropdown.
+- 🌐 **Full YouTube Localization:** Complete support for 82 official YouTube languages with independent Region and Language settings.
+- ⚡ **512MB RAM & Stability Overhaul:** Freed 30–80MB RAM across 30+ image decoders, safe SQLite recovery, eliminated queue hijacking/looping, and fixed background resource leaks.
 
 ### v2.2.0
-- 🍎 **Apple Music Now Playing UI:**
-  - Full Apple Music visual overhaul with real-time hardware-accelerated blurred backdrop powered by **Lumia Imaging SDK 2.0** (dual-pass blur, custom downsampling, and deep color wash).
-  - True edge-to-edge transparent StatusBar integration (`ApplicationViewBoundsMode.UseCoreWindow`) with top scrim protection.
-  - Interactive tactile controls: press-to-swell button feedback (1.28x), spring elasticity physics (`ElasticEase` & `BackEase`), and slider expand-on-touch animation.
-  - Full-bleed album artwork with gentle bottom cosine alpha dissolve into the backdrop.
-  - Marquee scrolling text animation for long song titles.
-  - Elegant compact header bar for Lyrics and Queue views showing track thumbnail and metadata.
-- 🎤 **Apple Music Synced Lyrics & Mini Lyric:**
-  - Added optical defocus blur simulation for distant lines with distance-based progressive opacity falloff.
-  - Official Apple Music quote-bubble icon and circular vertical floating quick controls.
-  - Live Mini Lyric line on Now Playing screen with smooth fade and infinite marquee animation.
-  - Expanded lyrics support with LRCLIB and TTML `InvariantCulture` timestamp parsing.
-- 🔐 **Cookie Auth & Account Sync:**
-  - Support for Google Cookie-based login (`SAPISIDHASH` via WebView) to bypass BotGuard.
-  - Full Liked Music sync (`VLLM`), subscribed artists sync, and direct creation/editing of cloud YouTube playlists.
-- 🏠 **Dynamic Home Feed & Top Charts:**
-  - Revamped Home feed matching SimpMusic layout to dynamically load all YouTube Music carousels (Quick Picks 4-item list, Moods & Genres, 16:9 thumbnails).
-  - Incremental section continuation loading and detached-UI rendering for lag-free scrolling.
-  - Dedicated Top Charts and Moods/Genres exploration directly within the Search and Home tabs.
-- 🛡️ **YouTube BotGuard Bypass & Stream Reliability:**
-  - Integrated remote poToken service with multi-client fallback chain (`ANDROID`, `IOS`, `VISIONOS`, `ANDROID_VR`) to resolve HTTP 400 errors and bandwidth throttling.
-  - Fixed YouTube audio stream resolution using `VISIONOS` poToken & `itag 140` fallback.
-  - Completely eliminated audio-title race condition when skipping songs rapidly.
-  - Preserved signed YouTube URLs and prevented seeking failures on expired remote streams.
-- 🎛️ **Controls, Dock & Offline Tools:**
-  - Quick-access dock buttons for Lyrics, Queue, and one-tap Audio Endpoint / Bluetooth output device selector.
-  - Mini player horizontal swipe gestures to skip songs or dismiss.
-  - Playback speed control (0.5x – 2.0x), song credits dialog, and end-of-queue infinite radio autoplay.
-  - Playlist search filter bar and local M3U playlist export/import.
-- 🛠️ **Quality of Life & Fixes:**
-  - Fixed volume slider touch lock bug.
-  - Replaced missing Windows 10 MDL2 glyph E946 with vector SVG Info icon.
-  - Fixed lyrics recycling, back navigation stacks, and memory optimization for 512MB RAM devices.
-  - Removed BETA tag — officially promoted to stable release.
+- 🍎 **Apple Music Now Playing UI:** Hardware-accelerated blurred backdrop (Lumia Imaging SDK 2.0), edge-to-edge transparent StatusBar, spring elasticity physics, and compact headers.
+- 🎤 **Apple Music Synced Lyrics & Mini Lyric:** Defocus blur effect for distant lines, progressive opacity falloff, and live Mini Lyric marquee on Now Playing.
+- 🔐 **Cookie Auth & Account Sync:** Google Cookie-based login (`SAPISIDHASH` via WebView) to bypass BotGuard, with full Liked Music & Playlist cloud sync.
+- 🏠 **Dynamic Home Feed:** YouTube carousels (Quick Picks, Moods & Genres, 16:9 videos) with smooth incremental loading.
+- 🛡️ **BotGuard Bypass & Multi-Client Streams:** Integrated remote poToken service with multi-client fallback chain (`ANDROID`, `IOS`, `VISIONOS`) and fixed audio-title race conditions.
+- 🎛️ **Controls & Tools:** Quick dock buttons for Lyrics/Queue, mini player swipe gestures, playback speed control (0.5x–2.0x), and song credits.
 
 ### v2.1.4
 - ⏭️ **SponsorBlock Integration:** Automatically skip sponsor segments, intros, music video interludes, and outros.
