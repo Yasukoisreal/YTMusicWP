@@ -66,8 +66,8 @@
 
 ## Supported Devices
 
-- **512MB Low-End:** Lumia 520, 525, 530, 535, 620, 625, 630, 635 (✅ Ultra-Smooth)
-- **1GB+ Mid-Range & Flagships:** Lumia 720, 730/735, 820, 830, 920, 925, 930, 1020, 1520, Icon (✅ Flawless Experience)
+- **512MB Low-End:** Lumia 520, 530, 620, 625, 630, 635, 720 (✅ Ultra-Smooth)
+- **1GB+ Mid-Range & Flagships:** Lumia 525, 535, 730/735, 820, 830, 920, 925, 930, 1020, 1520, Icon (✅ Flawless Experience)
 - **Windows 10 Mobile:** Lumia 550, 640/640 XL, 650, 950/950 XL, HP Elite x3, Alcatel Idol 4S (✅ Fully Compatible)
 
 ## Data    
@@ -139,13 +139,13 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
   - Added complete list of 82 official YouTube languages in Settings.
   - Independent Language and Location settings.
   - Localized search chips, greetings, home shelves, and fixed Burmese font rendering.
-- 🛠️ **Reliability & 512MB RAM Performance:**
-  - Fixed playlist loading failure for `OLAK5...` chart playlists, algorithmic radio mixes, and curated YouTube mixes.
-  - Fixed lyrics tap-to-seek synchronization with Now Playing progress slider and remote room guests.
-  - Prevented queue destruction and active list wipeout when tapping `PlayTrack`.
-  - SQLite corrupt database auto-recovery, direct stream caching for tile images, LRU blur cache.
-  - Virtualization recycling on HomeDynamicSections and MoodsGenresListView.
-  - Aggressive LOH allocation reduction, background task COM/IPC exception guarding, and automatic temporary file cleanup (`temp_play_*`).
+- 🛠️ **Comprehensive Codebase Audit & 512MB RAM Optimization Overhaul:**
+  - **30–80MB RAM Freed on 512MB Devices:** Fixed WinRT `BitmapImage` decoding bug across 30+ locations by enforcing `DecodePixelWidth` before `UriSource` in parameterless constructors, eliminating accidental full-resolution uncompressed BGRA decoding.
+  - **Hardware-Adaptive Scaling:** Intelligent decode bounds (320px on 512MB vs 480–540px on 1GB+ devices) and dynamic in-memory blur and lyrics cache trimming under OS memory pressure (`MemoryManager.AppMemoryUsageIncreased`).
+  - **Playback & Queue Stability:** Preserved resolved streaming URLs during background sync; eliminated `_currentTrackIndex` desynchronization during queue edits; added cancellation sequence tokens to `PlayTrack` to eliminate queue hijacking when skipping rapidly; fixed seek bar resuming automatically while paused; preserved user volume across track transitions.
+  - **Data Integrity & Dual-Sync:** Non-destructive SQLite corrupt auto-recovery (atomic history purge and timestamped `.bak` backups instead of deleting database); synchronous dual-storage (SQLite + JSON) for Favorites; safe snapshot before enumeration preventing collection modified crashes; safe stream disposal before M4A tag renaming; safe ID prefix stripping.
+  - **UI Race Conditions & Edge Cases:** Added re-entrancy locks (`_isClosingArtistProfile`, `_isClosingNowPlaying`) preventing race conditions during slide animations; intelligent Back button Z-order stack navigation; LRC metadata header filtering (`[ar:...]`, `[ti:...]`); and Live Tile XML compliance (`TileSquare310x310ImageAndText01`).
+  - **Resource Leak Prevention:** Wrapped HTTP responses in `using` blocks across OAuth polling, InnerTube, SponsorBlock, and Apple Music Lyrics clients; startup cleanup of orphaned `.tagging` and `.tmp` files.
 
 ### v2.2.0
 - 🍎 **Apple Music Now Playing UI:**
