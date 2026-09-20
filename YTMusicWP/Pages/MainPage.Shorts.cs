@@ -451,17 +451,29 @@ namespace YTMusicWP
                 try
                 {
                     // Blurred background: 30px decode → pixelated/blurred when stretched
-                    ShortsBlurBg.ImageSource = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 30 };
+                    var blurBmp = new BitmapImage();
+                    blurBmp.DecodePixelWidth = 30;
+                    blurBmp.UriSource = new Uri(thumbUrl, UriKind.Absolute);
+                    ShortsBlurBg.ImageSource = blurBmp;
 
                     // Cover art in center (crisp)
-                    ShortsCoverArt.ImageSource = new BitmapImage(new Uri(thumbUrl, UriKind.Absolute)) { DecodePixelWidth = 240 };
+                    var coverBmp = new BitmapImage();
+                    coverBmp.DecodePixelWidth = 240;
+                    coverBmp.UriSource = new Uri(thumbUrl, UriKind.Absolute);
+                    ShortsCoverArt.ImageSource = coverBmp;
                     ShortsCoverArtPanel.Visibility = Visibility.Visible;
 
                     // Mini cover
-                    ShortsMiniCover.ImageSource = new BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute)) { DecodePixelWidth = 50 };
+                    var miniCoverBmp = new BitmapImage();
+                    miniCoverBmp.DecodePixelWidth = 50;
+                    miniCoverBmp.UriSource = new Uri(track.ThumbnailUrl, UriKind.Absolute);
+                    ShortsMiniCover.ImageSource = miniCoverBmp;
 
                     // Artist avatar
-                    ShortsArtistAvatarBrush.ImageSource = new BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute)) { DecodePixelWidth = 40 };
+                    var avatarBmp = new BitmapImage();
+                    avatarBmp.DecodePixelWidth = 40;
+                    avatarBmp.UriSource = new Uri(track.ThumbnailUrl, UriKind.Absolute);
+                    ShortsArtistAvatarBrush.ImageSource = avatarBmp;
                 }
                 catch { }
             }

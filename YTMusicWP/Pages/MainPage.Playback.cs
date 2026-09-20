@@ -103,14 +103,16 @@ namespace YTMusicWP
             if (!string.IsNullOrEmpty(track.ThumbnailUrl))
             {
                 // [OPT-M3] Dùng chung 1 BitmapImage cho BigCover + MenuCover (cùng src, cùng DecodePixelWidth)
-                var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetNowPlayingThumbnail(track.ThumbnailUrl), UriKind.Absolute));
+                var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                 bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                bigBmp.UriSource = new Uri(GetNowPlayingThumbnail(track.ThumbnailUrl), UriKind.Absolute);
                 BigCoverImage.ImageSource  = bigBmp;
                 AlbumArtEntranceStoryboard.Begin();
                 MenuCoverImage.ImageSource = bigBmp;
 
-                var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(track.ThumbnailUrl), UriKind.Absolute));
+                var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                 miniBmp.DecodePixelWidth = 100;
+                miniBmp.UriSource = new Uri(GetSquareThumbnail(track.ThumbnailUrl), UriKind.Absolute);
                 MiniCoverImage.ImageSource = miniBmp;
             }
 
@@ -952,7 +954,9 @@ namespace YTMusicWP
                                     }
                                     else
                                     {
-                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480 };
+                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                                        amBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                                        amBmp.UriSource = new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute);
                                         AppleMusicArtwork.Source = amBmp;
                                         if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                                     }
@@ -1062,7 +1066,9 @@ namespace YTMusicWP
                                     }
                                     else
                                     {
-                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute)) { DecodePixelWidth = 480 };
+                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                                        amBmp.DecodePixelWidth = 480;
+                                        amBmp.UriSource = new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute);
                                         AppleMusicArtwork.Source = amBmp;
                                         if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                                     }

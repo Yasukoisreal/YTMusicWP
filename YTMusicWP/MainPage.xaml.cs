@@ -99,6 +99,7 @@ namespace YTMusicWP
             double textWidth = targetTitle.ActualWidth;
             double canvasWidth = targetCanvas.ActualWidth;
             if (canvasWidth <= 0) canvasWidth = targetCanvas.Width;
+            if (double.IsNaN(canvasWidth) || canvasWidth <= 0) return;
             if (textWidth <= canvasWidth || textWidth <= 0) return;
 
             double overflow = textWidth - canvasWidth;
@@ -273,7 +274,7 @@ namespace YTMusicWP
                 foreach (var file in files)
                 {
                     string name = file.Name.ToLowerInvariant();
-                    if (name.StartsWith("temp_play_") || name.StartsWith("temp_live_buf_") || name.EndsWith(".tmp"))
+                    if (name.StartsWith("temp_play_") || name.StartsWith("temp_live_buf_") || name.EndsWith(".tmp") || name.EndsWith(".tagging"))
                     {
                         try { await file.DeleteAsync(StorageDeleteOption.PermanentDelete); } catch { }
                     }
@@ -510,41 +511,44 @@ namespace YTMusicWP
             catch { }
         }
 
-        private void Current_Resuming(object sender, object e)
+        private async void Current_Resuming(object sender, object e)
         {
-            try
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
             {
-                UpdateGreetingText();
-
-                // FIX: Làm mới lại liên kết với OS Player khi bị ngắt kết nối do ngủ đông
-                _appMediaPlayer = BackgroundMediaPlayer.Current;
-                _isSliderManipulating = false; // Mở khóa thanh tua nhạc nếu bị kẹt
-
-                if (_bgTimer == null)
+                try
                 {
-                    _bgTimer = new Timer(TimerCallback, null, 0, 1000);
+                    UpdateGreetingText();
+
+                    // FIX: Làm mới lại liên kết với OS Player khi bị ngắt kết nối do ngủ đông
+                    _appMediaPlayer = BackgroundMediaPlayer.Current;
+                    _isSliderManipulating = false; // Mở khóa thanh tua nhạc nếu bị kẹt
+
+                    if (_bgTimer == null)
+                    {
+                        _bgTimer = new Timer(TimerCallback, null, 0, 1000);
+                    }
+                    // FIX #5: Unsubscribe trước để tránh double subscription khi fast resume
+                    BackgroundMediaPlayer.MessageReceivedFromBackground -= BackgroundMediaPlayer_MessageReceivedFromBackground;
+                    BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
+                    _appMediaPlayer.CurrentStateChanged -= BackgroundMediaPlayer_CurrentStateChanged;
+                    _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged;
+                    NetworkInformation.NetworkStatusChanged -= NetworkInformation_NetworkStatusChanged;
+                    NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
+                    SyncBackgroundPlayer();
+
+                    bool npVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
+                                   || (FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible);
+                    UpdateStatusBarColor(npVisible, animate: false);
+
+                    if (YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.InRoom)
+                    {
+                        var ignoredSync = YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.RequestSyncAsync();
+                    }
                 }
-                // FIX #5: Unsubscribe trước để tránh double subscription khi fast resume
-                BackgroundMediaPlayer.MessageReceivedFromBackground -= BackgroundMediaPlayer_MessageReceivedFromBackground;
-                BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
-                _appMediaPlayer.CurrentStateChanged -= BackgroundMediaPlayer_CurrentStateChanged;
-                _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged;
-                NetworkInformation.NetworkStatusChanged -= NetworkInformation_NetworkStatusChanged;
-                NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
-                SyncBackgroundPlayer();
+                catch { }
 
-                bool npVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
-                               || (FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible);
-                UpdateStatusBarColor(npVisible, animate: false);
-
-                if (YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.InRoom)
-                {
-                    var ignoredSync = YTMusicWP.Services.ListenTogether.ListenTogetherManager.Instance.RequestSyncAsync();
-                }
-            }
-            catch { }
-
-            var _ = FlushPendingHistoryAsync();
+                await FlushPendingHistoryAsync();
+            });
         }
 
         private async Task FlushPendingHistoryAsync()

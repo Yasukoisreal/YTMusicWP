@@ -803,14 +803,16 @@ namespace YTMusicWP
                 {
                     try
                     {
-                        var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetNowPlayingThumbnail(ytTrack.ThumbnailUrl), UriKind.Absolute));
+                        var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                         bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                        bigBmp.UriSource = new Uri(GetNowPlayingThumbnail(ytTrack.ThumbnailUrl), UriKind.Absolute);
                         BigCoverImage.ImageSource = bigBmp;
                         if (AlbumArtEntranceStoryboard != null) AlbumArtEntranceStoryboard.Begin();
                         MenuCoverImage.ImageSource = bigBmp;
 
-                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(ytTrack.ThumbnailUrl), UriKind.Absolute));
+                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                         miniBmp.DecodePixelWidth = 100;
+                        miniBmp.UriSource = new Uri(GetSquareThumbnail(ytTrack.ThumbnailUrl), UriKind.Absolute);
                         MiniCoverImage.ImageSource = miniBmp;
                     }
                     catch { }

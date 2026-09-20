@@ -109,6 +109,7 @@
     <Compile Include="Pages\MainPage.Home.cs" />
     <Compile Include="Pages\MainPage.Lyrics.cs" />
     <Compile Include="Converters\SquareThumbnailConverter.cs" />
+    <Compile Include="Converters\IsPlayingToColorConverter.cs" />
     <Compile Include="Pages\MainPage.Api.cs" />
     <Compile Include="Pages\MainPage.Storage.cs" />
     <Compile Include="Pages\MainPage.Navigation.cs" />

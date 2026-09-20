@@ -367,7 +367,10 @@ namespace YTMusicWP
             if (!string.IsNullOrEmpty(track.ThumbnailUrl))
             {
                 try {
-                    BottomSheetCover.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl)) { DecodePixelWidth = 100 };
+                    var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    bmp.DecodePixelWidth = 100;
+                    bmp.UriSource = new Uri(track.ThumbnailUrl);
+                    BottomSheetCover.ImageSource = bmp;
                 } catch {}
             }
 
@@ -1061,7 +1064,9 @@ namespace YTMusicWP
                         }
                         else
                         {
-                            var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(amThumb, UriKind.Absolute)) { DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480 };
+                            var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            amBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                            amBmp.UriSource = new Uri(amThumb, UriKind.Absolute);
                             if (AppleMusicArtwork != null) AppleMusicArtwork.Source = amBmp;
                             if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                         }
@@ -1243,7 +1248,9 @@ namespace YTMusicWP
             {
                 try
                 {
-                    var thumbBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(currentTrack.ThumbnailUrl), UriKind.Absolute)) { DecodePixelWidth = 100 };
+                    var thumbBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    thumbBmp.DecodePixelWidth = 100;
+                    thumbBmp.UriSource = new Uri(GetSquareThumbnail(currentTrack.ThumbnailUrl), UriKind.Absolute);
                     if (AppleMusicLyricsThumb != null) AppleMusicLyricsThumb.ImageSource = thumbBmp;
                     if (AppleMusicQueueThumb != null) AppleMusicQueueThumb.ImageSource = thumbBmp;
                 }

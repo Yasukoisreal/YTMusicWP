@@ -72,14 +72,6 @@ namespace YTMusicWP
             get { return _isPlaying ? Visibility.Visible : Visibility.Collapsed; }
         }
 
-        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _activeGreenBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 29, 185, 84));
-        private static readonly Windows.UI.Xaml.Media.SolidColorBrush _defaultWhiteBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
-
-        public Windows.UI.Xaml.Media.Brush TitleColor
-        {
-            get { return _isPlaying ? _activeGreenBrush : _defaultWhiteBrush; }
-        }
-
         public string Subtitle { get; set; }
         public string ItemType { get; set; }
         public bool IsLive { get; set; }

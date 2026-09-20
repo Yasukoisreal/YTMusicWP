@@ -25,7 +25,10 @@ namespace YTMusicWP
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                 if (!string.IsNullOrEmpty(coverUrl))
                 {
-                    PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(coverUrl), UriKind.Absolute)) { DecodePixelWidth = 220 };
+                    var coverBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    coverBmp.DecodePixelWidth = 220;
+                    coverBmp.UriSource = new Uri(GetSquareThumbnail(coverUrl), UriKind.Absolute);
+                    PlaylistDetailsCoverBrush.ImageSource = coverBmp;
                     PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
                 }
                 PlaylistSongsList.ItemsSource = null;
@@ -83,7 +86,10 @@ namespace YTMusicWP
                     {
                         try
                         {
-                            PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(effectiveCover), UriKind.Absolute)) { DecodePixelWidth = 220 };
+                            var headerCoverBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                            headerCoverBmp.DecodePixelWidth = 220;
+                            headerCoverBmp.UriSource = new Uri(GetSquareThumbnail(effectiveCover), UriKind.Absolute);
+                            PlaylistDetailsCoverBrush.ImageSource = headerCoverBmp;
                             PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
                         }
                         catch { }
@@ -95,7 +101,10 @@ namespace YTMusicWP
                         {
                             try
                             {
-                                PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(fallbackCover), UriKind.Absolute)) { DecodePixelWidth = 220 };
+                                var fallbackCoverBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                                fallbackCoverBmp.DecodePixelWidth = 220;
+                                fallbackCoverBmp.UriSource = new Uri(GetSquareThumbnail(fallbackCover), UriKind.Absolute);
+                                PlaylistDetailsCoverBrush.ImageSource = fallbackCoverBmp;
                                 PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
                             }
                             catch { }
@@ -121,9 +130,19 @@ namespace YTMusicWP
                 _currentArtistAvatarUrl = avatarUrl;
 
                 if (!string.IsNullOrEmpty(artistResult.CoverUrl))
-                    ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(artistResult.CoverUrl))) { DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480 };
+                {
+                    var artistCoverBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    artistCoverBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                    artistCoverBmp.UriSource = new Uri(GetHighResThumbnail(artistResult.CoverUrl), UriKind.Absolute);
+                    ArtistProfileCover.Source = artistCoverBmp;
+                }
                 else if (!string.IsNullOrEmpty(avatarUrl))
-                    ArtistProfileCover.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480 };
+                {
+                    var artistAvatarBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    artistAvatarBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                    artistAvatarBmp.UriSource = new Uri(GetHighResThumbnail(avatarUrl), UriKind.Absolute);
+                    ArtistProfileCover.Source = artistAvatarBmp;
+                }
 
                 if (!string.IsNullOrEmpty(artistResult.Name) && artistResult.Name != "Artist")
                     ArtistProfileTitle.Text = artistResult.Name;
@@ -256,7 +275,9 @@ namespace YTMusicWP
                 if (list.Count > 0 && ArtistProfileCover.Source == null)
                 {
                     try {
-                        var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(list[0].ThumbnailUrl))) { DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480 };
+                        var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                        bmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                        bmp.UriSource = new Uri(GetHighResThumbnail(list[0].ThumbnailUrl), UriKind.Absolute);
                         ArtistProfileCover.Source = bmp;
                     } catch {}
                 }
@@ -304,7 +325,10 @@ namespace YTMusicWP
                 // Use avatar or cover for about background
                 if (!string.IsNullOrEmpty(avatarUrl))
                 {
-                    ArtistAboutImage.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetHighResThumbnail(avatarUrl))) { DecodePixelWidth = 300 };
+                    var aboutBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    aboutBmp.DecodePixelWidth = 300;
+                    aboutBmp.UriSource = new Uri(GetHighResThumbnail(avatarUrl), UriKind.Absolute);
+                    ArtistAboutImage.ImageSource = aboutBmp;
                 }
                 ArtistAboutSection.Visibility = Visibility.Visible;
             }

@@ -573,56 +573,57 @@ namespace YTMusicWP
         {
             try
             {
-                var content = new FormUrlEncodedContent(new[]
+                using (var content = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("client_id", _builtInClientId),
                     new KeyValuePair<string, string>("scope", "https://www.googleapis.com/auth/youtube openid profile")
-                });
-
-                var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/device/code", content);
-                string resultJson = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
+                }))
+                using (var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/device/code", content))
                 {
-                    var json = JObject.Parse(resultJson);
-                    string deviceCode = json["device_code"]?.ToString();
-                    string userCode = json["user_code"]?.ToString();
-                    string verificationUrl = json["verification_url"]?.ToString() ?? "https://www.google.com/device";
-                    int expiresIn = json["expires_in"]?.Value<int>() ?? 1800;
-                    int interval = json["interval"]?.Value<int>() ?? 5;
+                    string resultJson = await response.Content.ReadAsStringAsync();
 
-                    _deviceUserCode = userCode;
-                    _deviceVerificationUrl = verificationUrl;
-
-                    DeviceCodeText.Text = userCode ?? "ERROR";
-                    DeviceCodeStatus.Text = "Waiting for you to sign in...";
-
-                    // Generate QR Code bitmap with auto-fill URL
-                    string qrUrl = !string.IsNullOrEmpty(userCode)
-                        ? ("https://www.google.com/device?user_code=" + userCode)
-                        : verificationUrl;
-
-                    var qrBitmap = Services.QrCodeGenerator.GenerateQrBitmap(qrUrl, 4, 3);
-                    if (qrBitmap != null)
+                    if (response.IsSuccessStatusCode)
                     {
-                        DeviceCodeQrImage.Source = qrBitmap;
+                        var json = JObject.Parse(resultJson);
+                        string deviceCode = json["device_code"]?.ToString();
+                        string userCode = json["user_code"]?.ToString();
+                        string verificationUrl = json["verification_url"]?.ToString() ?? "https://www.google.com/device";
+                        int expiresIn = json["expires_in"]?.Value<int>() ?? 1800;
+                        int interval = json["interval"]?.Value<int>() ?? 5;
+
+                        _deviceUserCode = userCode;
+                        _deviceVerificationUrl = verificationUrl;
+
+                        DeviceCodeText.Text = userCode ?? "ERROR";
+                        DeviceCodeStatus.Text = "Waiting for you to sign in...";
+
+                        // Generate QR Code bitmap with auto-fill URL
+                        string qrUrl = !string.IsNullOrEmpty(userCode)
+                            ? ("https://www.google.com/device?user_code=" + userCode)
+                            : verificationUrl;
+
+                        var qrBitmap = Services.QrCodeGenerator.GenerateQrBitmap(qrUrl, 4, 3);
+                        if (qrBitmap != null)
+                        {
+                            DeviceCodeQrImage.Source = qrBitmap;
+                        }
+                        else
+                        {
+                            DeviceCodeQrImage.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + Uri.EscapeDataString(qrUrl)));
+                        }
+                        DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
+
+                        // Start polling for user authorization
+                        _deviceCodePolling = true;
+                        await PollDeviceCodeAsync(deviceCode, interval, expiresIn);
                     }
                     else
                     {
-                        DeviceCodeQrImage.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + Uri.EscapeDataString(qrUrl)));
+                        DeviceCodeText.Text = "ERROR";
+                        DeviceCodeStatus.Text = "Failed to get code. Try again.";
+                        DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                        DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
                     }
-                    DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
-
-                    // Start polling for user authorization
-                    _deviceCodePolling = true;
-                    await PollDeviceCodeAsync(deviceCode, interval, expiresIn);
-                }
-                else
-                {
-                    DeviceCodeText.Text = "ERROR";
-                    DeviceCodeStatus.Text = "Failed to get code. Try again.";
-                    DeviceCodeProgress.Visibility = Visibility.Collapsed;
-                    DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
                 }
             }
             catch
@@ -645,65 +646,66 @@ namespace YTMusicWP
 
                 try
                 {
-                    var content = new FormUrlEncodedContent(new[]
+                    using (var content = new FormUrlEncodedContent(new[]
                     {
                         new KeyValuePair<string, string>("client_id", _builtInClientId),
                         new KeyValuePair<string, string>("client_secret", _builtInClientSecret),
                         new KeyValuePair<string, string>("device_code", deviceCode),
                         new KeyValuePair<string, string>("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
-                    });
-
-                    var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/token", content);
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    var json = JObject.Parse(resultJson);
-
-                    if (response.IsSuccessStatusCode)
+                    }))
+                    using (var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/token", content))
                     {
-                        // Success! Got tokens
-                        _deviceCodePolling = false;
-                        string accessToken = json["access_token"]?.ToString();
-                        string refreshToken = json["refresh_token"]?.ToString() ?? "";
+                        string resultJson = await response.Content.ReadAsStringAsync();
+                        var json = JObject.Parse(resultJson);
 
-                        var settings = ApplicationData.Current.LocalSettings.Values;
-                        settings["GoogleAccessToken"] = accessToken;
-                        SyncNowBtn.Visibility = Visibility.Visible;
-                        settings["GoogleRefreshToken"] = refreshToken;
-                        long expiresInSec = json["expires_in"]?.Value<long>() ?? 3600;
-                        settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresInSec - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                        SyncNowBtn.Visibility = Visibility.Visible;
-
-                        DeviceCodeStatus.Text = "Success! Syncing...";
-                        DeviceCodeProgress.Visibility = Visibility.Collapsed;
-
-                        UpdateAccountPanel(true, "Logged In & Syncing...");
-                        LoginStatusText.Foreground = _greenBrush;
-                        ShowToast("Login successful! Syncing...");
-
-                        await SyncAllAsync(accessToken);
-
-                        LoginWebContainer.Visibility = Visibility.Collapsed;
-                        return;
-                    }
-                    else
-                    {
-                        string error = json["error"]?.ToString() ?? "";
-                        if (error == "authorization_pending")
+                        if (response.IsSuccessStatusCode)
                         {
-                            // User hasn't approved yet, keep polling
-                            continue;
-                        }
-                        else if (error == "slow_down")
-                        {
-                            interval += 2; // Increase polling interval
-                            continue;
+                            // Success! Got tokens
+                            _deviceCodePolling = false;
+                            string accessToken = json["access_token"]?.ToString();
+                            string refreshToken = json["refresh_token"]?.ToString() ?? "";
+
+                            var settings = ApplicationData.Current.LocalSettings.Values;
+                            settings["GoogleAccessToken"] = accessToken;
+                            SyncNowBtn.Visibility = Visibility.Visible;
+                            settings["GoogleRefreshToken"] = refreshToken;
+                            long expiresInSec = json["expires_in"]?.Value<long>() ?? 3600;
+                            settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresInSec - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                            SyncNowBtn.Visibility = Visibility.Visible;
+
+                            DeviceCodeStatus.Text = "Success! Syncing...";
+                            DeviceCodeProgress.Visibility = Visibility.Collapsed;
+
+                            UpdateAccountPanel(true, "Logged In & Syncing...");
+                            LoginStatusText.Foreground = _greenBrush;
+                            ShowToast("Login successful! Syncing...");
+
+                            await SyncAllAsync(accessToken);
+
+                            LoginWebContainer.Visibility = Visibility.Collapsed;
+                            return;
                         }
                         else
                         {
-                            // access_denied, expired_token, etc.
-                            _deviceCodePolling = false;
-                            DeviceCodeStatus.Text = "Login failed: " + error;
-                            DeviceCodeProgress.Visibility = Visibility.Collapsed;
-                            return;
+                            string error = json["error"]?.ToString() ?? "";
+                            if (error == "authorization_pending")
+                            {
+                                // User hasn't approved yet, keep polling
+                                continue;
+                            }
+                            else if (error == "slow_down")
+                            {
+                                interval += 2; // Increase polling interval
+                                continue;
+                            }
+                            else
+                            {
+                                // access_denied, expired_token, etc.
+                                _deviceCodePolling = false;
+                                DeviceCodeStatus.Text = "Login failed: " + error;
+                                DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                                return;
+                            }
                         }
                     }
                 }
@@ -891,42 +893,43 @@ namespace YTMusicWP
 
             try
             {
-                var content = new FormUrlEncodedContent(new[]
+                using (var content = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("code", authCode),
                     new KeyValuePair<string, string>("client_id", clientId),
                     new KeyValuePair<string, string>("client_secret", clientSecret),
                     new KeyValuePair<string, string>("redirect_uri", "http://localhost"),
                     new KeyValuePair<string, string>("grant_type", "authorization_code")
-                });
-
-                var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/token", content);
-                string resultJson = await response.Content.ReadAsStringAsync();
-
-                if (response.IsSuccessStatusCode)
+                }))
+                using (var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/token", content))
                 {
-                    var json = JObject.Parse(resultJson);
-                    string accessToken = json["access_token"]?.ToString();
-                    string refreshToken = json["refresh_token"]?.ToString() ?? "";
+                    string resultJson = await response.Content.ReadAsStringAsync();
 
-                    var settings = ApplicationData.Current.LocalSettings.Values;
-                    settings["GoogleAccessToken"] = accessToken;
-                    SyncNowBtn.Visibility = Visibility.Visible;
-                    settings["GoogleRefreshToken"] = refreshToken;
-                    settings["GoogleClientId"] = clientId;
-                    settings["GoogleClientSecret"] = clientSecret;
-                    // Token expiry: expires_in is seconds (typically 3600)
-                    long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
-                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = JObject.Parse(resultJson);
+                        string accessToken = json["access_token"]?.ToString();
+                        string refreshToken = json["refresh_token"]?.ToString() ?? "";
 
-                    ShowToast("Login successful! Syncing...");
-                    await SyncAllAsync(accessToken);
-                }
-                else
-                {
-                    LoginStatusText.Text = "Status: Auth Failed";
-                    LoginStatusText.Foreground = _authRedBrush;
-                    ShowToast("Auth Error! Please try again.");
+                        var settings = ApplicationData.Current.LocalSettings.Values;
+                        settings["GoogleAccessToken"] = accessToken;
+                        SyncNowBtn.Visibility = Visibility.Visible;
+                        settings["GoogleRefreshToken"] = refreshToken;
+                        settings["GoogleClientId"] = clientId;
+                        settings["GoogleClientSecret"] = clientSecret;
+                        // Token expiry: expires_in is seconds (typically 3600)
+                        long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
+                        settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+
+                        ShowToast("Login successful! Syncing...");
+                        await SyncAllAsync(accessToken);
+                    }
+                    else
+                    {
+                        LoginStatusText.Text = "Status: Auth Failed";
+                        LoginStatusText.Foreground = _authRedBrush;
+                        ShowToast("Auth Error! Please try again.");
+                    }
                 }
             }
             catch
@@ -1236,24 +1239,25 @@ namespace YTMusicWP
 
             try
             {
-                var content = new FormUrlEncodedContent(new[]
+                using (var content = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("client_id", _builtInClientId),
                     new KeyValuePair<string, string>("client_secret", _builtInClientSecret),
                     new KeyValuePair<string, string>("refresh_token", settings["GoogleRefreshToken"].ToString()),
                     new KeyValuePair<string, string>("grant_type", "refresh_token")
-                });
-
-                var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/token", content);
-                if (response.IsSuccessStatusCode)
+                }))
+                using (var response = await _apiClient.PostAsync("https://oauth2.googleapis.com/token", content))
                 {
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    var json = JObject.Parse(resultJson);
-                    string newToken = json["access_token"]?.ToString();
-                    long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
-                    settings["GoogleAccessToken"] = newToken;
-                    settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                    return newToken;
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string resultJson = await response.Content.ReadAsStringAsync();
+                        var json = JObject.Parse(resultJson);
+                        string newToken = json["access_token"]?.ToString();
+                        long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
+                        settings["GoogleAccessToken"] = newToken;
+                        settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                        return newToken;
+                    }
                 }
             }
             catch { }
@@ -1643,41 +1647,48 @@ namespace YTMusicWP
             try
             {
                 // Method 0: Google userinfo (works if openid+profile scope is available)
-                var userinfoReq = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v3/userinfo");
-                userinfoReq.Headers.Add("Authorization", "Bearer " + accessToken);
-                var userinfoResp = await _apiClient.SendAsync(userinfoReq);
-                if (userinfoResp.IsSuccessStatusCode)
+                using (var userinfoReq = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/oauth2/v3/userinfo"))
                 {
-                    string uiJson = await userinfoResp.Content.ReadAsStringAsync();
-                    var uiData = JObject.Parse(uiJson);
-                    string name = uiData["name"]?.ToString() ?? "";
-                    string pic = uiData["picture"]?.ToString() ?? "";
-                    // Request higher res
-                    if (!string.IsNullOrEmpty(pic) && pic.Contains("=s96-c"))
-                        pic = pic.Replace("=s96-c", "=s128-c");
-                    if (SaveAvatarData(name, pic)) return;
+                    userinfoReq.Headers.Add("Authorization", "Bearer " + accessToken);
+                    using (var userinfoResp = await _apiClient.SendAsync(userinfoReq))
+                    {
+                        if (userinfoResp.IsSuccessStatusCode)
+                        {
+                            string uiJson = await userinfoResp.Content.ReadAsStringAsync();
+                            var uiData = JObject.Parse(uiJson);
+                            string name = uiData["name"]?.ToString() ?? "";
+                            string pic = uiData["picture"]?.ToString() ?? "";
+                            // Request higher res
+                            if (!string.IsNullOrEmpty(pic) && pic.Contains("=s96-c"))
+                                pic = pic.Replace("=s96-c", "=s128-c");
+                            if (SaveAvatarData(name, pic)) return;
+                        }
+                    }
                 }
 
                 // Method 1: YouTube Data API channels?mine=true
-                var request = new HttpRequestMessage(HttpMethod.Get,
-                    "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&fields=items(snippet(title,thumbnails))");
-                request.Headers.Add("Authorization", "Bearer " + accessToken);
-                var response = await _apiClient.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
+                using (var request = new HttpRequestMessage(HttpMethod.Get,
+                    "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true&fields=items(snippet(title,thumbnails))"))
                 {
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    var json = JObject.Parse(resultJson);
-                    var items = json["items"] as JArray;
-                    if (items != null && items.Count > 0)
+                    request.Headers.Add("Authorization", "Bearer " + accessToken);
+                    using (var response = await _apiClient.SendAsync(request))
                     {
-                        var snippet = items[0]["snippet"];
-                        string name = snippet?["title"]?.ToString() ?? "";
-                        string avatarUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
-                            ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
-                            ?? snippet?.SelectToken("thumbnails.default.url")?.ToString() ?? "";
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string resultJson = await response.Content.ReadAsStringAsync();
+                            var json = JObject.Parse(resultJson);
+                            var items = json["items"] as JArray;
+                            if (items != null && items.Count > 0)
+                            {
+                                var snippet = items[0]["snippet"];
+                                string name = snippet?["title"]?.ToString() ?? "";
+                                string avatarUrl = snippet?.SelectToken("thumbnails.high.url")?.ToString()
+                                    ?? snippet?.SelectToken("thumbnails.medium.url")?.ToString()
+                                    ?? snippet?.SelectToken("thumbnails.default.url")?.ToString() ?? "";
 
-                        if (SaveAvatarData(name, avatarUrl)) return;
+                                if (SaveAvatarData(name, avatarUrl)) return;
+                            }
+                        }
                     }
                 }
 
@@ -1697,39 +1708,43 @@ namespace YTMusicWP
                 };
 
                 string menuUrl = "https://www.youtube.com/youtubei/v1/account/account_menu?prettyPrint=false";
-                var menuReq = new HttpRequestMessage(HttpMethod.Post, menuUrl);
-                menuReq.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                menuReq.Headers.Add("Authorization", "Bearer " + accessToken);
-
-                var menuResp = await _apiClient.SendAsync(menuReq);
-                if (menuResp.IsSuccessStatusCode)
+                using (var menuReq = new HttpRequestMessage(HttpMethod.Post, menuUrl))
                 {
-                    string menuJson = await menuResp.Content.ReadAsStringAsync();
-                    var menuData = JObject.Parse(menuJson);
+                    menuReq.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                    menuReq.Headers.Add("Authorization", "Bearer " + accessToken);
 
-                    string name = menuData.SelectToken("$..accountName..text")?.ToString() ?? "";
-
-                    // Iterate thumbnails to get largest
-                    string avatarUrl = "";
-                    var thumbs = menuData.SelectTokens("$..accountPhoto..thumbnails[*]");
-                    foreach (var t in thumbs)
+                    using (var menuResp = await _apiClient.SendAsync(menuReq))
                     {
-                        string u = t["url"]?.ToString();
-                        if (!string.IsNullOrEmpty(u)) avatarUrl = u;
-                    }
-
-                    // Also try header renderer
-                    if (string.IsNullOrEmpty(avatarUrl))
-                    {
-                        thumbs = menuData.SelectTokens("$..thumbnail..thumbnails[*]");
-                        foreach (var t in thumbs)
+                        if (menuResp.IsSuccessStatusCode)
                         {
-                            string u = t["url"]?.ToString();
-                            if (!string.IsNullOrEmpty(u)) avatarUrl = u;
+                            string menuJson = await menuResp.Content.ReadAsStringAsync();
+                            var menuData = JObject.Parse(menuJson);
+
+                            string name = menuData.SelectToken("$..accountName..text")?.ToString() ?? "";
+
+                            // Iterate thumbnails to get largest
+                            string avatarUrl = "";
+                            var thumbs = menuData.SelectTokens("$..accountPhoto..thumbnails[*]");
+                            foreach (var t in thumbs)
+                            {
+                                string u = t["url"]?.ToString();
+                                if (!string.IsNullOrEmpty(u)) avatarUrl = u;
+                            }
+
+                            // Also try header renderer
+                            if (string.IsNullOrEmpty(avatarUrl))
+                            {
+                                thumbs = menuData.SelectTokens("$..thumbnail..thumbnails[*]");
+                                foreach (var t in thumbs)
+                                {
+                                    string u = t["url"]?.ToString();
+                                    if (!string.IsNullOrEmpty(u)) avatarUrl = u;
+                                }
+                            }
+
+                            SaveAvatarData(name, avatarUrl);
                         }
                     }
-
-                    SaveAvatarData(name, avatarUrl);
                 }
             }
             catch { }

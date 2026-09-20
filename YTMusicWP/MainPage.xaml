@@ -21,6 +21,7 @@
 
         <!-- ═══════ CONVERTERS ═══════ -->
         <converters:SquareThumbnailConverter x:Key="SquareThumbConverter"/>
+        <converters:IsPlayingToColorConverter x:Key="IsPlayingToColorConverter"/>
 
         <!-- ═══════ SPOTIFY FONT SYSTEM ═══════ -->
         <FontFamily x:Key="MontserratRegular">/Assets/Fonts/Montserrat-Regular.ttf#Montserrat</FontFamily>
@@ -324,7 +325,7 @@
 
                 <!-- Text information -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding TitleColor}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding IsPlaying, Converter={StaticResource IsPlayingToColorConverter}}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
                     <StackPanel Orientation="Horizontal">
                         <Border Background="#CC0000" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding LiveBadgeVisibility}">
                             <TextBlock Text="LIVE" Foreground="White" FontSize="10" FontWeight="Bold"/>
@@ -705,7 +706,7 @@
                     </Border>
                 </Grid>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,6,0">
-                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding TitleColor}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                    <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding IsPlaying, Converter={StaticResource IsPlayingToColorConverter}}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
                     <TextBlock Text="{Binding ChannelName}" FontSize="13" Foreground="#B3B3B3" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <Button Grid.Column="2" Content="↑" Click="QueueMoveUp_Click" Foreground="#888888" FontSize="18" Background="Transparent" BorderThickness="0" MinWidth="34" MinHeight="36" Padding="0"/>
@@ -752,7 +753,7 @@
                     </Border>
                 </Grid>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding TitleColor}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
+                    <TextBlock Text="{Binding Title}" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding IsPlaying, Converter={StaticResource IsPlayingToColorConverter}}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
                     <TextBlock Text="{Binding DisplaySubtitle}" FontSize="12" Foreground="#A0A0A0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <Button Grid.Column="2" Content="⋮" Foreground="#888888" FontSize="18" Style="{StaticResource IconButtonStyle}" Width="40" Height="48" Click="MoreButton_Click" HorizontalAlignment="Right"/>

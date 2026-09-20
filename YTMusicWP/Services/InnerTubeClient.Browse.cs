@@ -1670,7 +1670,7 @@ namespace YTMusicWP
 
         public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null, Action<List<HomeSection>> onPageLoaded = null)
         {
-            var firstPage = await BrowseHomeFirstPageAsync(accessToken);
+            var firstPage = await BrowseHomeFirstPageAsync(filterParams: null, accessToken: accessToken);
             onPageLoaded?.Invoke(new List<HomeSection>(firstPage.Sections));
             return firstPage.Sections;
         }

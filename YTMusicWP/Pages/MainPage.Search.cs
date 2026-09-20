@@ -386,13 +386,19 @@ namespace YTMusicWP
                 {
                     TopCardArtistThumb.Visibility = Visibility.Visible;
                     TopCardSquareThumb.Visibility = Visibility.Collapsed;
-                    TopCardArtistThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetArtistAvatar(card.ThumbnailUrl))) { DecodePixelWidth = 120 };
+                    var artistThumbBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    artistThumbBmp.DecodePixelWidth = 120;
+                    artistThumbBmp.UriSource = new Uri(GetArtistAvatar(card.ThumbnailUrl), UriKind.Absolute);
+                    TopCardArtistThumbBrush.ImageSource = artistThumbBmp;
                 }
                 else
                 {
                     TopCardArtistThumb.Visibility = Visibility.Collapsed;
                     TopCardSquareThumb.Visibility = Visibility.Visible;
-                    TopCardSquareThumbBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(card.ThumbnailUrl))) { DecodePixelWidth = 120 };
+                    var squareThumbBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                    squareThumbBmp.DecodePixelWidth = 120;
+                    squareThumbBmp.UriSource = new Uri(GetSquareThumbnail(card.ThumbnailUrl), UriKind.Absolute);
+                    TopCardSquareThumbBrush.ImageSource = squareThumbBmp;
                 }
             }
             else
@@ -420,7 +426,12 @@ namespace YTMusicWP
                     TopCardSong1Title.Text = s1.Title ?? "";
                     TopCardSong1Sub.Text = s1.DisplaySubtitle ?? "";
                     if (!string.IsNullOrEmpty(s1.ThumbnailUrl))
-                        TopCardSong1Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s1.ThumbnailUrl))) { DecodePixelWidth = 80 };
+                    {
+                        var s1ThumbBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                        s1ThumbBmp.DecodePixelWidth = 80;
+                        s1ThumbBmp.UriSource = new Uri(GetSquareThumbnail(s1.ThumbnailUrl), UriKind.Absolute);
+                        TopCardSong1Thumb.ImageSource = s1ThumbBmp;
+                    }
                 }
                 else TopCardSong1.Visibility = Visibility.Collapsed;
 
@@ -432,7 +443,12 @@ namespace YTMusicWP
                     TopCardSong2Title.Text = s2.Title ?? "";
                     TopCardSong2Sub.Text = s2.DisplaySubtitle ?? "";
                     if (!string.IsNullOrEmpty(s2.ThumbnailUrl))
-                        TopCardSong2Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s2.ThumbnailUrl))) { DecodePixelWidth = 80 };
+                    {
+                        var s2ThumbBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                        s2ThumbBmp.DecodePixelWidth = 80;
+                        s2ThumbBmp.UriSource = new Uri(GetSquareThumbnail(s2.ThumbnailUrl), UriKind.Absolute);
+                        TopCardSong2Thumb.ImageSource = s2ThumbBmp;
+                    }
                 }
                 else TopCardSong2.Visibility = Visibility.Collapsed;
 
@@ -444,7 +460,12 @@ namespace YTMusicWP
                     TopCardSong3Title.Text = s3.Title ?? "";
                     TopCardSong3Sub.Text = s3.DisplaySubtitle ?? "";
                     if (!string.IsNullOrEmpty(s3.ThumbnailUrl))
-                        TopCardSong3Thumb.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(s3.ThumbnailUrl))) { DecodePixelWidth = 80 };
+                    {
+                        var s3ThumbBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                        s3ThumbBmp.DecodePixelWidth = 80;
+                        s3ThumbBmp.UriSource = new Uri(GetSquareThumbnail(s3.ThumbnailUrl), UriKind.Absolute);
+                        TopCardSong3Thumb.ImageSource = s3ThumbBmp;
+                    }
                 }
                 else TopCardSong3.Visibility = Visibility.Collapsed;
             }
