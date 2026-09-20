@@ -109,7 +109,7 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 ### v2.3.0 (Latest)
 - 🔴 **Continuous YouTube Live Streaming:** Zero-gap continuous live audio streaming engine with low-latency rolling buffer and live telemetry.
 - 📻 **Listen Together:** Real-time synchronized listening rooms compatible with Metrolist & SimpMusic (synced queue, playback, and tap-to-seek).
-- 🔄 **Home & Pull-to-Refresh:** Smooth native pull-to-refresh on Home feed and restored 2x3 quick shortcuts grid for recently played tracks.
+- 🔄 **Home & Pull-to-Refresh:** Smooth native pull-to-refresh on Home feed with floating capsule pill and 60fps spinner.
 - 🔍 **Search Suggestions & Moods/Genres:** Instant YouTube Music search suggestions, entity matching, and dynamic tilted exploration cards.
 - 💾 **Smart Downloads & M4A Tagging:** Native atom metadata and high-res artwork injection directly into downloaded `.m4a` files for offline playback.
 - 📚 **Redesigned Library:** 4 SimpMusic-style quick-access tiles with album art mosaics, dynamic filter pills, and sort dropdown.
