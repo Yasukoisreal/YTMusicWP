@@ -1411,8 +1411,9 @@ namespace YTMusicWP
                                 }
                                 if (newIdx >= 0 && newIdx < currentLyrics.Count)
                                 {
+                                    int oldIdx = currentLyricIndex;
                                     currentLyricIndex = newIdx;
-                                    ForceUpdateLyricUI();
+                                    ForceUpdateLyricUI(oldIdx);
                                 }
                             }
                         }

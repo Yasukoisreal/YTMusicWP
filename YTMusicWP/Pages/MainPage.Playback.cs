@@ -793,8 +793,9 @@ namespace YTMusicWP
                             }
                             if (newIdx >= 0 && newIdx < currentLyrics.Count)
                             {
+                                int oldIdx = currentLyricIndex;
                                 currentLyricIndex = newIdx;
-                                ForceUpdateLyricUI();
+                                ForceUpdateLyricUI(oldIdx);
                             }
                         }
                     }
@@ -1892,7 +1893,7 @@ namespace YTMusicWP
             MiniLyricTranslate.X = 0;
         }
 
-        public void ForceUpdateLyricUI()
+        public void ForceUpdateLyricUI(int oldIndex = -1)
         {
             if (currentLyricIndex < 0 || currentLyricIndex >= currentLyrics.Count) return;
             
@@ -1904,48 +1905,79 @@ namespace YTMusicWP
             {
                 var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
                 
-                UpdateLyricsVisualState();
+                UpdateLyricsVisualState(oldIndex);
                 
                 if (!_isAppleMusicStyle && !isFullscreen)
                 {
-                    if (_lyricInSb != null) _lyricInSb.Stop();
-                    if (_lyricOutSb != null) _lyricOutSb.Stop();
-
+                    // Defensive sweep: ensure all other realized containers outside active and old lines are reset to inactive scale/opacity
                     for (int i = 0; i < currentLyrics.Count; i++)
                     {
+                        if (i == currentLyricIndex || (oldIndex >= 0 && i == oldIndex)) continue;
                         var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
                         if (container == null) continue;
 
                         var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
                         if (st == null)
                         {
-                            st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = (i == currentLyricIndex) ? 1.0 : 0.85, ScaleY = (i == currentLyricIndex) ? 1.0 : 0.85 };
+                            st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
                             container.RenderTransformOrigin = new Point(0, 0.5);
                             container.RenderTransform = st;
                         }
                         else
                         {
-                            st.ScaleX = (i == currentLyricIndex) ? 1.0 : 0.85;
-                            st.ScaleY = (i == currentLyricIndex) ? 1.0 : 0.85;
+                            if (st.ScaleX != 0.85 || st.ScaleY != 0.85)
+                            {
+                                st.ScaleX = 0.85;
+                                st.ScaleY = 0.85;
+                            }
                         }
-                        container.Opacity = (i == currentLyricIndex) ? 1.0 : 0.5;
+                        if (container.Opacity != 0.5) container.Opacity = 0.5;
                     }
 
+                    // Animate OLD lyric
+                    if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex)
+                    {
+                        var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                        if (oldContainer != null)
+                        {
+                            var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                            if (oldScale == null)
+                            {
+                                oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1.0, ScaleY = 1.0 };
+                                oldContainer.RenderTransformOrigin = new Point(0, 0.5);
+                                oldContainer.RenderTransform = oldScale;
+                            }
+                            AnimateLyricOut(oldContainer, oldScale);
+                        }
+                    }
+
+                    // Animate NEW lyric
                     var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                     if (newContainer != null)
                     {
                         var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (scaleTransform != null)
+                        if (scaleTransform == null)
+                        {
+                            scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                            newContainer.RenderTransformOrigin = new Point(0, 0.5);
+                            newContainer.RenderTransform = scaleTransform;
+                        }
+                        else
                         {
                             scaleTransform.ScaleX = 0.85;
                             scaleTransform.ScaleY = 0.85;
-                            newContainer.Opacity = 0.5;
-                            AnimateLyricIn(newContainer, scaleTransform);
                         }
+                        newContainer.Opacity = 0.5;
+                        AnimateLyricIn(newContainer, scaleTransform);
                     }
                 }
                 else if (isFullscreen)
                 {
+                    if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex)
+                    {
+                        var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                        if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
+                    }
                     var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                     if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
                 }
@@ -1968,6 +2000,24 @@ namespace YTMusicWP
                     targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
                     targetListView.UpdateLayout();
                     activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+
+                    if (activeContainer != null && !_isAppleMusicStyle && !isFullscreen)
+                    {
+                        var scaleTransform = activeContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                        if (scaleTransform == null)
+                        {
+                            scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
+                            activeContainer.RenderTransformOrigin = new Point(0, 0.5);
+                            activeContainer.RenderTransform = scaleTransform;
+                        }
+                        else
+                        {
+                            scaleTransform.ScaleX = 0.85;
+                            scaleTransform.ScaleY = 0.85;
+                        }
+                        activeContainer.Opacity = 0.5;
+                        AnimateLyricIn(activeContainer, scaleTransform);
+                    }
                 }
                 
                 if (scrollViewer != null && activeContainer != null)
@@ -2125,11 +2175,14 @@ namespace YTMusicWP
             }
 
             // CRITICAL FIX: If previous container was animating in and is NOT the new active container,
-            // reset it to inactive (0.5 opacity, 0.85 scale) instead of forcing it to 1.0!
+            // reset it to inactive (0.5 opacity, 0.85 scale) UNLESS it is actively animating out via AnimateLyricOut!
             if (_lastInContainer != null && _lastInContainer != container)
             {
-                _lastInContainer.Opacity = 0.5;
-                if (_lastInScale != null) { _lastInScale.ScaleX = 0.85; _lastInScale.ScaleY = 0.85; }
+                if (_lastInContainer != _lastOutContainer)
+                {
+                    _lastInContainer.Opacity = 0.5;
+                    if (_lastInScale != null) { _lastInScale.ScaleX = 0.85; _lastInScale.ScaleY = 0.85; }
+                }
             }
 
             _lastInContainer = container;

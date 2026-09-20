@@ -483,8 +483,9 @@ namespace YTMusicWP
                 }
 
                 // Immediately highlight and center the clicked lyric
+                int oldIndex = currentLyricIndex;
                 currentLyricIndex = targetIndex;
-                ForceUpdateLyricUI();
+                ForceUpdateLyricUI(oldIndex);
 
                 await Task.Delay(400);
                 _isSliderManipulating = false;
