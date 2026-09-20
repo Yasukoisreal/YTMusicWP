@@ -61,19 +61,36 @@ namespace YTMusicWP
                     else
                         PlaylistDetailsSubtitle.Text = plResult.Tracks.Count + " tracks";
 
+                    string effectiveCover = !string.IsNullOrEmpty(plResult.ThumbnailUrl) ? plResult.ThumbnailUrl : coverUrl;
+                    if (playlistId.StartsWith("MPREb_") || playlistId.StartsWith("OLAK5uy_"))
+                    {
+                        if (!string.IsNullOrEmpty(effectiveCover))
+                        {
+                            foreach (var t in plResult.Tracks)
+                            {
+                                t.ThumbnailUrl = effectiveCover;
+                            }
+                        }
+                    }
+
                     foreach (var t in plResult.Tracks)
                         tracks.Add(t);
 
                     _playlistContinuationToken = plResult.ContinuationToken;
 
-                    // If no cover was set, try proxy thumbnail or first track's thumbnail
-                    if (PlaylistDetailsCoverRect.Visibility == Visibility.Collapsed && tracks.Count > 0)
+                    // If cover is available, ensure header cover is set
+                    if (!string.IsNullOrEmpty(effectiveCover) && (PlaylistDetailsCoverRect.Visibility == Visibility.Collapsed || !string.IsNullOrEmpty(plResult.ThumbnailUrl)))
                     {
-                        string fallbackCover = plResult.ThumbnailUrl;
-                        if (string.IsNullOrEmpty(fallbackCover))
+                        try
                         {
-                            fallbackCover = tracks.FirstOrDefault(t => !string.IsNullOrEmpty(t.ThumbnailUrl))?.ThumbnailUrl;
+                            PlaylistDetailsCoverBrush.ImageSource = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(GetSquareThumbnail(effectiveCover), UriKind.Absolute)) { DecodePixelWidth = 220 };
+                            PlaylistDetailsCoverRect.Visibility = Visibility.Visible;
                         }
+                        catch { }
+                    }
+                    else if (PlaylistDetailsCoverRect.Visibility == Visibility.Collapsed && tracks.Count > 0)
+                    {
+                        string fallbackCover = tracks.FirstOrDefault(t => !string.IsNullOrEmpty(t.ThumbnailUrl))?.ThumbnailUrl;
                         if (!string.IsNullOrEmpty(fallbackCover))
                         {
                             try

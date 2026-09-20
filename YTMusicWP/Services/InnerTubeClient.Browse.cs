@@ -221,17 +221,26 @@ namespace YTMusicWP
                         ?? "";
                 }
 
-                // Thumbnail
+                // Thumbnail (specifically target the header thumbnail, avoiding straplineThumbnail artist avatar)
                 if (string.IsNullOrEmpty(result.ThumbnailUrl))
                 {
-                    var headerThumbs = data.SelectTokens("$..musicResponsiveHeaderRenderer..thumbnails[*].url").Select(t => t?.ToString()).Where(u => !string.IsNullOrEmpty(u)).ToList();
+                    var headerThumbs = data.SelectTokens("$..musicResponsiveHeaderRenderer.thumbnail..thumbnails[*].url").Select(t => t?.ToString()).Where(u => !string.IsNullOrEmpty(u)).ToList();
+                    if (headerThumbs == null || headerThumbs.Count == 0)
+                    {
+                        headerThumbs = data.SelectTokens("$..musicDetailHeaderRenderer.thumbnail..thumbnails[*].url").Select(t => t?.ToString()).Where(u => !string.IsNullOrEmpty(u)).ToList();
+                    }
+                    if (headerThumbs == null || headerThumbs.Count == 0)
+                    {
+                        headerThumbs = data.SelectTokens("$..microformatDataRenderer.thumbnail..thumbnails[*].url").Select(t => t?.ToString()).Where(u => !string.IsNullOrEmpty(u)).ToList();
+                    }
+
                     if (headerThumbs != null && headerThumbs.Count > 0)
                     {
                         result.ThumbnailUrl = headerThumbs.Last();
                     }
                     else
                     {
-                        result.ThumbnailUrl = data.SelectToken("$..musicResponsiveHeaderRenderer..thumbnails[0].url")?.ToString()
+                        result.ThumbnailUrl = data.SelectToken("$..musicResponsiveHeaderRenderer.thumbnail..thumbnails[0].url")?.ToString()
                             ?? data["header"]?.SelectToken("$..thumbnails[0].url")?.ToString()
                             ?? data["microformat"]?.SelectToken("$..thumbnails[0].url")?.ToString()
                             ?? "";
