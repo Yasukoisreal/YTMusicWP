@@ -1009,8 +1009,9 @@ namespace YTMusicWP
         {
             try
             {
+                var snapshot = favoriteTracks.ToList();
                 JArray array = new JArray();
-                foreach (var t in favoriteTracks)
+                foreach (var t in snapshot)
                 {
                     JObject obj = new JObject();
                     obj["VideoId"] = t.VideoId; obj["Title"] = t.Title;
@@ -1068,8 +1069,16 @@ namespace YTMusicWP
 
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
             bool isAdding = (existing == null);
-            if (existing != null) favoriteTracks.Remove(existing);
-            else favoriteTracks.Insert(0, track);
+            if (existing != null)
+            {
+                favoriteTracks.Remove(existing);
+                var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
+            }
+            else
+            {
+                favoriteTracks.Insert(0, track);
+                var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
+            }
             SaveFavoritesAsync();
             ShowToast(isAdding ? "Added to Favorites" : "Removed from Favorites");
 

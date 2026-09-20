@@ -1220,13 +1220,17 @@ namespace YTMusicWP
             // Check expiry
             if (settings.ContainsKey("GoogleTokenExpiry"))
             {
-                double expiry = (double)settings["GoogleTokenExpiry"];
-                double now = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                if (now >= expiry)
+                double expiry = 0;
+                try { expiry = Convert.ToDouble(settings["GoogleTokenExpiry"]); } catch { }
+                if (expiry > 0)
                 {
-                    // Token expired ? refresh
-                    string newToken = await RefreshGoogleTokenAsync();
-                    return newToken;
+                    double now = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+                    if (now >= expiry)
+                    {
+                        // Token expired – refresh
+                        string newToken = await RefreshGoogleTokenAsync();
+                        return newToken;
+                    }
                 }
             }
             return settings["GoogleAccessToken"].ToString();

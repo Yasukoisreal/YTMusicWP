@@ -582,7 +582,8 @@ namespace YTMusicWP
             }
             else if (_lastSearchCard.ItemType == "playlist" || (!string.IsNullOrEmpty(_lastSearchCard.BrowseId) && (_lastSearchCard.BrowseId.StartsWith("VL") || _lastSearchCard.BrowseId.StartsWith("PL"))))
             {
-                OpenYouTubePlaylist(_lastSearchCard.BrowseId.Replace("VL", ""), _lastSearchCard.Title, _lastSearchCard.ThumbnailUrl);
+                string pId = _lastSearchCard.BrowseId;
+                OpenYouTubePlaylist(pId.StartsWith("VL") ? pId.Substring(2) : pId, _lastSearchCard.Title, _lastSearchCard.ThumbnailUrl);
             }
             else if (_lastSearchCard.ItemType == "album" || (!string.IsNullOrEmpty(_lastSearchCard.BrowseId) && _lastSearchCard.BrowseId.StartsWith("MPREb_")))
             {

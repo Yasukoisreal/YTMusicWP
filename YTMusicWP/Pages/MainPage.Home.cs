@@ -1155,6 +1155,7 @@ namespace YTMusicWP
                     if (IsMusicTrack(t) && !favoriteTracks.Any(f => f.VideoId == t.VideoId))
                     {
                         favoriteTracks.Insert(0, t);
+                        var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(t);
                         addedCount++;
                     }
                 }

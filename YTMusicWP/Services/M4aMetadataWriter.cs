@@ -32,7 +32,8 @@ namespace YTMusicWP.Services
                 if (udtaBox == null || udtaBox.Length == 0) return false;
 
                 // 2. Open source file stream
-                using (var srcStream = (await targetFile.OpenReadAsync()).AsStreamForRead())
+                using (var winrtSrcStream = await targetFile.OpenReadAsync())
+                using (var srcStream = winrtSrcStream.AsStreamForRead())
                 {
                     long fileSize = srcStream.Length;
                     if (fileSize < 64) return false;
@@ -156,7 +157,8 @@ namespace YTMusicWP.Services
                     string tempName = targetFile.Name + ".tagging";
                     tempFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(tempName, CreationCollisionOption.ReplaceExisting);
 
-                    using (var dstStream = (await tempFile.OpenAsync(FileAccessMode.ReadWrite)).AsStreamForWrite())
+                    using (var winrtDstStream = await tempFile.OpenAsync(FileAccessMode.ReadWrite))
+                    using (var dstStream = winrtDstStream.AsStreamForWrite())
                     {
                         // Write everything before moov
                         srcStream.Seek(0, SeekOrigin.Begin);

@@ -571,7 +571,7 @@ namespace YTMusicWP
             if (!string.IsNullOrEmpty(targetId))
             {
                 if (targetId.StartsWith("VL") || targetId.StartsWith("PL"))
-                    OpenYouTubePlaylist(targetId.Replace("VL", ""), album.Title, album.ThumbnailUrl);
+                    OpenYouTubePlaylist(targetId.StartsWith("VL") ? targetId.Substring(2) : targetId, album.Title, album.ThumbnailUrl);
                 else
                     OpenYouTubePlaylist(targetId, album.Title, album.ThumbnailUrl);
             }

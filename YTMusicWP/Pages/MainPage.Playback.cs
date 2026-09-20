@@ -439,6 +439,7 @@ namespace YTMusicWP
                 if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♥"; AppleMusicQueueHeartBtn.Foreground = _greenBrush; }
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(currentTrack);
             }
+            SaveFavoritesAsync();
 
             // Sync to YouTube (skip LOCAL tracks that can't be rated)
             if (!currentTrack.VideoId.StartsWith("LOCAL:"))

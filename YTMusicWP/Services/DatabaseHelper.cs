@@ -32,7 +32,11 @@ namespace YTMusicWP.Services
                 {
                     _db = null;
                     var file = await ApplicationData.Current.LocalFolder.GetFileAsync("YTMusicWP.db3");
-                    if (file != null) await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+                    if (file != null)
+                    {
+                        string backupName = "YTMusicWP.db3.bak." + DateTime.UtcNow.Ticks;
+                        await file.RenameAsync(backupName, NameCollisionOption.GenerateUniqueName);
+                    }
                     _db = new SQLiteAsyncConnection(dbPath);
                     await _db.CreateTableAsync<HistoryEntity>();
                     await _db.CreateTableAsync<FavoriteEntity>();
@@ -128,8 +132,15 @@ namespace YTMusicWP.Services
 
         public static async Task ClearHistoryAsync()
         {
-            if (_db != null) await _db.DropTableAsync<HistoryEntity>();
-            if (_db != null) await _db.CreateTableAsync<HistoryEntity>();
+            if (_db == null) return;
+            try
+            {
+                await _db.ExecuteAsync("DELETE FROM HistoryEntity;");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("ClearHistoryAsync Error: " + ex.Message);
+            }
         }
 
         public static async Task RemoveHistoryAsync(string videoId)

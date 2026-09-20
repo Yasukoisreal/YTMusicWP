@@ -35,7 +35,7 @@ namespace YTMusicWP
                     if (result.Card.ItemType == "artist" || bId.StartsWith("UC"))
                         vId = "CHANNEL:" + bId;
                     else if (result.Card.ItemType == "playlist" || result.Card.ItemType == "album")
-                        vId = "PLAYLIST:" + bId.Replace("VL", "");
+                        vId = "PLAYLIST:" + (bId.StartsWith("VL") ? bId.Substring(2) : bId);
                 }
 
                 if (!string.IsNullOrEmpty(vId) && !tracks.Any(t => t.VideoId == vId))
@@ -761,7 +761,7 @@ namespace YTMusicWP
             }
             else if ((type == "playlist" || type == "album") && !string.IsNullOrEmpty(browseId) && string.IsNullOrEmpty(videoId))
             {
-                videoId = "PLAYLIST:" + browseId.Replace("VL", "");
+                videoId = "PLAYLIST:" + (browseId.StartsWith("VL") ? browseId.Substring(2) : browseId);
             }
 
             // Extract AlbumName if present

@@ -72,9 +72,13 @@ namespace YTMusicWP
                         playlistId.StartsWith("RDAMPL") || playlistId.StartsWith("VLRDAMPL") ||
                         (playlistId.StartsWith("RD") && !playlistId.StartsWith("RDCLAK") && !playlistId.StartsWith("VLRDCLAK")))
                     {
-                        string radioVideoId = playlistId.Replace("VLRDAMVM", "").Replace("RDAMVM", "")
-                                                        .Replace("VLRDAMPL", "").Replace("RDAMPL", "")
-                                                        .Replace("VLRD", "").Replace("RD", "");
+                        string radioVideoId = playlistId;
+                        if (radioVideoId.StartsWith("VLRDAMVM")) radioVideoId = radioVideoId.Substring(8);
+                        else if (radioVideoId.StartsWith("RDAMVM")) radioVideoId = radioVideoId.Substring(6);
+                        else if (radioVideoId.StartsWith("VLRDAMPL")) radioVideoId = radioVideoId.Substring(8);
+                        else if (radioVideoId.StartsWith("RDAMPL")) radioVideoId = radioVideoId.Substring(6);
+                        else if (radioVideoId.StartsWith("VLRD")) radioVideoId = radioVideoId.Substring(4);
+                        else if (radioVideoId.StartsWith("RD")) radioVideoId = radioVideoId.Substring(2);
                         var radioTracks = await GetRadioTracksAsync(radioVideoId);
                         if (radioTracks != null && radioTracks.Count > 0)
                         {
