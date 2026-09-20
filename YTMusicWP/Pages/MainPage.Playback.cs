@@ -700,6 +700,24 @@ namespace YTMusicWP
                             var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                             if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
                         }
+                        else if (_isAppleMusicStyle && !isFullscreen)
+                        {
+                            var c = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                            if (c != null)
+                            {
+                                if (c.RenderTransform != null) c.RenderTransform = null;
+                                if (c.Opacity != 1.0) c.Opacity = 1.0;
+                            }
+                            if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
+                            {
+                                var oldC = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
+                                if (oldC != null)
+                                {
+                                    if (oldC.RenderTransform != null) oldC.RenderTransform = null;
+                                    if (oldC.Opacity != 1.0) oldC.Opacity = 1.0;
+                                }
+                            }
+                        }
 
                         // Smooth center-scroll (replaces abrupt ScrollIntoView)
                         ScrollViewer scrollViewer;
@@ -1980,6 +1998,23 @@ namespace YTMusicWP
                     }
                     var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                     if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
+                }
+                else if (_isAppleMusicStyle && !isFullscreen)
+                {
+                    if (_lyricInSb != null) _lyricInSb.Stop();
+                    if (_lyricOutSb != null) _lyricOutSb.Stop();
+                    _lastInContainer = null;
+                    _lastInScale = null;
+                    _lastOutContainer = null;
+                    _lastOutScale = null;
+
+                    for (int i = 0; i < currentLyrics.Count; i++)
+                    {
+                        var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
+                        if (container == null) continue;
+                        if (container.RenderTransform != null) container.RenderTransform = null;
+                        if (container.Opacity != 1.0) container.Opacity = 1.0;
+                    }
                 }
                 
                 ScrollViewer scrollViewer = null;

@@ -776,9 +776,28 @@ namespace YTMusicWP
 
         private void RefreshRegularLyricsContainers()
         {
+            if (currentLyrics == null || currentLyrics.Count == 0) return;
+
             UpdateLyricsVisualState();
 
-            if (!_isAppleMusicStyle)
+            if (_isAppleMusicStyle)
+            {
+                if (_lyricInSb != null) _lyricInSb.Stop();
+                if (_lyricOutSb != null) _lyricOutSb.Stop();
+                _lastInContainer = null;
+                _lastInScale = null;
+                _lastOutContainer = null;
+                _lastOutScale = null;
+
+                for (int i = 0; i < currentLyrics.Count; i++)
+                {
+                    var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                    if (container == null) continue;
+                    container.RenderTransform = null;
+                    container.Opacity = 1.0;
+                }
+            }
+            else
             {
                 for (int i = 0; i < currentLyrics.Count; i++)
                 {
@@ -815,10 +834,6 @@ namespace YTMusicWP
                         }
                     }
                 }
-            }
-            else
-            {
-                // In Apple Music style, ContainerContentChanging already ensures RenderTransform = null and Opacity = 1.0.
             }
 
             // Scroll to current lyric (center it)

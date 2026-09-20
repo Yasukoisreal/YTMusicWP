@@ -1081,6 +1081,24 @@ namespace YTMusicWP
                     catch { }
                 }
 
+                if (AppleMusicSlider != null && _appMediaPlayer != null)
+                {
+                    try
+                    {
+                        var dur = _appMediaPlayer.NaturalDuration;
+                        var pos = _appMediaPlayer.Position;
+                        AppleMusicSlider.Maximum = dur.TotalSeconds;
+                        AppleMusicSlider.Value = pos.TotalSeconds;
+                        if (AppleMusicCurrentTime != null) AppleMusicCurrentTime.Text = pos.ToString(@"m\:ss");
+                        if (AppleMusicRemainingTime != null && dur.TotalSeconds > 0)
+                        {
+                            var remain = Math.Max(0, dur.TotalSeconds - pos.TotalSeconds);
+                            AppleMusicRemainingTime.Text = "-" + string.Format("{0}:{1:D2}", (int)remain / 60, (int)remain % 60);
+                        }
+                    }
+                    catch { }
+                }
+
                 var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
                 bool isShuffle = settings.Values.ContainsKey("ShuffleMode") ? (bool)settings.Values["ShuffleMode"] : false;
                 int repeatMode = settings.Values.ContainsKey("RepeatMode") ? (int)settings.Values["RepeatMode"] : 0;
