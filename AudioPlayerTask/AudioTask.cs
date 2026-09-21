@@ -831,8 +831,10 @@ namespace AudioPlayerTask
                                         int itag = (int)fmt.GetNamedNumber("itag");
                                         if (itag == 18 && fmt.ContainsKey("url"))
                                         {
+                                            string u = fmt.GetNamedString("url");
+                                            if (IsLiveStreamUrl(u)) continue;
                                             _innerTubeDebug += " [" + clientName + ":i18:OK]";
-                                            return fmt.GetNamedString("url");
+                                            return u;
                                         }
                                     }
                                 }
@@ -855,8 +857,10 @@ namespace AudioPlayerTask
                                             int itag = (int)fmt.GetNamedNumber("itag");
                                             if (itag == targetItag && fmt.ContainsKey("url"))
                                             {
+                                                string u = fmt.GetNamedString("url");
+                                                if (IsLiveStreamUrl(u)) continue;
                                                 _innerTubeDebug += " [" + clientName + (usePoToken ? "+po" : "") + ":i" + targetItag + ":OK]";
-                                                return fmt.GetNamedString("url");
+                                                return u;
                                             }
                                         }
                                     }

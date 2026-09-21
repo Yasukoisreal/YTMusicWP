@@ -360,6 +360,11 @@ namespace YTMusicWP
                                 string url = fmt["url"]?.ToString();
                                 if (!string.IsNullOrEmpty(url))
                                 {
+                                    if (url.IndexOf("live=1", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                        url.IndexOf("live/1", StringComparison.OrdinalIgnoreCase) >= 0)
+                                    {
+                                        continue;
+                                    }
                                     LastResolveDebug += " i18:OK";
                                     return PrepareStreamUrl(url);
                                 }
@@ -380,6 +385,11 @@ namespace YTMusicWP
                                     string url = fmt["url"]?.ToString();
                                     if (!string.IsNullOrEmpty(url))
                                     {
+                                        if (url.IndexOf("live=1", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            url.IndexOf("live/1", StringComparison.OrdinalIgnoreCase) >= 0)
+                                        {
+                                            continue;
+                                        }
                                         LastResolveDebug += " i" + itag + ":OK";
                                         return PrepareStreamUrl(url);
                                     }
