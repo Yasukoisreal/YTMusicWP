@@ -300,6 +300,29 @@ namespace YTMusicWP
                         _cachedCaptionsData = data["captions"];
                     }
 
+                    // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
+                    bool forceSabr = false;
+                    try
+                    {
+                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                        if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
+                    }
+                    catch { }
+
+                    string serverAbrUrl = data["streamingData"]?["serverAbrStreamingUrl"]?.ToString();
+                    if (forceSabr && !string.IsNullOrEmpty(serverAbrUrl))
+                    {
+                        string ustreamerConfig = data["streamingData"]?["ustreamerConfig"]?.ToString();
+                        if (string.IsNullOrEmpty(ustreamerConfig))
+                        {
+                            ustreamerConfig = data["playerConfig"]?["mediaCommonConfig"]?["mediaUstreamerRequestConfig"]?["videoPlaybackUstreamerConfig"]?.ToString();
+                        }
+
+                        LastResolveDebug += " SABR_FORCED:OK";
+                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "");
+                        return sabrDescriptor;
+                    }
+
                     int[] preferredItags = new[] { 18, 140, 141, 139 };
 
                     var fmts2 = data["streamingData"]?["formats"];
@@ -341,7 +364,22 @@ namespace YTMusicWP
                         }
                     }
 
-                    // 3. Fallback for live streams: extract direct audio BaseURL from dashManifestUrl (MP4 AAC itag 140/139)
+                    // 3. Fallback cho SABR streams (Google Server-side Adaptive Bitrate) - Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource
+                    if (!string.IsNullOrEmpty(serverAbrUrl))
+                    {
+                        string ustreamerConfig = data["streamingData"]?["ustreamerConfig"]?.ToString();
+                        if (string.IsNullOrEmpty(ustreamerConfig))
+                        {
+                            ustreamerConfig = data["playerConfig"]?["mediaCommonConfig"]?["mediaUstreamerRequestConfig"]?["videoPlaybackUstreamerConfig"]?.ToString();
+                        }
+
+                        LastResolveDebug += " SABR:OK";
+                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "");
+                        return sabrDescriptor;
+                    }
+
+                    // 4. Fallback cho Live stream qua DASH: [TẠM THỜI VÔ HIỆU HÓA để test SABR theo yêu cầu người dùng]
+                    /*
                     string dashUrl = data["streamingData"]?["dashManifestUrl"]?.ToString();
                     if (!string.IsNullOrEmpty(dashUrl))
                     {
@@ -372,21 +410,7 @@ namespace YTMusicWP
                             LastResolveDebug += " DASH_EX:" + ex.Message.Substring(0, Math.Min(15, ex.Message.Length));
                         }
                     }
-
-                    // 4. Fallback for SABR streams (Google Server-side Adaptive Bitrate)
-                    string serverAbrUrl = data["streamingData"]?["serverAbrStreamingUrl"]?.ToString();
-                    if (!string.IsNullOrEmpty(serverAbrUrl))
-                    {
-                        string ustreamerConfig = data["streamingData"]?["ustreamerConfig"]?.ToString();
-                        if (string.IsNullOrEmpty(ustreamerConfig))
-                        {
-                            ustreamerConfig = data["playerConfig"]?["mediaCommonConfig"]?["mediaUstreamerRequestConfig"]?["videoPlaybackUstreamerConfig"]?.ToString();
-                        }
-
-                        LastResolveDebug += " SABR:OK";
-                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "");
-                        return sabrDescriptor;
-                    }
+                    */
 
                     LastResolveDebug += " NOURL";
                 }

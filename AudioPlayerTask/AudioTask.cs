@@ -54,6 +54,7 @@ namespace AudioPlayerTask
         private bool _isCurrentTrackLive = false;
         private LiveMediaStreamSource _liveMss = null;
         private SabrMediaStreamSource _sabrMss = null;
+        private CancellationTokenSource _sabrCts = null;
         private string _currentLiveBaseUrl = null;
         private long _currentLiveSeq = -1;
         private long _nextLiveStartSeq = -1;
@@ -140,6 +141,11 @@ namespace AudioPlayerTask
                 {
                     try { _liveMss.Dispose(); } catch { }
                     _liveMss = null;
+                }
+                if (_sabrCts != null)
+                {
+                    try { _sabrCts.Cancel(); _sabrCts.Dispose(); } catch { }
+                    _sabrCts = null;
                 }
                 if (_sabrMss != null)
                 {
@@ -314,6 +320,16 @@ namespace AudioPlayerTask
                     _liveCts = null;
                 }
                 var _ = CleanupLiveTempFilesAsync();
+            }
+            if (_sabrCts != null)
+            {
+                try { _sabrCts.Cancel(); _sabrCts.Dispose(); } catch { }
+                _sabrCts = null;
+            }
+            if (_sabrMss != null)
+            {
+                try { _sabrMss.Dispose(); } catch { }
+                _sabrMss = null;
             }
             _isCurrentTrackLive = false;
             _currentLiveBaseUrl = null;
@@ -748,6 +764,43 @@ namespace AudioPlayerTask
                     if (data.ContainsKey("streamingData"))
                     {
                         var streamingData = data.GetNamedObject("streamingData");
+
+                        // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
+                        bool forceSabr = false;
+                        try
+                        {
+                            var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                            if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
+                        }
+                        catch { }
+
+                        if (forceSabr && streamingData.ContainsKey("serverAbrStreamingUrl"))
+                        {
+                            string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
+                            if (!string.IsNullOrEmpty(sabrUrl))
+                            {
+                                string ustreamerConfig = "";
+                                if (streamingData.ContainsKey("ustreamerConfig"))
+                                {
+                                    ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
+                                }
+                                else if (data.ContainsKey("playerConfig"))
+                                {
+                                    try
+                                    {
+                                        var pcfg = data.GetNamedObject("playerConfig");
+                                        var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
+                                        var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
+                                        ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
+                                    }
+                                    catch { }
+                                }
+
+                                _innerTubeDebug += " [" + clientName + ":SABR_FORCED:OK]";
+                                return "SABR:" + sabrUrl + "|" + ustreamerConfig + "|" + userAgent + "|" + clientId + "|" + clientVersion;
+                            }
+                        }
+
                         // 1. Ưu tiên itag 18 từ formats (không bị bóp băng thông)
                         if (streamingData.ContainsKey("formats"))
                         {
@@ -795,7 +848,36 @@ namespace AudioPlayerTask
                             }
                         }
 
-                        // 3. Fallback cho Live stream: trích xuất direct audio BaseURL từ dashManifestUrl (MP4 AAC itag 140/139) bằng streaming reader siêu nhẹ (~170KB, 0 bytes trên Large Object Heap)
+                        // 3. Fallback cho SABR stream: serverAbrStreamingUrl (Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource)
+                        if (streamingData.ContainsKey("serverAbrStreamingUrl"))
+                        {
+                            string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
+                            if (!string.IsNullOrEmpty(sabrUrl))
+                            {
+                                string ustreamerConfig = "";
+                                if (streamingData.ContainsKey("ustreamerConfig"))
+                                {
+                                    ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
+                                }
+                                else if (data.ContainsKey("playerConfig"))
+                                {
+                                    try
+                                    {
+                                        var pcfg = data.GetNamedObject("playerConfig");
+                                        var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
+                                        var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
+                                        ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
+                                    }
+                                    catch { }
+                                }
+
+                                _innerTubeDebug += " [" + clientName + ":SABR:OK]";
+                                return "SABR:" + sabrUrl + "|" + ustreamerConfig + "|" + userAgent + "|" + clientId + "|" + clientVersion;
+                            }
+                        }
+
+                        // 4. Fallback cho Live stream qua DASH: [TẠM THỜI VÔ HIỆU HÓA để test SABR theo yêu cầu người dùng]
+                        /*
                         if (streamingData.ContainsKey("dashManifestUrl"))
                         {
                             string dashUrl = streamingData.GetNamedString("dashManifestUrl");
@@ -830,34 +912,7 @@ namespace AudioPlayerTask
                                 }
                             }
                         }
-
-                        // 4. Fallback cho SABR stream: serverAbrStreamingUrl
-                        if (streamingData.ContainsKey("serverAbrStreamingUrl"))
-                        {
-                            string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
-                            if (!string.IsNullOrEmpty(sabrUrl))
-                            {
-                                string ustreamerConfig = "";
-                                if (streamingData.ContainsKey("ustreamerConfig"))
-                                {
-                                    ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
-                                }
-                                else if (data.ContainsKey("playerConfig"))
-                                {
-                                    try
-                                    {
-                                        var pcfg = data.GetNamedObject("playerConfig");
-                                        var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
-                                        var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
-                                        ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
-                                    }
-                                    catch { }
-                                }
-
-                                _innerTubeDebug += " [" + clientName + ":SABR:OK]";
-                                return "SABR:" + sabrUrl + "|" + ustreamerConfig + "|" + userAgent + "|" + clientId + "|" + clientVersion;
-                            }
-                        }
+                        */
                     }
                 }
 
@@ -1445,160 +1500,10 @@ namespace AudioPlayerTask
 
         private async void PlayLiveBufferedTrackAsync(string vidId)
         {
-            lock (_playlistLock)
-            {
-                if (_currentTrackIndex < 0 || _currentTrackIndex >= _videoIdList.Count) return;
-                if (_videoIdList[_currentTrackIndex] != vidId) return;
-            }
-            if (_isLiveInitializing) return;
-            _isLiveInitializing = true;
-            StopPlaybackMonitor();
-
-            try
-            {
-                if (_liveMss != null)
-                {
-                    try { _liveMss.Dispose(); } catch { }
-                    _liveMss = null;
-                }
-
-                if (_liveCts != null)
-                {
-                    try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
-                    _liveCts = null;
-                }
-                _liveCts = new CancellationTokenSource();
-                var ct = _liveCts.Token;
-
-                _isCurrentTrackLive = true;
-
-                try
-                {
-                    ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = true;
-                }
-                catch { }
-
-                var ls = ApplicationData.Current.LocalSettings.Values;
-                if (ls.ContainsKey("UserVolume"))
-                {
-                    try
-                    {
-                        double uVol = Convert.ToDouble(ls["UserVolume"]);
-                        if (uVol >= 0.0 && uVol <= 1.0) _mediaPlayer.Volume = uVol;
-                    }
-                    catch { }
-                }
-                else
-                {
-                    bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
-                    _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
-                }
-                UpdateSystemMediaControls();
-
-                while (!ct.IsCancellationRequested && _liveReconnectCount < 3)
-                {
-                    // 1. Get or refresh BaseURL
-                    if (string.IsNullOrEmpty(_currentLiveBaseUrl) || 
-                        !_liveBaseUrlStopwatch.IsRunning || 
-                        _liveBaseUrlStopwatch.Elapsed.TotalSeconds >= 15.0)
-                    {
-                        await RefreshLiveBaseUrlAsync(vidId, ct);
-                    }
-
-                    // 2. Discover live edge sequence number
-                    long headSeq = -1;
-                    if (!string.IsNullOrEmpty(_currentLiveBaseUrl))
-                    {
-                        headSeq = await GetLatestLiveSeqAsync(_currentLiveBaseUrl, ct);
-                    }
-
-                    if (headSeq > 0)
-                    {
-                        _currentLiveSeq = headSeq;
-                        LogLive("[Live HEAD] seq=" + _currentLiveSeq);
-                    }
-
-                    // 3. Start safely in DVR window: 7 chunks = ~35s behind live edge (safe runway matching YouTube standard latency)
-                    long safetyOffset = 7;
-                    long startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
-
-                    // If still no valid sequence or BaseURL is missing, force a fresh BaseURL resolve
-                    if (startSeq <= 0 || string.IsNullOrEmpty(_currentLiveBaseUrl))
-                    {
-                        await RefreshLiveBaseUrlAsync(vidId, ct, true);
-                        if (!string.IsNullOrEmpty(_currentLiveBaseUrl))
-                        {
-                            headSeq = await GetLatestLiveSeqAsync(_currentLiveBaseUrl, ct);
-                            if (headSeq > 0) _currentLiveSeq = headSeq;
-                        }
-                        startSeq = _currentLiveSeq > 0 ? Math.Max(1, _currentLiveSeq - safetyOffset) : -1;
-                    }
-
-                    if (startSeq > 0 && !string.IsNullOrEmpty(_currentLiveBaseUrl))
-                    {
-                        LogLive("[Live MSS Init] startSeq=" + startSeq + " (head=" + _currentLiveSeq + ", offset=" + safetyOffset + ")");
-                        _liveMss = new LiveMediaStreamSource(
-                            vidId,
-                            _currentLiveBaseUrl,
-                            startSeq,
-                            DownloadLiveSegmentWithRetryAsync,
-                            (v, c) => RefreshLiveBaseUrlAsync(v, c, true),
-                            () => _currentLiveSeq,
-                            (c) => GetLatestLiveSeqAsync(_currentLiveBaseUrl, c),
-                            () => _currentLiveBaseUrl != null,
-                            LogLive);
-
-                        bool preloaded = await _liveMss.PreloadInitialChunksAsync(ct);
-                        if (preloaded && !ct.IsCancellationRequested)
-                        {
-                            _currentLoadedVidId = vidId;
-                            _mediaPlayer.AutoPlay = true;
-                            _mediaPlayer.SetMediaSource(_liveMss.StreamSource);
-                            try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
-                            _mediaPlayer.Play();
-                            _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
-                            _liveMss.StartStreaming();
-                            LogLive("[Live MSS Playing] Stream started successfully via MediaStreamSource!");
-                            _liveReconnectCount = 0;
-                            StartPlaybackMonitor();
-                            return;
-                        }
-                        else
-                        {
-                            if (_liveMss != null)
-                            {
-                                try { _liveMss.Dispose(); } catch { }
-                                _liveMss = null;
-                            }
-                        }
-                    }
-
-                    _liveReconnectCount++;
-                    LogLive("[Live MSS Lỗi] Khởi tạo thất bại, thử lại lần " + _liveReconnectCount + "/3");
-                    if (_liveReconnectCount < 3 && !ct.IsCancellationRequested)
-                    {
-                        _currentLiveBaseUrl = null;
-                        try { await Task.Delay(1500, ct); } catch { break; }
-                    }
-                }
-
-                if (!ct.IsCancellationRequested)
-                {
-                    LogLive("[Live Fallback] MSS không khả dụng sau 3 lần thử, kích hoạt file-swap buffer...");
-                    _liveMss = null;
-                    _liveReconnectCount = 0;
-                    _liveBufferCycle = 0;
-                    _nextLiveStartSeq = Math.Max(1, _currentLiveSeq - 7);
-                    PreBufferNextLiveChunkAsync(LIVE_DEEP_SEGMENTS);
-                    SwapToNextLiveBuffer();
-                    StartPlaybackMonitor();
-                    return;
-                }
-            }
-            finally
-            {
-                _isLiveInitializing = false;
-            }
+            // [TEMP DISABLED FOR SABR TESTING] LiveMediaStreamSource tạm thời vô hiệu hóa để test SABR
+            LogLive("[Live MSS] LiveMediaStreamSource tạm thời vô hiệu hóa để test SABR.");
+            ReportErrorToUI("LiveMediaStreamSource tạm tắt để test SABR.");
+            await Task.Yield();
         }
 
         private async Task CleanupLiveTempFilesAsync()
@@ -1673,18 +1578,21 @@ namespace AudioPlayerTask
                 }
                 if (_currentLoadedVidId != vidId) _liveReconnectCount = 0;
 
+                if (trackUrl.StartsWith("SABR:", StringComparison.OrdinalIgnoreCase))
+                {
+                    PlaySabrTrack(trackUrl, vidId);
+                    return;
+                }
+
+                // [TEMP DISABLED FOR SABR TESTING] LiveMediaStreamSource tạm thời vô hiệu hóa
+                /*
                 if (_isCurrentTrackLive && !string.IsNullOrEmpty(_currentLiveBaseUrl))
                 {
                     LogLive("[Live PlayUrl] vid=" + vidId + " seq=" + _currentLiveSeq + " url=" + trackUrl.Substring(0, Math.Min(40, trackUrl.Length)) + "...");
                     PlayLiveBufferedTrackAsync(vidId);
                     return;
                 }
-
-                if (trackUrl.StartsWith("SABR:", StringComparison.OrdinalIgnoreCase))
-                {
-                    PlaySabrTrack(trackUrl, vidId);
-                    return;
-                }
+                */
 
                 if (_sabrMss != null)
                 {
@@ -1736,8 +1644,9 @@ namespace AudioPlayerTask
             }
         }
 
-        private void PlaySabrTrack(string sabrDescriptor, string vidId)
+        private async void PlaySabrTrack(string sabrDescriptor, string vidId)
         {
+            int seq = _playbackSequence;
             try
             {
                 StopPlaybackMonitor();
@@ -1752,11 +1661,19 @@ namespace AudioPlayerTask
                     try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
                     _liveCts = null;
                 }
+                if (_sabrCts != null)
+                {
+                    try { _sabrCts.Cancel(); _sabrCts.Dispose(); } catch { }
+                    _sabrCts = null;
+                }
                 if (_sabrMss != null)
                 {
                     try { _sabrMss.Dispose(); } catch { }
                     _sabrMss = null;
                 }
+
+                _sabrCts = new CancellationTokenSource();
+                var ct = _sabrCts.Token;
 
                 string payload = sabrDescriptor.Substring(5);
                 string[] tokens = payload.Split('|');
@@ -1780,6 +1697,23 @@ namespace AudioPlayerTask
                     clientName,
                     clientVersion,
                     LogLive);
+
+                // Preload initial chunk before setting media source to ensure fast start & error detection
+                bool preloaded = await _sabrMss.PreloadInitialChunkAsync(ct);
+                if (ct.IsCancellationRequested || seq != _playbackSequence)
+                {
+                    if (_sabrMss != null) { try { _sabrMss.Dispose(); } catch { } _sabrMss = null; }
+                    return;
+                }
+
+                if (!preloaded)
+                {
+                    string err = !string.IsNullOrEmpty(_sabrMss.LastError) ? _sabrMss.LastError : "Unknown error";
+                    LogLive("[SABR Init Error] " + err);
+                    ReportErrorToUI("SABR Error: " + err);
+                    if (_sabrMss != null) { try { _sabrMss.Dispose(); } catch { } _sabrMss = null; }
+                    return;
+                }
 
                 // Volume preservation / Normalize Volume
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -2158,9 +2092,9 @@ namespace AudioPlayerTask
 
                 if (_isCurrentTrackLive)
                 {
-                    if (_liveMss != null)
+                    if (_liveMss != null || _sabrMss != null)
                     {
-                        // LiveMediaStreamSource streams continuously in RAM without any buffer swaps!
+                        // LiveMediaStreamSource / SabrMediaStreamSource streams continuously in RAM without any buffer swaps!
                         return;
                     }
 
@@ -2508,6 +2442,16 @@ namespace AudioPlayerTask
                 LogLive("[Live MSS MediaEnded] Livestream completed");
                 try { _liveMss.Dispose(); } catch { }
                 _liveMss = null;
+                StopPlaybackMonitor();
+                MoveNext();
+                return;
+            }
+
+            if (_sabrMss != null)
+            {
+                LogLive("[SABR MediaEnded] Stream completed");
+                try { _sabrMss.Dispose(); } catch { }
+                _sabrMss = null;
                 StopPlaybackMonitor();
                 MoveNext();
                 return;

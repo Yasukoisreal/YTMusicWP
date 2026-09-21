@@ -2402,6 +2402,20 @@
                                 </StackPanel>
                                 <ToggleSwitch x:Name="NormalizeVolumeToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
+                            <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                            <!-- Test SABR Streaming -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Force SABR Engine (Test)" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Force SABR / UMP protocol for all tracks" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="ForceSabrToggle" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
 

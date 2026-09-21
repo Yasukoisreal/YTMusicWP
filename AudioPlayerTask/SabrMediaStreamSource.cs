@@ -51,6 +51,7 @@ namespace AudioPlayerTask
 
         public MediaStreamSource StreamSource { get { return _mss; } }
         public bool IsDisposed { get { return _isDisposed; } }
+        public string LastError { get; private set; }
 
         public double BufferedSeconds
         {
@@ -168,10 +169,47 @@ namespace AudioPlayerTask
             Dispose();
         }
 
+        public async Task<bool> PreloadInitialChunkAsync(CancellationToken ct)
+        {
+            try
+            {
+                Log("Preloading initial SABR chunk rn=0...");
+                int beforeCount = 0;
+                lock (_queueLock) { beforeCount = _sampleQueue.Count; }
+
+                bool ok = await FetchChunkAsync(0, ct).ConfigureAwait(false);
+                if (ok)
+                {
+                    int afterCount = 0;
+                    lock (_queueLock) { afterCount = _sampleQueue.Count; }
+                    if (afterCount > beforeCount)
+                    {
+                        _requestNumber = 1;
+                        Log("Preload done: parsed " + (afterCount - beforeCount) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                        return true;
+                    }
+                    else
+                    {
+                        LastError = "No audio samples received in initial chunk";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LastError = ex.Message;
+                Log("Preload exception: " + ex.Message);
+            }
+            return false;
+        }
+
         public void StartStreaming(float playbackRate = 1.0f)
         {
             _playbackRate = playbackRate;
-            RestartStreamingAt(0);
+            if (_streamingTask == null || _streamingTask.IsCompleted)
+            {
+                var token = _cts.Token;
+                _streamingTask = Task.Run(() => StreamingLoopAsync(token), token);
+            }
         }
 
         private void RestartStreamingAt(long positionMs)
@@ -188,9 +226,65 @@ namespace AudioPlayerTask
             _streamingTask = Task.Run(() => StreamingLoopAsync(token), token);
         }
 
+        private async Task<bool> FetchChunkAsync(int rn, CancellationToken ct)
+        {
+            if (string.IsNullOrEmpty(_serverAbrUrl))
+            {
+                LastError = "Server ABR URL is null or empty";
+                Log(LastError);
+                return false;
+            }
+
+            // Build target URL with request number sequence (rn)
+            string requestUrl = _serverAbrUrl;
+            string sep = requestUrl.Contains("?") ? "&" : "?";
+            requestUrl += sep + "rn=" + rn;
+
+            // Build Protobuf VideoPlaybackAbrRequest
+            byte[] requestBody = MiniProtoWriter.BuildAudioAbrRequest(
+                _ustreamerConfig,
+                _currentPositionMs,
+                _playbackRate,
+                140); // 140 = AAC 128kbps itag
+
+            using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri(requestUrl)))
+            {
+                req.Headers.TryAppendWithoutValidation("User-Agent", _userAgent);
+                req.Headers.TryAppendWithoutValidation("Accept", "application/vnd.yt-ump");
+
+                if (!string.IsNullOrEmpty(_clientName))
+                    req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Name", _clientName);
+                if (!string.IsNullOrEmpty(_clientVersion))
+                    req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Version", _clientVersion);
+
+                // Attach protobuf body
+                req.Content = new HttpBufferContent(requestBody.AsBuffer());
+                req.Content.Headers.TryAppendWithoutValidation("Content-Type", "application/x-protobuf");
+
+                using (var resp = await _httpClient.SendRequestAsync(req, HttpCompletionOption.ResponseHeadersRead).AsTask(ct).ConfigureAwait(false))
+                {
+                    if (!resp.IsSuccessStatusCode)
+                    {
+                        LastError = "HTTP " + (int)resp.StatusCode + " " + resp.ReasonPhrase;
+                        Log("HTTP " + (int)resp.StatusCode + " on rn=" + rn);
+                        return false;
+                    }
+
+                    // Stream-read UMP parts directly from network response stream
+                    using (var winrtStream = await resp.Content.ReadAsInputStreamAsync().AsTask(ct).ConfigureAwait(false))
+                    using (var netStream = winrtStream.AsStreamForRead())
+                    {
+                        await UmpParser.ProcessStreamAsync(netStream, OnUmpPartReceived, ct).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            return true;
+        }
+
         private async Task StreamingLoopAsync(CancellationToken ct)
         {
-            Log("Starting Sabr streaming loop at pos=" + _currentPositionMs + "ms");
+            Log("Starting Sabr streaming loop at rn=" + _requestNumber + ", pos=" + _currentPositionMs + "ms");
 
             while (!ct.IsCancellationRequested && !_isDisposed)
             {
@@ -205,54 +299,11 @@ namespace AudioPlayerTask
                         continue;
                     }
 
-                    if (string.IsNullOrEmpty(_serverAbrUrl))
+                    bool ok = await FetchChunkAsync(_requestNumber, ct).ConfigureAwait(false);
+                    if (!ok)
                     {
-                        Log("Server ABR URL is null or empty");
-                        break;
-                    }
-
-                    // Build target URL with request number sequence (rn)
-                    string requestUrl = _serverAbrUrl;
-                    string sep = requestUrl.Contains("?") ? "&" : "?";
-                    requestUrl += sep + "rn=" + _requestNumber;
-
-                    // Build Protobuf VideoPlaybackAbrRequest
-                    byte[] requestBody = MiniProtoWriter.BuildAudioAbrRequest(
-                        _ustreamerConfig,
-                        _currentPositionMs,
-                        _playbackRate,
-                        140); // 140 = AAC 128kbps itag
-
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri(requestUrl)))
-                    {
-                        req.Headers.TryAppendWithoutValidation("User-Agent", _userAgent);
-                        req.Headers.TryAppendWithoutValidation("Accept", "application/vnd.yt-ump");
-
-                        if (!string.IsNullOrEmpty(_clientName))
-                            req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Name", _clientName);
-                        if (!string.IsNullOrEmpty(_clientVersion))
-                            req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Version", _clientVersion);
-
-                        // Attach protobuf body
-                        req.Content = new HttpBufferContent(requestBody.AsBuffer());
-                        req.Content.Headers.TryAppendWithoutValidation("Content-Type", "application/x-protobuf");
-
-                        using (var resp = await _httpClient.SendRequestAsync(req, HttpCompletionOption.ResponseHeadersRead).AsTask(ct).ConfigureAwait(false))
-                        {
-                            if (!resp.IsSuccessStatusCode)
-                            {
-                                Log("HTTP " + (int)resp.StatusCode + " on rn=" + _requestNumber);
-                                await Task.Delay(2000, ct).ConfigureAwait(false);
-                                continue;
-                            }
-
-                            // Stream-read UMP parts directly from network response stream
-                            using (var winrtStream = await resp.Content.ReadAsInputStreamAsync().AsTask(ct).ConfigureAwait(false))
-                            using (var netStream = winrtStream.AsStreamForRead())
-                            {
-                                await UmpParser.ProcessStreamAsync(netStream, OnUmpPartReceived, ct).ConfigureAwait(false);
-                            }
-                        }
+                        await Task.Delay(2000, ct).ConfigureAwait(false);
+                        continue;
                     }
 
                     _requestNumber++;
@@ -263,6 +314,7 @@ namespace AudioPlayerTask
                 }
                 catch (Exception ex)
                 {
+                    LastError = ex.Message;
                     Log("StreamingLoop exception: " + ex.Message);
                     try { await Task.Delay(1500, ct).ConfigureAwait(false); } catch { }
                 }
@@ -295,7 +347,8 @@ namespace AudioPlayerTask
                     break;
 
                 case UmpPartId.SABR_ERROR:
-                    Log("SABR Server Error part received");
+                    LastError = "SABR Server Error part received";
+                    Log(LastError);
                     break;
             }
         }
