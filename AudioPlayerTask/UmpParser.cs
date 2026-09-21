@@ -120,27 +120,53 @@ namespace AudioPlayerTask
     internal static class UmpParser
     {
         /// <summary>
-        /// Reads a variable-length integer (Varint) from a ChunkedStreamReader asynchronously.
+        /// Reads a UMP prefix-coded variable-length integer (Varint) from a ChunkedStreamReader asynchronously.
+        /// UMP specification (googlevideo / YouTube):
+        ///   b0 < 128 (1 byte):  val = b0
+        ///   b0 < 192 (2 bytes): val = (b0 & 0x3F) + 64 * b1
+        ///   b0 < 224 (3 bytes): val = (b0 & 0x1F) + 32 * (b1 + 256 * b2)
+        ///   b0 < 240 (4 bytes): val = (b0 & 0x0F) + 16 * (b1 + 256 * (b2 + 256 * b3))
+        ///   else     (5 bytes): 32-bit unsigned little-endian integer
         /// Returns -1 on EOF or malformed data.
         /// </summary>
         public static async Task<long> ReadVarintAsync(ChunkedStreamReader reader, CancellationToken ct)
         {
-            long value = 0;
-            int shift = 0;
+            int b0 = await reader.ReadByteAsync(ct).ConfigureAwait(false);
+            if (b0 < 0) return -1;
 
-            while (true)
+            if (b0 < 128)
             {
-                int b = await reader.ReadByteAsync(ct).ConfigureAwait(false);
-                if (b < 0) return -1;
-
-                value |= (long)(b & 0x7F) << shift;
-                if ((b & 0x80) == 0) break;
-
-                shift += 7;
-                if (shift > 64) return -1;
+                return b0;
+            }
+            if (b0 < 192)
+            {
+                int b1 = await reader.ReadByteAsync(ct).ConfigureAwait(false);
+                if (b1 < 0) return -1;
+                return (b0 & 0x3F) + 64 * b1;
+            }
+            if (b0 < 224)
+            {
+                int b1 = await reader.ReadByteAsync(ct).ConfigureAwait(false);
+                if (b1 < 0) return -1;
+                int b2 = await reader.ReadByteAsync(ct).ConfigureAwait(false);
+                if (b2 < 0) return -1;
+                return (b0 & 0x1F) + 32 * (b1 + 256 * b2);
+            }
+            if (b0 < 240)
+            {
+                int b1 = await reader.ReadByteAsync(ct).ConfigureAwait(false);
+                if (b1 < 0) return -1;
+                int b2 = await reader.ReadByteAsync(ct).ConfigureAwait(false);
+                if (b2 < 0) return -1;
+                int b3 = await reader.ReadByteAsync(ct).ConfigureAwait(false);
+                if (b3 < 0) return -1;
+                return (b0 & 0x0F) + 16 * (b1 + 256 * (b2 + 256 * b3));
             }
 
-            return value;
+            // 5-byte format: 1 prefix byte + 4 bytes uint32 little endian
+            byte[] buf = await reader.ReadExactBytesAsync(4, ct).ConfigureAwait(false);
+            if (buf == null || buf.Length < 4) return -1;
+            return (long)BitConverter.ToUInt32(buf, 0);
         }
 
         /// <summary>

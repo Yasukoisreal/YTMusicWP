@@ -204,5 +204,28 @@ namespace AudioPlayerTask
                 return requestWriter.ToByteArray();
             }
         }
+
+        /// <summary>
+        /// Safely decodes a Base64 or Base64Url-encoded string into raw bytes.
+        /// Handles URL-safe replacement ('-' to '+', '_' to '/') and missing '=' padding.
+        /// </summary>
+        public static byte[] Base64UrlDecode(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return new byte[0];
+            try
+            {
+                string standard = input.Replace('-', '+').Replace('_', '/');
+                int rem = standard.Length % 4;
+                if (rem > 0)
+                {
+                    standard += new string('=', 4 - rem);
+                }
+                return Convert.FromBase64String(standard);
+            }
+            catch
+            {
+                return Encoding.UTF8.GetBytes(input);
+            }
+        }
     }
 }

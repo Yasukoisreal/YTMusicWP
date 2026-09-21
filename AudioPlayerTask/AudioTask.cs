@@ -1685,12 +1685,7 @@ namespace AudioPlayerTask
                 string clientVersion = tokens.Length > 4 ? tokens[4] : null;
                 string poToken = tokens.Length > 5 ? tokens[5] : null;
 
-                byte[] ustreamerBytes = null;
-                if (!string.IsNullOrEmpty(ustreamerConfigStr))
-                {
-                    try { ustreamerBytes = Convert.FromBase64String(ustreamerConfigStr); }
-                    catch { ustreamerBytes = System.Text.Encoding.UTF8.GetBytes(ustreamerConfigStr); }
-                }
+                byte[] ustreamerBytes = MiniProtoWriter.Base64UrlDecode(ustreamerConfigStr);
 
                 _sabrMss = new SabrMediaStreamSource(
                     serverAbrUrl,

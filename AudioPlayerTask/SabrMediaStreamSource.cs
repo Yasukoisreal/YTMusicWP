@@ -31,6 +31,7 @@ namespace AudioPlayerTask
             public MediaStreamSourceSampleRequestDeferral Deferral;
         }
         private readonly List<PendingRequest> _pendingRequests = new List<PendingRequest>();
+        private readonly Dictionary<int, MemoryStream> _pendingSegments = new Dictionary<int, MemoryStream>();
 
         private string _serverAbrUrl;
         private byte[] _ustreamerConfig;
@@ -88,8 +89,7 @@ namespace AudioPlayerTask
 
             if (!string.IsNullOrEmpty(_poToken))
             {
-                try { _poTokenBytes = Convert.FromBase64String(_poToken); }
-                catch { _poTokenBytes = System.Text.Encoding.UTF8.GetBytes(_poToken); }
+                _poTokenBytes = MiniProtoWriter.Base64UrlDecode(_poToken);
             }
 
             int clientNameInt = 3;
@@ -220,9 +220,21 @@ namespace AudioPlayerTask
                         Log("Preload done: parsed " + (afterCount - beforeCount) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
                         return true;
                     }
-                    else
+                    else if (string.IsNullOrEmpty(LastError))
                     {
-                        LastError = "No audio samples received in initial chunk";
+                        Log("rn=0 delivered init segment. Preloading rn=1 for audio samples...");
+                        bool ok1 = await FetchChunkAsync(1, ct).ConfigureAwait(false);
+                        if (ok1)
+                        {
+                            lock (_queueLock) { afterCount = _sampleQueue.Count; }
+                            if (afterCount > beforeCount)
+                            {
+                                _requestNumber = 2;
+                                Log("Preload done at rn=1: parsed " + (afterCount - beforeCount) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                                return true;
+                            }
+                        }
+                        LastError = "No audio samples received in initial chunks";
                     }
                 }
             }
@@ -311,6 +323,9 @@ namespace AudioPlayerTask
                     {
                         await UmpParser.ProcessStreamAsync(netStream, OnUmpPartReceived, ct).ConfigureAwait(false);
                     }
+
+                    // Flush any completed media segments that were missing a trailing MEDIA_END
+                    FlushPendingSegments();
                 }
             }
 
@@ -368,7 +383,48 @@ namespace AudioPlayerTask
                     // In UMP, byte 0 is headerId, byte 1..N is the raw fMP4 chunk
                     if (part.Data != null && part.Data.Length > 1)
                     {
-                        ParseAndEnqueueFmp4(part.Data, 1, part.Data.Length - 1);
+                        int headerId = part.Data[0];
+                        lock (_queueLock)
+                        {
+                            MemoryStream ms;
+                            if (!_pendingSegments.TryGetValue(headerId, out ms))
+                            {
+                                ms = new MemoryStream();
+                                _pendingSegments[headerId] = ms;
+                            }
+                            ms.Write(part.Data, 1, part.Data.Length - 1);
+                        }
+                    }
+                    break;
+
+                case UmpPartId.MEDIA_END:
+                    if (part.Data != null && part.Data.Length > 0)
+                    {
+                        int headerId = part.Data[0];
+                        byte[] segBytes = null;
+                        lock (_queueLock)
+                        {
+                            MemoryStream ms;
+                            if (_pendingSegments.TryGetValue(headerId, out ms))
+                            {
+                                _pendingSegments.Remove(headerId);
+                                segBytes = ms.ToArray();
+                                ms.Dispose();
+                            }
+                        }
+
+                        if (segBytes != null && segBytes.Length > 0)
+                        {
+                            if (headerId == 0)
+                            {
+                                Log("Received complete init segment (" + segBytes.Length + " bytes)");
+                            }
+                            else
+                            {
+                                int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                                Log("Segment " + headerId + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
+                            }
+                        }
                     }
                     break;
 
@@ -402,6 +458,30 @@ namespace AudioPlayerTask
                 default:
                     Log("Received UMP part " + part.Type + " (" + part.Size + " bytes)");
                     break;
+            }
+        }
+
+        private void FlushPendingSegments()
+        {
+            lock (_queueLock)
+            {
+                var keys = new List<int>(_pendingSegments.Keys);
+                for (int i = 0; i < keys.Count; i++)
+                {
+                    int hid = keys[i];
+                    if (hid > 0)
+                    {
+                        MemoryStream ms = _pendingSegments[hid];
+                        _pendingSegments.Remove(hid);
+                        byte[] segBytes = ms.ToArray();
+                        ms.Dispose();
+                        if (segBytes.Length > 0)
+                        {
+                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                            Log("Flushed segment " + hid + ": " + samples + " samples (" + segBytes.Length + " bytes)");
+                        }
+                    }
+                }
             }
         }
 
@@ -539,6 +619,12 @@ namespace AudioPlayerTask
                     try { p.Deferral.Complete(); } catch { }
                 }
                 _sampleQueue.Clear();
+
+                foreach (var kvp in _pendingSegments)
+                {
+                    try { kvp.Value.Dispose(); } catch { }
+                }
+                _pendingSegments.Clear();
             }
 
             if (_httpClient != null)
