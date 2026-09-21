@@ -116,6 +116,7 @@ namespace AudioPlayerTask
                 }
             }
             _clientNameInt = clientNameInt;
+            Log("Initialized for client=" + (_clientName ?? "?") + " (id=" + _clientNameInt + "), poToken=" + (!string.IsNullOrEmpty(_poToken) ? (_poToken.Length + " chars") : "NONE"));
 
             // Shared HTTP filter that ignores legacy SSL handshake anomalies
             var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();

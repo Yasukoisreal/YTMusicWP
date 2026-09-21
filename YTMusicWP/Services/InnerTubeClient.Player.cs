@@ -195,6 +195,17 @@ namespace YTMusicWP
                 RequireCookie = false,
                 RequestClientNameHeader = "28"
             },
+            // 4.5. WEB_REMIX với poToken từ Cloudflare Worker (hỗ trợ SABR không cần cookie)
+            new PlayerClientConfig {
+                ClientName = "WEB_REMIX",
+                ClientVersion = "1.20260304.03.00",
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+                ExtraClientParams = "",
+                ApiKey = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30",
+                RequireCookie = false,
+                RequestClientNameHeader = "67",
+                SupportsPoToken = true
+            },
             // 5. VISIONOS với poToken - Fallback cuối cùng vượt qua BotGuard
             new PlayerClientConfig {
                 ClientName = "VISIONOS",
@@ -378,7 +389,8 @@ namespace YTMusicWP
                     }
 
                     // 3. Fallback cho SABR streams (Google Server-side Adaptive Bitrate) - Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource
-                    if (!string.IsNullOrEmpty(serverAbrUrl))
+                    // Bỏ qua client ANDROID vì YouTube yêu cầu DroidGuard attestation sau 30s (SPS code 3)
+                    if (!string.IsNullOrEmpty(serverAbrUrl) && (client.ClientName != "ANDROID" || forceSabr))
                     {
                         string ustreamerConfig = data["streamingData"]?["ustreamerConfig"]?.ToString();
                         if (string.IsNullOrEmpty(ustreamerConfig))

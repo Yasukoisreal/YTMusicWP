@@ -652,6 +652,11 @@ namespace AudioPlayerTask
                 "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
 
+            // 3.5. WEB_REMIX với poToken từ Cloudflare Worker (hỗ trợ SABR không cần cookie)
+            url = await TryInnerTubeClient(videoId, "WEB_REMIX", "1.20260304.03.00", "67", "Windows", "PC", "Windows", "10",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36", true, null, null, "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30");
+            if (!string.IsNullOrEmpty(url)) return url;
+
             // 4. Fallback cuối cùng: Thử VISIONOS với poToken từ Render server (vượt qua BotGuard)
             url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
@@ -860,7 +865,8 @@ namespace AudioPlayerTask
                         }
 
                         // 3. Fallback cho SABR stream: serverAbrStreamingUrl (Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource)
-                        if (streamingData.ContainsKey("serverAbrStreamingUrl"))
+                        // Bỏ qua client ANDROID vì YouTube yêu cầu DroidGuard attestation sau 30s (SPS code 3)
+                        if (streamingData.ContainsKey("serverAbrStreamingUrl") && (clientName != "ANDROID" || forceSabr))
                         {
                             string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
                             if (!string.IsNullOrEmpty(sabrUrl))
