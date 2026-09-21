@@ -50,6 +50,8 @@ namespace AudioPlayerTask
         private int _chunkParsedSamples = 0;
         private float _playbackRate = 1.0f;
         private bool _isDisposed = false;
+        private int _lastSpsCode = 0;
+        private int _consecutiveEmptyChunks = 0;
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private Task _streamingTask = null;
@@ -91,7 +93,7 @@ namespace AudioPlayerTask
 
             if (!string.IsNullOrEmpty(_poToken))
             {
-                _poTokenBytes = System.Text.Encoding.UTF8.GetBytes(_poToken);
+                _poTokenBytes = MiniProtoWriter.Base64UrlDecode(_poToken);
             }
 
             int clientNameInt = 3;
@@ -260,6 +262,8 @@ namespace AudioPlayerTask
             _cts = new CancellationTokenSource();
             _currentPositionMs = positionMs;
             _requestNumber = 0;
+            _lastSpsCode = 0;
+            _consecutiveEmptyChunks = 0;
 
             var token = _cts.Token;
             _streamingTask = Task.Run(() => StreamingLoopAsync(token), token);
@@ -276,10 +280,14 @@ namespace AudioPlayerTask
 
             lock (_queueLock) { _chunkParsedSamples = 0; }
 
-            // Build target URL with request number sequence (rn)
+            // Build target URL with request number sequence (rn), ump=1, srfvp=1, and pot=<token>
             string requestUrl = _serverAbrUrl;
             string sep = requestUrl.Contains("?") ? "&" : "?";
-            requestUrl += sep + "rn=" + rn;
+            requestUrl += sep + "rn=" + rn + "&ump=1&srfvp=1";
+            if (!string.IsNullOrEmpty(_poToken))
+            {
+                requestUrl += "&pot=" + Uri.EscapeDataString(_poToken);
+            }
 
             // Build Protobuf VideoPlaybackAbrRequest
             byte[] requestBody = MiniProtoWriter.BuildAudioAbrRequest(
@@ -360,12 +368,29 @@ namespace AudioPlayerTask
 
                     if (newSamples == 0)
                     {
+                        if (_lastSpsCode == 3)
+                        {
+                            LastError = "YouTube Stream Protection: Attestation required (SPS code 3)";
+                            Log(LastError + ", stopping SABR streaming loop.");
+                            break;
+                        }
+
+                        _consecutiveEmptyChunks++;
+                        if (_consecutiveEmptyChunks >= 4)
+                        {
+                            LastError = "No audio received after " + _consecutiveEmptyChunks + " attempts";
+                            Log(LastError + ", stopping SABR streaming loop.");
+                            break;
+                        }
+
                         // Server returned 0 audio samples (e.g. reached live head or waiting for next chunk).
                         // DO NOT advance _requestNumber! Wait 3s for live encoder to generate the next chunk.
                         Log("No audio in rn=" + _requestNumber + ", waiting 3s for next live segment...");
                         await Task.Delay(3000, ct).ConfigureAwait(false);
                         continue;
                     }
+
+                    _consecutiveEmptyChunks = 0;
 
                     // Audio samples received successfully, advance request sequence
                     _requestNumber++;
@@ -478,6 +503,7 @@ namespace AudioPlayerTask
 
                 case UmpPartId.STREAM_PROTECTION_STATUS:
                     int spsCode = (part.Data != null && part.Data.Length > 1) ? (int)part.Data[1] : 0;
+                    _lastSpsCode = spsCode;
                     Log("Received STREAM_PROTECTION_STATUS (code " + spsCode + ", " + part.Size + " bytes)");
                     break;
 

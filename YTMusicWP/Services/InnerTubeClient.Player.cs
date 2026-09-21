@@ -320,8 +320,19 @@ namespace YTMusicWP
                             ustreamerConfig = data["playerConfig"]?["mediaCommonConfig"]?["mediaUstreamerRequestConfig"]?["videoPlaybackUstreamerConfig"]?.ToString();
                         }
 
+                        string effectivePo = currentPoToken;
+                        if (string.IsNullOrEmpty(effectivePo))
+                        {
+                            try
+                            {
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
+                            }
+                            catch { }
+                        }
+
                         LastResolveDebug += " SABR_FORCED:OK";
-                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (currentPoToken ?? "");
+                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (effectivePo ?? "");
                         return sabrDescriptor;
                     }
 
@@ -375,8 +386,19 @@ namespace YTMusicWP
                             ustreamerConfig = data["playerConfig"]?["mediaCommonConfig"]?["mediaUstreamerRequestConfig"]?["videoPlaybackUstreamerConfig"]?.ToString();
                         }
 
+                        string effectivePo = currentPoToken;
+                        if (string.IsNullOrEmpty(effectivePo))
+                        {
+                            try
+                            {
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
+                            }
+                            catch { }
+                        }
+
                         LastResolveDebug += " SABR:OK";
-                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (currentPoToken ?? "");
+                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (effectivePo ?? "");
                         return sabrDescriptor;
                     }
 
