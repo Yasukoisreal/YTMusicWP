@@ -47,6 +47,7 @@ namespace AudioPlayerTask
         private long _sampleIndex = 0;
         private long _currentPositionMs = 0;
         private int _requestNumber = 0;
+        private int _chunkParsedSamples = 0;
         private float _playbackRate = 1.0f;
         private bool _isDisposed = false;
 
@@ -90,7 +91,7 @@ namespace AudioPlayerTask
 
             if (!string.IsNullOrEmpty(_poToken))
             {
-                _poTokenBytes = MiniProtoWriter.Base64UrlDecode(_poToken);
+                _poTokenBytes = System.Text.Encoding.UTF8.GetBytes(_poToken);
             }
 
             int clientNameInt = 3;
@@ -212,33 +213,24 @@ namespace AudioPlayerTask
                 int beforeCount = 0;
                 lock (_queueLock) { beforeCount = _sampleQueue.Count; }
 
-                bool ok = await FetchChunkAsync(0, ct).ConfigureAwait(false);
-                if (ok)
+                int samples0 = await FetchChunkAsync(0, ct).ConfigureAwait(false);
+                if (samples0 > 0)
                 {
-                    int afterCount = 0;
-                    lock (_queueLock) { afterCount = _sampleQueue.Count; }
-                    if (afterCount > beforeCount)
+                    _requestNumber = 1;
+                    Log("Preload done: parsed " + samples0 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                    return true;
+                }
+                else if (samples0 == 0 && string.IsNullOrEmpty(LastError))
+                {
+                    Log("rn=0 delivered init segment. Preloading rn=1 for audio samples...");
+                    int samples1 = await FetchChunkAsync(1, ct).ConfigureAwait(false);
+                    if (samples1 > 0)
                     {
-                        _requestNumber = 1;
-                        Log("Preload done: parsed " + (afterCount - beforeCount) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                        _requestNumber = 2;
+                        Log("Preload done at rn=1: parsed " + samples1 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
                         return true;
                     }
-                    else if (string.IsNullOrEmpty(LastError))
-                    {
-                        Log("rn=0 delivered init segment. Preloading rn=1 for audio samples...");
-                        bool ok1 = await FetchChunkAsync(1, ct).ConfigureAwait(false);
-                        if (ok1)
-                        {
-                            lock (_queueLock) { afterCount = _sampleQueue.Count; }
-                            if (afterCount > beforeCount)
-                            {
-                                _requestNumber = 2;
-                                Log("Preload done at rn=1: parsed " + (afterCount - beforeCount) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
-                                return true;
-                            }
-                        }
-                        LastError = "No audio samples received in initial chunks";
-                    }
+                    LastError = "No audio samples received in initial chunks";
                 }
             }
             catch (Exception ex)
@@ -273,14 +265,16 @@ namespace AudioPlayerTask
             _streamingTask = Task.Run(() => StreamingLoopAsync(token), token);
         }
 
-        private async Task<bool> FetchChunkAsync(int rn, CancellationToken ct)
+        private async Task<int> FetchChunkAsync(int rn, CancellationToken ct)
         {
             if (string.IsNullOrEmpty(_serverAbrUrl))
             {
                 LastError = "Server ABR URL is null or empty";
                 Log(LastError);
-                return false;
+                return -1;
             }
+
+            lock (_queueLock) { _chunkParsedSamples = 0; }
 
             // Build target URL with request number sequence (rn)
             string requestUrl = _serverAbrUrl;
@@ -318,7 +312,7 @@ namespace AudioPlayerTask
                     {
                         LastError = "HTTP " + (int)resp.StatusCode + " " + resp.ReasonPhrase;
                         Log("HTTP " + (int)resp.StatusCode + " on rn=" + rn);
-                        return false;
+                        return -1;
                     }
 
                     // Stream-read UMP parts directly from network response stream
@@ -333,7 +327,9 @@ namespace AudioPlayerTask
                 }
             }
 
-            return true;
+            int parsed = 0;
+            lock (_queueLock) { parsed = _chunkParsedSamples; }
+            return parsed;
         }
 
         private async Task StreamingLoopAsync(CancellationToken ct)
@@ -344,22 +340,34 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    // Flow control: keep ~15s buffer in RAM (~600 samples)
+                    // Flow control: keep ~10s buffer in RAM (~400 samples)
+                    // Caps RAM footprint (critical for 512MB WP8.1) and prevents overrunning live broadcast head
                     int count = 0;
                     lock (_queueLock) { count = _sampleQueue.Count; }
-                    if (count >= 600)
+                    if (count >= 400)
                     {
                         await Task.Delay(1500, ct).ConfigureAwait(false);
                         continue;
                     }
 
-                    bool ok = await FetchChunkAsync(_requestNumber, ct).ConfigureAwait(false);
-                    if (!ok)
+                    int newSamples = await FetchChunkAsync(_requestNumber, ct).ConfigureAwait(false);
+                    if (newSamples < 0)
                     {
+                        // HTTP/network error: wait 2s and retry the same rn
                         await Task.Delay(2000, ct).ConfigureAwait(false);
                         continue;
                     }
 
+                    if (newSamples == 0)
+                    {
+                        // Server returned 0 audio samples (e.g. reached live head or waiting for next chunk).
+                        // DO NOT advance _requestNumber! Wait 3s for live encoder to generate the next chunk.
+                        Log("No audio in rn=" + _requestNumber + ", waiting 3s for next live segment...");
+                        await Task.Delay(3000, ct).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    // Audio samples received successfully, advance request sequence
                     _requestNumber++;
                 }
                 catch (OperationCanceledException)
@@ -466,6 +474,11 @@ namespace AudioPlayerTask
                     {
                         Log("Received NEXT_REQUEST_POLICY (" + part.Size + " bytes)");
                     }
+                    break;
+
+                case UmpPartId.STREAM_PROTECTION_STATUS:
+                    int spsCode = (part.Data != null && part.Data.Length > 1) ? (int)part.Data[1] : 0;
+                    Log("Received STREAM_PROTECTION_STATUS (code " + spsCode + ", " + part.Size + " bytes)");
                     break;
 
                 default:
@@ -575,6 +588,7 @@ namespace AudioPlayerTask
 
                     _sampleQueue.Enqueue(sample);
                     parsedCount++;
+                    _chunkParsedSamples++;
                 }
 
                 // Fulfill waiting deferrals immediately

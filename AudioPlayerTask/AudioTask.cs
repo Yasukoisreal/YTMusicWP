@@ -797,8 +797,18 @@ namespace AudioPlayerTask
                                     catch { }
                                 }
 
+                                string effectivePo = (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken)) ? tokenInfo.PoToken : "";
+                                if (string.IsNullOrEmpty(effectivePo))
+                                {
+                                    try
+                                    {
+                                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                        if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
+                                    }
+                                    catch { }
+                                }
                                 _innerTubeDebug += " [" + clientName + ":SABR_FORCED:OK]";
-                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + (tokenInfo != null ? tokenInfo.PoToken ?? "" : "");
+                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + effectivePo;
                             }
                         }
 
@@ -872,8 +882,18 @@ namespace AudioPlayerTask
                                     catch { }
                                 }
 
+                                string effectivePo = (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken)) ? tokenInfo.PoToken : "";
+                                if (string.IsNullOrEmpty(effectivePo))
+                                {
+                                    try
+                                    {
+                                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                        if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
+                                    }
+                                    catch { }
+                                }
                                 _innerTubeDebug += " [" + clientName + ":SABR:OK]";
-                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + (tokenInfo != null ? tokenInfo.PoToken ?? "" : "");
+                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + effectivePo;
                             }
                         }
 
