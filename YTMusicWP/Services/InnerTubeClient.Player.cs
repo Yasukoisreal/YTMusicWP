@@ -231,11 +231,13 @@ namespace YTMusicWP
                     LastResolveDebug += " [" + client.ClientName + (client.SupportsPoToken ? "+po" : "") + "]";
 
                     string poTokenField = "";
+                    string currentPoToken = null;
                     if (client.SupportsPoToken)
                     {
                         var tokenInfo = await FetchRemotePoTokenAsync(videoId, client.ClientName);
                         if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                         {
+                            currentPoToken = tokenInfo.PoToken;
                             poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
                         }
                     }
@@ -319,7 +321,7 @@ namespace YTMusicWP
                         }
 
                         LastResolveDebug += " SABR_FORCED:OK";
-                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "");
+                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (currentPoToken ?? "");
                         return sabrDescriptor;
                     }
 
@@ -374,7 +376,7 @@ namespace YTMusicWP
                         }
 
                         LastResolveDebug += " SABR:OK";
-                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "");
+                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (currentPoToken ?? "");
                         return sabrDescriptor;
                     }
 

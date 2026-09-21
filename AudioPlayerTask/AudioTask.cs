@@ -668,9 +668,10 @@ namespace AudioPlayerTask
                 string visitorData = await GetVisitorDataAsync(videoId);
 
                 string poTokenField = "";
+                RemotePoTokenResult tokenInfo = null;
                 if (usePoToken)
                 {
-                    var tokenInfo = await FetchRemotePoTokenAsync(videoId, clientName);
+                    tokenInfo = await FetchRemotePoTokenAsync(videoId, clientName);
                     if (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken))
                     {
                         poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
@@ -797,7 +798,7 @@ namespace AudioPlayerTask
                                 }
 
                                 _innerTubeDebug += " [" + clientName + ":SABR_FORCED:OK]";
-                                return "SABR:" + sabrUrl + "|" + ustreamerConfig + "|" + userAgent + "|" + clientId + "|" + clientVersion;
+                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + (tokenInfo != null ? tokenInfo.PoToken ?? "" : "");
                             }
                         }
 
@@ -872,7 +873,7 @@ namespace AudioPlayerTask
                                 }
 
                                 _innerTubeDebug += " [" + clientName + ":SABR:OK]";
-                                return "SABR:" + sabrUrl + "|" + ustreamerConfig + "|" + userAgent + "|" + clientId + "|" + clientVersion;
+                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + (tokenInfo != null ? tokenInfo.PoToken ?? "" : "");
                             }
                         }
 
@@ -1682,6 +1683,7 @@ namespace AudioPlayerTask
                 string userAgent = tokens.Length > 2 ? tokens[2] : null;
                 string clientName = tokens.Length > 3 ? tokens[3] : null;
                 string clientVersion = tokens.Length > 4 ? tokens[4] : null;
+                string poToken = tokens.Length > 5 ? tokens[5] : null;
 
                 byte[] ustreamerBytes = null;
                 if (!string.IsNullOrEmpty(ustreamerConfigStr))
@@ -1696,6 +1698,7 @@ namespace AudioPlayerTask
                     userAgent,
                     clientName,
                     clientVersion,
+                    poToken,
                     LogLive);
 
                 // Preload initial chunk before setting media source to ensure fast start & error detection

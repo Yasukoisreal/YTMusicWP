@@ -253,5 +253,92 @@ namespace AudioPlayerTask
             catch { }
             return null;
         }
+
+        /// <summary>
+        /// Extracts error details from a SABR_ERROR (type 44) protobuf payload.
+        /// Wire format:
+        ///   field 1 (string type): 0x0A [len] [utf8 string]
+        ///   field 2 (int32 code):  0x10 [varint]
+        /// </summary>
+        public static string ExtractSabrError(byte[] data)
+        {
+            if (data == null || data.Length == 0) return "Empty SABR error payload";
+            try
+            {
+                int idx = 0;
+                string type = null;
+                int? code = null;
+
+                while (idx < data.Length)
+                {
+                    byte tag = data[idx++];
+                    int fieldNum = tag >> 3;
+                    int wireType = tag & 0x07;
+
+                    if (fieldNum == 1 && wireType == 2)
+                    {
+                        int len = 0;
+                        int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            len |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+
+                        if (len > 0 && idx + len <= data.Length)
+                        {
+                            type = Encoding.UTF8.GetString(data, idx, len);
+                            idx += len;
+                        }
+                    }
+                    else if (fieldNum == 2 && wireType == 0)
+                    {
+                        int val = 0;
+                        int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            val |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        code = val;
+                    }
+                    else if (wireType == 0)
+                    {
+                        while (idx < data.Length && (data[idx++] & 0x80) != 0) { }
+                    }
+                    else if (wireType == 2)
+                    {
+                        int len = 0;
+                        int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            len |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        idx += len;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(type) || code.HasValue)
+                {
+                    return string.Format("{0} (code {1})", type ?? "Unknown", code.HasValue ? code.Value.ToString() : "?");
+                }
+            }
+            catch (Exception ex)
+            {
+                return "Error parsing SABR error: " + ex.Message;
+            }
+            return "Unparseable SABR error payload (" + data.Length + " bytes: " + BitConverter.ToString(data) + ")";
+        }
     }
 }

@@ -112,8 +112,18 @@ namespace AudioPlayerTask
         /// <param name="playerTimeMs">Current playback offset in milliseconds.</param>
         /// <param name="playbackRate">Playback rate (e.g. 1.0f).</param>
         /// <param name="preferredItag">Preferred audio itag (e.g. 140 for AAC or 251 for Opus).</param>
+        /// <param name="clientNameInt">InnerTube client ID integer (e.g. 3 for ANDROID, 1 for WEB, 67 for WEB_REMIX, 101 for VISIONOS).</param>
+        /// <param name="clientVersion">Client version string.</param>
+        /// <param name="poToken">Optional PO token byte array.</param>
         /// <returns>Encoded protobuf byte array.</returns>
-        public static byte[] BuildAudioAbrRequest(byte[] ustreamerConfig, long playerTimeMs = 0, float playbackRate = 1.0f, int preferredItag = 140)
+        public static byte[] BuildAudioAbrRequest(
+            byte[] ustreamerConfig,
+            long playerTimeMs = 0,
+            float playbackRate = 1.0f,
+            int preferredItag = 140,
+            int clientNameInt = 3,
+            string clientVersion = "19.29.35",
+            byte[] poToken = null)
         {
             using (var requestWriter = new MiniProtoWriter(512))
             {
@@ -123,6 +133,9 @@ namespace AudioPlayerTask
                 {
                     // Field 21: sticky_resolution = 360
                     stateWriter.WriteVarintField(21, 360);
+
+                    // Field 22: client_viewport_is_flexible = false
+                    stateWriter.WriteBoolField(22, false);
 
                     // Field 28: player_time_ms
                     stateWriter.WriteVarintField(28, (ulong)playerTimeMs);
@@ -140,19 +153,13 @@ namespace AudioPlayerTask
                 }
                 requestWriter.WriteSubMessage(1, clientAbrStateBytes);
 
-                // 2. Field 4: player_time_ms
-                if (playerTimeMs > 0)
-                {
-                    requestWriter.WriteVarintField(4, (ulong)playerTimeMs);
-                }
-
-                // 3. Field 5: video_playback_ustreamer_config (Raw bytes)
+                // 2. Field 5: video_playback_ustreamer_config (Raw bytes)
                 if (ustreamerConfig != null && ustreamerConfig.Length > 0)
                 {
                     requestWriter.WriteBytesField(5, ustreamerConfig);
                 }
 
-                // 4. Field 16: preferred_audio_format_ids (FormatId submessage: field 1 = itag)
+                // 3. Field 16: preferred_audio_format_ids (FormatId submessage: field 1 = itag)
                 if (preferredItag > 0)
                 {
                     byte[] formatIdBytes;
@@ -163,6 +170,36 @@ namespace AudioPlayerTask
                     }
                     requestWriter.WriteSubMessage(16, formatIdBytes);
                 }
+
+                // 4. Field 19: streamer_context
+                byte[] streamerContextBytes;
+                using (var ctxWriter = new MiniProtoWriter(256))
+                {
+                    // Submessage 1: ClientInfo
+                    byte[] clientInfoBytes;
+                    using (var infoWriter = new MiniProtoWriter(128))
+                    {
+                        if (clientNameInt > 0)
+                        {
+                            infoWriter.WriteVarintField(16, (ulong)clientNameInt);
+                        }
+                        if (!string.IsNullOrEmpty(clientVersion))
+                        {
+                            infoWriter.WriteStringField(17, clientVersion);
+                        }
+                        clientInfoBytes = infoWriter.ToByteArray();
+                    }
+                    ctxWriter.WriteSubMessage(1, clientInfoBytes);
+
+                    // Field 2: po_token (bytes)
+                    if (poToken != null && poToken.Length > 0)
+                    {
+                        ctxWriter.WriteBytesField(2, poToken);
+                    }
+
+                    streamerContextBytes = ctxWriter.ToByteArray();
+                }
+                requestWriter.WriteSubMessage(19, streamerContextBytes);
 
                 return requestWriter.ToByteArray();
             }

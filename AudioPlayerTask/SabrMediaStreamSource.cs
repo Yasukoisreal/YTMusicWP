@@ -36,7 +36,10 @@ namespace AudioPlayerTask
         private byte[] _ustreamerConfig;
         private string _userAgent;
         private string _clientName;
+        private int _clientNameInt = 3;
         private string _clientVersion;
+        private string _poToken;
+        private byte[] _poTokenBytes;
         private Action<string> _logFunc;
 
         private long _sampleIndex = 0;
@@ -70,6 +73,7 @@ namespace AudioPlayerTask
             string userAgent = null,
             string clientName = null,
             string clientVersion = null,
+            string poToken = null,
             Action<string> logFunc = null)
         {
             _serverAbrUrl = serverAbrUrl;
@@ -79,7 +83,35 @@ namespace AudioPlayerTask
                 : userAgent;
             _clientName = clientName;
             _clientVersion = clientVersion;
+            _poToken = poToken;
             _logFunc = logFunc;
+
+            if (!string.IsNullOrEmpty(_poToken))
+            {
+                try { _poTokenBytes = Convert.FromBase64String(_poToken); }
+                catch { _poTokenBytes = System.Text.Encoding.UTF8.GetBytes(_poToken); }
+            }
+
+            int clientNameInt = 3;
+            if (!string.IsNullOrEmpty(_clientName))
+            {
+                if (!int.TryParse(_clientName, out clientNameInt))
+                {
+                    switch (_clientName.ToUpperInvariant())
+                    {
+                        case "WEB": clientNameInt = 1; break;
+                        case "MWEB": clientNameInt = 2; break;
+                        case "ANDROID": clientNameInt = 3; break;
+                        case "IOS": clientNameInt = 5; break;
+                        case "TVHTML5": clientNameInt = 16; break;
+                        case "ANDROID_VR": clientNameInt = 28; break;
+                        case "WEB_REMIX": clientNameInt = 67; break;
+                        case "VISIONOS": clientNameInt = 101; break;
+                        default: clientNameInt = 3; break;
+                    }
+                }
+            }
+            _clientNameInt = clientNameInt;
 
             // Shared HTTP filter that ignores legacy SSL handshake anomalies
             var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
@@ -245,15 +277,18 @@ namespace AudioPlayerTask
                 _ustreamerConfig,
                 _currentPositionMs,
                 _playbackRate,
-                140); // 140 = AAC 128kbps itag
+                140, // 140 = AAC 128kbps itag
+                _clientNameInt,
+                !string.IsNullOrEmpty(_clientVersion) ? _clientVersion : "19.29.35",
+                _poTokenBytes);
 
             using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri(requestUrl)))
             {
                 req.Headers.TryAppendWithoutValidation("User-Agent", _userAgent);
                 req.Headers.TryAppendWithoutValidation("Accept", "application/vnd.yt-ump");
+                req.Headers.TryAppendWithoutValidation("Accept-Encoding", "identity");
 
-                if (!string.IsNullOrEmpty(_clientName))
-                    req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Name", _clientName);
+                req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Name", _clientNameInt.ToString());
                 if (!string.IsNullOrEmpty(_clientVersion))
                     req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Version", _clientVersion);
 
@@ -337,6 +372,14 @@ namespace AudioPlayerTask
                     }
                     break;
 
+                case UmpPartId.MEDIA_HEADER:
+                    Log("Received MEDIA_HEADER (" + part.Size + " bytes)");
+                    break;
+
+                case UmpPartId.FORMAT_INITIALIZATION_METADATA:
+                    Log("Received FORMAT_INITIALIZATION_METADATA (" + part.Size + " bytes)");
+                    break;
+
                 case UmpPartId.SABR_REDIRECT:
                     string newUrl = UmpParser.ExtractSabrRedirectUrl(part.Data);
                     if (!string.IsNullOrEmpty(newUrl))
@@ -347,8 +390,17 @@ namespace AudioPlayerTask
                     break;
 
                 case UmpPartId.SABR_ERROR:
-                    LastError = "SABR Server Error part received";
+                    string errDetail = UmpParser.ExtractSabrError(part.Data);
+                    LastError = "SABR Server Error: " + errDetail;
                     Log(LastError);
+                    break;
+
+                case UmpPartId.NEXT_REQUEST_POLICY:
+                    Log("Received NEXT_REQUEST_POLICY (" + part.Size + " bytes)");
+                    break;
+
+                default:
+                    Log("Received UMP part " + part.Type + " (" + part.Size + " bytes)");
                     break;
             }
         }
