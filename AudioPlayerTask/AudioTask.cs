@@ -53,6 +53,7 @@ namespace AudioPlayerTask
         private volatile bool _startPaused = false;
         private bool _isCurrentTrackLive = false;
         private LiveMediaStreamSource _liveMss = null;
+        private SabrMediaStreamSource _sabrMss = null;
         private string _currentLiveBaseUrl = null;
         private long _currentLiveSeq = -1;
         private long _nextLiveStartSeq = -1;
@@ -139,6 +140,11 @@ namespace AudioPlayerTask
                 {
                     try { _liveMss.Dispose(); } catch { }
                     _liveMss = null;
+                }
+                if (_sabrMss != null)
+                {
+                    try { _sabrMss.Dispose(); } catch { }
+                    _sabrMss = null;
                 }
                 await CleanupLiveTempFilesAsync();
                 _httpClient?.Dispose();
@@ -694,7 +700,7 @@ namespace AudioPlayerTask
                     "application/json"
                 ))
                 using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
-                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData")))
+                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig")))
                 {
                     request.Content = content;
                     request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
@@ -822,6 +828,34 @@ namespace AudioPlayerTask
                                 {
                                     _innerTubeDebug += " [DASH_EX:" + ex.Message.Substring(0, Math.Min(15, ex.Message.Length)) + "]";
                                 }
+                            }
+                        }
+
+                        // 4. Fallback cho SABR stream: serverAbrStreamingUrl
+                        if (streamingData.ContainsKey("serverAbrStreamingUrl"))
+                        {
+                            string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
+                            if (!string.IsNullOrEmpty(sabrUrl))
+                            {
+                                string ustreamerConfig = "";
+                                if (streamingData.ContainsKey("ustreamerConfig"))
+                                {
+                                    ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
+                                }
+                                else if (data.ContainsKey("playerConfig"))
+                                {
+                                    try
+                                    {
+                                        var pcfg = data.GetNamedObject("playerConfig");
+                                        var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
+                                        var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
+                                        ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
+                                    }
+                                    catch { }
+                                }
+
+                                _innerTubeDebug += " [" + clientName + ":SABR:OK]";
+                                return "SABR:" + sabrUrl + "|" + ustreamerConfig + "|" + userAgent + "|" + clientId + "|" + clientVersion;
                             }
                         }
                     }
@@ -1646,6 +1680,18 @@ namespace AudioPlayerTask
                     return;
                 }
 
+                if (trackUrl.StartsWith("SABR:", StringComparison.OrdinalIgnoreCase))
+                {
+                    PlaySabrTrack(trackUrl, vidId);
+                    return;
+                }
+
+                if (_sabrMss != null)
+                {
+                    try { _sabrMss.Dispose(); } catch { }
+                    _sabrMss = null;
+                }
+
                 // Volume preservation / Normalize Volume
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 if (ls.ContainsKey("UserVolume"))
@@ -1687,6 +1733,97 @@ namespace AudioPlayerTask
             catch (Exception ex)
             {
                 ReportErrorToUI("Stream Error: " + ex.Message.Split('\n')[0]);
+            }
+        }
+
+        private void PlaySabrTrack(string sabrDescriptor, string vidId)
+        {
+            try
+            {
+                StopPlaybackMonitor();
+
+                if (_liveMss != null)
+                {
+                    try { _liveMss.Dispose(); } catch { }
+                    _liveMss = null;
+                }
+                if (_liveCts != null)
+                {
+                    try { _liveCts.Cancel(); _liveCts.Dispose(); } catch { }
+                    _liveCts = null;
+                }
+                if (_sabrMss != null)
+                {
+                    try { _sabrMss.Dispose(); } catch { }
+                    _sabrMss = null;
+                }
+
+                string payload = sabrDescriptor.Substring(5);
+                string[] tokens = payload.Split('|');
+                string serverAbrUrl = tokens.Length > 0 ? tokens[0] : null;
+                string ustreamerConfigStr = tokens.Length > 1 ? tokens[1] : null;
+                string userAgent = tokens.Length > 2 ? tokens[2] : null;
+                string clientName = tokens.Length > 3 ? tokens[3] : null;
+                string clientVersion = tokens.Length > 4 ? tokens[4] : null;
+
+                byte[] ustreamerBytes = null;
+                if (!string.IsNullOrEmpty(ustreamerConfigStr))
+                {
+                    try { ustreamerBytes = Convert.FromBase64String(ustreamerConfigStr); }
+                    catch { ustreamerBytes = System.Text.Encoding.UTF8.GetBytes(ustreamerConfigStr); }
+                }
+
+                _sabrMss = new SabrMediaStreamSource(
+                    serverAbrUrl,
+                    ustreamerBytes,
+                    userAgent,
+                    clientName,
+                    clientVersion,
+                    LogLive);
+
+                // Volume preservation / Normalize Volume
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (ls.ContainsKey("UserVolume"))
+                {
+                    try
+                    {
+                        double uVol = Convert.ToDouble(ls["UserVolume"]);
+                        if (uVol >= 0.0 && uVol <= 1.0) _mediaPlayer.Volume = uVol;
+                    }
+                    catch { }
+                }
+                else
+                {
+                    bool normalize = ls.ContainsKey("NormalizeVolume") ? (bool)ls["NormalizeVolume"] : false;
+                    _mediaPlayer.Volume = normalize ? 0.75 : 1.0;
+                }
+
+                UpdateSystemMediaControls();
+                _mediaPlayer.AutoPlay = !_startPaused;
+                _mediaPlayer.SetMediaSource(_sabrMss.StreamSource);
+                try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
+                _sabrMss.StartStreaming((float)_playbackRate);
+                _currentLoadedVidId = vidId;
+
+                if (_startPaused)
+                {
+                    _startPaused = false;
+                    _mediaPlayer.Pause();
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
+                }
+                else
+                {
+                    _mediaPlayer.Play();
+                    _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+                }
+
+                StartPlaybackMonitor();
+                LogLive("[SABR Playback] Stream started successfully for " + vidId);
+            }
+            catch (Exception ex)
+            {
+                LogLive("[SABR Error] " + ex.Message);
+                ReportErrorToUI("SABR playback failed: " + ex.Message);
             }
         }
 

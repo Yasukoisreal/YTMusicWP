@@ -85,6 +85,9 @@
   <ItemGroup>
     <Compile Include="AudioTask.cs" />
     <Compile Include="LiveMediaStreamSource.cs" />
+    <Compile Include="MiniProtoWriter.cs" />
+    <Compile Include="UmpParser.cs" />
+    <Compile Include="SabrMediaStreamSource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\YTMusicWP\Services\SponsorBlockApi.cs">
       <Link>SponsorBlockApi.cs</Link>

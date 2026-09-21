@@ -255,7 +255,7 @@ namespace YTMusicWP
                     "}";
 
                     var req = new HttpRequestMessage(HttpMethod.Post,
-                        "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,captions");
+                        "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig,captions");
                     req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
                     req.Headers.TryAddWithoutValidation("User-Agent", client.UserAgent);
                     
@@ -371,6 +371,21 @@ namespace YTMusicWP
                         {
                             LastResolveDebug += " DASH_EX:" + ex.Message.Substring(0, Math.Min(15, ex.Message.Length));
                         }
+                    }
+
+                    // 4. Fallback for SABR streams (Google Server-side Adaptive Bitrate)
+                    string serverAbrUrl = data["streamingData"]?["serverAbrStreamingUrl"]?.ToString();
+                    if (!string.IsNullOrEmpty(serverAbrUrl))
+                    {
+                        string ustreamerConfig = data["streamingData"]?["ustreamerConfig"]?.ToString();
+                        if (string.IsNullOrEmpty(ustreamerConfig))
+                        {
+                            ustreamerConfig = data["playerConfig"]?["mediaCommonConfig"]?["mediaUstreamerRequestConfig"]?["videoPlaybackUstreamerConfig"]?.ToString();
+                        }
+
+                        LastResolveDebug += " SABR:OK";
+                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "");
+                        return sabrDescriptor;
                     }
 
                     LastResolveDebug += " NOURL";
