@@ -415,14 +415,14 @@ namespace AudioPlayerTask
 
                         if (segBytes != null && segBytes.Length > 0)
                         {
-                            if (headerId == 0)
+                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                            if (samples > 0)
                             {
-                                Log("Received complete init segment (" + segBytes.Length + " bytes)");
+                                Log("Segment " + headerId + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
                             }
                             else
                             {
-                                int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
-                                Log("Segment " + headerId + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
+                                Log("Segment " + headerId + " received (" + segBytes.Length + " bytes, init segment / no audio samples)");
                             }
                         }
                     }
@@ -469,15 +469,15 @@ namespace AudioPlayerTask
                 for (int i = 0; i < keys.Count; i++)
                 {
                     int hid = keys[i];
-                    if (hid > 0)
+                    MemoryStream ms = _pendingSegments[hid];
+                    _pendingSegments.Remove(hid);
+                    byte[] segBytes = ms.ToArray();
+                    ms.Dispose();
+                    if (segBytes.Length > 0)
                     {
-                        MemoryStream ms = _pendingSegments[hid];
-                        _pendingSegments.Remove(hid);
-                        byte[] segBytes = ms.ToArray();
-                        ms.Dispose();
-                        if (segBytes.Length > 0)
+                        int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                        if (samples > 0)
                         {
-                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
                             Log("Flushed segment " + hid + ": " + samples + " samples (" + segBytes.Length + " bytes)");
                         }
                     }
@@ -502,7 +502,7 @@ namespace AudioPlayerTask
 
             int flags = (chunk[trunHeader + 9] << 16) | (chunk[trunHeader + 10] << 8) | chunk[trunHeader + 11];
             int sampleCount = ReadInt32BE(chunk, trunHeader + 12);
-            if (sampleCount <= 0 || sampleCount > 600) return 0;
+            if (sampleCount <= 0 || sampleCount > 2000) return 0;
 
             int cur = trunHeader + 16;
             if ((flags & 0x000001) != 0) cur += 4; // data_offset
