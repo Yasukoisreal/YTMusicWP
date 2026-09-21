@@ -366,5 +366,55 @@ namespace AudioPlayerTask
             }
             return "Unparseable SABR error payload (" + data.Length + " bytes: " + BitConverter.ToString(data) + ")";
         }
+
+        /// <summary>
+        /// Extracts the playback cookie bytes from a NEXT_REQUEST_POLICY (type 35) protobuf payload.
+        /// Wire format: field 7 (PlaybackCookie) wireType 2: tag = (7 << 3) | 2 = 0x3A (58)
+        /// </summary>
+        public static byte[] ExtractPlaybackCookie(byte[] data)
+        {
+            if (data == null || data.Length == 0) return null;
+            try
+            {
+                int idx = 0;
+                while (idx < data.Length)
+                {
+                    int tag = data[idx++];
+                    int fieldNum = tag >> 3;
+                    int wireType = tag & 0x07;
+
+                    if (wireType == 0)
+                    {
+                        while (idx < data.Length && (data[idx++] & 0x80) != 0) { }
+                    }
+                    else if (wireType == 2)
+                    {
+                        int len = 0;
+                        int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            len |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+
+                        if (fieldNum == 7 && len > 0 && idx + len <= data.Length)
+                        {
+                            byte[] cookie = new byte[len];
+                            Buffer.BlockCopy(data, idx, cookie, 0, len);
+                            return cookie;
+                        }
+                        idx += len;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
     }
 }

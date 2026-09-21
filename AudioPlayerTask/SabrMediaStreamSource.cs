@@ -41,6 +41,7 @@ namespace AudioPlayerTask
         private string _clientVersion;
         private string _poToken;
         private byte[] _poTokenBytes;
+        private byte[] _playbackCookieBytes = null;
         private Action<string> _logFunc;
 
         private long _sampleIndex = 0;
@@ -148,7 +149,7 @@ namespace AudioPlayerTask
         private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
             var request = args.Request;
-            if (request.StartPosition.HasValue)
+            if (request.StartPosition.HasValue && request.StartPosition.Value > TimeSpan.FromMilliseconds(500))
             {
                 TimeSpan startPos = request.StartPosition.Value;
                 Log("Mss_Starting seek to " + startPos.TotalSeconds.ToString("F1") + "s");
@@ -181,7 +182,9 @@ namespace AudioPlayerTask
                 {
                     if (_sampleQueue.Count > 0)
                     {
-                        request.Sample = _sampleQueue.Dequeue();
+                        var sample = _sampleQueue.Dequeue();
+                        request.Sample = sample;
+                        _currentPositionMs = (long)sample.Timestamp.TotalMilliseconds;
                         return;
                     }
 
@@ -292,7 +295,8 @@ namespace AudioPlayerTask
                 140, // 140 = AAC 128kbps itag
                 _clientNameInt,
                 !string.IsNullOrEmpty(_clientVersion) ? _clientVersion : "19.29.35",
-                _poTokenBytes);
+                _poTokenBytes,
+                _playbackCookieBytes);
 
             using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri(requestUrl)))
             {
@@ -452,7 +456,16 @@ namespace AudioPlayerTask
                     break;
 
                 case UmpPartId.NEXT_REQUEST_POLICY:
-                    Log("Received NEXT_REQUEST_POLICY (" + part.Size + " bytes)");
+                    byte[] cookie = UmpParser.ExtractPlaybackCookie(part.Data);
+                    if (cookie != null && cookie.Length > 0)
+                    {
+                        _playbackCookieBytes = cookie;
+                        Log("Extracted playback cookie (" + cookie.Length + " bytes)");
+                    }
+                    else
+                    {
+                        Log("Received NEXT_REQUEST_POLICY (" + part.Size + " bytes)");
+                    }
                     break;
 
                 default:
@@ -569,7 +582,9 @@ namespace AudioPlayerTask
                 {
                     var p = _pendingRequests[0];
                     _pendingRequests.RemoveAt(0);
-                    p.Request.Sample = _sampleQueue.Dequeue();
+                    var s = _sampleQueue.Dequeue();
+                    p.Request.Sample = s;
+                    _currentPositionMs = (long)s.Timestamp.TotalMilliseconds;
                     try { p.Deferral.Complete(); } catch { }
                 }
             }

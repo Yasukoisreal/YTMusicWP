@@ -123,7 +123,8 @@ namespace AudioPlayerTask
             int preferredItag = 140,
             int clientNameInt = 3,
             string clientVersion = "19.29.35",
-            byte[] poToken = null)
+            byte[] poToken = null,
+            byte[] playbackCookie = null)
         {
             using (var requestWriter = new MiniProtoWriter(512))
             {
@@ -195,6 +196,12 @@ namespace AudioPlayerTask
                     if (poToken != null && poToken.Length > 0)
                     {
                         ctxWriter.WriteBytesField(2, poToken);
+                    }
+
+                    // Field 3: playback_cookie (bytes)
+                    if (playbackCookie != null && playbackCookie.Length > 0)
+                    {
+                        ctxWriter.WriteBytesField(3, playbackCookie);
                     }
 
                     streamerContextBytes = ctxWriter.ToByteArray();
