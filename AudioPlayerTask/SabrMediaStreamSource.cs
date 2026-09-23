@@ -59,6 +59,7 @@ namespace AudioPlayerTask
         private int _lastMediaHeaderSeqNum = -1;
         private bool _lastMediaHeaderIsInit = false;
         private DateTime _lastSuccessfulChunkTime = DateTime.MinValue;
+        private readonly bool _isLiveStream;
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private Task _streamingTask = null;
@@ -86,7 +87,8 @@ namespace AudioPlayerTask
             string clientName = null,
             string clientVersion = null,
             string poToken = null,
-            Action<string> logFunc = null)
+            Action<string> logFunc = null,
+            bool isLiveStream = false)
         {
             _serverAbrUrl = serverAbrUrl;
             _ustreamerConfig = ustreamerConfig;
@@ -97,6 +99,7 @@ namespace AudioPlayerTask
             _clientVersion = clientVersion;
             _poToken = poToken;
             _logFunc = logFunc;
+            _isLiveStream = isLiveStream || IsLiveStreamUrl(serverAbrUrl);
 
             if (!string.IsNullOrEmpty(_poToken))
             {
@@ -196,6 +199,13 @@ namespace AudioPlayerTask
                         var sample = _sampleQueue.Dequeue();
                         request.Sample = sample;
                         _currentPositionMs = (long)sample.Timestamp.TotalMilliseconds;
+                        return;
+                    }
+
+                    if (_cts.IsCancellationRequested || _isDisposed || (_streamingTask != null && _streamingTask.IsCompleted))
+                    {
+                        // No more samples and streaming loop ended -> EOS
+                        request.Sample = null;
                         return;
                     }
 
@@ -395,10 +405,10 @@ namespace AudioPlayerTask
                     }
 
                     // Pacing guard for live streams: each chunk is ~5.0s of audio.
-                    // If buffer is healthy (>= 250 samples / ~5.8s) and we just received a chunk
-                    // less than 4 seconds ago, wait for the remaining time so the live encoder has
-                    // time to produce the next segment without sending us a duplicate!
-                    if (count >= 250 && _lastSuccessfulChunkTime > DateTime.MinValue)
+                    // The live encoder on YouTube generates chunks in real-time (~5.0s intervals).
+                    // If we just received a chunk less than 4.0s ago, wait for the remaining time
+                    // so the encoder has time to produce the next segment without sending empty chunks.
+                    if ((_isLiveStream || count >= 250) && _lastSuccessfulChunkTime > DateTime.MinValue)
                     {
                         double elapsedSinceLast = (DateTime.UtcNow - _lastSuccessfulChunkTime).TotalSeconds;
                         if (elapsedSinceLast < 4.0)
@@ -429,22 +439,30 @@ namespace AudioPlayerTask
                         }
 
                         _consecutiveEmptyChunks++;
-                        if (_consecutiveEmptyChunks >= 4)
+                        if (!_isLiveStream && _consecutiveEmptyChunks >= 5)
                         {
-                            LastError = "No audio received after " + _consecutiveEmptyChunks + " attempts";
+                            LastError = "End of track reached (no audio after " + _consecutiveEmptyChunks + " attempts)";
+                            Log(LastError + ", finishing SABR streaming loop.");
+                            break;
+                        }
+                        else if (_isLiveStream && _consecutiveEmptyChunks >= 120)
+                        {
+                            LastError = "Live stream stalled (no audio after " + _consecutiveEmptyChunks + " attempts)";
                             Log(LastError + ", stopping SABR streaming loop.");
                             break;
                         }
 
                         // Server returned 0 audio samples (e.g. reached live head or duplicate chunk skipped).
-                        // DO NOT advance _requestNumber! Wait 1.5s for live encoder to generate the next chunk.
-                        Log("No audio in rn=" + _requestNumber + ", waiting 1.5s for next live segment...");
-                        await Task.Delay(1500, ct).ConfigureAwait(false);
+                        // DO NOT advance _requestNumber! Wait for live encoder to generate the next chunk.
+                        int waitMs = _isLiveStream ? Math.Min(1500 + _consecutiveEmptyChunks * 250, 3500) : 1500;
+                        Log("No audio in rn=" + _requestNumber + " (attempt " + _consecutiveEmptyChunks + "), waiting " + (waitMs / 1000.0).ToString("F1") + "s for next live segment...");
+                        await Task.Delay(waitMs, ct).ConfigureAwait(false);
                         continue;
                     }
 
                     _consecutiveEmptyChunks = 0;
                     _formatsInitialized = true;
+                    _lastSuccessfulChunkTime = DateTime.UtcNow;
 
                     // Audio samples received successfully, advance request sequence
                     _requestNumber++;
@@ -462,6 +480,16 @@ namespace AudioPlayerTask
             }
 
             Log("Sabr streaming loop terminated");
+            lock (_queueLock)
+            {
+                while (_pendingRequests.Count > 0)
+                {
+                    var p = _pendingRequests[0];
+                    _pendingRequests.RemoveAt(0);
+                    p.Request.Sample = null;
+                    try { p.Deferral.Complete(); } catch { }
+                }
+            }
         }
 
         private void OnUmpPartReceived(UmpPart part)
@@ -767,6 +795,17 @@ namespace AudioPlayerTask
         private static int ReadInt32BE(byte[] data, int offset)
         {
             return (int)((data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3]);
+        }
+
+        private static bool IsLiveStreamUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return false;
+            return url.IndexOf("live=1", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("live/1", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("yt_live_broadcast", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("hls_variant", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("hls_playlist", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf(".m3u8", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public void Dispose()

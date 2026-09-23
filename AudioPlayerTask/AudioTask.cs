@@ -1746,7 +1746,8 @@ namespace AudioPlayerTask
                     clientName,
                     clientVersion,
                     poToken,
-                    LogLive);
+                    LogLive,
+                    _isCurrentTrackLive);
 
                 // Preload initial chunk before setting media source to ensure fast start & error detection
                 bool preloaded = await _sabrMss.PreloadInitialChunkAsync(ct);
@@ -1826,6 +1827,11 @@ namespace AudioPlayerTask
                 {
                     try { _liveMss.Dispose(); } catch { }
                     _liveMss = null;
+                }
+                if (_sabrMss != null)
+                {
+                    try { _sabrMss.Dispose(); } catch { }
+                    _sabrMss = null;
                 }
             }
 
