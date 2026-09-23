@@ -109,14 +109,7 @@ namespace YTMusicWP.Services
 
         public static void SetPlayingBadge()
         {
-            try
-            {
-                var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
-                var badgeEl = badgeXml.SelectSingleNode("/badge") as XmlElement;
-                badgeEl.SetAttribute("value", "playing");
-                BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
-            }
-            catch { }
+            // WP8.1 does not support BadgeGlyph templates (throws COMException/ArgumentException)
         }
 
         public static void ClearBadge()

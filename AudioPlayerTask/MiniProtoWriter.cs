@@ -126,7 +126,9 @@ namespace AudioPlayerTask
             byte[] poToken = null,
             byte[] playbackCookie = null,
             bool formatsInitialized = false,
-            long bufferedDurationMs = 0)
+            long bufferedDurationMs = 0,
+            int startSegmentIndex = -1,
+            int endSegmentIndex = -1)
         {
             using (var requestWriter = new MiniProtoWriter(512))
             {
@@ -168,8 +170,8 @@ namespace AudioPlayerTask
                     requestWriter.WriteSubMessage(2, selFmtBytes);
                 }
 
-                // 3. Field 3: buffered_ranges — tells server what we already downloaded
-                if (formatsInitialized && bufferedDurationMs > 0 && preferredItag > 0)
+                // 3. Field 3: buffered_ranges — tells server what segments/duration we already downloaded
+                if (formatsInitialized && preferredItag > 0 && (bufferedDurationMs > 0 || endSegmentIndex >= 0))
                 {
                     byte[] bufferedRangeBytes;
                     using (var brWriter = new MiniProtoWriter(128))
@@ -188,6 +190,18 @@ namespace AudioPlayerTask
 
                         // Sub-field 3: durationMs = bufferedDurationMs
                         brWriter.WriteVarintField(3, (ulong)bufferedDurationMs);
+
+                        // Sub-field 4: startSegmentIndex
+                        if (startSegmentIndex >= 0)
+                        {
+                            brWriter.WriteVarintField(4, (ulong)startSegmentIndex);
+                        }
+
+                        // Sub-field 5: endSegmentIndex
+                        if (endSegmentIndex >= 0)
+                        {
+                            brWriter.WriteVarintField(5, (ulong)endSegmentIndex);
+                        }
 
                         bufferedRangeBytes = brWriter.ToByteArray();
                     }

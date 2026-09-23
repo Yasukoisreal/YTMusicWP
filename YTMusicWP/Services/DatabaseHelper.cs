@@ -15,6 +15,15 @@ namespace YTMusicWP.Services
 
         public static async Task InitializeAsync()
         {
+            try
+            {
+                SQLitePCL.Batteries_V2.Init();
+            }
+            catch (Exception pex)
+            {
+                Debug.WriteLine("[SQLite] Batteries_V2.Init: " + pex.Message);
+            }
+
             string dbPath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "YTMusicWP.db3");
             try
             {

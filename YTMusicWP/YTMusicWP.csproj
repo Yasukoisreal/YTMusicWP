@@ -178,6 +178,18 @@
     <Content Include="Assets\Fonts\Montserrat-SemiBold.ttf" />
     <Content Include="Assets\Fonts\Montserrat-Bold.ttf" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(Platform)' == 'ARM' ">
+    <Content Include="..\packages\SQLitePCLRaw.lib.e_sqlite3.2.1.2\runtimes\win-arm\native\e_sqlite3.dll">
+      <Link>e_sqlite3.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Platform)' == 'x86' ">
+    <Content Include="..\packages\SQLitePCLRaw.lib.e_sqlite3.2.1.2\runtimes\win-x86\native\e_sqlite3.dll">
+      <Link>e_sqlite3.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>

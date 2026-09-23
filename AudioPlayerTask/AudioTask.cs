@@ -2051,15 +2051,6 @@ namespace AudioPlayerTask
                             ExpirationTime = DateTimeOffset.UtcNow.AddHours(12)
                         };
                         updater.Update(notif);
-
-                        try
-                        {
-                            var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
-                            var badgeEl = badgeXml.SelectSingleNode("/badge") as XmlElement;
-                            badgeEl?.SetAttribute("value", "playing");
-                            BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
-                        }
-                        catch { }
                     }
                 }
                 catch { }
@@ -2529,13 +2520,6 @@ namespace AudioPlayerTask
                     if (!_isRetrying) _retryCount = 0;
                     _isRetrying = false;
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
-                    try
-                    {
-                        var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
-                        ((XmlElement)badgeXml.SelectSingleNode("/badge")).SetAttribute("value", "playing");
-                        BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
-                    }
-                    catch { }
                 }
                 else if (sender.CurrentState == MediaPlayerState.Paused)
                 {
@@ -2559,22 +2543,10 @@ namespace AudioPlayerTask
                     }
 
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
-                    try
-                    {
-                        var badgeXml = BadgeUpdateManager.GetTemplateContent(BadgeTemplateType.BadgeGlyph);
-                        ((XmlElement)badgeXml.SelectSingleNode("/badge")).SetAttribute("value", "paused");
-                        BadgeUpdateManager.CreateBadgeUpdaterForApplication().Update(new BadgeNotification(badgeXml));
-                    }
-                    catch { }
                 }
                 else if (sender.CurrentState == MediaPlayerState.Closed || sender.CurrentState == MediaPlayerState.Stopped)
                 {
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Closed;
-                    try
-                    {
-                        BadgeUpdateManager.CreateBadgeUpdaterForApplication().Clear();
-                    }
-                    catch { }
                 }
             }
             catch { }
