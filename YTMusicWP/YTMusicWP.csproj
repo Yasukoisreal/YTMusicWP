@@ -179,14 +179,14 @@
     <Content Include="Assets\Fonts\Montserrat-SemiBold.ttf" />
     <Content Include="Assets\Fonts\Montserrat-Bold.ttf" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Platform)' == 'ARM' ">
-    <Content Include="..\packages\SQLitePCLRaw.lib.e_sqlite3.2.1.2\runtimes\win-arm\native\e_sqlite3.dll">
-      <Link>e_sqlite3.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(Platform)' == 'x86' ">
-    <Content Include="..\packages\SQLitePCLRaw.lib.e_sqlite3.2.1.2\runtimes\win-x86\native\e_sqlite3.dll">
+  <PropertyGroup Condition=" '$(Platform)' == 'x86' ">
+    <SqliteNativeDir>win-x86</SqliteNativeDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' != 'x86' ">
+    <SqliteNativeDir>win-arm</SqliteNativeDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="..\packages\SQLitePCLRaw.lib.e_sqlite3.2.1.2\runtimes\$(SqliteNativeDir)\native\e_sqlite3.dll">
       <Link>e_sqlite3.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -264,7 +264,6 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
   <Import Project="..\packages\LumiaImagingSDK.2.0.208\build\wpa81\LumiaImagingSDK.targets" Condition="Exists('..\packages\LumiaImagingSDK.2.0.208\build\wpa81\LumiaImagingSDK.targets')" />
-  <Import Project="..\packages\Win2D.win81.1.21.0\build\wpa\Win2D.win81.targets" Condition="Exists('..\packages\Win2D.win81.1.21.0\build\wpa\Win2D.win81.targets')" />
   <Import Project="..\packages\Fody.2.0.0\build\portable-net+sl+win+wpa+wp\Fody.targets" Condition="Exists('..\packages\Fody.2.0.0\build\portable-net+sl+win+wpa+wp\Fody.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
