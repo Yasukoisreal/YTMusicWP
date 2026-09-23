@@ -9,6 +9,7 @@ using Windows.Media.Core;
 using Windows.Media.MediaProperties;
 using Windows.Storage.Streams;
 using Windows.Web.Http;
+using YTMusicWP.Services;
 
 namespace AudioPlayerTask
 {
@@ -328,8 +329,15 @@ namespace AudioPlayerTask
                 _firstMediaHeaderSeqNum,
                 _lastMediaHeaderSeqNum);
 
-            using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri(requestUrl)))
+            var resolvedInfo = await SecureDnsResolver.RewriteUrlAsync(requestUrl).ConfigureAwait(false);
+
+            using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri(resolvedInfo.Url)))
             {
+                if (resolvedInfo.WasResolved && !string.IsNullOrEmpty(resolvedInfo.OriginalHost))
+                {
+                    req.Headers.Host = new Windows.Networking.HostName(resolvedInfo.OriginalHost);
+                }
+
                 req.Headers.TryAppendWithoutValidation("User-Agent", _userAgent);
                 req.Headers.TryAppendWithoutValidation("Accept", "application/vnd.yt-ump");
                 req.Headers.TryAppendWithoutValidation("Accept-Encoding", "identity");

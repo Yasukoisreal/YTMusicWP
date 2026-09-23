@@ -267,31 +267,40 @@ namespace YTMusicWP
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
-                    var req = new HttpRequestMessage(HttpMethod.Post,
-                        "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig,captions");
-                    req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent", client.UserAgent);
-                    
-                    if (!string.IsNullOrEmpty(client.RequestClientNameHeader))
-                        req.Headers.Add("X-YouTube-Client-Name", client.RequestClientNameHeader);
-                    
-                    req.Headers.Add("X-YouTube-Client-Version", client.ClientVersion);
+                    string playerUrl = "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig,captions";
+                    var resolved = await Services.SecureDnsResolver.RewriteUrlAsync(playerUrl).ConfigureAwait(false);
 
-                    if (HasCookieAuth)
+                    string json = null;
+                    using (var req = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post, new Uri(resolved.Url)))
                     {
-                        req.Headers.Add("Cookie", _cookieString);
-                        req.Headers.Add("Authorization", GenerateSAPISIDHash(_sapisid, "https://www.youtube.com"));
-                    }
-
-                    string json;
-                    using (var resp = await _client.SendAsync(req))
-                    {
-                        if (!resp.IsSuccessStatusCode)
+                        if (resolved.WasResolved && !string.IsNullOrEmpty(resolved.OriginalHost))
                         {
-                            LastResolveDebug += " H" + (int)resp.StatusCode;
-                            continue;
+                            req.Headers.Host = new Windows.Networking.HostName(resolved.OriginalHost);
                         }
-                        json = await resp.Content.ReadAsStringAsync();
+                        req.Content = new Windows.Web.Http.HttpStringContent(requestBody, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                        req.Headers.TryAppendWithoutValidation("User-Agent", client.UserAgent);
+
+                        if (!string.IsNullOrEmpty(client.RequestClientNameHeader))
+                            req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Name", client.RequestClientNameHeader);
+
+                        req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Version", client.ClientVersion);
+
+                        if (HasCookieAuth)
+                        {
+                            req.Headers.TryAppendWithoutValidation("Cookie", _cookieString);
+                            req.Headers.TryAppendWithoutValidation("Authorization", GenerateSAPISIDHash(_sapisid, "https://www.youtube.com"));
+                        }
+
+                        var httpClient = GetWinrtClient();
+                        using (var resp = await httpClient.SendRequestAsync(req).AsTask().ConfigureAwait(false))
+                        {
+                            if (!resp.IsSuccessStatusCode)
+                            {
+                                LastResolveDebug += " H" + (int)resp.StatusCode;
+                                continue;
+                            }
+                            json = await resp.Content.ReadAsStringAsync().AsTask().ConfigureAwait(false);
+                        }
                     }
                     var data = JObject.Parse(json);
 
@@ -630,17 +639,25 @@ namespace YTMusicWP
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
-                    var req = new HttpRequestMessage(HttpMethod.Post,
-                        "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions");
-                    req.Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json");
-                    req.Headers.TryAddWithoutValidation("User-Agent",
-                        "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+                    string capUrl = "https://www.youtube.com/youtubei/v1/player?key=AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI&prettyPrint=false&fields=captions";
+                    var resolvedCap = await Services.SecureDnsResolver.RewriteUrlAsync(capUrl).ConfigureAwait(false);
 
                     string json;
-                    using (var resp = await _client.SendAsync(req))
+                    using (var req = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post, new Uri(resolvedCap.Url)))
                     {
-                        if (!resp.IsSuccessStatusCode) return tracks;
-                        json = await resp.Content.ReadAsStringAsync();
+                        if (resolvedCap.WasResolved && !string.IsNullOrEmpty(resolvedCap.OriginalHost))
+                        {
+                            req.Headers.Host = new Windows.Networking.HostName(resolvedCap.OriginalHost);
+                        }
+                        req.Content = new Windows.Web.Http.HttpStringContent(requestBody, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                        req.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
+
+                        var httpClient = GetWinrtClient();
+                        using (var resp = await httpClient.SendRequestAsync(req).AsTask().ConfigureAwait(false))
+                        {
+                            if (!resp.IsSuccessStatusCode) return tracks;
+                            json = await resp.Content.ReadAsStringAsync().AsTask().ConfigureAwait(false);
+                        }
                     }
                     var data = JObject.Parse(json);
                     captionsNode = data?["captions"];
@@ -1182,58 +1199,46 @@ namespace YTMusicWP
                     ["videoId"] = videoId
                 };
 
-                var request = new HttpRequestMessage(HttpMethod.Post, "https://www.youtube.com/youtubei/v1/next?prettyPrint=false");
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "com.google.android.youtube/19.09.37");
-
                 string countText = null;
                 string continuationToken = null;
 
-                using (var response = await _client.SendAsync(request))
+                var data = await PostWinrtJsonAsync("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", body, "com.google.android.youtube/19.09.37").ConfigureAwait(false);
+                if (data == null) return null;
+                var panels = data["engagementPanels"];
+                if (panels != null)
                 {
-                    if (!response.IsSuccessStatusCode) return null;
-                    using (var stream = await response.Content.ReadAsStreamAsync())
-                    using (var reader = new System.IO.StreamReader(stream))
-                    using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
+                    foreach (var p in panels)
                     {
-                        var data = JObject.Load(jsonReader);
-                        var panels = data["engagementPanels"];
-                        if (panels != null)
+                        var r = p["engagementPanelSectionListRenderer"];
+                        if (r != null && r["panelIdentifier"] != null && r["panelIdentifier"].ToString().IndexOf("comments", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
-                            foreach (var p in panels)
+                            countText = r["header"]?["engagementPanelTitleHeaderRenderer"]?["contextualInfo"]?["runs"]?[0]?["text"]?.ToString();
+                            var content = r["content"]?["sectionListRenderer"];
+                            if (content != null)
                             {
-                                var r = p["engagementPanelSectionListRenderer"];
-                                if (r != null && r["panelIdentifier"] != null && r["panelIdentifier"].ToString().IndexOf("comments", StringComparison.OrdinalIgnoreCase) >= 0)
+                                var secs = content["contents"];
+                                if (secs != null)
                                 {
-                                    countText = r["header"]?["engagementPanelTitleHeaderRenderer"]?["contextualInfo"]?["runs"]?[0]?["text"]?.ToString();
-                                    var content = r["content"]?["sectionListRenderer"];
-                                    if (content != null)
+                                    foreach (var c in secs)
                                     {
-                                        var secs = content["contents"];
-                                        if (secs != null)
+                                        var itemSec = c["itemSectionRenderer"]?["contents"];
+                                        if (itemSec != null)
                                         {
-                                            foreach (var c in secs)
+                                            foreach (var ic in itemSec)
                                             {
-                                                var itemSec = c["itemSectionRenderer"]?["contents"];
-                                                if (itemSec != null)
+                                                var cont = ic["continuationItemRenderer"];
+                                                if (cont != null)
                                                 {
-                                                    foreach (var ic in itemSec)
-                                                    {
-                                                        var cont = ic["continuationItemRenderer"];
-                                                        if (cont != null)
-                                                        {
-                                                            continuationToken = cont["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
-                                                            break;
-                                                        }
-                                                    }
+                                                    continuationToken = cont["continuationEndpoint"]?["continuationCommand"]?["token"]?.ToString();
+                                                    break;
                                                 }
-                                                if (!string.IsNullOrEmpty(continuationToken)) break;
                                             }
                                         }
+                                        if (!string.IsNullOrEmpty(continuationToken)) break;
                                     }
-                                    break;
                                 }
                             }
+                            break;
                         }
                     }
                 }
@@ -1265,22 +1270,11 @@ namespace YTMusicWP
                     ["continuation"] = continuationToken
                 };
 
-                var reqCont = new HttpRequestMessage(HttpMethod.Post, "https://www.youtube.com/youtubei/v1/next?prettyPrint=false");
-                reqCont.Content = new StringContent(bodyCont.ToString(), System.Text.Encoding.UTF8, "application/json");
-                reqCont.Headers.Add("User-Agent", "com.google.android.youtube/19.09.37");
-
+                var dataCont = await PostWinrtJsonAsync("https://www.youtube.com/youtubei/v1/next?prettyPrint=false", bodyCont, "com.google.android.youtube/19.09.37").ConfigureAwait(false);
+                if (dataCont == null) return null;
                 string author = "";
                 string topText = "";
-
-                using (var respCont = await _client.SendAsync(reqCont))
-                {
-                    if (!respCont.IsSuccessStatusCode) return null;
-                    using (var stream = await respCont.Content.ReadAsStreamAsync())
-                    using (var reader = new System.IO.StreamReader(stream))
-                    using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
-                    {
-                        var dataCont = JObject.Load(jsonReader);
-                        var endpoints = dataCont["onResponseReceivedEndpoints"];
+                var endpoints = dataCont["onResponseReceivedEndpoints"];
                         if (endpoints != null)
                         {
                             foreach (var ep in endpoints)
@@ -1312,8 +1306,6 @@ namespace YTMusicWP
                                 if (!string.IsNullOrEmpty(topText)) break;
                             }
                         }
-                    }
-                }
 
                 if (!string.IsNullOrEmpty(topText) || !string.IsNullOrEmpty(countText))
                 {

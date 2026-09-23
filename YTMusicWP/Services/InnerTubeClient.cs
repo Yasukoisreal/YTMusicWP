@@ -1,6 +1,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -14,6 +15,28 @@ namespace YTMusicWP
     public static partial class InnerTubeClient
     {
         private static readonly HttpClient _client = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };
+        private static Windows.Web.Http.HttpClient _winrtClient;
+        private static readonly object _winrtClientLock = new object();
+
+        public static Windows.Web.Http.HttpClient GetWinrtClient()
+        {
+            if (_winrtClient == null)
+            {
+                lock (_winrtClientLock)
+                {
+                    if (_winrtClient == null)
+                    {
+                        var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
+                        filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
+                        filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
+                        filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
+                        _winrtClient = new Windows.Web.Http.HttpClient(filter);
+                    }
+                }
+            }
+            return _winrtClient;
+        }
+
         private static string _cachedVisitorData = null;
         private static DateTime _vdCacheTime = DateTime.MinValue;
 
@@ -146,20 +169,29 @@ namespace YTMusicWP
             try
             {
                 // Use lightweight sw.js_data endpoint instead of full homepage (~500KB → ~2KB)
-                var request = new HttpRequestMessage(HttpMethod.Get, "https://www.youtube.com/sw.js_data");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Linux; Andr0id 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 OPR/46.0.2207.0 OMI/4.21.0.273.DIA6.149 Model/Sony-BRAVIA-8K-UR2,gzip(gfe)");
-                using (var resp = await _client.SendAsync(request))
+                var resolved = await Services.SecureDnsResolver.RewriteUrlAsync("https://www.youtube.com/sw.js_data").ConfigureAwait(false);
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(resolved.Url)))
                 {
-                    if (resp.IsSuccessStatusCode)
+                    if (resolved.WasResolved && !string.IsNullOrEmpty(resolved.OriginalHost))
                     {
-                        string body = await resp.Content.ReadAsStringAsync();
-                        string vd = ExtractVisitorData(body);
-                        if (!string.IsNullOrEmpty(vd))
+                        request.Headers.Host = new Windows.Networking.HostName(resolved.OriginalHost);
+                    }
+                    request.Headers.TryAppendWithoutValidation("User-Agent", "Mozilla/5.0 (Linux; Andr0id 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 OPR/46.0.2207.0 OMI/4.21.0.273.DIA6.149 Model/Sony-BRAVIA-8K-UR2,gzip(gfe)");
+
+                    var client = GetWinrtClient();
+                    using (var resp = await client.SendRequestAsync(request).AsTask().ConfigureAwait(false))
+                    {
+                        if (resp.IsSuccessStatusCode)
                         {
-                            _cachedVisitorData = vd;
-                            _vdCacheTime = DateTime.Now;
-                            try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["CachedVisitorData"] = vd; } catch { }
-                            return vd;
+                            string body = await resp.Content.ReadAsStringAsync().AsTask().ConfigureAwait(false);
+                            string vd = ExtractVisitorData(body);
+                            if (!string.IsNullOrEmpty(vd))
+                            {
+                                _cachedVisitorData = vd;
+                                _vdCacheTime = DateTime.Now;
+                                try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["CachedVisitorData"] = vd; } catch { }
+                                return vd;
+                            }
                         }
                     }
                 }
@@ -265,32 +297,69 @@ namespace YTMusicWP
             return new JObject { ["client"] = client };
         }
 
-        public static async Task<JObject> PostInnerTubeAsync(string url, JObject body, bool isMusic = true)
+        public static async Task<JObject> PostWinrtJsonAsync(string url, JObject body, string userAgent = null, IDictionary<string, string> headers = null, bool isMusic = false)
         {
-            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+            var resolved = await Services.SecureDnsResolver.RewriteUrlAsync(url).ConfigureAwait(false);
+            using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post, new Uri(resolved.Url)))
             {
-                request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
-                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36");
-                if (!string.IsNullOrEmpty(CurrentLanguage))
+                if (resolved.WasResolved && !string.IsNullOrEmpty(resolved.OriginalHost))
                 {
-                    request.Headers.Add("Accept-Language", CurrentLanguage);
-                }
-                if (isMusic)
-                {
-                    request.Headers.Add("Origin", "https://music.youtube.com");
-                    request.Headers.Add("Referer", "https://music.youtube.com/");
+                    request.Headers.Host = new Windows.Networking.HostName(resolved.OriginalHost);
                 }
 
-                using (var resp = await _client.SendAsync(request))
+                if (body != null)
                 {
-                    using (var stream = await resp.Content.ReadAsStreamAsync())
-                    using (var reader = new System.IO.StreamReader(stream))
+                    request.Content = new Windows.Web.Http.HttpStringContent(
+                        body.ToString(),
+                        Windows.Storage.Streams.UnicodeEncoding.Utf8,
+                        "application/json"
+                    );
+                }
+
+                string ua = !string.IsNullOrEmpty(userAgent)
+                    ? userAgent
+                    : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36";
+                request.Headers.TryAppendWithoutValidation("User-Agent", ua);
+
+                if (!string.IsNullOrEmpty(CurrentLanguage))
+                {
+                    request.Headers.TryAppendWithoutValidation("Accept-Language", CurrentLanguage);
+                }
+
+                if (isMusic)
+                {
+                    request.Headers.TryAppendWithoutValidation("Origin", "https://music.youtube.com");
+                    request.Headers.TryAppendWithoutValidation("Referer", "https://music.youtube.com/");
+                }
+
+                if (headers != null)
+                {
+                    foreach (var kvp in headers)
+                    {
+                        request.Headers.TryAppendWithoutValidation(kvp.Key, kvp.Value);
+                    }
+                }
+
+                var client = GetWinrtClient();
+                using (var resp = await client.SendRequestAsync(request).AsTask().ConfigureAwait(false))
+                {
+                    if (!resp.IsSuccessStatusCode)
+                        return null;
+
+                    using (var stream = await resp.Content.ReadAsInputStreamAsync().AsTask().ConfigureAwait(false))
+                    using (var netStream = System.IO.WindowsRuntimeStreamExtensions.AsStreamForRead(stream))
+                    using (var reader = new System.IO.StreamReader(netStream))
                     using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
                     {
                         return JObject.Load(jsonReader);
                     }
                 }
             }
+        }
+
+        public static async Task<JObject> PostInnerTubeAsync(string url, JObject body, bool isMusic = true)
+        {
+            return await PostWinrtJsonAsync(url, body, null, null, isMusic).ConfigureAwait(false);
         }
 
         // ==========================================

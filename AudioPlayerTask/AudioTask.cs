@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 using Windows.Storage;
+using YTMusicWP.Services;
 
 namespace AudioPlayerTask
 {
@@ -405,9 +406,14 @@ namespace AudioPlayerTask
             try
             {
                 string result = null;
+                var resolvedSw = await SecureDnsResolver.RewriteUrlAsync("https://www.youtube.com/sw.js_data");
                 using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get,
-                    new Uri("https://www.youtube.com/sw.js_data")))
+                    new Uri(resolvedSw.Url)))
                 {
+                    if (resolvedSw.WasResolved && !string.IsNullOrEmpty(resolvedSw.OriginalHost))
+                    {
+                        request.Headers.Host = new Windows.Networking.HostName(resolvedSw.OriginalHost);
+                    }
                     request.Headers.TryAppendWithoutValidation("User-Agent",
                         "Mozilla/5.0 (Linux; Andr0id 9; BRAVIA 8K UR2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 OPR/46.0.2207.0 OMI/4.21.0.273.DIA6.149 Model/Sony-BRAVIA-8K-UR2,gzip(gfe)");
                     request.Headers.Add("Accept", "application/json");
@@ -715,6 +721,8 @@ namespace AudioPlayerTask
                 "}";
 
                 string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" || clientName == "VISIONOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI");
+                string playerUrl = "https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig";
+                var resolvedPlayer = await SecureDnsResolver.RewriteUrlAsync(playerUrl);
                 string json;
                 using (var content = new Windows.Web.Http.HttpStringContent(
                     requestBody,
@@ -722,8 +730,12 @@ namespace AudioPlayerTask
                     "application/json"
                 ))
                 using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post,
-                    new Uri("https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig")))
+                    new Uri(resolvedPlayer.Url)))
                 {
+                    if (resolvedPlayer.WasResolved && !string.IsNullOrEmpty(resolvedPlayer.OriginalHost))
+                    {
+                        request.Headers.Host = new Windows.Networking.HostName(resolvedPlayer.OriginalHost);
+                    }
                     request.Content = content;
                     request.Headers.TryAppendWithoutValidation("User-Agent", userAgent);
                     request.Headers.Add("X-YouTube-Client-Name", clientId);
@@ -1194,8 +1206,13 @@ namespace AudioPlayerTask
             if (string.IsNullOrEmpty(baseUrl)) return -1;
             try
             {
-                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Head, new Uri(baseUrl)))
+                var resolvedBase = await SecureDnsResolver.RewriteUrlAsync(baseUrl);
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Head, new Uri(resolvedBase.Url)))
                 {
+                    if (resolvedBase.WasResolved && !string.IsNullOrEmpty(resolvedBase.OriginalHost))
+                    {
+                        request.Headers.Host = new Windows.Networking.HostName(resolvedBase.OriginalHost);
+                    }
                     request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
                     using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                     {
@@ -1234,8 +1251,13 @@ namespace AudioPlayerTask
 
             try
             {
-                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(segUrl)))
+                var resolvedSeg = await SecureDnsResolver.RewriteUrlAsync(segUrl);
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(resolvedSeg.Url)))
                 {
+                    if (resolvedSeg.WasResolved && !string.IsNullOrEmpty(resolvedSeg.OriginalHost))
+                    {
+                        request.Headers.Host = new Windows.Networking.HostName(resolvedSeg.OriginalHost);
+                    }
                     request.Headers.TryAppendWithoutValidation("User-Agent", "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip");
                     using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
                     {

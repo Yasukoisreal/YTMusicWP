@@ -95,6 +95,9 @@
     <Compile Include="..\YTMusicWP\Models\SponsorBlockSegment.cs">
       <Link>SponsorBlockSegment.cs</Link>
     </Compile>
+    <Compile Include="..\YTMusicWP\Services\SecureDnsResolver.cs">
+      <Link>SecureDnsResolver.cs</Link>
+    </Compile>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '12.0' ">
     <VisualStudioVersion>12.0</VisualStudioVersion>

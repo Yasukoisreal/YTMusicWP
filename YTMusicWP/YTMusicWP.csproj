@@ -143,6 +143,7 @@
     <Compile Include="Services\SponsorBlockApi.cs" />
     <Compile Include="Services\AppleMusicLyricsApi.cs" />
     <Compile Include="Services\InnerTubeClient.Moods.cs" />
+    <Compile Include="Services\SecureDnsResolver.cs" />
     <Compile Include="Models\MoodCategoryItem.cs" />
   </ItemGroup>
   <ItemGroup>
