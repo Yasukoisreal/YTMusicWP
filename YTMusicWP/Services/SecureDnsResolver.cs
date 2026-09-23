@@ -99,18 +99,23 @@ namespace YTMusicWP.Services
                 }
             }
 
-            // 1. Try Primary: Google Public DNS (8.8.8.8)
-            string ip = await QueryDohEndpointAsync("https://8.8.8.8/resolve?name=" + Uri.EscapeDataString(host) + "&type=A", null, host).ConfigureAwait(false);
+            // 1. Try Primary: Cloudflare DNS (1.1.1.1) — Native IP SSL certificate, ultra-fast (<50ms)
+            string ip = await QueryDohEndpointAsync("https://1.1.1.1/dns-query?name=" + Uri.EscapeDataString(host) + "&type=A", "application/dns-json", host, null).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(ip))
                 return ip;
 
-            // 2. Try Secondary Google DNS (8.8.4.4)
-            ip = await QueryDohEndpointAsync("https://8.8.4.4/resolve?name=" + Uri.EscapeDataString(host) + "&type=A", null, host).ConfigureAwait(false);
+            // 2. Try Secondary: Cloudflare DNS (1.0.0.1)
+            ip = await QueryDohEndpointAsync("https://1.0.0.1/dns-query?name=" + Uri.EscapeDataString(host) + "&type=A", "application/dns-json", host, null).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(ip))
                 return ip;
 
-            // 3. Try Fallback: Cloudflare DNS (1.1.1.1)
-            ip = await QueryDohEndpointAsync("https://1.1.1.1/dns-query?name=" + Uri.EscapeDataString(host) + "&type=A", "application/dns-json", host).ConfigureAwait(false);
+            // 3. Try Fallback: Google Public DNS (dns.google)
+            ip = await QueryDohEndpointAsync("https://dns.google/resolve?name=" + Uri.EscapeDataString(host) + "&type=A", null, host, null).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(ip))
+                return ip;
+
+            // 4. Try Fallback: Google Public DNS IP (8.8.8.8) with Host header
+            ip = await QueryDohEndpointAsync("https://8.8.8.8/resolve?name=" + Uri.EscapeDataString(host) + "&type=A", null, host, "dns.google").ConfigureAwait(false);
             if (!string.IsNullOrEmpty(ip))
                 return ip;
 
@@ -157,20 +162,24 @@ namespace YTMusicWP.Services
             return info;
         }
 
-        private static async Task<string> QueryDohEndpointAsync(string endpointUrl, string acceptHeader, string host)
+        private static async Task<string> QueryDohEndpointAsync(string endpointUrl, string acceptHeader, string host, string customHost)
         {
             try
             {
                 var client = GetHttpClient();
                 using (var req = new HttpRequestMessage(HttpMethod.Get, new Uri(endpointUrl)))
                 {
+                    if (!string.IsNullOrEmpty(customHost))
+                    {
+                        req.Headers.Host = new HostName(customHost);
+                    }
                     if (!string.IsNullOrEmpty(acceptHeader))
                     {
                         req.Headers.TryAppendWithoutValidation("Accept", acceptHeader);
                     }
                     req.Headers.TryAppendWithoutValidation("User-Agent", "YTMusicWP/1.0");
 
-                    using (var cts = new CancellationTokenSource(3000)) // 3-second timeout per DoH provider
+                    using (var cts = new CancellationTokenSource(2000)) // 2-second timeout per DoH provider
                     using (var resp = await client.SendRequestAsync(req).AsTask(cts.Token).ConfigureAwait(false))
                     {
                         if (resp.IsSuccessStatusCode)
