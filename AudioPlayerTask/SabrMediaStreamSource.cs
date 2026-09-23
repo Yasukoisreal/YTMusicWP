@@ -376,21 +376,21 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    // Flow control: keep ~8-10s buffer in RAM (~350 samples)
-                    // Caps RAM footprint (critical for 512MB WP8.1) and prevents overrunning live broadcast head
+                    // Flow control: keep ~12-14s buffer in RAM (~550 samples, ~250KB)
+                    // Caps RAM footprint (critical for 512MB WP8.1) while providing comfortable cushion for weak networks
                     int count = 0;
                     lock (_queueLock) { count = _sampleQueue.Count; }
-                    if (count >= 350)
+                    if (count >= 550)
                     {
                         await Task.Delay(1500, ct).ConfigureAwait(false);
                         continue;
                     }
 
                     // Pacing guard for live streams: each chunk is ~5.0s of audio.
-                    // If buffer is healthy (>= 150 samples / ~3.5s) and we just received a chunk
+                    // If buffer is healthy (>= 250 samples / ~5.8s) and we just received a chunk
                     // less than 4 seconds ago, wait for the remaining time so the live encoder has
                     // time to produce the next segment without sending us a duplicate!
-                    if (count >= 150 && _lastSuccessfulChunkTime > DateTime.MinValue)
+                    if (count >= 250 && _lastSuccessfulChunkTime > DateTime.MinValue)
                     {
                         double elapsedSinceLast = (DateTime.UtcNow - _lastSuccessfulChunkTime).TotalSeconds;
                         if (elapsedSinceLast < 4.0)

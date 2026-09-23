@@ -12,16 +12,22 @@ namespace YTMusicWP.Services
     public static class DatabaseHelper
     {
         private static SQLiteAsyncConnection _db;
+        private static bool _sqliteDisabled = false;
 
         public static async Task InitializeAsync()
         {
+            if (_sqliteDisabled) return;
+
             try
             {
                 SQLitePCL.Batteries_V2.Init();
             }
             catch (Exception pex)
             {
-                Debug.WriteLine("[SQLite] Batteries_V2.Init: " + pex.Message);
+                Debug.WriteLine("[SQLite] Native SQLite not available: " + pex.Message + ". Using JSON storage fallback.");
+                _sqliteDisabled = true;
+                _db = null;
+                return;
             }
 
             string dbPath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "YTMusicWP.db3");
@@ -36,25 +42,9 @@ namespace YTMusicWP.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Database Initialize Error: " + ex.Message);
-                try
-                {
-                    _db = null;
-                    var file = await ApplicationData.Current.LocalFolder.GetFileAsync("YTMusicWP.db3");
-                    if (file != null)
-                    {
-                        string backupName = "YTMusicWP.db3.bak." + DateTime.UtcNow.Ticks;
-                        await file.RenameAsync(backupName, NameCollisionOption.GenerateUniqueName);
-                    }
-                    _db = new SQLiteAsyncConnection(dbPath);
-                    await _db.CreateTableAsync<HistoryEntity>();
-                    await _db.CreateTableAsync<FavoriteEntity>();
-                    await _db.CreateTableAsync<DownloadedEntity>();
-                }
-                catch (Exception retryEx)
-                {
-                    Debug.WriteLine("Database Recovery Error: " + retryEx.Message);
-                }
+                Debug.WriteLine("Database Initialize Error: " + ex.Message + ". Using JSON storage fallback.");
+                _sqliteDisabled = true;
+                _db = null;
             }
         }
 
