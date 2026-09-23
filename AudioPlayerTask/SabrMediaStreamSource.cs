@@ -290,10 +290,19 @@ namespace AudioPlayerTask
                 requestUrl += "&pot=" + Uri.EscapeDataString(_poToken);
             }
 
+            // Compute fetched position from _sampleIndex (what we've already enqueued),
+            // NOT _currentPositionMs (what the player has consumed).
+            // This tells the server the correct offset so it sends the NEXT chunk, not a repeat.
+            long fetchedPositionMs;
+            lock (_queueLock)
+            {
+                fetchedPositionMs = (long)(_sampleIndex * 1024.0 / 44100.0 * 1000.0);
+            }
+
             // Build Protobuf VideoPlaybackAbrRequest
             byte[] requestBody = MiniProtoWriter.BuildAudioAbrRequest(
                 _ustreamerConfig,
-                _currentPositionMs,
+                fetchedPositionMs,
                 _playbackRate,
                 140, // 140 = AAC 128kbps itag
                 _clientNameInt,
