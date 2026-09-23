@@ -124,7 +124,9 @@ namespace AudioPlayerTask
             int clientNameInt = 3,
             string clientVersion = "19.29.35",
             byte[] poToken = null,
-            byte[] playbackCookie = null)
+            byte[] playbackCookie = null,
+            bool formatsInitialized = false,
+            long bufferedDurationMs = 0)
         {
             using (var requestWriter = new MiniProtoWriter(512))
             {
@@ -154,13 +156,51 @@ namespace AudioPlayerTask
                 }
                 requestWriter.WriteSubMessage(1, clientAbrStateBytes);
 
-                // 2. Field 5: video_playback_ustreamer_config (Raw bytes)
+                // 2. Field 2: selected_format_ids — tells server "format already initialized, skip init metadata"
+                if (formatsInitialized && preferredItag > 0)
+                {
+                    byte[] selFmtBytes;
+                    using (var sfWriter = new MiniProtoWriter(16))
+                    {
+                        sfWriter.WriteVarintField(1, (ulong)preferredItag);
+                        selFmtBytes = sfWriter.ToByteArray();
+                    }
+                    requestWriter.WriteSubMessage(2, selFmtBytes);
+                }
+
+                // 3. Field 3: buffered_ranges — tells server what we already downloaded
+                if (formatsInitialized && bufferedDurationMs > 0 && preferredItag > 0)
+                {
+                    byte[] bufferedRangeBytes;
+                    using (var brWriter = new MiniProtoWriter(128))
+                    {
+                        // Sub-field 1: FormatId { itag }
+                        byte[] brFmtBytes;
+                        using (var bfWriter = new MiniProtoWriter(16))
+                        {
+                            bfWriter.WriteVarintField(1, (ulong)preferredItag);
+                            brFmtBytes = bfWriter.ToByteArray();
+                        }
+                        brWriter.WriteSubMessage(1, brFmtBytes);
+
+                        // Sub-field 2: startTimeMs = 0
+                        brWriter.WriteVarintField(2, 0);
+
+                        // Sub-field 3: durationMs = bufferedDurationMs
+                        brWriter.WriteVarintField(3, (ulong)bufferedDurationMs);
+
+                        bufferedRangeBytes = brWriter.ToByteArray();
+                    }
+                    requestWriter.WriteSubMessage(3, bufferedRangeBytes);
+                }
+
+                // 4. Field 5: video_playback_ustreamer_config (Raw bytes)
                 if (ustreamerConfig != null && ustreamerConfig.Length > 0)
                 {
                     requestWriter.WriteBytesField(5, ustreamerConfig);
                 }
 
-                // 3. Field 16: preferred_audio_format_ids (FormatId submessage: field 1 = itag)
+                // 5. Field 16: preferred_audio_format_ids (FormatId submessage: field 1 = itag)
                 if (preferredItag > 0)
                 {
                     byte[] formatIdBytes;
@@ -172,7 +212,7 @@ namespace AudioPlayerTask
                     requestWriter.WriteSubMessage(16, formatIdBytes);
                 }
 
-                // 4. Field 19: streamer_context
+                // 6. Field 19: streamer_context
                 byte[] streamerContextBytes;
                 using (var ctxWriter = new MiniProtoWriter(256))
                 {

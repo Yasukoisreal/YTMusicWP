@@ -52,6 +52,10 @@ namespace AudioPlayerTask
         private bool _isDisposed = false;
         private int _lastSpsCode = 0;
         private int _consecutiveEmptyChunks = 0;
+        private bool _formatsInitialized = false;
+        private readonly HashSet<int> _downloadedSequences = new HashSet<int>();
+        private int _lastMediaHeaderSeqNum = -1;
+        private bool _lastMediaHeaderIsInit = false;
 
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private Task _streamingTask = null;
@@ -265,6 +269,10 @@ namespace AudioPlayerTask
             _requestNumber = 0;
             _lastSpsCode = 0;
             _consecutiveEmptyChunks = 0;
+            _formatsInitialized = false;
+            _downloadedSequences.Clear();
+            _lastMediaHeaderSeqNum = -1;
+            _lastMediaHeaderIsInit = false;
 
             var token = _cts.Token;
             _streamingTask = Task.Run(() => StreamingLoopAsync(token), token);
@@ -308,7 +316,9 @@ namespace AudioPlayerTask
                 _clientNameInt,
                 !string.IsNullOrEmpty(_clientVersion) ? _clientVersion : "19.29.35",
                 _poTokenBytes,
-                _playbackCookieBytes);
+                _playbackCookieBytes,
+                _formatsInitialized,
+                fetchedPositionMs);
 
             using (var req = new HttpRequestMessage(HttpMethod.Post, new Uri(requestUrl)))
             {
@@ -401,6 +411,7 @@ namespace AudioPlayerTask
                     }
 
                     _consecutiveEmptyChunks = 0;
+                    _formatsInitialized = true;
 
                     // Audio samples received successfully, advance request sequence
                     _requestNumber++;
@@ -462,21 +473,78 @@ namespace AudioPlayerTask
 
                         if (segBytes != null && segBytes.Length > 0)
                         {
+                            // Skip init segments (moov/ftyp only, no playable audio)
+                            if (_lastMediaHeaderIsInit)
+                            {
+                                Log("Skipping init segment " + headerId + " (" + segBytes.Length + " bytes)");
+                                break;
+                            }
+
+                            // Deduplicate: skip if we already parsed this sequence number
+                            if (_lastMediaHeaderSeqNum >= 0 && _downloadedSequences.Contains(_lastMediaHeaderSeqNum))
+                            {
+                                Log("Skipping duplicate seq=" + _lastMediaHeaderSeqNum + " (" + segBytes.Length + " bytes)");
+                                break;
+                            }
+
                             int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
                             if (samples > 0)
                             {
-                                Log("Segment " + headerId + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
+                                if (_lastMediaHeaderSeqNum >= 0)
+                                    _downloadedSequences.Add(_lastMediaHeaderSeqNum);
+                                Log("Segment " + headerId + " seq=" + _lastMediaHeaderSeqNum + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
                             }
                             else
                             {
-                                Log("Segment " + headerId + " received (" + segBytes.Length + " bytes, init segment / no audio samples)");
+                                Log("Segment " + headerId + " received (" + segBytes.Length + " bytes, no audio samples)");
                             }
                         }
                     }
                     break;
 
                 case UmpPartId.MEDIA_HEADER:
-                    Log("Received MEDIA_HEADER (" + part.Size + " bytes)");
+                    // Parse MediaHeader protobuf: field 8 = isInitSeg (bool), field 9 = sequenceNumber (varint)
+                    _lastMediaHeaderIsInit = false;
+                    _lastMediaHeaderSeqNum = -1;
+                    if (part.Data != null && part.Data.Length > 2)
+                    {
+                        int idx = 0;
+                        while (idx < part.Data.Length)
+                        {
+                            int b = part.Data[idx++];
+                            int fld = b >> 3;
+                            int wt = b & 0x07;
+                            if (wt == 0) // varint
+                            {
+                                long val = 0; int shift = 0;
+                                while (idx < part.Data.Length)
+                                {
+                                    byte vb = part.Data[idx++];
+                                    val |= (long)(vb & 0x7F) << shift;
+                                    if ((vb & 0x80) == 0) break;
+                                    shift += 7;
+                                }
+                                if (fld == 8) _lastMediaHeaderIsInit = (val != 0);
+                                else if (fld == 9) _lastMediaHeaderSeqNum = (int)val;
+                            }
+                            else if (wt == 2) // length-delimited
+                            {
+                                int len = 0; int shift = 0;
+                                while (idx < part.Data.Length)
+                                {
+                                    byte lb = part.Data[idx++];
+                                    len |= (lb & 0x7F) << shift;
+                                    if ((lb & 0x80) == 0) break;
+                                    shift += 7;
+                                }
+                                idx += len;
+                            }
+                            else if (wt == 5) { idx += 4; } // fixed32
+                            else if (wt == 1) { idx += 8; } // fixed64
+                            else break;
+                        }
+                    }
+                    Log("Received MEDIA_HEADER (seq=" + _lastMediaHeaderSeqNum + ", init=" + _lastMediaHeaderIsInit + ", " + part.Size + " bytes)");
                     break;
 
                 case UmpPartId.FORMAT_INITIALIZATION_METADATA:
