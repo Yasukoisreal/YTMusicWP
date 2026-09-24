@@ -54,7 +54,7 @@ namespace YTMusicWP
 
         private int _playTrackSequence = 0;
 
-        private async void PlayTrack(YouTubeTrack track)
+        private async void PlayTrack(YouTubeTrack track, IEnumerable<YouTubeTrack> customQueue = null, double startPosition = 0)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
             int mySeq = ++_playTrackSequence;
@@ -132,31 +132,50 @@ namespace YTMusicWP
 
             YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(track.Title, track.ChannelName, track.ThumbnailUrl, null);
 
-            // BUG FIX: Xác định activeList TRƯỚC khi insert vào history.
-            // Nếu detect sau khi insert, historyTracks.Contains(track) sẽ luôn true,
-            // gây mất nguồn context thực sự (search, playlist, favorites...).
-            ObservableCollection<YouTubeTrack> activeList = homeTracks;
-            if (ContainsTrack(currentQueueTracks, track)) activeList = currentQueueTracks;
-            else if (ContainsTrack(searchResults, track)) activeList = searchResults;
-            else if (ContainsTrack(favoriteTracks, track)) activeList = favoriteTracks;
-            else if (ContainsTrack(downloadedTracks, track)) activeList = downloadedTracks;
-            else if (ContainsTrack(homeHistoryCarouselTracks, track)) activeList = homeHistoryCarouselTracks;
-            else if (ContainsTrack(historyQuickGridTracks, track)) activeList = historyQuickGridTracks;
-            else if (ContainsTrack(podcastTracks, track)) activeList = podcastTracks;
-            else if (ContainsTrack(audiobookTracks, track)) activeList = audiobookTracks;
+            // BUG FIX: Xác định activeList nguồn phát chuẩn xác.
+            // Ưu tiên customQueue và các view người dùng đang trực tiếp xem (Playlist, Artist),
+            // dời các danh sách thu gọn (homeHistoryCarousel, quickGrid) xuống cuối cùng để tránh lỗi lặp 3-4 bài.
+            ObservableCollection<YouTubeTrack> activeList = null;
+
+            if (customQueue != null && customQueue.Any())
+            {
+                activeList = customQueue as ObservableCollection<YouTubeTrack> ?? new ObservableCollection<YouTubeTrack>(customQueue);
+            }
             else if (PlaylistDetailsView != null && PlaylistDetailsView.Visibility == Visibility.Visible && PlaylistSongsList != null && PlaylistSongsList.ItemsSource != null && ContainsTrack(PlaylistSongsList.ItemsSource as IEnumerable<YouTubeTrack>, track))
             {
                 var playlistItems = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
                 activeList = playlistItems ?? new ObservableCollection<YouTubeTrack>((IEnumerable<YouTubeTrack>)PlaylistSongsList.ItemsSource);
             }
-            else if (ContainsTrack(historyTracks, track)) activeList = historyTracks;
-            else if (_currentViewingPlaylist != null && ContainsTrack(_currentViewingPlaylist.Tracks, track)) activeList = _currentViewingPlaylist.Tracks;
-            else if (ArtistSongsList.ItemsSource != null && ContainsTrack(ArtistSongsList.ItemsSource as IEnumerable<YouTubeTrack>, track))
+            else if (ArtistProfileView != null && ArtistProfileView.Visibility == Visibility.Visible && ArtistSongsList != null && ArtistSongsList.ItemsSource != null && ContainsTrack(ArtistSongsList.ItemsSource as IEnumerable<YouTubeTrack>, track))
             {
                 var artistList = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
                 activeList = artistList ?? new ObservableCollection<YouTubeTrack>((IEnumerable<YouTubeTrack>)ArtistSongsList.ItemsSource);
             }
-            else if (HomeDynamicSections.ItemsSource != null)
+            else if (_currentViewingPlaylist != null && ContainsTrack(_currentViewingPlaylist.Tracks, track))
+            {
+                activeList = _currentViewingPlaylist.Tracks;
+            }
+            else if (ContainsTrack(searchResults, track))
+            {
+                activeList = searchResults;
+            }
+            else if (ContainsTrack(favoriteTracks, track))
+            {
+                activeList = favoriteTracks;
+            }
+            else if (ContainsTrack(downloadedTracks, track))
+            {
+                activeList = downloadedTracks;
+            }
+            else if (ContainsTrack(podcastTracks, track))
+            {
+                activeList = podcastTracks;
+            }
+            else if (ContainsTrack(audiobookTracks, track))
+            {
+                activeList = audiobookTracks;
+            }
+            else if (HomeDynamicSections != null && HomeDynamicSections.ItemsSource != null)
             {
                 var sections = HomeDynamicSections.ItemsSource as System.Collections.Generic.IEnumerable<YTMusicWP.InnerTubeClient.HomeSection>;
                 if (sections != null)
@@ -165,6 +184,27 @@ namespace YTMusicWP
                     if (foundSection != null)
                         activeList = new ObservableCollection<YouTubeTrack>(foundSection.Tracks);
                 }
+            }
+            else if (ContainsTrack(currentQueueTracks, track))
+            {
+                activeList = currentQueueTracks;
+            }
+            else if (ContainsTrack(historyTracks, track))
+            {
+                activeList = historyTracks;
+            }
+            else if (ContainsTrack(homeHistoryCarouselTracks, track))
+            {
+                activeList = homeHistoryCarouselTracks;
+            }
+            else if (ContainsTrack(historyQuickGridTracks, track))
+            {
+                activeList = historyQuickGridTracks;
+            }
+
+            if (activeList == null)
+            {
+                activeList = homeTracks;
             }
 
             int trackIdx = FindTrackIndex(activeList, track);
@@ -241,6 +281,10 @@ namespace YTMusicWP
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
                 { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }, { "FastUrl", urls[relativeStartIndex] }
             };
+            if (startPosition > 0)
+            {
+                message.Add("StartPosition", startPosition);
+            }
             try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
 
             UpdateQueueActiveState();
@@ -493,6 +537,7 @@ namespace YTMusicWP
         {
             try { _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged; } catch { }
             _bgTimer = new Timer(TimerCallback, null, 0, 1000);
+            SyncBackgroundPlayer();
         }
 
         private async void BackgroundMediaPlayer_CurrentStateChanged(MediaPlayer sender, object args)
@@ -832,10 +877,23 @@ namespace YTMusicWP
         {
             try
             {
-                // FIX: Nhận diện OS đã tự đóng Background Task (State = Closed) để ra lệnh phát lại từ đầu
-                if (_appMediaPlayer.CurrentState == MediaPlayerState.Closed)
+                // FIX: Nhận diện OS đã tự đóng Background Task (State = Closed/Stopped) để ra lệnh phát tiếp tục từ vị trí đã lưu
+                if (_appMediaPlayer.CurrentState == MediaPlayerState.Closed || _appMediaPlayer.CurrentState == MediaPlayerState.Stopped)
                 {
-                    if (currentTrack != null) PlayTrack(currentTrack);
+                    if (currentTrack != null)
+                    {
+                        double resumePos = 0;
+                        try
+                        {
+                            var ls = ApplicationData.Current.LocalSettings.Values;
+                            if (ls.ContainsKey("CurrentPosition"))
+                            {
+                                resumePos = Convert.ToDouble(ls["CurrentPosition"]);
+                            }
+                        }
+                        catch { }
+                        PlayTrack(currentTrack, startPosition: resumePos);
+                    }
                 }
                 else if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
                 {
@@ -891,109 +949,135 @@ namespace YTMusicWP
                 var localSettings = ApplicationData.Current.LocalSettings.Values;
 
                 var state = _appMediaPlayer.CurrentState;
-                if (state == MediaPlayerState.Playing || state == MediaPlayerState.Paused || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening)
+                bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
+                bool isTrackActive = isPlaying || (state == MediaPlayerState.Paused);
+
+                // If closed or stopped, check if we have saved track info from a previous session to restore UI
+                if (!isTrackActive)
                 {
-                    bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
-                    SetPlayPauseIcon(isPlaying);
-
-                    string title = localSettings.ContainsKey("CurrentTitle") ? localSettings["CurrentTitle"].ToString() : "Unknown";
-                    string artist = localSettings.ContainsKey("CurrentArtist") ? localSettings["CurrentArtist"].ToString() : "Unknown";
-                    string vid = localSettings.ContainsKey("CurrentVideoId") ? localSettings["CurrentVideoId"].ToString() : "";
-                    string thumb = localSettings.ContainsKey("CurrentThumbnail") ? localSettings["CurrentThumbnail"].ToString() : "";
-
-                    // [OPT-M8] Skip nếu track đã sync — tránh tạo BitmapImage mới khi resume
-                    if (currentTrack != null && currentTrack.VideoId == vid)
+                    if (!localSettings.ContainsKey("CurrentVideoId") || string.IsNullOrEmpty(localSettings["CurrentVideoId"]?.ToString()))
                     {
                         return;
                     }
+                }
 
-                    MiniTitle.Text = title; BigTitle.Text = title;
-                    MiniArtist.Text = artist; BigArtist.Text = artist;
+                SetPlayPauseIcon(isPlaying);
 
-                    MenuTitle.Text = title;
-                    MenuArtist.Text = artist;
+                string title = localSettings.ContainsKey("CurrentTitle") ? localSettings["CurrentTitle"].ToString() : "Unknown";
+                string artist = localSettings.ContainsKey("CurrentArtist") ? localSettings["CurrentArtist"].ToString() : "Unknown";
+                string vid = localSettings.ContainsKey("CurrentVideoId") ? localSettings["CurrentVideoId"].ToString() : "";
+                string thumb = localSettings.ContainsKey("CurrentThumbnail") ? localSettings["CurrentThumbnail"].ToString() : "";
 
-                    if (!string.IsNullOrEmpty(thumb))
+                // [OPT-M8] Skip nếu track đã sync — tránh tạo BitmapImage mới khi resume
+                if (currentTrack != null && currentTrack.VideoId == vid)
+                {
+                    return;
+                }
+
+                MiniTitle.Text = title; BigTitle.Text = title;
+                MiniArtist.Text = artist; BigArtist.Text = artist;
+
+                MenuTitle.Text = title;
+                MenuArtist.Text = artist;
+
+                if (!string.IsNullOrEmpty(thumb))
+                {
+                    try
                     {
-                        try
+                        string finalThumbUrl = GetNowPlayingThumbnail(thumb);
+                        bool isWide = finalThumbUrl.Contains("w540-h304") || finalThumbUrl.Contains("mqdefault");
+
+                        if (isWide)
                         {
-                            string finalThumbUrl = GetNowPlayingThumbnail(thumb);
-                            bool isWide = finalThumbUrl.Contains("w540-h304") || finalThumbUrl.Contains("mqdefault");
+                            BigCoverRectangle.Width = 360;
+                            BigCoverRectangle.Height = 202;
+                            BigCoverShadow.Width = 350;
+                            BigCoverShadow.Height = 192;
+                            MiniCoverRectangle.Width = 82;
+                        }
+                        else
+                        {
+                            BigCoverRectangle.Width = 300;
+                            BigCoverRectangle.Height = 300;
+                            BigCoverShadow.Width = 290;
+                            BigCoverShadow.Height = 290;
+                            MiniCoverRectangle.Width = 46;
+                        }
 
-                            if (isWide)
+                        var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                        bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? (isWide ? 360 : 320) : (isWide ? 540 : 480);
+                        bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
+                        BigCoverImage.ImageSource = bigBmp;
+                        if (AppleMusicArtwork != null)
+                        {
+                            if (_isAppleMusicStyle)
                             {
-                                BigCoverRectangle.Width = 360;
-                                BigCoverRectangle.Height = 202;
-                                BigCoverShadow.Width = 350;
-                                BigCoverShadow.Height = 192;
-                                MiniCoverRectangle.Width = 82;
-                            }
-                            else
-                            {
-                                BigCoverRectangle.Width = 300;
-                                BigCoverRectangle.Height = 300;
-                                BigCoverShadow.Width = 290;
-                                BigCoverShadow.Height = 290;
-                                MiniCoverRectangle.Width = 46;
-                            }
-
-                            var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? (isWide ? 360 : 320) : (isWide ? 540 : 480);
-                            bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
-                            BigCoverImage.ImageSource = bigBmp;
-                            if (AppleMusicArtwork != null)
-                            {
-                                if (_isAppleMusicStyle)
+                                var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(thumb);
+                                var cachedBackdrop = Services.LumiaBlurHelper.GetCached(thumb);
+                                if (cachedBackdrop != null && AppleMusicBackdrop != null)
                                 {
-                                    var cachedFaded = Services.LumiaBlurHelper.GetCachedFaded(thumb);
-                                    var cachedBackdrop = Services.LumiaBlurHelper.GetCached(thumb);
-                                    if (cachedBackdrop != null && AppleMusicBackdrop != null)
-                                    {
-                                        AppleMusicBackdrop.Source = cachedBackdrop;
-                                    }
-                                    if (cachedFaded != null)
-                                    {
-                                        AppleMusicArtwork.Source = cachedFaded;
-                                        if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
-                                    }
-                                    else
-                                    {
-                                        var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                                        amBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
-                                        amBmp.UriSource = new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute);
-                                        AppleMusicArtwork.Source = amBmp;
-                                        if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
-                                    }
+                                    AppleMusicBackdrop.Source = cachedBackdrop;
+                                }
+                                if (cachedFaded != null)
+                                {
+                                    AppleMusicArtwork.Source = cachedFaded;
+                                    if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Collapsed;
                                 }
                                 else
                                 {
-                                    AppleMusicArtwork.Source = bigBmp;
+                                    var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                                    amBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                                    amBmp.UriSource = new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute);
+                                    AppleMusicArtwork.Source = amBmp;
+                                    if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                                 }
                             }
-                            AlbumArtEntranceStoryboard.Begin();
-                            MenuCoverImage.ImageSource = bigBmp;
-
-                            var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                            miniBmp.DecodePixelWidth = isWide ? 150 : 100;
-                            miniBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
-                            MiniCoverImage.ImageSource = miniBmp;
+                            else
+                            {
+                                AppleMusicArtwork.Source = bigBmp;
+                            }
                         }
-                        catch { }
+                        AlbumArtEntranceStoryboard.Begin();
+                        MenuCoverImage.ImageSource = bigBmp;
+
+                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
+                        miniBmp.DecodePixelWidth = isWide ? 150 : 100;
+                        miniBmp.UriSource = new Uri(GetSquareThumbnail(thumb), UriKind.Absolute);
+                        MiniCoverImage.ImageSource = miniBmp;
+                    }
+                    catch { }
+                }
+
+                if (!string.IsNullOrEmpty(vid))
+                {
+                    currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
+                    bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
+                    BigHeartBtn.Content = isFav ? "♥" : "♡";
+                    BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+
+                    var ignored = UpdateLyricsAsync(title, artist);
+                    UpdateNowPlayingGradient(title, artist, thumb);
+                    if (_isAppleMusicStyle)
+                    {
+                        UpdateAppleMusicCompactHeaders();
                     }
 
-                    if (!string.IsNullOrEmpty(vid))
+                    if (!isTrackActive && localSettings.ContainsKey("CurrentPosition"))
                     {
-                        currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
-                        bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
-                        BigHeartBtn.Content = isFav ? "♥" : "♡";
-                        BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
-
-                        var ignored = UpdateLyricsAsync(title, artist);
-                        UpdateNowPlayingGradient(title, artist, thumb);
-                        if (_isAppleMusicStyle)
+                        try
                         {
-                            UpdateAppleMusicCompactHeaders();
+                            double savedPos = Convert.ToDouble(localSettings["CurrentPosition"]);
+                            if (savedPos > 0)
+                            {
+                                MusicSlider.Value = savedPos;
+                                if (AppleMusicSlider != null) AppleMusicSlider.Value = savedPos;
+                                var ts = TimeSpan.FromSeconds(savedPos);
+                                CurrentTimeText.Text = ts.ToString(@"m\:ss");
+                                if (AppleMusicCurrentTime != null) AppleMusicCurrentTime.Text = ts.ToString(@"m\:ss");
+                                MiniProgressBar.Value = savedPos;
+                            }
                         }
+                        catch { }
                     }
                 }
             }

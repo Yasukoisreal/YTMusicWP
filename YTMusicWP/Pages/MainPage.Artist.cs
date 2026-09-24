@@ -533,7 +533,7 @@ namespace YTMusicWP
         private void ArtistPlayAll_Click(object sender, RoutedEventArgs e)
         {
             var list = ArtistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
-            if (list != null && list.Count > 0) PlayTrack(list[0]);
+            if (list != null && list.Count > 0) PlayTrack(list[0], list);
         }
 
         private void ArtistShuffle_Click(object sender, RoutedEventArgs e)
@@ -543,7 +543,7 @@ namespace YTMusicWP
             {
                 var rng = new Random();
                 int idx = rng.Next(list.Count);
-                PlayTrack(list[idx]);
+                PlayTrack(list[idx], list);
             }
         }
 
@@ -551,22 +551,6 @@ namespace YTMusicWP
         {
             var album = e.ClickedItem as ArtistAlbum;
             if (album == null) return;
-
-            // If it has a videoId, play it!
-            if (!string.IsNullOrEmpty(album.VideoId))
-            {
-                var track = new YouTubeTrack
-                {
-                    VideoId = album.VideoId,
-                    Title = album.Title,
-                    ChannelName = ArtistProfileTitle.Text,
-                    ThumbnailUrl = album.ThumbnailUrl
-                };
-
-                // If there's a playlist context attached, we could pass it, but for single video just play it
-                PlayTrack(track);
-                return;
-            }
 
             // If browseId looks like an artist profile, open artist
             if (!string.IsNullOrEmpty(album.BrowseId) && (album.BrowseId.StartsWith("UC") || album.BrowseId.StartsWith("FEmusic_library_privately_owned_artist")))
@@ -583,6 +567,22 @@ namespace YTMusicWP
                     OpenYouTubePlaylist(targetId.StartsWith("VL") ? targetId.Substring(2) : targetId, album.Title, album.ThumbnailUrl);
                 else
                     OpenYouTubePlaylist(targetId, album.Title, album.ThumbnailUrl);
+                return;
+            }
+
+            // Fallback: If it has a videoId, play it!
+            if (!string.IsNullOrEmpty(album.VideoId))
+            {
+                var track = new YouTubeTrack
+                {
+                    VideoId = album.VideoId,
+                    Title = album.Title,
+                    ChannelName = ArtistProfileTitle.Text,
+                    ThumbnailUrl = album.ThumbnailUrl
+                };
+
+                PlayTrack(track);
+                return;
             }
         }
         private void ArtistAbout_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)

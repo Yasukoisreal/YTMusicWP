@@ -52,6 +52,7 @@ namespace AudioPlayerTask
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
         private volatile bool _isUserPaused = false;
         private volatile bool _startPaused = false;
+        private double _pendingStartPosition = 0;
         private bool _isCurrentTrackLive = false;
         private LiveMediaStreamSource _liveMss = null;
         private SabrMediaStreamSource _sabrMss = null;
@@ -122,6 +123,19 @@ namespace AudioPlayerTask
         {
             try
             {
+                try
+                {
+                    if (!_isCurrentTrackLive && _mediaPlayer != null)
+                    {
+                        double pos = _mediaPlayer.Position.TotalSeconds;
+                        if (pos > 0)
+                        {
+                            Windows.Storage.ApplicationData.Current.LocalSettings.Values["CurrentPosition"] = pos;
+                        }
+                    }
+                }
+                catch { }
+
                 LogLive("[Live TaskInstance_Canceled] reason=" + reason);
                 FlushLiveLogs();
                 _systemControls.ButtonPressed -= SystemControls_ButtonPressed;
@@ -177,6 +191,15 @@ namespace AudioPlayerTask
                         _videoIdList = new List<string>((string[])e.Data["VideoIds"]);
                         _thumbnailList = new List<string>((string[])e.Data["Thumbnails"]);
                         _currentTrackIndex = (int)e.Data["StartIndex"];
+
+                        if (e.Data.ContainsKey("StartPosition"))
+                        {
+                            try { _pendingStartPosition = Convert.ToDouble(e.Data["StartPosition"]); } catch { _pendingStartPosition = 0; }
+                        }
+                        else
+                        {
+                            _pendingStartPosition = 0;
+                        }
 
                         if (e.Data.ContainsKey("FastUrl"))
                         {
@@ -2019,7 +2042,11 @@ namespace AudioPlayerTask
 
                 if (storedTitle != title) ls["CurrentTitle"] = title;
                 if (storedArtist != artist) ls["CurrentArtist"] = artist;
-                if (storedVid != vidId) ls["CurrentVideoId"] = vidId;
+                if (storedVid != vidId)
+                {
+                    ls["CurrentVideoId"] = vidId;
+                    ls["CurrentPosition"] = 0.0;
+                }
                 if (storedThumb != thumb) ls["CurrentThumbnail"] = thumb;
 
                 // Add to PendingHistory for SQLite insertion by foreground
@@ -2503,6 +2530,19 @@ namespace AudioPlayerTask
                 }
                 else if (sender.CurrentState == MediaPlayerState.Paused)
                 {
+                    try
+                    {
+                        if (!_isCurrentTrackLive)
+                        {
+                            double pos = sender.Position.TotalSeconds;
+                            if (pos > 0)
+                            {
+                                Windows.Storage.ApplicationData.Current.LocalSettings.Values["CurrentPosition"] = pos;
+                            }
+                        }
+                    }
+                    catch { }
+
                     if (_isCurrentTrackLive)
                     {
                         try { _liveBufferStopwatch.Stop(); } catch { }
@@ -2536,6 +2576,12 @@ namespace AudioPlayerTask
         {
             try
             {
+                if (!_isCurrentTrackLive && _pendingStartPosition > 0)
+                {
+                    try { sender.Position = TimeSpan.FromSeconds(_pendingStartPosition); } catch { }
+                }
+                _pendingStartPosition = 0;
+
                 if (sender.AutoPlay && sender.CurrentState != MediaPlayerState.Playing)
                 {
                     sender.Play();

@@ -809,21 +809,21 @@ namespace YTMusicWP
         private void PlayAllPlaylist_Click(object sender, RoutedEventArgs e)
         {
             // If filtered or active in list, play first track of displayed items
-            var source = PlaylistSongsList.ItemsSource as System.Collections.IEnumerable;
+            var source = PlaylistSongsList.ItemsSource as IEnumerable<YouTubeTrack>;
             if (source != null)
             {
-                var firstTrack = source.Cast<object>().FirstOrDefault() as YouTubeTrack;
+                var firstTrack = source.FirstOrDefault();
                 if (firstTrack != null)
                 {
-                    PlayTrack(firstTrack);
+                    PlayTrack(firstTrack, source);
                     return;
                 }
             }
 
             // Fallback: _currentViewingPlaylist
-            if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks.Count > 0)
+            if (_currentViewingPlaylist != null && _currentViewingPlaylist.Tracks != null && _currentViewingPlaylist.Tracks.Count > 0)
             {
-                PlayTrack(_currentViewingPlaylist.Tracks[0]);
+                PlayTrack(_currentViewingPlaylist.Tracks[0], _currentViewingPlaylist.Tracks);
                 return;
             }
 

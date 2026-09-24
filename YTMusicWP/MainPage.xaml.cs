@@ -823,7 +823,12 @@ namespace YTMusicWP
         private void SongList_ItemClick(object sender, ItemClickEventArgs e)
         {
             var track = e.ClickedItem as YouTubeTrack;
-            if (track != null) PlayTrack(track);
+            if (track != null)
+            {
+                var itemsControl = sender as ItemsControl;
+                var source = itemsControl?.ItemsSource as IEnumerable<YouTubeTrack>;
+                PlayTrack(track, source);
+            }
         }
 
         private YouTubeTrack _bottomSheetTrack;
