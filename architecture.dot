@@ -1,0 +1,198 @@
+digraph YTMusicWP_Architecture {
+    // General Graph Styling
+    graph [
+        label="YTMusicWP - Full System Architecture & Component Diagram\n(Windows Phone 8.1 / WPA81 Architecture)",
+        labelloc="t",
+        fontsize=20,
+        fontname="Segoe UI, Tahoma, sans-serif",
+        fontcolor="#FFFFFF",
+        bgcolor="#1E1E24",
+        rankdir="TB",
+        compound=true,
+        splines="spline",
+        nodesep=0.6,
+        ranksep=0.8
+    ];
+
+    node [
+        fontname="Segoe UI, Tahoma, sans-serif",
+        fontsize=11,
+        shape="box",
+        style="filled,rounded",
+        color="#4A5568",
+        fillcolor="#2D3748",
+        fontcolor="#F7FAFC",
+        penwidth=1.5,
+        margin="0.2,0.1"
+    ];
+
+    edge [
+        fontname="Segoe UI, Tahoma, sans-serif",
+        fontsize=9,
+        fontcolor="#A0AEC0",
+        color="#718096",
+        penwidth=1.2,
+        arrowsize=0.8
+    ];
+
+    // ==========================================
+    // FOREGROUND APPLICATION (YTMusicWP)
+    // ==========================================
+    subgraph cluster_foreground {
+        label = "Foreground UI Process (YTMusicWP.exe)";
+        style = "filled,rounded";
+        fillcolor = "#161B22";
+        color = "#30363D";
+        fontcolor = "#58A6FF";
+        fontsize = 14;
+
+        subgraph cluster_ui_pages {
+            label = "UI Layer (MainPage Partial Classes & Pages)";
+            style = "filled,rounded";
+            fillcolor = "#21262D";
+            color = "#30363D";
+            fontcolor = "#79C0FF";
+            fontsize = 12;
+
+            App [label="App.xaml.cs\n• Lifecycle (Suspension / Resume)\n• Unhandled Exception Logger\n• Startup Temp File Cleanup", fillcolor="#1F6FEB", fontcolor="#FFFFFF"];
+            MainPage [label="MainPage.xaml.cs\n• Core Navigation & Shell\n• Memory & Temp Monitoring", fillcolor="#238636", fontcolor="#FFFFFF"];
+            
+            Page_Playback [label="MainPage.Playback.cs\n• MiniPlayer & Full NowPlaying\n• Progress Timer & Seeking\n• Audio Play/Pause UI Sync"];
+            Page_NowPlaying [label="MainPage.NowPlaying.cs\n• Apple Music & Default UI Styles\n• Volume Slider & Compact Headers\n• Dock Controls (Lyrics / Queue)"];
+            Page_Lyrics [label="MainPage.Lyrics.cs\n• Synchronized LRC Parser\n• Apple Music Distance Falloff\n• Container Recycling & Centering"];
+            Page_Home [label="MainPage.Home.cs\n• Shelves & Quick Picks\n• Mood Categories & Playlists"];
+            Page_Search [label="MainPage.Search.cs\n• Debounced Query Execution\n• Instant Suggestion Chips"];
+            Page_Library [label="MainPage.Library.cs\n• Local History & Favorites\n• Offline Downloads & Playlists"];
+            Page_Artist [label="MainPage.Artist.cs\n• Discography, Albums, Singles"];
+            Page_Auth [label="MainPage.Auth.cs\n• OAuth Device Code Flow\n• Auto Token Refresh Engine"];
+            Page_Storage [label="MainPage.Storage.cs\n• Cache Management\n• Temp Cleaning (.tagging, .tmp)"];
+            Page_ListenTogether [label="MainPage.ListenTogether.cs\n• Room Creation & Sync\n• Live Listeners WebSocket UI"];
+        }
+
+        subgraph cluster_services {
+            label = "Foreground Services & Helpers Layer";
+            style = "filled,rounded";
+            fillcolor = "#21262D";
+            color = "#30363D";
+            fontcolor = "#7EE787";
+            fontsize = 12;
+
+            InnerTubeClient [label="InnerTubeClient\n• Browse / Search / Playlist API\n• Player & SABR Video Stream Info\n• OAuth Authenticated Requests", fillcolor="#0D4429", fontcolor="#E6EDF3"];
+            DatabaseHelper [label="DatabaseHelper (SQLite)\n• Playback History Tracking\n• Cached Tracks & Playlists\n• User Settings Storage", fillcolor="#0D4429", fontcolor="#E6EDF3"];
+            TileService [label="TileService\n• Live Tiles Push (310x310 / 150x150)\n• Peek Templates & Artwork Push", fillcolor="#0D4429", fontcolor="#E6EDF3"];
+            LumiaBlurHelper [label="LumiaBlurHelper\n• Lumia Imaging SDK 2.0 Blur\n• 120x200 Fast Texture Caching", fillcolor="#0D4429", fontcolor="#E6EDF3"];
+            ListenTogetherClient [label="ListenTogetherClient\n• WebSocket Client Connection\n• Host-Listener Sync Timestamps", fillcolor="#0D4429", fontcolor="#E6EDF3"];
+        }
+
+        subgraph cluster_models {
+            label = "Models & Data Converters";
+            style = "filled,rounded";
+            fillcolor = "#21262D";
+            color = "#30363D";
+            fontcolor = "#FFA657";
+            fontsize = 12;
+
+            YouTubeTrack [label="YouTubeTrack Model\n(Id, Title, Artist, Thumb, Duration)"];
+            LyricLine [label="LyricLine Model\n(TimeSpan, Text, IsActive)"];
+            DatabaseEntities [label="Database Entities\n(HistoryEntry, CachedSong)"];
+            Converters [label="XAML Converters\n• IsPlayingToColorConverter\n• SquareThumbnailConverter"];
+        }
+    }
+
+    // ==========================================
+    // WINRT IPC COMMUNICATION BOUNDARY
+    // ==========================================
+    subgraph cluster_winrt_ipc {
+        label = "WinRT Process Isolation & IPC Boundary (Windows Phone 8.1)";
+        style = "filled,dashed";
+        fillcolor = "#261C14";
+        color = "#D29922";
+        fontcolor = "#F0883E";
+        fontsize = 13;
+
+        IPC_Msg_To_BG [label="Foreground -> Background (ValueSet)\n• Command: 'Play', 'Pause', 'Skip', 'Seek'\n• Track Metadata (Cap <= 100 items)\n• Audio Stream URL or SABR Config", fillcolor="#5E3B08", fontcolor="#FFF8E7"];
+        IPC_Msg_To_FG [label="Background -> Foreground (ValueSet)\n• State Changed ('Playing', 'Paused', 'Ended')\n• Track Index Changed & Buffering Status\n• Live Tile & SMTC Track Sync", fillcolor="#5E3B08", fontcolor="#FFF8E7"];
+    }
+
+    // ==========================================
+    // BACKGROUND AUDIO PROCESS (AudioPlayerTask)
+    // ==========================================
+    subgraph cluster_background {
+        label = "Background Audio Process (AudioPlayerTask.winmd)";
+        style = "filled,rounded";
+        fillcolor = "#161B22";
+        color = "#30363D";
+        fontcolor = "#F778BA";
+        fontsize = 14;
+
+        AudioTask [label="AudioTask.cs (IBackgroundTask)\n• BackgroundMediaPlayer.Current Lifecycle\n• Queue Management & Shuffling\n• SystemMediaTransportControls (SMTC)\n• Persistent State & Resumption Handler", fillcolor="#891C5C", fontcolor="#FFFFFF"];
+        
+        LiveMediaStreamSource [label="LiveMediaStreamSource.cs\n• Live HLS / Chunk Streams\n• Rolling Ring Buffer Handler"];
+        SabrMediaStreamSource [label="SabrMediaStreamSource.cs\n• Direct YouTube SABR Source\n• Chunk Request Dispatcher"];
+        MiniProtoWriter [label="MiniProtoWriter.cs\n• Minimal SABR Request Protobuf Writer"];
+        UmpParser [label="UmpParser.cs\n• YouTube UMP Frame Multiplexer"];
+        
+        TempStorage [label="Storage / Temp Audio Cache\n• temp_play_* streams\n• Aggressive Startup Cleanup", shape="cylinder", fillcolor="#38215C", fontcolor="#E6EDF3"];
+    }
+
+    // ==========================================
+    // EXTERNAL SYSTEMS & HARDWARE
+    // ==========================================
+    subgraph cluster_external {
+        label = "External APIs & Windows Phone 8.1 System";
+        style = "filled,rounded";
+        fillcolor = "#12141A";
+        color = "#30363D";
+        fontcolor = "#8B949E";
+        fontsize = 13;
+
+        YouTube_Server [label="Google InnerTube & SABR Servers\n• Audio Streams (AAC/Opus)\n• Metadata, Search, Recommendations", shape="ellipse", fillcolor="#21262D", fontcolor="#C9D1D9"];
+        WP81_OS [label="Windows Phone 8.1 OS & Hardware\n• Lock Screen Controls\n• Volume Bar / Hardware Next-Prev Keys\n• 512MB RAM Constraints & Watchdog", shape="ellipse", fillcolor="#21262D", fontcolor="#C9D1D9"];
+    }
+
+    // ==========================================
+    // RELATIONSHIPS & DATA FLOW
+    // ==========================================
+
+    // Foreground Internal Flows
+    App -> MainPage [label="Launches / Suspends"];
+    MainPage -> Page_Playback;
+    MainPage -> Page_NowPlaying;
+    MainPage -> Page_Lyrics;
+    MainPage -> Page_Home;
+    MainPage -> Page_Search;
+    MainPage -> Page_Library;
+    MainPage -> Page_Artist;
+    MainPage -> Page_Auth;
+    MainPage -> Page_Storage;
+    MainPage -> Page_ListenTogether;
+
+    Page_Playback -> Page_NowPlaying [label="Style Switch / Dock Sync"];
+    Page_Playback -> Page_Lyrics [label="Sync Time & Lines"];
+    Page_Playback -> LumiaBlurHelper [label="Extract Blur Bitmap"];
+    Page_Home -> InnerTubeClient [label="Fetch Shelves"];
+    Page_Search -> InnerTubeClient [label="Query Items"];
+    Page_Library -> DatabaseHelper [label="Read/Write History"];
+    Page_Library -> Page_Playback [label="Play Local/History"];
+    Page_Playback -> TileService [label="Update Live Tile"];
+
+    // IPC Flows (Foreground <-> WinRT <-> Background)
+    Page_Playback -> IPC_Msg_To_BG [label="Send Play/Skip/Queue (<=100)", color="#E3B341", penwidth=2.0];
+    IPC_Msg_To_BG -> AudioTask [label="Deliver ValueSet", color="#E3B341", penwidth=2.0];
+
+    AudioTask -> IPC_Msg_To_FG [label="Notify Playback State", color="#F0883E", penwidth=2.0];
+    IPC_Msg_To_FG -> Page_Playback [label="Update UI Timer & Icons", color="#F0883E", penwidth=2.0];
+
+    // Background Audio Internal Flows
+    AudioTask -> SabrMediaStreamSource [label="Stream Audio"];
+    AudioTask -> LiveMediaStreamSource [label="Stream Live"];
+    SabrMediaStreamSource -> MiniProtoWriter [label="Build Header"];
+    SabrMediaStreamSource -> UmpParser [label="Extract Frames"];
+    AudioTask -> TempStorage [label="Cache Track / Cleanup"];
+
+    // System & Network Connections
+    InnerTubeClient -> YouTube_Server [label="HTTPS POST (OAuth/Guest)", color="#58A6FF"];
+    SabrMediaStreamSource -> YouTube_Server [label="HTTPS Audio Chunks", color="#58A6FF"];
+    AudioTask -> WP81_OS [label="Sync SMTC & Hardware Buttons", color="#7EE787"];
+    AudioTask -> TileService [label="Background Tile Push", color="#7EE787"];
+}

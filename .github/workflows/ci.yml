@@ -1,0 +1,60 @@
+name: CI / CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # =========================================================================
+  # JOB 1: Test & Quality Gate (Fail-Fast: Runs on EVERY Push and PR)
+  # =========================================================================
+  test_and_verify:
+    name: Automated Unit Testing & Code Verification
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup VSTest Path
+        uses: darenm/setup-vstest@v1.2
+
+      - name: Build Unit Test Suite (YTMusicWP.Tests)
+        run: |
+          msbuild YTMusicWP.Tests\YTMusicWP.Tests.csproj /t:Build /p:Configuration=Release /p:Platform="Any CPU" /v:m
+
+      - name: Execute Automated Unit Tests (Fail-Fast Gate)
+        run: |
+          vstest.console.exe YTMusicWP.Tests\bin\Release\YTMusicWP.Tests.dll /Logger:Console
+
+  # =========================================================================
+  # JOB 2: Release Gate (Runs ONLY on version tags 'v*' AND when Job 1 passes)
+  # =========================================================================
+  release_package:
+    name: Gated Release & Packaging
+    needs: test_and_verify
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Confirm Release Verification
+        run: |
+          echo "All unit tests and quality checks passed 100%. Ready for release artifact deployment."
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

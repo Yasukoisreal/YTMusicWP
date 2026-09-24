@@ -1,0 +1,579 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="YTMusicWP.App" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAQAAAAAAIAEg=</HashCode>
+      <FileName>App.xaml.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.HomeSectionTemplateSelector" Collapsed="true">
+    <Position X="2.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAgAAAAAAABAAAAAAAAACAIQAAAAAKAAEEAAAQAA=</HashCode>
+      <FileName>MainPage.xaml.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.MainPage" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="14.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>7/f///f///7/77/1X/7v/////3/3t3//f//7//3/v30=</HashCode>
+      <FileName>MainPage.xaml.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.LibraryItem" Collapsed="true">
+    <Position X="4" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAgAEAAQAAAAAAAAQAAAAAAAAAAAAAQAgA=</HashCode>
+      <FileName>Models\LibraryItem.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.LyricLine" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="11" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAAAABAEAAAIAAgwgAQgAAAAEQIAAAACAQAEQA=</HashCode>
+      <FileName>Models\LyricLine.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.MoodCategoryItem" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="5.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAIAgIAAIAIAEAAoEGgAAIgoAAACAAAAACAiAIQAAA=</HashCode>
+      <FileName>Models\MoodCategoryItem.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.SongCredits" Collapsed="true">
+    <Position X="12.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAAAIAAgBEgACAAAACAAAIABAACAAAAACAAAAAA=</HashCode>
+      <FileName>Models\SongCredits.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.UserPlaylist" Collapsed="true">
+    <Position X="2.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Models\UserPlaylist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.YouTubeTrack" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="9.25" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABVAQAAICAAOAUAA4gAGAIAZgozABAAQAoSUgABQAgg=</HashCode>
+      <FileName>Models\YouTubeTrack.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.ArtistSectionGroup" Collapsed="true">
+    <Position X="9.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAACEAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Pages\MainPage.Artist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.YouTubePlaylistInfo" Collapsed="true">
+    <Position X="5.75" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAABAAAAAAAAAAAAAAQAAAAQAAA=</HashCode>
+      <FileName>Pages\MainPage.Auth.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.YouTubeSubscription" Collapsed="true">
+    <Position X="7.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAQAAAAQAAA=</HashCode>
+      <FileName>Pages\MainPage.Auth.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.InnerTubeClient" Collapsed="true">
+    <Position X="5.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>lCZhgECQa4CCrkFNTxgCMBoEEEGC9pgBEQGQggBIdBA=</HashCode>
+      <FileName>Services\InnerTubeClient.Auth.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.PlaylistResult" Collapsed="true">
+    <Position X="0.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAAAEAAQAAAAAAAAAAAAAAIAAAAAAAQAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.ArtistResult" Collapsed="true">
+    <Position X="7.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAgAgAIAAAAAAQAAAAAAAAAAAgADAAAAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.ArtistAlbum" Collapsed="true">
+    <Position X="5.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAwAABAAAgAIAAAAAAAAAAAABQAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.DiscoverItem" Collapsed="true">
+    <Position X="7.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAAAAAAAAAEAAQAABAAAAAIAAAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.MoodItem" Collapsed="true">
+    <Position X="7.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAIAAAAAAEAAgAAAAAAAAAAAAAAAAAAAgAAAAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.MoodCategory" Collapsed="true">
+    <Position X="4" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAACEAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.CaptionTrack" Collapsed="true">
+    <Position X="0.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAgAAAAAAAEAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.Player.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.SearchSuggestionItem" Collapsed="true">
+    <Position X="5.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQQAIAAAAAAAEAAwAAIAAAAAIAABggAAQAAAAAQAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.Search.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.SearchCardItem" Collapsed="true">
+    <Position X="2.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgQAAAAAAAAAAFAAwAAIAAggAIEABAAAAAAAEAAQAgA=</HashCode>
+      <FileName>Services\InnerTubeClient.Search.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.SearchChipItem" Collapsed="true">
+    <Position X="4" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAEUAAAAAAgAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.Search.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Converters.IsPlayingToColorConverter" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="7.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAIAAAAAAAAgAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Converters\IsPlayingToColorConverter.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.Converters.SquareThumbnailConverter" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="2.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAIAAAAAAAAgAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Converters\SquareThumbnailConverter.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.Models.HistoryEntity" Collapsed="true">
+    <Position X="0.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAAgAAAAAEEAAAAAAAAAAoAAAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>Models\DatabaseEntities.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Models.FavoriteEntity" Collapsed="true">
+    <Position X="14.5" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAEEAAAAAAAAAAoAAAAAAAAAAAAAQAAA=</HashCode>
+      <FileName>Models\DatabaseEntities.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Models.DownloadedEntity" Collapsed="true">
+    <Position X="9.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEEAAAAAAgAAAoAAAAAAAAAAAABQAAA=</HashCode>
+      <FileName>Models\DatabaseEntities.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Models.SponsorBlockSegment" Collapsed="true">
+    <Position X="0.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAACAAAAAAAAAAAAAAAAAAEAAAAAAAAAAACAA=</HashCode>
+      <FileName>Models\SponsorBlockSegment.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.AppleMusicLyricsApi" Collapsed="true">
+    <Position X="2.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAIAAAAAAQAABAAAAAAAAAAAAAgAAAAAAAAAAQ=</HashCode>
+      <FileName>Services\AppleMusicLyricsApi.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.DatabaseHelper" Collapsed="true">
+    <Position X="5.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAgAgIAIAAIAEAAgAMAAAAAAAAAAAABAAAAAAAEABBA=</HashCode>
+      <FileName>Services\DatabaseHelper.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.LumiaBlurHelper" Collapsed="true">
+    <Position X="9.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAABAAAAEABAABAAAAAAAACAAAAAAAAATCQABgAA=</HashCode>
+      <FileName>Services\LumiaBlurHelper.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.M4aMetadataWriter" Collapsed="true">
+    <Position X="12.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAEAAAACAAAAAAAEAAAAgBBAAAAAAAAAAAAIAAEE=</HashCode>
+      <FileName>Services\M4aMetadataWriter.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.MemoryHelper" Collapsed="true">
+    <Position X="0.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAASAAEQIAAAAAAAAAAAAAgAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\MemoryHelper.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.QrCodeGenerator" Collapsed="true">
+    <Position X="7.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\QrCodeGenerator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.SecureDnsResolver" Collapsed="true">
+    <Position X="7.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEAIAAAAIAAAAAAAgAAABBAAAAgABAAAAAACQAAEAA=</HashCode>
+      <FileName>Services\SecureDnsResolver.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.SponsorBlockApi" Collapsed="true">
+    <Position X="14.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEAAAAAAABAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\SponsorBlockApi.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.TileService" Collapsed="true">
+    <Position X="5.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QARAAAAAIAACAQAABBYAAAgQAMAAMoAIAAFAAFASAAE=</HashCode>
+      <FileName>Services\TileService.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ListenTogetherClient" Collapsed="true" BaseTypeListCollapsed="true">
+    <Position X="5.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AA1AAAAAQCCAWAFAAKAAAACAqBoAAAABAAEECqsAAgA=</HashCode>
+      <FileName>Services\ListenTogether\ListenTogetherClient.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.RoomMember" Collapsed="true">
+    <Position X="14.5" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAABCAQAAAAwAAAAQAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ListenTogetherManager.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.PendingJoinRequest" Collapsed="true">
+    <Position X="9.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAwAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ListenTogetherManager.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ListenTogetherManager" Collapsed="true">
+    <Position X="7.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CSQEJBASUEANBEEgAABIg5AAwAxYACBEUAIEAAAQASQ=</HashCode>
+      <FileName>Services\ListenTogether\ListenTogetherManager.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.MessageTypes" Collapsed="true">
+    <Position X="2.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>DESEACAQGEABBQAMEEIGAAAAgAgSAAAAIACBAIAAEAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.PlaybackActions" Collapsed="true">
+    <Position X="14.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAgAAAAAEAAAQAACAgAAAAAAAAAAAAAgAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.Envelope" Collapsed="true">
+    <Position X="11" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAQEAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ClientCapabilities" Collapsed="true">
+    <Position X="2.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAiAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ServerCapabilities" Collapsed="true">
+    <Position X="9.25" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAAAAAAAQAAAAAAAAAAACAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.TrackInfo" Collapsed="true">
+    <Position X="7.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAACAAAAEAACAEAAAAAACAAAAIAAAAAAAAAACAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.UserInfo" Collapsed="true">
+    <Position X="12.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAABAAQAAAAgAAAAQAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.RoomState" Collapsed="true">
+    <Position X="0.5" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAAAAAAAAgAAEAAAAQQERAACAAAAIAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.CreateRoomPayload" Collapsed="true">
+    <Position X="4" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.RoomCreatedPayload" Collapsed="true">
+    <Position X="12.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAAAAAAAgAAABAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.JoinRoomPayload" Collapsed="true">
+    <Position X="14.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAAAAABAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.JoinRequestPayload" Collapsed="true">
+    <Position X="12.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ApproveJoinPayload" Collapsed="true">
+    <Position X="4" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.RejectJoinPayload" Collapsed="true">
+    <Position X="11" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAIAAAAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.JoinApprovedPayload" Collapsed="true">
+    <Position X="9.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAAAAAAAgAAABAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.JoinRejectedPayload" Collapsed="true">
+    <Position X="11" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.UserJoinedPayload" Collapsed="true">
+    <Position X="14.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.UserLeftPayload" Collapsed="true">
+    <Position X="0.5" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.UserDisconnectedPayload" Collapsed="true">
+    <Position X="11" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.UserReconnectedPayload" Collapsed="true">
+    <Position X="4" Y="8.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.PingPayload" Collapsed="true">
+    <Position X="11" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAEAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.PongPayload" Collapsed="true">
+    <Position X="2.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAgAAAAAAAAAAAAAAAAAABAAAAAAEAgAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.BufferWaitPayload" Collapsed="true">
+    <Position X="14.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.BufferReadyPayload" Collapsed="true">
+    <Position X="12.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.BufferCompletePayload" Collapsed="true">
+    <Position X="11" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.PlaybackActionPayload" Collapsed="true">
+    <Position X="12.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAgAAAAAAAASEAEAABAAmIAAAAAAAQ=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.SyncStatePayload" Collapsed="true">
+    <Position X="4" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAgAAAAAAAQQEQAACAAAAIAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ErrorPayload" Collapsed="true">
+    <Position X="12.75" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAIAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.KickUserPayload" Collapsed="true">
+    <Position X="2.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAIAAAAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.KickedPayload" Collapsed="true">
+    <Position X="0.5" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.TransferHostPayload" Collapsed="true">
+    <Position X="9.25" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.HostChangedPayload" Collapsed="true">
+    <Position X="4" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ReconnectPayload" Collapsed="true">
+    <Position X="9.25" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ProtobufStream" Collapsed="true">
+    <Position X="5.75" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAAAAABAAAAAQwIBAAAAQAAAAUAAAAADgAAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ProtobufCodec" Collapsed="true">
+    <Position X="4" Y="5.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABBDAAgAAiAAAAAESQAQDgAAAQETAEAEAhAAQARFDwA=</HashCode>
+      <FileName>Services\ListenTogether\ProtobufCodec.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="YTMusicWP.Services.ListenTogether.ServerClock" Collapsed="true">
+    <Position X="11" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAEAABAAgAAAAAAEAgCEABAAACAAAAAAAAAE=</HashCode>
+      <FileName>Services\ListenTogether\ServerClock.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Struct Name="YTMusicWP.Services.ResolvedUrlInfo" Collapsed="true">
+    <Position X="0.5" Y="9.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAIAAAAAAAE=</HashCode>
+      <FileName>Services\SecureDnsResolver.cs</FileName>
+    </TypeIdentifier>
+  </Struct>
+  <Enum Name="YTMusicWP.SearchSuggestionType" Collapsed="true">
+    <Position X="2.25" Y="11" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAAAAAAAAAAAAAAAAAgAAIAAAAgAAAAACAAAAAA=</HashCode>
+      <FileName>Services\InnerTubeClient.Search.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="YTMusicWP.Services.ListenTogether.ConnectionState" Collapsed="true">
+    <Position X="0.5" Y="11" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAQAACAAAAAAAAAAAAAAAAABAAAgAAAAA=</HashCode>
+      <FileName>Services\ListenTogether\ListenTogetherManager.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
