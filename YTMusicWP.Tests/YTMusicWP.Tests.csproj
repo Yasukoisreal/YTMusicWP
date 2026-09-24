@@ -53,6 +53,9 @@
     <Compile Include="MiniProtoWriterTests.cs" />
     <Compile Include="UmpParserTests.cs" />
     <Compile Include="LrcParserTests.cs" />
+    <Compile Include="FormatSelectorTests.cs" />
+    <Compile Include="SponsorBlockFilterTests.cs" />
+    <Compile Include="TrackDurationParserTests.cs" />
     <Compile Include="..\AudioPlayerTask\MiniProtoWriter.cs">
       <Link>Sources\MiniProtoWriter.cs</Link>
     </Compile>
@@ -61,6 +64,18 @@
     </Compile>
     <Compile Include="..\YTMusicWP\Services\LrcParser.cs">
       <Link>Sources\LrcParser.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\FormatSelector.cs">
+      <Link>Sources\FormatSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\SponsorBlockFilter.cs">
+      <Link>Sources\SponsorBlockFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Models\SponsorBlockSegment.cs">
+      <Link>Sources\SponsorBlockSegment.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\TrackDurationParser.cs">
+      <Link>Sources\TrackDurationParser.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />

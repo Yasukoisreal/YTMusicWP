@@ -1,4 +1,4 @@
-﻿namespace YTMusicWP.Models
+namespace YTMusicWP.Models
 {
     internal class SponsorBlockSegment
     {

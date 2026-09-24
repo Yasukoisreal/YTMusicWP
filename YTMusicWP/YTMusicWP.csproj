@@ -132,6 +132,9 @@
     <Compile Include="Services\MemoryHelper.cs" />
     <Compile Include="Services\M4aMetadataWriter.cs" />
     <Compile Include="Services\LrcParser.cs" />
+    <Compile Include="Services\FormatSelector.cs" />
+    <Compile Include="Services\SponsorBlockFilter.cs" />
+    <Compile Include="Services\TrackDurationParser.cs" />
     <Compile Include="Models\YouTubeTrack.cs" />
     <Compile Include="Models\SongCredits.cs" />
     <Compile Include="Models\DatabaseEntities.cs" />
