@@ -416,5 +416,60 @@ namespace AudioPlayerTask
             catch { }
             return null;
         }
+
+        /// <summary>
+        /// Extracts the status integer from a STREAM_PROTECTION_STATUS (type 58) protobuf payload.
+        /// Protobuf schema: optional int32 status = 1 (tag 0x08).
+        /// Values: 1 = OK (verified/authorized), 2 = Attestation pending, 3 = Attestation required.
+        /// </summary>
+        public static int ExtractStreamProtectionStatus(byte[] data)
+        {
+            if (data == null || data.Length == 0) return 0;
+            try
+            {
+                int idx = 0;
+                while (idx < data.Length)
+                {
+                    byte tag = data[idx++];
+                    int fieldNum = tag >> 3;
+                    int wireType = tag & 0x07;
+
+                    if (fieldNum == 1 && wireType == 0)
+                    {
+                        long val = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            val |= (long)(b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        return (int)val;
+                    }
+                    else if (wireType == 0)
+                    {
+                        while (idx < data.Length && (data[idx++] & 0x80) != 0) { }
+                    }
+                    else if (wireType == 2)
+                    {
+                        int len = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            len |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        idx += len;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            catch { }
+            return 0;
+        }
     }
 }

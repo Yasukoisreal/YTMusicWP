@@ -688,9 +688,10 @@ namespace AudioPlayerTask
                     break;
 
                 case UmpPartId.STREAM_PROTECTION_STATUS:
-                    int spsCode = (part.Data != null && part.Data.Length > 1) ? (int)part.Data[1] : 0;
+                    int spsCode = UmpParser.ExtractStreamProtectionStatus(part.Data);
                     _lastSpsCode = spsCode;
-                    Log("Received STREAM_PROTECTION_STATUS (code " + spsCode + ", " + part.Size + " bytes)");
+                    string spsDesc = spsCode == 1 ? "OK / Verified" : (spsCode == 2 ? "Attestation Pending" : (spsCode == 3 ? "Attestation Required" : "Code " + spsCode));
+                    Log("Received STREAM_PROTECTION_STATUS: code " + spsCode + " (" + spsDesc + ", " + part.Size + " bytes)");
                     break;
 
                 default:
