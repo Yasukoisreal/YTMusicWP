@@ -207,12 +207,10 @@ namespace YTMusicWP
                 activeList = homeTracks;
             }
 
-            int trackIdx = FindTrackIndex(activeList, track);
             // SAFETY FALLBACK: Prevents IndexOutOfRangeException if track is not in activeList
-            if (activeList == null || trackIdx < 0)
+            if (activeList == null || !ContainsTrack(activeList, track))
             {
                 activeList = new ObservableCollection<YouTubeTrack> { track };
-                trackIdx = 0;
             }
 
             // Cập nhật lịch sử SAU khi đã chọn activeList
@@ -235,6 +233,14 @@ namespace YTMusicWP
             }
 
             if (mySeq != _playTrackSequence || currentTrack != track) return;
+
+            // BUG FIX: Luôn tính lại trackIdx ngay trước khi cắt slice để tránh sai lệch index khi activeList (như historyTracks) bị thay đổi vị trí do cập nhật lịch sử phát
+            int trackIdx = FindTrackIndex(activeList, track);
+            if (trackIdx < 0)
+            {
+                activeList = new ObservableCollection<YouTubeTrack> { track };
+                trackIdx = 0;
+            }
 
             // OPTIMIZATION: Giới hạn mảng gửi sang BackgroundTask để tránh lỗi IPC Payload quá tải (RAM 512MB)
             int maxItems = 100;
