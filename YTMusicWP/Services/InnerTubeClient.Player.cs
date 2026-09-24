@@ -356,7 +356,7 @@ namespace YTMusicWP
                         return sabrDescriptor;
                     }
 
-                    int[] preferredItags = new[] { 18, 140, 141, 139 };
+                    var candidateFormats = new List<Services.StreamFormatInfo>();
 
                     var fmts2 = data["streamingData"]?["formats"];
                     if (fmts2 != null)
@@ -364,19 +364,12 @@ namespace YTMusicWP
                         foreach (var fmt in fmts2)
                         {
                             int itag = fmt["itag"]?.Value<int>() ?? 0;
-                            if (itag == 18)
+                            string url = fmt["url"]?.ToString();
+                            string mime = fmt["mimeType"]?.ToString();
+                            int bitrate = fmt["bitrate"]?.Value<int>() ?? 0;
+                            if (itag > 0 && !string.IsNullOrEmpty(url))
                             {
-                                string url = fmt["url"]?.ToString();
-                                if (!string.IsNullOrEmpty(url))
-                                {
-                                    if (url.IndexOf("live=1", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                        url.IndexOf("live/1", StringComparison.OrdinalIgnoreCase) >= 0)
-                                    {
-                                        continue;
-                                    }
-                                    LastResolveDebug += " i18:OK";
-                                    return PrepareStreamUrl(url);
-                                }
+                                candidateFormats.Add(new Services.StreamFormatInfo(itag, url, mime, bitrate));
                             }
                         }
                     }
@@ -384,27 +377,35 @@ namespace YTMusicWP
                     var formats = data["streamingData"]?["adaptiveFormats"];
                     if (formats != null)
                     {
-                        foreach (int targetItag in preferredItags)
+                        foreach (var fmt in formats)
                         {
-                            foreach (var fmt in formats)
+                            int itag = fmt["itag"]?.Value<int>() ?? 0;
+                            string url = fmt["url"]?.ToString();
+                            string mime = fmt["mimeType"]?.ToString();
+                            int bitrate = fmt["bitrate"]?.Value<int>() ?? 0;
+                            if (itag > 0 && !string.IsNullOrEmpty(url))
                             {
-                                int itag = fmt["itag"]?.Value<int>() ?? 0;
-                                if (itag == targetItag)
-                                {
-                                    string url = fmt["url"]?.ToString();
-                                    if (!string.IsNullOrEmpty(url))
-                                    {
-                                        if (url.IndexOf("live=1", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                            url.IndexOf("live/1", StringComparison.OrdinalIgnoreCase) >= 0)
-                                        {
-                                            continue;
-                                        }
-                                        LastResolveDebug += " i" + itag + ":OK";
-                                        return PrepareStreamUrl(url);
-                                    }
-                                }
+                                candidateFormats.Add(new Services.StreamFormatInfo(itag, url, mime, bitrate));
                             }
                         }
+                    }
+
+                    var qualityPref = Services.AudioQualityPreference.Auto;
+                    try
+                    {
+                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                        if (ls.ContainsKey("AudioQualityPreference"))
+                        {
+                            qualityPref = (Services.AudioQualityPreference)Convert.ToInt32(ls["AudioQualityPreference"]);
+                        }
+                    }
+                    catch { }
+
+                    var bestFormat = Services.FormatSelector.SelectBestFormat(candidateFormats, qualityPref);
+                    if (bestFormat != null)
+                    {
+                        LastResolveDebug += " i" + bestFormat.Itag + ":OK";
+                        return PrepareStreamUrl(bestFormat.Url);
                     }
 
                     // 3. Fallback cho SABR streams (Google Server-side Adaptive Bitrate) - Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource
