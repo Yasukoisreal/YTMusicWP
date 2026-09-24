@@ -25,25 +25,9 @@ jobs:
       - name: Setup VSTest Path
         uses: darenm/setup-vstest@v1.2
 
-      - name: Setup .NET 4.5.2 Reference Assemblies
-        shell: pwsh
-        run: |
-          $targetDir = "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5.2"
-          if (!(Test-Path $targetDir)) {
-            Write-Host "Installing .NET Framework 4.5.2 Reference Assemblies from NuGet..."
-            $ProgressPreference = 'SilentlyContinue'
-            $zipPath = "$env:TEMP\net452.zip"
-            $extractPath = "$env:TEMP\net452_extracted"
-            Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.NETFramework.ReferenceAssemblies.net452/1.0.3" -OutFile $zipPath
-            Expand-Archive -Force -Path $zipPath -DestinationPath $extractPath
-            New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
-            Copy-Item -Path "$extractPath\build\.NETFramework\v4.5.2\*" -Destination $targetDir -Recurse -Force
-            Write-Host "Successfully installed .NET Framework 4.5.2 Reference Assemblies."
-          }
-
       - name: Build Unit Test Suite (YTMusicWP.Tests)
         run: |
-          msbuild YTMusicWP.Tests\YTMusicWP.Tests.csproj /t:Build /p:Configuration=Release /p:Platform="Any CPU" /v:m
+          msbuild YTMusicWP.Tests\YTMusicWP.Tests.csproj /t:Build /p:Configuration=Release /p:Platform="Any CPU" /p:TargetFrameworkVersion=v4.8 /v:m
 
       - name: Execute Automated Unit Tests (Fail-Fast Gate)
         run: |
