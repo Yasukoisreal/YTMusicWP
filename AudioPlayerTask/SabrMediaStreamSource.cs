@@ -140,7 +140,7 @@ namespace AudioPlayerTask
             var streamDescriptor = new AudioStreamDescriptor(encodingProps);
 
             _mss = new MediaStreamSource(streamDescriptor);
-            _mss.CanSeek = true;
+            _mss.CanSeek = !_isLiveStream;
             _mss.BufferTime = TimeSpan.FromSeconds(3);
 
             _mss.SampleRequested += Mss_SampleRequested;
@@ -163,7 +163,7 @@ namespace AudioPlayerTask
         private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
             var request = args.Request;
-            if (request.StartPosition.HasValue && request.StartPosition.Value > TimeSpan.FromMilliseconds(500))
+            if (!_isLiveStream && request.StartPosition.HasValue && request.StartPosition.Value > TimeSpan.FromMilliseconds(500))
             {
                 TimeSpan startPos = request.StartPosition.Value;
                 Log("Mss_Starting seek to " + startPos.TotalSeconds.ToString("F1") + "s");
@@ -237,8 +237,27 @@ namespace AudioPlayerTask
                 if (samples0 > 0)
                 {
                     _requestNumber = 1;
+                    _formatsInitialized = true;
                     _lastSuccessfulChunkTime = DateTime.UtcNow;
                     Log("Preload done: parsed " + samples0 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+
+                    if (_isLiveStream)
+                    {
+                        Log("Preloading rn=1 to build live buffer cushion...");
+                        for (int attempt = 0; attempt < 5; attempt++)
+                        {
+                            if (ct.IsCancellationRequested) break;
+                            await Task.Delay(1000, ct).ConfigureAwait(false);
+                            int samples1 = await FetchChunkAsync(1, ct).ConfigureAwait(false);
+                            if (samples1 > 0)
+                            {
+                                _requestNumber = 2;
+                                _lastSuccessfulChunkTime = DateTime.UtcNow;
+                                Log("Live cushion ready: parsed " + (samples0 + samples1) + " total samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                                break;
+                            }
+                        }
+                    }
                     return true;
                 }
                 else if (samples0 == 0 && string.IsNullOrEmpty(LastError))
@@ -248,8 +267,27 @@ namespace AudioPlayerTask
                     if (samples1 > 0)
                     {
                         _requestNumber = 2;
+                        _formatsInitialized = true;
                         _lastSuccessfulChunkTime = DateTime.UtcNow;
                         Log("Preload done at rn=1: parsed " + samples1 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+
+                        if (_isLiveStream)
+                        {
+                            Log("Preloading rn=2 to build live buffer cushion...");
+                            for (int attempt = 0; attempt < 5; attempt++)
+                            {
+                                if (ct.IsCancellationRequested) break;
+                                await Task.Delay(1000, ct).ConfigureAwait(false);
+                                int samples2 = await FetchChunkAsync(2, ct).ConfigureAwait(false);
+                                if (samples2 > 0)
+                                {
+                                    _requestNumber = 3;
+                                    _lastSuccessfulChunkTime = DateTime.UtcNow;
+                                    Log("Live cushion ready: parsed " + (samples1 + samples2) + " total samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                                    break;
+                                }
+                            }
+                        }
                         return true;
                     }
                     LastError = "No audio samples received in initial chunks";
@@ -324,6 +362,10 @@ namespace AudioPlayerTask
                 fetchedPositionMs = (long)(_sampleIndex * 1024.0 / 44100.0 * 1000.0);
             }
 
+            int startSeq = (_isLiveStream && _lastMediaHeaderSeqNum >= 0) ? _lastMediaHeaderSeqNum : _firstMediaHeaderSeqNum;
+            int endSeq = _lastMediaHeaderSeqNum;
+            long segDurationMs = _isLiveStream ? 5000 : fetchedPositionMs;
+
             // Build Protobuf VideoPlaybackAbrRequest
             byte[] requestBody = MiniProtoWriter.BuildAudioAbrRequest(
                 _ustreamerConfig,
@@ -335,9 +377,9 @@ namespace AudioPlayerTask
                 _poTokenBytes,
                 _playbackCookieBytes,
                 _formatsInitialized,
-                fetchedPositionMs,
-                _firstMediaHeaderSeqNum,
-                _lastMediaHeaderSeqNum);
+                segDurationMs,
+                startSeq,
+                endSeq);
 
             var resolvedInfo = await SecureDnsResolver.RewriteUrlAsync(requestUrl).ConfigureAwait(false);
 
@@ -394,21 +436,22 @@ namespace AudioPlayerTask
             {
                 try
                 {
-                    // Flow control: keep ~12-14s buffer in RAM (~550 samples, ~250KB)
+                    // Flow control: keep ~15s buffer in RAM (~650 samples, ~300KB)
                     // Caps RAM footprint (critical for 512MB WP8.1) while providing comfortable cushion for weak networks
                     int count = 0;
                     lock (_queueLock) { count = _sampleQueue.Count; }
-                    if (count >= 550)
+                    if (count >= 650)
                     {
                         await Task.Delay(1500, ct).ConfigureAwait(false);
                         continue;
                     }
 
-                    // Pacing guard for live streams: each chunk is ~5.0s of audio.
+                    // Pacing guard: each chunk is ~5.0s of audio.
                     // The live encoder on YouTube generates chunks in real-time (~5.0s intervals).
-                    // If we just received a chunk less than 4.0s ago, wait for the remaining time
-                    // so the encoder has time to produce the next segment without sending empty chunks.
-                    if ((_isLiveStream || count >= 250) && _lastSuccessfulChunkTime > DateTime.MinValue)
+                    // If buffer is healthy (>= 350 samples, ~8.1s) and we just received a chunk less than 4.0s ago,
+                    // wait for the remaining time so the encoder has time to produce the next segment.
+                    // If buffer is low (< 350 samples), do NOT wait: fetch immediately to build up safety cushion!
+                    if (count >= 350 && _lastSuccessfulChunkTime > DateTime.MinValue)
                     {
                         double elapsedSinceLast = (DateTime.UtcNow - _lastSuccessfulChunkTime).TotalSeconds;
                         if (elapsedSinceLast < 4.0)
@@ -454,7 +497,7 @@ namespace AudioPlayerTask
 
                         // Server returned 0 audio samples (e.g. reached live head or duplicate chunk skipped).
                         // DO NOT advance _requestNumber! Wait for live encoder to generate the next chunk.
-                        int waitMs = _isLiveStream ? Math.Min(1500 + _consecutiveEmptyChunks * 250, 3500) : 1500;
+                        int waitMs = _isLiveStream ? Math.Min(1000 + _consecutiveEmptyChunks * 200, 2200) : 1500;
                         Log("No audio in rn=" + _requestNumber + " (attempt " + _consecutiveEmptyChunks + "), waiting " + (waitMs / 1000.0).ToString("F1") + "s for next live segment...");
                         await Task.Delay(waitMs, ct).ConfigureAwait(false);
                         continue;
