@@ -191,6 +191,11 @@ namespace YTMusicWP
             if (SearchBox != null) SearchBox.IsTabStop = false;
             
             StopTitleMarquee();
+            if (_miniLyricMarqueeStoryboard != null)
+            {
+                _miniLyricMarqueeStoryboard.Stop();
+                _miniLyricMarqueeStoryboard = null;
+            }
 
             if (AppleMusicGrabber != null)
             {
@@ -321,7 +326,7 @@ namespace YTMusicWP
             {
                 var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
             }
-            else if (idx != 0 && _isAppleMusicStyle)
+            else if (idx != 0)
             {
                 StopTitleMarquee();
             }
