@@ -63,7 +63,7 @@ export default function InteractivePlayerPreview() {
               {/* Dynamic screen image transition */}
               <div className="relative w-full h-full rounded-[28px] overflow-hidden bg-black">
                 <img
-                  src={activeMode === 'apple' ? './Pictures/02.png' : './Pictures/01.png'}
+                  src={activeMode === 'apple' ? './Pictures/11.png' : './Pictures/08.png'}
                   alt={activeMode === 'apple' ? 'Apple Music blurred backdrop' : 'Spotify classic dark player'}
                   className="w-full h-full object-cover transition-opacity duration-500"
                 />

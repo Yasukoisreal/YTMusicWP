@@ -173,7 +173,7 @@ export default function Hero() {
                 <div className="relative w-full h-full rounded-[28px] overflow-hidden bg-black flex flex-col">
                   {/* Real screenshot from Lumia device */}
                   <img 
-                    src="./Pictures/02.png" 
+                    src="./Pictures/11.png" 
                     alt="YTMusicWP Apple Music Mode on Lumia" 
                     className="w-full h-full object-cover object-top select-none pointer-events-none"
                   />
@@ -181,7 +181,7 @@ export default function Hero() {
                   {/* Tactile Playback Pill Overlay */}
                   <div className="absolute bottom-4 left-4 right-4 p-3 rounded-2xl glass-panel-glow flex items-center justify-between z-20">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 rounded-lg bg-cover bg-center shrink-0 border border-white/20 relative" style={{ backgroundImage: "url('./Pictures/01.png')" }}>
+                      <div className="w-10 h-10 rounded-lg bg-cover bg-center shrink-0 border border-white/20 relative" style={{ backgroundImage: "url('./Pictures/11.png')" }}>
                         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#1DB954] border border-black" />
                       </div>
                       <div className="flex flex-col truncate">

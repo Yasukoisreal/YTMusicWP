@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { Image, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 
 const screenshots = [
-  { src: './Pictures/02.png', title: 'Apple Music UI', category: 'Player', desc: 'Blurred backdrop powered by Lumia Imaging SDK' },
-  { src: './Pictures/01.png', title: 'Spotify Classic Dark', category: 'Player', desc: 'OLED AMOLED black player with green accents' },
-  { src: './Pictures/03.png', title: 'Synced Karaoke Lyrics', category: 'Player', desc: 'Real-time scrolling with progressive opacity falloff' },
-  { src: './Pictures/04.png', title: 'Dynamic Home Feed', category: 'Explore', desc: 'Quick Picks, Moods & Genres with pull-to-refresh' },
-  { src: './Pictures/05.png', title: 'SimpMusic Library', category: 'Library', desc: '4 quick-access tiles with album art mosaic' },
-  { src: './Pictures/06.png', title: 'Listen Together Rooms', category: 'Social', desc: 'Real-time playback sync with Metrolist & SimpMusic' },
-  { src: './Pictures/07.png', title: 'Smart Offline Downloads', category: 'Library', desc: 'M4A atom metadata and high-res artwork injection' },
-  { src: './Pictures/08.png', title: 'Search & Suggestions', category: 'Explore', desc: 'Live YouTube Music entity search and query suggestions' },
-  { src: './Pictures/09.png', title: 'Start Screen Live Tiles', category: 'System', desc: 'Flip Tiles and People-Hub style artist mosaic' },
-  { src: './Pictures/10.png', title: 'Detailed Song Credits', category: 'Player', desc: 'Complete performer, composer, and licensing info' },
-  { src: './Pictures/11.png', title: 'Queue & Infinite Radio', category: 'Player', desc: 'Smart queue with automatic endless recommendations' },
-  { src: './Pictures/12.png', title: 'QR Code Device Login', category: 'System', desc: 'Fast Google account sync without browser limits' },
-  { src: './Pictures/13.png', title: 'Playback Speed Control', category: 'Player', desc: 'Fine-tuned audio playback speeds from 0.5x to 2.0x' },
+  { src: './Pictures/11.png', title: 'Apple Music Now Playing', category: 'Player', desc: 'Hardware-accelerated frosted glass backdrop blur with bottom docking controls' },
+  { src: './Pictures/08.png', title: 'Spotify Classic Dark', category: 'Player', desc: 'Pure AMOLED #000000 black player with green accents and live mini lyric marquee' },
+  { src: './Pictures/12.png', title: 'Apple Music Synced Lyrics', category: 'Player', desc: 'Compact header, real-time scrolling lyrics with progressive distance opacity falloff' },
+  { src: './Pictures/09.png', title: 'Spotify Synced Lyrics', category: 'Player', desc: 'Real-time karaoke lyrics with font scaling controls (A+/A-) and fullscreen mode' },
+  { src: './Pictures/13.png', title: 'Apple Music Smart Queue', category: 'Player', desc: 'Queue management with action pills (info, add, shuffle, repeat) and bottom dock' },
+  { src: './Pictures/10.png', title: 'Spotify Mode Queue', category: 'Player', desc: 'Dynamic UP NEXT playback queue with reordering and instant track removal' },
+  { src: './Pictures/01.png', title: 'Dynamic Home Feed', category: 'Explore', desc: 'Personalized Quick Picks, Replay Mix, and mood categories' },
+  { src: './Pictures/02.png', title: 'Search & Discover', category: 'Explore', desc: 'Discover trending charts (Global 50, Billboard) and genre exploration' },
+  { src: './Pictures/03.png', title: 'Search Results', category: 'Explore', desc: 'Fast entity search for tracks, playlists, albums, and artists' },
+  { src: './Pictures/04.png', title: 'Your Library', category: 'Library', desc: 'Local and cloud library with quick access to playlists and saved artists' },
+  { src: './Pictures/05.png', title: 'Curated Playlist & Mix', category: 'Library', desc: 'Mixes and playlists with one-tap Play All, pin to Start, and full track lists' },
+  { src: './Pictures/06.png', title: 'Liked Music Collection', category: 'Library', desc: 'Auto-updating collection of your favorite tracks with duration metadata' },
+  { src: './Pictures/07.png', title: 'Settings & Audio Engine', category: 'System', desc: 'Account sync, region selection, autoplay, gapless playback, and volume normalization' },
 ];
 
 const categories = ['All', 'Player', 'Library', 'Explore', 'System'];
