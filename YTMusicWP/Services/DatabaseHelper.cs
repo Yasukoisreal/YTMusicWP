@@ -42,9 +42,31 @@ namespace YTMusicWP.Services
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Database Initialize Error: " + ex.Message + ". Using JSON storage fallback.");
-                _sqliteDisabled = true;
-                _db = null;
+                Debug.WriteLine("Database Initialize Error: " + ex.Message + ". Attempting repair...");
+                try
+                {
+                    _db = null;
+                    try
+                    {
+                        var file = await ApplicationData.Current.LocalFolder.GetFileAsync("YTMusicWP.db3");
+                        if (file != null)
+                        {
+                            await file.DeleteAsync();
+                        }
+                    }
+                    catch { }
+
+                    _db = new SQLiteAsyncConnection(dbPath);
+                    await _db.CreateTableAsync<HistoryEntity>();
+                    await _db.CreateTableAsync<FavoriteEntity>();
+                    await _db.CreateTableAsync<DownloadedEntity>();
+                }
+                catch (Exception retryEx)
+                {
+                    Debug.WriteLine("Database Repair Error: " + retryEx.Message + ". Using JSON storage fallback.");
+                    _sqliteDisabled = true;
+                    _db = null;
+                }
             }
         }
 
@@ -134,7 +156,7 @@ namespace YTMusicWP.Services
             if (_db == null) return;
             try
             {
-                await _db.ExecuteAsync("DELETE FROM HistoryEntity;");
+                await _db.DeleteAllAsync<HistoryEntity>();
             }
             catch (Exception ex)
             {
@@ -222,8 +244,15 @@ namespace YTMusicWP.Services
 
         public static async Task ClearFavoritesAsync()
         {
-            if (_db != null) await _db.DropTableAsync<FavoriteEntity>();
-            if (_db != null) await _db.CreateTableAsync<FavoriteEntity>();
+            if (_db == null) return;
+            try
+            {
+                await _db.DeleteAllAsync<FavoriteEntity>();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("ClearFavoritesAsync Error: " + ex.Message);
+            }
         }
 
         // ==========================================

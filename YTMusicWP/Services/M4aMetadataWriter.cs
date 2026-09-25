@@ -83,7 +83,7 @@ namespace YTMusicWP.Services
                         srcStream.Seek(nextPos, SeekOrigin.Begin);
                     }
 
-                    if (moovOffset < 0 || moovSize <= 8 || moovSize > 20 * 1024 * 1024)
+                    if (moovOffset < 0 || moovSize <= 8 || moovSize > 2 * 1024 * 1024)
                     {
                         // moov not found or unreasonably large for audio metadata
                         return false;

@@ -231,8 +231,15 @@ namespace YTMusicWP
                                         // Save verified artist channelId & avatar to cache
                                         string ck = "AvatarCache_" + artist.Title.ToLowerInvariant();
                                         string ckId = "AvatarChId_" + artist.Title.ToLowerInvariant();
-                                        localSettings[ck] = avatarUrl;
-                                        localSettings[ckId] = ytmChannelId;
+                                        try
+                                        {
+                                            if (localSettings.Count < 500)
+                                            {
+                                                localSettings[ck] = avatarUrl;
+                                                localSettings[ckId] = ytmChannelId;
+                                            }
+                                        }
+                                        catch { }
 
                                         if (token.IsCancellationRequested) return;
                                         await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>

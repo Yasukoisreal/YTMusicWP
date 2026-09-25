@@ -156,7 +156,7 @@ namespace YTMusicWP.Services
                     "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                     "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
                     "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                    "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                    "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
                     "</visual></tile>", safeThumb, safeTitle, safeArtist);
 
                 var doc = new XmlDocument();
@@ -184,7 +184,7 @@ namespace YTMusicWP.Services
                             "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                             "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">Up Next: {1}</text></binding>" +
                             "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT: {1}</text><text id=\"2\">{2}</text></binding>" +
-                            "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT: {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT: {1}</text><text id=\"2\">{2}</text></binding>" +
                             "</visual></tile>", nextThumb, next1Title, next1Artist);
 
                         var docNext = new XmlDocument();
@@ -494,7 +494,10 @@ namespace YTMusicWP.Services
                 else
                     sb.Append('_');
             }
-            return sb.ToString();
+            string result = sb.ToString();
+            if (result.Length > 64)
+                result = result.Substring(0, 64);
+            return result;
         }
 
         // ── Scheduled Daypart Notifications (Morning, Afternoon, Evening) ──
@@ -557,7 +560,7 @@ namespace YTMusicWP.Services
                     "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                     "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}: {2}</text></binding>" +
                     "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
-                    "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
+                    "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
                     "</visual></tile>", thumb, safeGreeting, title, artist);
 
                 var doc = new XmlDocument();
@@ -624,7 +627,7 @@ namespace YTMusicWP.Services
                 "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
                 "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding>" +
                 "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2} · {3}</text></binding>" +
-                "<binding template=\"TileSquare310x310ImageAndText01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
+                "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
                 "</visual></tile>", safeThumb, safeTitle, safeArtist, safeLabel);
 
             var doc = new XmlDocument();
