@@ -17,6 +17,12 @@
   <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" width="200" alt="Get YTMusicWP from Live Store"></a> 
   <br>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://raw.githubusercontent.com/NeoApplications/Neo-Backup/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png" width="200"></a> 
+  <br><br>
+  <p>
+    <a href="https://github.com/Yasukoisreal/YTMusicWP/wiki">📖 <strong>Project Wiki</strong></a> &bull;
+    <a href="https://yasukoisreal.github.io/YTMusicWP/">🌐 <strong>Web Documentation</strong></a> &bull;
+    <a href="https://github.com/Yasukoisreal/YTMusicWP/issues">💬 <strong>Report an Issue</strong></a>
+  </p>
 </div>  
 
 > YTMusicWP brings the full YouTube Music experience back to your legacy Windows devices!
@@ -99,6 +105,8 @@ The easiest way to install and update YTMusicWP is directly from the Live Store.
 1. Navigate to **Settings** > **Update & Security** > **For developers** and enable **Developer mode**.
 2. Download the `.appx` package to your phone, open the file in **File Explorer** and tap **Install**.
 
+> 💡 *For a detailed step-by-step sideloading tutorial with pictures and troubleshooting, visit the [YTMusicWP Wiki](https://github.com/Yasukoisreal/YTMusicWP/wiki).*
+
 ## FAQ    
 #### 1. Why does the app sometimes fail to play a song?    
 Because the app connects directly to YouTube Music, changes made by YouTube can sometimes break the music streaming. We actively release small updates (hotfixes) to fix the app whenever YouTube changes their systems.
@@ -167,7 +175,12 @@ Contributions, bug reports, and pull requests are warmly welcome!
 git clone https://github.com/Yasukoisreal/YTMusicWP.git
 cd YTMusicWP
 .\nuget.exe restore YTMusicWP.sln
+
+# Build Release ARM package for Lumia
 & "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" YTMusicWP.sln /p:Configuration=Release /p:Platform=ARM
+
+# Run automated unit test suite (43 tests)
+& "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" YTMusicWP.Tests\bin\Debug\YTMusicWP.Tests.dll
 ```
 
 ## Legal Disclaimer & Terms of Use
