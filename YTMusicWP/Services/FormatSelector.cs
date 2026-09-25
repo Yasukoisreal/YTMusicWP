@@ -69,6 +69,43 @@ namespace YTMusicWP.Services
                    url.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
         }
 
+        public static bool IsWp81SupportedAudio(StreamFormatInfo fmt)
+        {
+            if (fmt == null || !IsValidStreamUrl(fmt.Url)) return false;
+
+            // Reject WebM and Opus formats (not natively supported by WP8.1 MediaEngine)
+            if (!string.IsNullOrEmpty(fmt.MimeType))
+            {
+                if (fmt.MimeType.IndexOf("webm", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    fmt.MimeType.IndexOf("opus", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return false;
+                }
+            }
+
+            // Known audio-containing itags (141=256k AAC, 140=128k AAC, 139=48k AAC, 18=360p MP4 w/AAC, 22=720p MP4 w/AAC)
+            if (fmt.Itag == 141 || fmt.Itag == 140 || fmt.Itag == 18 || fmt.Itag == 139 || fmt.Itag == 22)
+                return true;
+
+            if (!string.IsNullOrEmpty(fmt.MimeType))
+            {
+                if (fmt.MimeType.IndexOf("audio", StringComparison.OrdinalIgnoreCase) >= 0)
+                    return true;
+
+                if (fmt.MimeType.IndexOf("video/mp4", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    // Filter out video-only itags without audio track
+                    int itag = fmt.Itag;
+                    if (itag == 133 || itag == 134 || itag == 135 || itag == 136 || itag == 137 || itag == 138 || itag == 160 || itag == 264 || itag == 298 || itag == 299)
+                        return false;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static StreamFormatInfo SelectBestFormat(IEnumerable<StreamFormatInfo> formats, AudioQualityPreference preference = AudioQualityPreference.Auto)
         {
             if (formats == null) return null;
@@ -80,28 +117,23 @@ namespace YTMusicWP.Services
             {
                 foreach (var fmt in formats)
                 {
-                    if (fmt != null && fmt.Itag == targetItag && IsValidStreamUrl(fmt.Url))
+                    if (fmt != null && fmt.Itag == targetItag && IsWp81SupportedAudio(fmt))
                     {
                         return fmt;
                     }
                 }
             }
 
-            // Fallback: If none of preferred itags matched, pick any valid audio format
-            StreamFormatInfo fallback = null;
+            // Fallback: Pick any valid audio format compatible with WP8.1
             foreach (var fmt in formats)
             {
-                if (fmt != null && IsValidStreamUrl(fmt.Url))
+                if (IsWp81SupportedAudio(fmt))
                 {
-                    if (fmt.MimeType != null && fmt.MimeType.IndexOf("audio", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        return fmt;
-                    }
-                    if (fallback == null) fallback = fmt;
+                    return fmt;
                 }
             }
 
-            return fallback;
+            return null;
         }
     }
 }

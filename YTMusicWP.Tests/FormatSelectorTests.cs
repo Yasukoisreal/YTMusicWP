@@ -118,5 +118,35 @@ namespace YTMusicWP.Tests
             Assert.IsFalse(FormatSelector.IsLiveStreamUrl("https://example.com/play?id=12345"));
             Assert.IsFalse(FormatSelector.IsLiveStreamUrl(null));
         }
+
+        [TestMethod]
+        public void SelectBestFormat_RejectsWebmAndOpusOnWp81()
+        {
+            var formats = new List<StreamFormatInfo>
+            {
+                new StreamFormatInfo(251, "https://googlevideo.com/opus", "audio/webm; codecs=\"opus\"", 160000),
+                new StreamFormatInfo(250, "https://googlevideo.com/opus_low", "audio/webm", 70000),
+                new StreamFormatInfo(140, "https://googlevideo.com/m4a", "audio/mp4", 128000)
+            };
+
+            var selected = FormatSelector.SelectBestFormat(formats, AudioQualityPreference.High);
+
+            Assert.IsNotNull(selected);
+            Assert.AreEqual(140, selected.Itag);
+        }
+
+        [TestMethod]
+        public void SelectBestFormat_RejectsVideoOnlyStreamsInFallback()
+        {
+            var formats = new List<StreamFormatInfo>
+            {
+                new StreamFormatInfo(137, "https://googlevideo.com/1080p_video_only", "video/mp4", 4000000),
+                new StreamFormatInfo(136, "https://googlevideo.com/720p_video_only", "video/mp4", 2000000)
+            };
+
+            var selected = FormatSelector.SelectBestFormat(formats, AudioQualityPreference.Medium);
+
+            Assert.IsNull(selected);
+        }
     }
 }

@@ -15,6 +15,9 @@ namespace YTMusicWP.Services
         public static async Task<List<SponsorBlockSegment>> GetSkipSegmentsAsync(string videoId)
         {
             var segments = new List<SponsorBlockSegment>();
+            if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:") || videoId.StartsWith("CHANNEL:") || videoId.StartsWith("PLAYLIST:"))
+                return segments;
+
             try
             {
                 // We only care about sponsor, interaction, selfpromo, and music_offtopic (silence/non-music in MVs)

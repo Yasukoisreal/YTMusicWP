@@ -76,15 +76,9 @@ namespace YTMusicWP
                 string serverUrl = "https://potoken-api.nguyentruongan06052007.workers.dev/";
                 string body = "{}";
                 
-                var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
-                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
-                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
-                filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
-                
-                using (var httpClient = new Windows.Web.Http.HttpClient(filter))
-                {
-                    var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
-                    using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
+                var httpClient = GetWinrtClient();
+                var content = new Windows.Web.Http.HttpStringContent(body, Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+                using (var resp = await httpClient.PostAsync(new Uri(serverUrl), content))
                     {
                         if (!resp.IsSuccessStatusCode) return null;
                         string json = await resp.Content.ReadAsStringAsync();
@@ -119,7 +113,6 @@ namespace YTMusicWP
                         }
                         return null;
                     }
-                }
             }
             catch { return null; }
         }
@@ -235,14 +228,13 @@ namespace YTMusicWP
                     continue; // Bỏ qua nếu client yêu cầu cookie mà chưa đăng nhập
 
                 string vd = defaultVd;
-                string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
+                string poTokenField = "";
+                string currentPoToken = null;
 
                 try
                 {
                     LastResolveDebug += " [" + client.ClientName + (client.SupportsPoToken ? "+po" : "") + "]";
 
-                    string poTokenField = "";
-                    string currentPoToken = null;
                     if (client.SupportsPoToken)
                     {
                         var tokenInfo = await FetchRemotePoTokenAsync(videoId, client.ClientName);
@@ -250,8 +242,14 @@ namespace YTMusicWP
                         {
                             currentPoToken = tokenInfo.PoToken;
                             poTokenField = ",\"serviceIntegrityDimensions\":{\"poToken\":\"" + tokenInfo.PoToken + "\"}";
+                            if (!string.IsNullOrEmpty(tokenInfo.VisitorData))
+                            {
+                                vd = tokenInfo.VisitorData;
+                            }
                         }
                     }
+
+                    string vdField = !string.IsNullOrEmpty(vd) ? ",\"visitorData\":\"" + vd + "\"" : "";
 
                     string requestBody = "{" +
                         "\"contentCheckOk\":true," +
@@ -289,6 +287,7 @@ namespace YTMusicWP
                         {
                             req.Headers.TryAppendWithoutValidation("Cookie", _cookieString);
                             req.Headers.TryAppendWithoutValidation("Authorization", GenerateSAPISIDHash(_sapisid, "https://www.youtube.com"));
+                            req.Headers.TryAppendWithoutValidation("Origin", "https://www.youtube.com");
                         }
 
                         var httpClient = GetWinrtClient();
@@ -792,8 +791,10 @@ namespace YTMusicWP
                 string title = details?["title"]?.ToString() ?? "";
                 string author = details?["author"]?.ToString() ?? "";
                 string channelId = details?["channelId"]?.ToString() ?? "";
-                string thumbUrl = details?.SelectToken("thumbnail.thumbnails[-1:].url")?.ToString()
-                    ?? details?.SelectToken("thumbnail.thumbnails[0].url")?.ToString() ?? "";
+                var thumbs = details?["thumbnail"]?["thumbnails"] as JArray;
+                string thumbUrl = (thumbs != null && thumbs.Count > 0)
+                    ? (thumbs.Last["url"]?.ToString() ?? thumbs.First["url"]?.ToString() ?? "")
+                    : "";
 
                 // Strict filter: only YouTube Music audio tracks (ATV)
                 // MUSIC_VIDEO_TYPE_ATV = official audio track (song on YouTube Music)

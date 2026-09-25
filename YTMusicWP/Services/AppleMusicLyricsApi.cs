@@ -23,8 +23,8 @@ namespace YTMusicWP.Services
         {
             try
             {
-                string url = "https://lyrics-api.boidu.dev/getLyrics?s=" + Uri.EscapeDataString(title) +
-                             "&a=" + Uri.EscapeDataString(artist);
+                string url = "https://lyrics-api.boidu.dev/getLyrics?s=" + Uri.EscapeDataString(title ?? "") +
+                             "&a=" + Uri.EscapeDataString(artist ?? "");
                 if (duration > 0)
                 {
                     url += "&d=" + duration;
@@ -143,9 +143,13 @@ namespace YTMusicWP.Services
                 {
                     return double.Parse(timeStr.Substring(0, timeStr.Length - 2), inv) / 1000.0;
                 }
-                else if (timeStr.Contains("."))
+                else
                 {
-                    return double.Parse(timeStr, inv);
+                    double s;
+                    if (double.TryParse(timeStr, System.Globalization.NumberStyles.Any, inv, out s))
+                    {
+                        return s;
+                    }
                 }
             }
             catch { }
