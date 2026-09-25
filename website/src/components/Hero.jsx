@@ -144,10 +144,13 @@ export default function Hero() {
                 {/* Center Record Label */}
                 <div className="w-full h-full rounded-full flex items-center justify-center relative">
                   <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#00F0FF] via-[#0078D7] to-[#FF0033] p-1 shadow-inner flex items-center justify-center">
-                    <div className="w-full h-full rounded-full bg-[#06060A] flex flex-col items-center justify-center text-center p-1">
-                      <span className="font-display text-[9px] font-bold text-white tracking-widest">YTMUSIC</span>
-                      <span className="font-mono text-[7px] text-[#00F0FF]">512MB RAM</span>
-                      <div className="w-3 h-3 rounded-full bg-[#06060A] border border-white/40 mt-0.5" />
+                    <div className="w-full h-full rounded-full bg-[#06060A] flex flex-col items-center justify-center text-center p-2 relative overflow-hidden">
+                      <img 
+                        src="./logo.png" 
+                        alt="YTMusicWP Official Logo" 
+                        className="w-10 h-10 object-contain rounded-full shadow-md"
+                      />
+                      <span className="font-mono text-[6px] text-[#00F0FF] tracking-widest mt-0.5">512MB RAM</span>
                     </div>
                   </div>
                 </div>

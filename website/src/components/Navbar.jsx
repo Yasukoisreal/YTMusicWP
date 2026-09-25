@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Disc3, ExternalLink, Sparkles, BookOpen } from 'lucide-react';
+import { Download, ExternalLink, Sparkles, BookOpen } from 'lucide-react';
 import GithubIcon from './GithubIcon';
 
 export default function Navbar({ onOpenDonate }) {
@@ -19,10 +19,12 @@ export default function Navbar({ onOpenDonate }) {
         <nav className="glass-panel rounded-full px-5 py-3 flex items-center justify-between border border-white/10 shadow-2xl backdrop-blur-xl">
           {/* Logo / Brand */}
           <a href="#" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#0078D7] via-[#00F0FF] to-[#FF0033] p-[2px] transition-transform duration-500 group-hover:rotate-180">
-              <div className="w-full h-full bg-[#06060A] rounded-full flex items-center justify-center">
-                <Disc3 className="w-4 h-4 text-[#00F0FF] animate-spin-slow" />
-              </div>
+            <div className="relative w-8 h-8 rounded-xl overflow-hidden border border-white/20 shadow-md shadow-[#00F0FF]/10 group-hover:border-[#00F0FF]/60 transition-all duration-300 flex items-center justify-center bg-black">
+              <img 
+                src="./logo.png" 
+                alt="YTMusicWP Logo" 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-display font-bold text-lg tracking-tight text-white group-hover:text-[#00F0FF] transition-colors">

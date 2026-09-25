@@ -20,9 +20,14 @@ export default function Footer({ onOpenDonate }) {
           {/* Brand info */}
           <div className="md:col-span-5 flex flex-col justify-between">
             <div>
-              <h3 className="font-display font-bold text-2xl text-white mb-2">
-                YTMusic<span className="text-[#00F0FF]">WP</span>
-              </h3>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-xl overflow-hidden border border-white/20 bg-black flex items-center justify-center">
+                  <img src="./logo.png" alt="YTMusicWP Logo" className="w-full h-full object-cover" />
+                </div>
+                <h3 className="font-display font-bold text-2xl text-white">
+                  YTMusic<span className="text-[#00F0FF]">WP</span>
+                </h3>
+              </div>
               <p className="text-slate-400 text-sm font-light leading-relaxed max-w-sm">
                 The open-source, community-driven YouTube Music client dedicated to keeping legendary Lumia smartphones alive with modern audio capabilities.
               </p>
