@@ -47,6 +47,7 @@ namespace AudioPlayerTask
 
         // Server stream state
         private string _resolvedUrl = null;
+        private string _resolvedUrlVideoId = null;
         private bool _innerTubeAttempted = false;
         private double _playbackRate = 1.0;
         private DateTime _sleepTimerExpiry = DateTime.MaxValue;
@@ -295,8 +296,8 @@ namespace AudioPlayerTask
                     ClearPreResolvedState();
                     PreResolveNextTrack();
                 }
-                else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext();
-                else if (e.Data.ContainsKey("PrevTrackMessage")) MovePrevious();
+                else if (e.Data.ContainsKey("NextTrackMessage")) MoveNext(true);
+                else if (e.Data.ContainsKey("PrevTrackMessage")) MovePrevious(true);
                 else if (e.Data.ContainsKey("SetPlaybackRate"))
                 {
                     try
@@ -1048,10 +1049,16 @@ namespace AudioPlayerTask
                 }
                 if (!string.IsNullOrEmpty(_resolvedUrl))
                 {
-                    string url = _resolvedUrl;
+                    if (_resolvedUrlVideoId == vidId)
+                    {
+                        string url = _resolvedUrl;
+                        _resolvedUrl = null;
+                        _resolvedUrlVideoId = null;
+                        PlayUrl(url, vidId);
+                        return;
+                    }
                     _resolvedUrl = null;
-                    PlayUrl(url, vidId);
-                    return;
+                    _resolvedUrlVideoId = null;
                 }
 
                 if (!_innerTubeAttempted)
@@ -1762,7 +1769,7 @@ namespace AudioPlayerTask
 
                 byte[] ustreamerBytes = MiniProtoWriter.Base64UrlDecode(ustreamerConfigStr);
 
-                _sabrMss = new SabrMediaStreamSource(
+                var localSabrMss = new SabrMediaStreamSource(
                     serverAbrUrl,
                     ustreamerBytes,
                     userAgent,
@@ -1773,21 +1780,27 @@ namespace AudioPlayerTask
                     _isCurrentTrackLive);
 
                 // Preload initial chunk before setting media source to ensure fast start & error detection
-                bool preloaded = await _sabrMss.PreloadInitialChunkAsync(ct);
+                bool preloaded = await localSabrMss.PreloadInitialChunkAsync(ct);
                 if (ct.IsCancellationRequested || seq != _playbackSequence)
                 {
-                    if (_sabrMss != null) { try { _sabrMss.Dispose(); } catch { } _sabrMss = null; }
+                    try { localSabrMss.Dispose(); } catch { }
                     return;
                 }
 
                 if (!preloaded)
                 {
-                    string err = !string.IsNullOrEmpty(_sabrMss.LastError) ? _sabrMss.LastError : "Unknown error";
+                    string err = !string.IsNullOrEmpty(localSabrMss.LastError) ? localSabrMss.LastError : "Unknown error";
                     LogLive("[SABR Init Error] " + err);
                     ReportErrorToUI("SABR Error: " + err);
-                    if (_sabrMss != null) { try { _sabrMss.Dispose(); } catch { } _sabrMss = null; }
+                    try { localSabrMss.Dispose(); } catch { }
                     return;
                 }
+
+                if (_sabrMss != null)
+                {
+                    try { _sabrMss.Dispose(); } catch { }
+                }
+                _sabrMss = localSabrMss;
 
                 // Volume preservation / Normalize Volume
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -1898,6 +1911,7 @@ namespace AudioPlayerTask
                 {
                     freshUrl = PrepareStreamUrl(freshUrl);
                     _resolvedUrl = freshUrl;
+                    _resolvedUrlVideoId = vidId;
                     _innerTubeAttempted = true;
                     _isRetrying = false;
                     StartPlaybackAsync();
@@ -1908,6 +1922,7 @@ namespace AudioPlayerTask
             // Retry 3-4: Dùng URL từ MainPage hoặc resolve lại nếu chưa có
             await Task.Delay(800);
             _resolvedUrl = null;
+            _resolvedUrlVideoId = null;
             bool hasTrackUrl = false;
             lock (_playlistLock)
             {
@@ -2025,10 +2040,10 @@ namespace AudioPlayerTask
                     _currentTrackIndex >= _artistList.Count ||
                     _currentTrackIndex >= _thumbnailList.Count ||
                     _currentTrackIndex >= _videoIdList.Count) return;
-                title = _titleList[_currentTrackIndex];
-                artist = _artistList[_currentTrackIndex];
-                thumb = _thumbnailList[_currentTrackIndex];
-                vidId = _videoIdList[_currentTrackIndex];
+                title = _titleList[_currentTrackIndex] ?? "";
+                artist = _artistList[_currentTrackIndex] ?? "";
+                thumb = _thumbnailList[_currentTrackIndex] ?? "";
+                vidId = _videoIdList[_currentTrackIndex] ?? "";
             }
 
             try { _systemControls.DisplayUpdater.Type = MediaPlaybackType.Music; _systemControls.DisplayUpdater.MusicProperties.Title = title; _systemControls.DisplayUpdater.MusicProperties.Artist = artist; _systemControls.DisplayUpdater.Update(); } catch { }
@@ -2052,13 +2067,51 @@ namespace AudioPlayerTask
                 // Add to PendingHistory for SQLite insertion by foreground
                 try
                 {
-                    string historyTrackStr = $"{vidId}|{title.Replace("|", "").Replace("^", "")}|{artist.Replace("|", "").Replace("^", "")}|{thumb}";
+                    string safeTitle = title.Replace("|", "").Replace("^", "");
+                    string safeArtist = artist.Replace("|", "").Replace("^", "");
+                    string historyTrackStr = $"{vidId}|{safeTitle}|{safeArtist}|{thumb}";
                     string pending = ls.ContainsKey("PendingHistory") ? ls["PendingHistory"]?.ToString() : "";
-                    if (pending.Length > 2000) pending = ""; // Protect settings quota
+                    if (!string.IsNullOrEmpty(pending) && pending.Length > 2000)
+                    {
+                        int sepIdx = pending.IndexOf("^^^", pending.Length - 1500);
+                        if (sepIdx >= 0) pending = pending.Substring(sepIdx + 3);
+                        else pending = "";
+                    }
                     if (string.IsNullOrEmpty(pending))
                         ls["PendingHistory"] = historyTrackStr;
                     else
                         ls["PendingHistory"] = pending + "^^^" + historyTrackStr;
+                }
+                catch { }
+
+                // Update Live Tile directly from background
+                try
+                {
+                    bool enableLiveTile = !ls.ContainsKey("EnableLiveTile") || (bool)ls["EnableLiveTile"];
+                    int liveTileMode = ls.ContainsKey("LiveTileMode") ? Convert.ToInt32(ls["LiveTileMode"]) : 0;
+                    if (enableLiveTile && liveTileMode != 2 && !string.IsNullOrEmpty(thumb))
+                    {
+                        string squareThumb = FormatSquareThumbnail(thumb);
+                        string safeThumb = System.Net.WebUtility.HtmlEncode(squareThumb);
+                        string safeTitle = System.Net.WebUtility.HtmlEncode(title);
+                        string safeArtist = System.Net.WebUtility.HtmlEncode(artist);
+                        string xml = string.Format(
+                            "<tile><visual version=\"2\">" +
+                            "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
+                            "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
+                            "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "</visual></tile>", safeThumb, safeTitle, safeArtist);
+
+                        var doc = new Windows.Data.Xml.Dom.XmlDocument();
+                        doc.LoadXml(xml);
+                        var notif = new Windows.UI.Notifications.TileNotification(doc)
+                        {
+                            Tag = "nowplaying",
+                            ExpirationTime = DateTimeOffset.UtcNow.AddHours(12)
+                        };
+                        Windows.UI.Notifications.TileUpdateManager.CreateTileUpdaterForApplication().Update(notif);
+                    }
                 }
                 catch { }
             }
@@ -2182,11 +2235,13 @@ namespace AudioPlayerTask
                 double remaining = (naturalDuration - pos).TotalSeconds;
 
                 // SponsorBlock Auto-Skip
-                if (_skipSegments != null && _skipSegments.Count > 0)
+                var segs = _skipSegments;
+                if (segs != null && segs.Count > 0)
                 {
-                    foreach (var seg in _skipSegments)
+                    for (int i = 0; i < segs.Count; i++)
                     {
-                        if (pos.TotalSeconds >= seg.Start && pos.TotalSeconds < seg.End - 1) // -1s buffer
+                        var seg = segs[i];
+                        if (seg != null && pos.TotalSeconds >= seg.Start && pos.TotalSeconds < seg.End - 1) // -1s buffer
                         {
                             _mediaPlayer.Position = TimeSpan.FromSeconds(seg.End);
                             SendToast("Skipped " + (seg.Category ?? "segment"));
@@ -2274,7 +2329,7 @@ namespace AudioPlayerTask
             }
         }
 
-        private void MoveNext()
+        private void MoveNext(bool isManualUserSkip = false)
         {
             int targetIdx;
             string preUrl;
@@ -2288,7 +2343,7 @@ namespace AudioPlayerTask
                 bool shuffle = ls.ContainsKey("ShuffleMode") ? (bool)ls["ShuffleMode"] : false;
                 int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;
                 bool autoplay = ls.ContainsKey("Autoplay") ? (bool)ls["Autoplay"] : true;
-                if (repeat == 2) { ResetRetryState(); _currentLoadedVidId = ""; StartPlaybackAsync(); return; }
+                if (repeat == 2 && !isManualUserSkip) { ResetRetryState(); _currentLoadedVidId = ""; StartPlaybackAsync(); return; }
                 ResetRetryState();
 
                 // Calculate expected next index
@@ -2335,7 +2390,7 @@ namespace AudioPlayerTask
             StartPlaybackAsync();
         }
 
-        private void MovePrevious()
+        private void MovePrevious(bool isManualUserSkip = false)
         {
             lock (_playlistLock)
             {
@@ -2353,7 +2408,7 @@ namespace AudioPlayerTask
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                 bool shuffle = ls.ContainsKey("ShuffleMode") ? (bool)ls["ShuffleMode"] : false;
                 int repeat = ls.ContainsKey("RepeatMode") ? (int)ls["RepeatMode"] : 0;
-                if (repeat == 2) { ResetRetryState(); StartPlaybackAsync(); return; }
+                if (repeat == 2 && !isManualUserSkip) { ResetRetryState(); StartPlaybackAsync(); return; }
                 ResetRetryState();
                 ClearPreResolvedState();
                 if (shuffle) _currentTrackIndex = _rand.Next(0, _trackList.Count);
@@ -2483,17 +2538,10 @@ namespace AudioPlayerTask
                 return;
             }
 
-            if (_isCurrentTrackLive || (sender != null && sender.NaturalDuration == TimeSpan.Zero))
+            if (_isCurrentTrackLive)
             {
-                if (_isCurrentTrackLive)
-                {
-                    LogLive("[Live MediaEnded] elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s");
-                    if ((DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
-                    {
-                        SwapToNextLiveBuffer();
-                    }
-                }
-                else
+                LogLive("[Live MediaEnded] elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s");
+                if ((DateTime.UtcNow - _lastLiveSwapTime).TotalSeconds >= 2.5)
                 {
                     SwapToNextLiveBuffer();
                 }
@@ -2602,8 +2650,8 @@ namespace AudioPlayerTask
             {
                 case SystemMediaTransportControlsButton.Play: _isUserPaused = false; try { if (_mediaPlayer.CurrentState == MediaPlayerState.Closed) StartPlaybackAsync(); else _mediaPlayer.Play(); } catch { StartPlaybackAsync(); } break;
                 case SystemMediaTransportControlsButton.Pause: _isUserPaused = true; try { _mediaPlayer.Pause(); } catch { } break;
-                case SystemMediaTransportControlsButton.Next: MoveNext(); break;
-                case SystemMediaTransportControlsButton.Previous: MovePrevious(); break;
+                case SystemMediaTransportControlsButton.Next: MoveNext(true); break;
+                case SystemMediaTransportControlsButton.Previous: MovePrevious(true); break;
             }
         }
         private static string FormatSquareThumbnail(string url)

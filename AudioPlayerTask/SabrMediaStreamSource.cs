@@ -181,6 +181,18 @@ namespace AudioPlayerTask
             }
             else
             {
+                if (!_isLiveStream && request.StartPosition.HasValue && _currentPositionMs > 500)
+                {
+                    // User sought back to start (<= 500ms) from a later position
+                    Log("Mss_Starting seek to beginning (0s)");
+                    lock (_queueLock)
+                    {
+                        _sampleQueue.Clear();
+                        _sampleIndex = 0;
+                        _currentPositionMs = 0;
+                    }
+                    RestartStreamingAt(0);
+                }
                 request.SetActualStartPosition(TimeSpan.Zero);
             }
         }
@@ -564,6 +576,7 @@ namespace AudioPlayerTask
                     {
                         int headerId = part.Data[0];
                         byte[] segBytes = null;
+                        int segLen = 0;
                         lock (_queueLock)
                         {
                             MemoryStream ms;
@@ -571,27 +584,28 @@ namespace AudioPlayerTask
                             {
                                 _pendingSegments.Remove(headerId);
                                 segBytes = ms.ToArray();
+                                segLen = segBytes.Length;
                                 ms.Dispose();
                             }
                         }
 
-                        if (segBytes != null && segBytes.Length > 0)
+                        if (segBytes != null && segLen > 0)
                         {
                             // Skip init segments (moov/ftyp only, no playable audio)
                             if (_lastMediaHeaderIsInit)
                             {
-                                Log("Skipping init segment " + headerId + " (" + segBytes.Length + " bytes)");
+                                Log("Skipping init segment " + headerId + " (" + segLen + " bytes)");
                                 break;
                             }
 
                             // Deduplicate: skip if we already parsed this sequence number
                             if (_lastMediaHeaderSeqNum >= 0 && _downloadedSequences.Contains(_lastMediaHeaderSeqNum))
                             {
-                                Log("Skipping duplicate seq=" + _lastMediaHeaderSeqNum + " (" + segBytes.Length + " bytes)");
+                                Log("Skipping duplicate seq=" + _lastMediaHeaderSeqNum + " (" + segLen + " bytes)");
                                 break;
                             }
 
-                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segLen);
                             if (samples > 0)
                             {
                                 if (_lastMediaHeaderSeqNum >= 0)
@@ -600,11 +614,11 @@ namespace AudioPlayerTask
                                     _downloadedSequences.Add(_lastMediaHeaderSeqNum);
                                 }
                                 _lastSuccessfulChunkTime = DateTime.UtcNow;
-                                Log("Segment " + headerId + " seq=" + _lastMediaHeaderSeqNum + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
+                                Log("Segment " + headerId + " seq=" + _lastMediaHeaderSeqNum + " finalized: " + samples + " samples parsed (" + segLen + " bytes)");
                             }
                             else
                             {
-                                Log("Segment " + headerId + " received (" + segBytes.Length + " bytes, no audio samples)");
+                                Log("Segment " + headerId + " received (" + segLen + " bytes, no audio samples)");
                             }
                         }
                     }
@@ -869,7 +883,12 @@ namespace AudioPlayerTask
                 {
                     var p = _pendingRequests[0];
                     _pendingRequests.RemoveAt(0);
-                    try { p.Deferral.Complete(); } catch { }
+                    try
+                    {
+                        p.Request.Sample = null;
+                        p.Deferral.Complete();
+                    }
+                    catch { }
                 }
                 _sampleQueue.Clear();
 

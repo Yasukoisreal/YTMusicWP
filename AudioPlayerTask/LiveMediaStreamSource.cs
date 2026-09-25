@@ -567,7 +567,12 @@ namespace AudioPlayerTask
             {
                 foreach (var p in _pendingRequests)
                 {
-                    try { p.Deferral.Complete(); } catch { }
+                    try
+                    {
+                        p.Request.Sample = null;
+                        p.Deferral.Complete();
+                    }
+                    catch { }
                 }
                 _pendingRequests.Clear();
                 _sampleQueue.Clear();
