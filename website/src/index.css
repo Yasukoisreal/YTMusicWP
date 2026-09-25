@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #06060a;
+    color: #f1f3f9;
+  }
+}
+
+/* Tactile Film Grain Overlay (Simulating tactile paper & analog film) */
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* Holographic / Iridescent Vinyl Grooves Conic Reflection */
+.vinyl-grooves {
+  background: 
+    radial-gradient(circle at center, transparent 38%, rgba(255,255,255,0.06) 38.5%, transparent 39%, rgba(0,0,0,0.8) 40%, transparent 68%, rgba(255,255,255,0.04) 68.5%, transparent 69%),
+    conic-gradient(
+      from 0deg,
+      rgba(255, 255, 255, 0.15) 0deg,
+      transparent 60deg,
+      rgba(0, 240, 255, 0.25) 120deg,
+      rgba(255, 0, 128, 0.25) 180deg,
+      transparent 240deg,
+      rgba(0, 240, 255, 0.25) 300deg,
+      rgba(255, 255, 255, 0.15) 360deg
+    ),
+    radial-gradient(circle at center, #18181f 0%, #0d0d12 100%);
+}
+
+/* Glassmorphism card */
+.glass-panel {
+  background: rgba(18, 18, 28, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-glow {
+  background: rgba(22, 22, 35, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8), 0 0 30px -10px rgba(0, 240, 255, 0.15);
+}
+
+/* Blueprint technical index corner markers */
+.blueprint-corner {
+  position: relative;
+}
+.blueprint-corner::before {
+  content: '+';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.3);
+}
+.blueprint-corner::after {
+  content: '+';
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Hide scrollbar for gallery */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

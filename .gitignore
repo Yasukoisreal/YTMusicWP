@@ -34,3 +34,7 @@ Thumbs.db
 # Ignore banner template
 Pictures/ProfessionalBanner.html
 .freebuff/
+website/node_modules/
+website/dist/
+__pycache__/
+*.pyc
