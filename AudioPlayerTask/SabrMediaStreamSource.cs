@@ -72,6 +72,8 @@ namespace AudioPlayerTask
         private int _lastEnqueuedLiveSeqNum = -1;
         private int _liveHeadSeq = -1;
         private long _liveHeadTimeMs = -1;
+        private const long LIVE_EDGE_SENTINEL_MS = 9007199254740991L; // Number.MAX_SAFE_INTEGER in googlevideo
+        private long _liveHeadSeekTimeMs = 0;
         private int _serverBackoffMs = 0;
         private DateTime _lastSuccessfulChunkTime = DateTime.MinValue;
         private readonly bool _isLiveStream;
@@ -357,6 +359,7 @@ namespace AudioPlayerTask
             _lastEnqueuedLiveSeqNum = -1;
             _liveHeadSeq = -1;
             _liveHeadTimeMs = -1;
+            _liveHeadSeekTimeMs = 0;
             _serverBackoffMs = 0;
             _pendingMediaHeaders.Clear();
             _lastSuccessfulChunkTime = DateTime.MinValue;
@@ -398,19 +401,44 @@ namespace AudioPlayerTask
             int endSeq = _lastMediaHeaderSeqNum;
             long segStartTimeMs = 0;
             long segDurationMs = fetchedPositionMs;
+            long requestPlayerTimeMs;
 
-            if (_isLiveStream && _lastMediaHeaderSeqNum >= 0)
+            if (_isLiveStream)
             {
-                startSeq = _lastMediaHeaderSeqNum;
-                endSeq = _lastMediaHeaderSeqNum;
-                segStartTimeMs = _lastMediaHeaderStartMs;
-                segDurationMs = _lastMediaHeaderDurationMs > 0 ? _lastMediaHeaderDurationMs : 5000;
+                // In live streams, tell YouTube to start/stream at the live edge.
+                // Initial request uses LIVE_EDGE_SENTINEL_MS (9007199254740991) matching googlevideo/YouTube.js
+                // so the server serves live edge audio instead of 50-minute-old DVR history.
+                // Once streaming, track the latest segment start time.
+                if (_lastMediaHeaderStartMs > 0)
+                {
+                    requestPlayerTimeMs = _lastMediaHeaderStartMs;
+                }
+                else if (_liveHeadSeekTimeMs > 0)
+                {
+                    requestPlayerTimeMs = _liveHeadSeekTimeMs;
+                }
+                else
+                {
+                    requestPlayerTimeMs = LIVE_EDGE_SENTINEL_MS;
+                }
+
+                if (_lastMediaHeaderSeqNum >= 0)
+                {
+                    startSeq = _lastMediaHeaderSeqNum;
+                    endSeq = _lastMediaHeaderSeqNum;
+                    segStartTimeMs = _lastMediaHeaderStartMs;
+                    segDurationMs = _lastMediaHeaderDurationMs > 0 ? _lastMediaHeaderDurationMs : 5000;
+                }
+            }
+            else
+            {
+                requestPlayerTimeMs = fetchedPositionMs;
             }
 
             // Build Protobuf VideoPlaybackAbrRequest
             byte[] requestBody = MiniProtoWriter.BuildAudioAbrRequest(
                 _ustreamerConfig,
-                fetchedPositionMs,
+                requestPlayerTimeMs,
                 _playbackRate,
                 140, // 140 = AAC 128kbps itag
                 _clientNameInt,
@@ -650,10 +678,10 @@ namespace AudioPlayerTask
 
                             if (_isLiveStream)
                             {
-                                // Discard stale DVR history from rn=0 (e.g. 33 minutes in the past)
-                                if (_liveHeadSeq > 0 && seq >= 0 && seq < _liveHeadSeq - 2)
+                                // Discard stale DVR history from cold start (e.g. segment from before SABR_SEEK live head)
+                                if (_liveHeadSeekTimeMs > 0 && startMs > 0 && startMs < _liveHeadSeekTimeMs - 30000)
                                 {
-                                    Log("Discarding stale DVR segment seq=" + seq + " (" + segBytes.Length + " bytes, live head is " + _liveHeadSeq + ")");
+                                    Log("Discarding stale DVR segment seq=" + seq + " startMs=" + startMs + " (" + segBytes.Length + " bytes, live seek is " + _liveHeadSeekTimeMs + ")");
                                     break;
                                 }
 
@@ -769,22 +797,6 @@ namespace AudioPlayerTask
                         _liveHeadSeq = (int)liveMeta.HeadSequenceNumber;
                         _liveHeadTimeMs = liveMeta.HeadTimeMs;
                         Log("Received LIVE_METADATA: headSeq=" + _liveHeadSeq + ", headTimeMs=" + _liveHeadTimeMs + " (" + part.Size + " bytes)");
-
-                        // If queue contains stale DVR audio before live head, purge immediately
-                        if (_isLiveStream)
-                        {
-                            lock (_queueLock)
-                            {
-                                if (_lastEnqueuedLiveSeqNum > 0 && _lastEnqueuedLiveSeqNum < _liveHeadSeq - 2)
-                                {
-                                    Log("Purging " + _sampleQueue.Count + " stale DVR samples (lastSeq=" + _lastEnqueuedLiveSeqNum + " vs head=" + _liveHeadSeq + ")");
-                                    _sampleQueue.Clear();
-                                    _sampleIndex = 0;
-                                    _currentPositionMs = 0;
-                                    _lastEnqueuedLiveSeqNum = -1;
-                                }
-                            }
-                        }
                     }
                     else
                     {
@@ -826,7 +838,31 @@ namespace AudioPlayerTask
                     break;
 
                 case UmpPartId.SABR_SEEK:
-                    Log("Received SABR_SEEK (" + part.Size + " bytes)");
+                    var seek = UmpParser.ExtractSabrSeek(part.Data);
+                    if (seek.SeekTimeMs > 0)
+                    {
+                        _liveHeadSeekTimeMs = seek.SeekTimeMs;
+                        Log("Received SABR_SEEK: seekTimeMs=" + _liveHeadSeekTimeMs + " (source=" + seek.SeekSource + ", " + part.Size + " bytes)");
+
+                        // If any samples were enqueued from a cold-start DVR segment before this live seek head, purge them
+                        if (_isLiveStream && _lastMediaHeaderStartMs > 0 && _lastMediaHeaderStartMs < _liveHeadSeekTimeMs - 30000)
+                        {
+                            lock (_queueLock)
+                            {
+                                Log("Purging " + _sampleQueue.Count + " samples from DVR segment before SABR_SEEK head (" + _lastMediaHeaderStartMs + " vs " + _liveHeadSeekTimeMs + ")");
+                                _sampleQueue.Clear();
+                                _sampleIndex = 0;
+                                _currentPositionMs = 0;
+                                _lastEnqueuedLiveSeqNum = -1;
+                                _lastMediaHeaderStartMs = 0;
+                                _lastMediaHeaderSeqNum = -1;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Log("Received SABR_SEEK (" + part.Size + " bytes)");
+                    }
                     break;
 
                 case UmpPartId.STREAM_PROTECTION_STATUS:
@@ -870,7 +906,7 @@ namespace AudioPlayerTask
 
                         if (_isLiveStream)
                         {
-                            if (_liveHeadSeq > 0 && seq >= 0 && seq < _liveHeadSeq - 2) continue;
+                            if (_liveHeadSeekTimeMs > 0 && startMs > 0 && startMs < _liveHeadSeekTimeMs - 30000) continue;
                             if (_lastEnqueuedLiveSeqNum >= 0 && seq >= 0 && seq <= _lastEnqueuedLiveSeqNum) continue;
                         }
                         else

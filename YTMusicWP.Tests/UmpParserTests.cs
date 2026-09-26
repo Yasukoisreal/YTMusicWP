@@ -158,5 +158,41 @@ namespace YTMusicWP.Tests
             Assert.AreEqual(0, policyEmpty.BackoffTimeMs);
             Assert.IsNull(policyEmpty.PlaybackCookie);
         }
+
+        [TestMethod]
+        public void ExtractSabrSeek_ValidProtobuf_ExtractsSeekTimeAndSource()
+        {
+            // Field 1 (seekMediaTime) = 3249658195
+            // Field 2 (seekMediaTimescale) = 1000
+            // Field 3 (seekSource) = 10 (SABR_SEEK_TO_HEAD)
+            byte[] payload;
+            using (var writer = new MiniProtoWriter())
+            {
+                writer.WriteVarintField(1, 3249658195L);
+                writer.WriteVarintField(2, 1000);
+                writer.WriteVarintField(3, 10);
+                payload = writer.ToByteArray();
+            }
+
+            var seek = UmpParser.ExtractSabrSeek(payload);
+            Assert.AreEqual(3249658195L, seek.SeekMediaTime);
+            Assert.AreEqual(1000, seek.SeekMediaTimescale);
+            Assert.AreEqual(10, seek.SeekSource);
+            Assert.AreEqual(3249658195L, seek.SeekTimeMs);
+        }
+
+        [TestMethod]
+        public void ExtractSabrSeek_NullOrEmpty_ReturnsDefault()
+        {
+            var seekNull = UmpParser.ExtractSabrSeek(null);
+            Assert.AreEqual(0L, seekNull.SeekMediaTime);
+            Assert.AreEqual(0, seekNull.SeekMediaTimescale);
+            Assert.AreEqual(0L, seekNull.SeekTimeMs);
+
+            var seekEmpty = UmpParser.ExtractSabrSeek(new byte[0]);
+            Assert.AreEqual(0L, seekEmpty.SeekMediaTime);
+            Assert.AreEqual(0, seekEmpty.SeekMediaTimescale);
+            Assert.AreEqual(0L, seekEmpty.SeekTimeMs);
+        }
     }
 }

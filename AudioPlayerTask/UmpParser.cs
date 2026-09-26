@@ -425,6 +425,74 @@ namespace AudioPlayerTask
             return result;
         }
 
+        internal struct ParsedSabrSeek
+        {
+            public long SeekMediaTime;
+            public int SeekMediaTimescale;
+            public int SeekSource;
+
+            public long SeekTimeMs
+            {
+                get
+                {
+                    if (SeekMediaTimescale > 0)
+                        return (long)((double)SeekMediaTime / SeekMediaTimescale * 1000.0);
+                    return SeekMediaTime;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Extracts seekMediaTime, timescale, and seekSource from a SABR_SEEK (type 45) protobuf payload.
+        /// </summary>
+        internal static ParsedSabrSeek ExtractSabrSeek(byte[] data)
+        {
+            var result = new ParsedSabrSeek();
+            if (data == null || data.Length == 0) return result;
+            try
+            {
+                int idx = 0;
+                while (idx < data.Length)
+                {
+                    byte tag = data[idx++];
+                    int fieldNum = tag >> 3;
+                    int wireType = tag & 0x07;
+
+                    if (wireType == 0) // varint
+                    {
+                        long val = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            val |= (long)(b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        if (fieldNum == 1) result.SeekMediaTime = val;
+                        else if (fieldNum == 2) result.SeekMediaTimescale = (int)val;
+                        else if (fieldNum == 3) result.SeekSource = (int)val;
+                    }
+                    else if (wireType == 2) // length-delimited
+                    {
+                        int len = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            len |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        idx += len;
+                    }
+                    else if (wireType == 1) { idx += 8; }
+                    else if (wireType == 5) { idx += 4; }
+                    else break;
+                }
+            }
+            catch { }
+            return result;
+        }
+
         internal struct ParsedNextRequestPolicy
         {
             public byte[] PlaybackCookie;
