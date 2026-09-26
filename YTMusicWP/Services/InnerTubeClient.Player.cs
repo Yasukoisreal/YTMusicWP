@@ -355,39 +355,7 @@ namespace YTMusicWP
                         _cachedCaptionsData = data["captions"];
                     }
 
-                    // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
-                    bool forceSabr = false;
-                    try
-                    {
-                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                        if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
-                    }
-                    catch { }
-
                     string serverAbrUrl = data["streamingData"]?["serverAbrStreamingUrl"]?.ToString();
-                    if (forceSabr && !string.IsNullOrEmpty(serverAbrUrl))
-                    {
-                        string ustreamerConfig = data["streamingData"]?["ustreamerConfig"]?.ToString();
-                        if (string.IsNullOrEmpty(ustreamerConfig))
-                        {
-                            ustreamerConfig = data["playerConfig"]?["mediaCommonConfig"]?["mediaUstreamerRequestConfig"]?["videoPlaybackUstreamerConfig"]?.ToString();
-                        }
-
-                        string effectivePo = currentPoToken;
-                        if (string.IsNullOrEmpty(effectivePo))
-                        {
-                            try
-                            {
-                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                                if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
-                            }
-                            catch { }
-                        }
-
-                        LastResolveDebug += " SABR_FORCED:OK";
-                        string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (effectivePo ?? "");
-                        return sabrDescriptor;
-                    }
 
                     var candidateFormats = new List<Services.StreamFormatInfo>();
 
@@ -451,7 +419,7 @@ namespace YTMusicWP
 
                     // 3. Fallback cho SABR streams (Google Server-side Adaptive Bitrate) - Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource
                     // Bỏ qua client ANDROID vì YouTube yêu cầu DroidGuard attestation sau 30s (SPS code 3)
-                    if (!string.IsNullOrEmpty(serverAbrUrl) && (client.ClientName != "ANDROID" || forceSabr))
+                    if (!string.IsNullOrEmpty(serverAbrUrl) && client.ClientName != "ANDROID")
                     {
                         string ustreamerConfig = data["streamingData"]?["ustreamerConfig"]?.ToString();
                         if (string.IsNullOrEmpty(ustreamerConfig))

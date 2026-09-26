@@ -166,7 +166,7 @@ namespace YTMusicWP
                 AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
                 GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
                 NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
-                if (ForceSabrToggle != null) ForceSabrToggle.IsOn = SafeGetBool(settings, "ForceSabr", false);
+                try { if (settings.ContainsKey("ForceSabr")) settings.Remove("ForceSabr"); } catch { }
 
                 int speedIdx = SafeGetInt(settings, "PlaybackSpeedIndex", 2);
                 if (speedIdx >= 0 && speedIdx < _playbackSpeeds.Length)
@@ -219,7 +219,6 @@ namespace YTMusicWP
                 AutoplayToggle.Toggled += AutoplayToggle_Toggled;
                 GaplessToggle.Toggled += GaplessToggle_Toggled;
                 NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
-                if (ForceSabrToggle != null) ForceSabrToggle.Toggled += ForceSabrToggle_Toggled;
                 RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
                 if (LanguageComboBox != null)
                     LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
@@ -321,13 +320,6 @@ namespace YTMusicWP
         {
             ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
             try { _appMediaPlayer.Volume = NormalizeVolumeToggle.IsOn ? 0.75 : 1.0; } catch { }
-        }
-
-        private void ForceSabrToggle_Toggled(object sender, RoutedEventArgs e)
-        {
-            if (ForceSabrToggle == null) return;
-            ApplicationData.Current.LocalSettings.Values["ForceSabr"] = ForceSabrToggle.IsOn;
-            ShowToast(ForceSabrToggle.IsOn ? "SABR testing enabled for all tracks" : "Standard streaming restored");
         }
 
         private void SplashAnimationToggle_Toggled(object sender, RoutedEventArgs e)

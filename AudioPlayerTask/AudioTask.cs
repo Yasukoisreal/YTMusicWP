@@ -857,52 +857,6 @@ namespace AudioPlayerTask
                     {
                         var streamingData = data.GetNamedObject("streamingData");
 
-                        // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
-                        bool forceSabr = false;
-                        try
-                        {
-                            var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                            if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
-                        }
-                        catch { }
-
-                        if (forceSabr && streamingData.ContainsKey("serverAbrStreamingUrl"))
-                        {
-                            string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
-                            if (!string.IsNullOrEmpty(sabrUrl))
-                            {
-                                string ustreamerConfig = "";
-                                if (streamingData.ContainsKey("ustreamerConfig"))
-                                {
-                                    ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
-                                }
-                                else if (data.ContainsKey("playerConfig"))
-                                {
-                                    try
-                                    {
-                                        var pcfg = data.GetNamedObject("playerConfig");
-                                        var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
-                                        var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
-                                        ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
-                                    }
-                                    catch { }
-                                }
-
-                                string effectivePo = (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken)) ? tokenInfo.PoToken : "";
-                                if (string.IsNullOrEmpty(effectivePo))
-                                {
-                                    try
-                                    {
-                                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                                        if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
-                                    }
-                                    catch { }
-                                }
-                                _innerTubeDebug += " [" + clientName + ":SABR_FORCED:OK]";
-                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + effectivePo;
-                            }
-                        }
-
                         // 1. Ưu tiên itag 18 từ formats (không bị bóp băng thông)
                         if (streamingData.ContainsKey("formats"))
                         {
@@ -956,7 +910,7 @@ namespace AudioPlayerTask
 
                         // 3. Fallback cho SABR stream: serverAbrStreamingUrl (Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource)
                         // Bỏ qua client ANDROID vì YouTube yêu cầu DroidGuard attestation sau 30s (SPS code 3)
-                        if (streamingData.ContainsKey("serverAbrStreamingUrl") && (clientName != "ANDROID" || forceSabr))
+                        if (streamingData.ContainsKey("serverAbrStreamingUrl") && clientName != "ANDROID")
                         {
                             string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
                             if (!string.IsNullOrEmpty(sabrUrl))
