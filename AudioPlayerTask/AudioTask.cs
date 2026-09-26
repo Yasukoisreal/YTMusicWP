@@ -59,6 +59,7 @@ namespace AudioPlayerTask
         private LiveMediaStreamSource _liveMss = null;
         private SabrMediaStreamSource _sabrMss = null;
         private CancellationTokenSource _sabrCts = null;
+        private bool _hadActiveMss = false;
         private string _currentLiveBaseUrl = null;
         private long _currentLiveSeq = -1;
         private long _nextLiveStartSeq = -1;
@@ -338,6 +339,21 @@ namespace AudioPlayerTask
             _isRetrying = false;
             _resolvedUrl = null;
             _innerTubeAttempted = false;
+
+            if (_sabrMss != null || _liveMss != null)
+            {
+                _hadActiveMss = true;
+            }
+
+            try
+            {
+                if (_mediaPlayer != null && (_mediaPlayer.CurrentState == MediaPlayerState.Playing || _mediaPlayer.CurrentState == MediaPlayerState.Buffering || _mediaPlayer.CurrentState == MediaPlayerState.Opening))
+                {
+                    _mediaPlayer.Pause();
+                }
+            }
+            catch { }
+
             if (_isCurrentTrackLive)
             {
                 if (_liveCts != null)
@@ -346,6 +362,11 @@ namespace AudioPlayerTask
                     _liveCts = null;
                 }
                 var _ = CleanupLiveTempFilesAsync();
+            }
+            if (_liveMss != null)
+            {
+                try { _liveMss.Dispose(); } catch { }
+                _liveMss = null;
             }
             if (_sabrCts != null)
             {
@@ -1014,6 +1035,14 @@ namespace AudioPlayerTask
 
                 int currentSeq = ++_playbackSequence;
 
+                if (_hadActiveMss)
+                {
+                    _hadActiveMss = false;
+                    try { if (_mediaPlayer != null) _mediaPlayer.Pause(); } catch { }
+                    await Task.Delay(150);
+                    if (currentSeq != _playbackSequence) return;
+                }
+
                 // Offline track: phát trực tiếp (nếu bài cũ vẫn mở thì tua về 0)
                 if (vidId.StartsWith("LOCAL:"))
                 {
@@ -1023,7 +1052,7 @@ namespace AudioPlayerTask
                         catch { }
                         return;
                     }
-                    PlayUrl(initialTrackUrl, vidId);
+                    await PlayUrl(initialTrackUrl, vidId);
                     return;
                 }
 
@@ -1052,7 +1081,7 @@ namespace AudioPlayerTask
                 {
                     string url = _resolvedUrl;
                     _resolvedUrl = null;
-                    PlayUrl(url, vidId);
+                    await PlayUrl(url, vidId);
                     return;
                 }
 
@@ -1078,7 +1107,7 @@ namespace AudioPlayerTask
                                 _trackList[_currentTrackIndex] = directUrl;
                             }
                         }
-                        PlayUrl(directUrl, vidId);
+                        await PlayUrl(directUrl, vidId);
                         return;
                     }
                 }
@@ -1097,7 +1126,7 @@ namespace AudioPlayerTask
                 }
                 if (!string.IsNullOrEmpty(fallbackUrl))
                 {
-                    PlayUrl(PrepareStreamUrl(fallbackUrl), vidId);
+                    await PlayUrl(PrepareStreamUrl(fallbackUrl), vidId);
                 }
                 else
                 {
@@ -1613,7 +1642,7 @@ namespace AudioPlayerTask
                    url.IndexOf("live=1", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        private void PlayUrl(string trackUrl, string vidId)
+        private async Task PlayUrl(string trackUrl, string vidId)
         {
             lock (_playlistLock)
             {
@@ -1697,7 +1726,37 @@ namespace AudioPlayerTask
 
                 UpdateSystemMediaControls();
                 _mediaPlayer.AutoPlay = !_startPaused;
-                _mediaPlayer.SetUriSource(new Uri(trackUrl));
+
+                bool setSuccess = false;
+                for (int setAttempt = 0; setAttempt < 2; setAttempt++)
+                {
+                    try
+                    {
+                        if (setAttempt > 0)
+                        {
+                            try { _mediaPlayer.Pause(); } catch { }
+                        }
+                        _mediaPlayer.SetUriSource(new Uri(trackUrl));
+                        setSuccess = true;
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogLive("[PlayUrl SetUriSource Error] attempt=" + setAttempt + ": " + ex.Message);
+                        if (setAttempt == 0)
+                        {
+                            try { _mediaPlayer.Pause(); } catch { }
+                            await Task.Delay(150);
+                        }
+                    }
+                }
+
+                if (!setSuccess)
+                {
+                    ReportErrorToUI("Failed to set stream source");
+                    return;
+                }
+
                 try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
                 _currentLoadedVidId = vidId;
 

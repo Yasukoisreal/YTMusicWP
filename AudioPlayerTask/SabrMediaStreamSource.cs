@@ -191,7 +191,11 @@ namespace AudioPlayerTask
         {
             try
             {
-                if (_isDisposed) return;
+                if (_isDisposed)
+                {
+                    try { args.Request.Sample = null; } catch { }
+                    return;
+                }
                 var request = args.Request;
 
                 lock (_queueLock)
@@ -204,7 +208,7 @@ namespace AudioPlayerTask
                         return;
                     }
 
-                    if (_cts.IsCancellationRequested || _isDisposed || (_streamingTask != null && _streamingTask.IsCompleted))
+                    if ((_cts != null && _cts.IsCancellationRequested) || _isDisposed || (_streamingTask != null && _streamingTask.IsCompleted))
                     {
                         // No more samples and streaming loop ended -> EOS
                         request.Sample = null;
@@ -898,7 +902,12 @@ namespace AudioPlayerTask
                 {
                     var p = _pendingRequests[0];
                     _pendingRequests.RemoveAt(0);
-                    try { p.Deferral.Complete(); } catch { }
+                    try
+                    {
+                        p.Request.Sample = null;
+                        p.Deferral.Complete();
+                    }
+                    catch { }
                 }
                 _sampleQueue.Clear();
 
@@ -917,9 +926,13 @@ namespace AudioPlayerTask
 
             if (_mss != null)
             {
-                _mss.SampleRequested -= Mss_SampleRequested;
-                _mss.Starting -= Mss_Starting;
-                _mss.Closed -= Mss_Closed;
+                try
+                {
+                    _mss.SampleRequested -= Mss_SampleRequested;
+                    _mss.Starting -= Mss_Starting;
+                    _mss.Closed -= Mss_Closed;
+                }
+                catch { }
                 _mss = null;
             }
         }

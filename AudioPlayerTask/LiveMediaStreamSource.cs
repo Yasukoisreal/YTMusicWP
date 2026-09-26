@@ -143,7 +143,11 @@ namespace AudioPlayerTask
 
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
-            if (_isDisposed) return;
+            if (_isDisposed)
+            {
+                try { args.Request.Sample = null; } catch { }
+                return;
+            }
             try
             {
                 var request = args.Request;
@@ -153,6 +157,12 @@ namespace AudioPlayerTask
                     if (_sampleQueue.Count > 0)
                     {
                         request.Sample = _sampleQueue.Dequeue();
+                        return;
+                    }
+
+                    if (_isDisposed || (_cts != null && _cts.IsCancellationRequested))
+                    {
+                        request.Sample = null;
                         return;
                     }
 
@@ -567,7 +577,12 @@ namespace AudioPlayerTask
             {
                 foreach (var p in _pendingRequests)
                 {
-                    try { p.Deferral.Complete(); } catch { }
+                    try
+                    {
+                        p.Request.Sample = null;
+                        p.Deferral.Complete();
+                    }
+                    catch { }
                 }
                 _pendingRequests.Clear();
                 _sampleQueue.Clear();
