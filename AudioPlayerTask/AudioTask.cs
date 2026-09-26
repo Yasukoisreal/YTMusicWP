@@ -26,6 +26,8 @@ namespace AudioPlayerTask
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
+            filter.CacheControl.ReadBehavior = Windows.Web.Http.Filters.HttpCacheReadBehavior.MostRecent;
+            filter.CacheControl.WriteBehavior = Windows.Web.Http.Filters.HttpCacheWriteBehavior.NoCache;
             return filter;
         }
 
@@ -2086,8 +2088,8 @@ namespace AudioPlayerTask
         private void StartPlaybackMonitor()
         {
             StopPlaybackMonitor();
-            // High-precision 100ms polling for live stream handover; 500ms for regular tracks
-            int intervalMs = _isCurrentTrackLive ? 100 : 500;
+            // High-precision 100ms polling ONLY for legacy file-swap live buffer handover; 500ms for MSS and regular tracks
+            int intervalMs = (_isCurrentTrackLive && _liveMss == null && _sabrMss == null) ? 100 : 500;
             _playbackMonitorTimer = Windows.System.Threading.ThreadPoolTimer.CreatePeriodicTimer(
                 PlaybackMonitorTimer_Tick, TimeSpan.FromMilliseconds(intervalMs));
         }

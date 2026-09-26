@@ -128,11 +128,13 @@ namespace AudioPlayerTask
             _clientNameInt = clientNameInt;
             Log("Initialized for client=" + (_clientName ?? "?") + " (id=" + _clientNameInt + "), poToken=" + (!string.IsNullOrEmpty(_poToken) ? (_poToken.Length + " chars") : "NONE"));
 
-            // Shared HTTP filter that ignores legacy SSL handshake anomalies
+            // Shared HTTP filter that ignores legacy SSL handshake anomalies and disables response caching
             var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
+            filter.CacheControl.ReadBehavior = Windows.Web.Http.Filters.HttpCacheReadBehavior.MostRecent;
+            filter.CacheControl.WriteBehavior = Windows.Web.Http.Filters.HttpCacheWriteBehavior.NoCache;
             _httpClient = new HttpClient(filter);
 
             // Audio encoding descriptor: AAC-ADTS 44.1kHz Stereo 128kbps (itag 140 baseline)
@@ -509,6 +511,12 @@ namespace AudioPlayerTask
 
                     // Audio samples received successfully, advance request sequence
                     _requestNumber++;
+
+                    // Periodically trigger GC every 8 chunks (~40s) to reclaim native COM wrappers and prevent OOM on 512MB WP8.1
+                    if (_requestNumber % 8 == 0)
+                    {
+                        try { GC.Collect(); } catch { }
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -598,6 +606,19 @@ namespace AudioPlayerTask
                                 {
                                     if (_firstMediaHeaderSeqNum < 0) _firstMediaHeaderSeqNum = _lastMediaHeaderSeqNum;
                                     _downloadedSequences.Add(_lastMediaHeaderSeqNum);
+                                    if (_downloadedSequences.Count > 80)
+                                    {
+                                        int threshold = _lastMediaHeaderSeqNum - 40;
+                                        var toRemove = new List<int>();
+                                        foreach (int seq in _downloadedSequences)
+                                        {
+                                            if (seq < threshold) toRemove.Add(seq);
+                                        }
+                                        for (int r = 0; r < toRemove.Count; r++)
+                                        {
+                                            _downloadedSequences.Remove(toRemove[r]);
+                                        }
+                                    }
                                 }
                                 _lastSuccessfulChunkTime = DateTime.UtcNow;
                                 Log("Segment " + headerId + " seq=" + _lastMediaHeaderSeqNum + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
@@ -714,10 +735,18 @@ namespace AudioPlayerTask
                     ms.Dispose();
                     if (segBytes.Length > 0)
                     {
-                        int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
-                        if (samples > 0)
+                        if (!_lastMediaHeaderIsInit && (_lastMediaHeaderSeqNum < 0 || !_downloadedSequences.Contains(_lastMediaHeaderSeqNum)))
                         {
-                            Log("Flushed segment " + hid + ": " + samples + " samples (" + segBytes.Length + " bytes)");
+                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                            if (samples > 0)
+                            {
+                                if (_lastMediaHeaderSeqNum >= 0)
+                                {
+                                    if (_firstMediaHeaderSeqNum < 0) _firstMediaHeaderSeqNum = _lastMediaHeaderSeqNum;
+                                    _downloadedSequences.Add(_lastMediaHeaderSeqNum);
+                                }
+                                Log("Flushed segment " + hid + ": " + samples + " samples (" + segBytes.Length + " bytes)");
+                            }
                         }
                     }
                 }

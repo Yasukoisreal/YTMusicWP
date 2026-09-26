@@ -569,11 +569,17 @@ namespace YTMusicWP
 
         private async void TimerCallback(object state)
         {
+            try
+            {
             // [OPT-P1] Bail-out sớm TRƯỚC khi gọi Dispatcher — tiết kiệm thread switch trên WP8.1
             if (_isSliderManipulating) return;
             MediaPlayer session;
             try { session = _appMediaPlayer; } catch { return; }
-            if (session == null || session.CurrentState != MediaPlayerState.Playing) return;
+            if (session == null) return;
+
+            MediaPlayerState stateVal;
+            try { stateVal = session.CurrentState; } catch { return; }
+            if (stateVal != MediaPlayerState.Playing) return;
 
             TimeSpan pos, dur;
             try { pos = session.Position; dur = session.NaturalDuration; } catch { return; }
@@ -823,6 +829,8 @@ namespace YTMusicWP
                     }
                     catch { }
                 });
+            }
+            catch { }
             }
             catch { }
         }
