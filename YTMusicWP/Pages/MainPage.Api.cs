@@ -219,8 +219,8 @@ namespace YTMusicWP
             {
                 int eqIdx = url.LastIndexOf("=");
                 if (eqIdx > 0)
-                    return url.Substring(0, eqIdx) + "=w500-h500-l90-rj";
-                return url + "=w500-h500-l90-rj";
+                    return url.Substring(0, eqIdx) + "=w500-h500-c-l90-rj";
+                return url + "=w500-h500-c-l90-rj";
             }
 
             if (url.Contains("ytimg.com") || url.Contains("img.youtube.com"))
@@ -232,11 +232,12 @@ namespace YTMusicWP
                     if (endIdx > 0)
                     {
                         string vidId = url.Substring(viIdx + 4, endIdx - (viIdx + 4));
-                        return "https://i.ytimg.com/vi/" + vidId + "/hqdefault.jpg";
+                        return "https://i.ytimg.com/vi/" + vidId + "/mqdefault.jpg";
                     }
                 }
-                if (url.Contains("mqdefault.jpg")) return url.Replace("mqdefault.jpg", "hqdefault.jpg");
-                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "hqdefault.jpg");
+                if (url.Contains("hqdefault.jpg")) return url.Replace("hqdefault.jpg", "mqdefault.jpg");
+                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "mqdefault.jpg");
+                if (url.Contains("maxresdefault.jpg")) return url.Replace("maxresdefault.jpg", "mqdefault.jpg");
             }
 
             return url;

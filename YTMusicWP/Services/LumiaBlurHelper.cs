@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Windows.UI.Xaml.Media.Imaging;
 using Lumia.Imaging;
 using Lumia.Imaging.Adjustments;
+using Lumia.Imaging.Transforms;
 
 namespace YTMusicWP.Services
 {
@@ -143,6 +144,44 @@ namespace YTMusicWP.Services
             _fadedCacheValues[0] = bitmap;
         }
 
+        private static CropFilter GetCenterCropFilter(double srcW, double srcH)
+        {
+            if (srcW <= 0 || srcH <= 0 || Math.Abs(srcW - srcH) <= 2)
+            {
+                return null;
+            }
+
+            double ratio = srcW / srcH;
+            double cropX, cropY, cropSize;
+
+            if (Math.Abs(ratio - (4.0 / 3.0)) < 0.08)
+            {
+                // 4:3 YouTube letterboxed thumbnail (e.g. hqdefault.jpg 480x360 or sddefault.jpg 640x480).
+                // Active 16:9 video height is srcW * 9 / 16.
+                // Center-cropping removes the top & bottom black bars and yields a clean 1:1 square.
+                cropSize = srcW * 9.0 / 16.0;
+                cropX = (srcW - cropSize) / 2.0;
+                cropY = (srcH - cropSize) / 2.0;
+            }
+            else if (ratio > 1.0)
+            {
+                // Landscape / 16:9 image (e.g. mqdefault.jpg 320x180, maxresdefault 1280x720, or Google CDN video).
+                // Center-crop to 1:1 square using full height.
+                cropSize = srcH;
+                cropX = (srcW - cropSize) / 2.0;
+                cropY = 0;
+            }
+            else
+            {
+                // Portrait image: crop to 1:1 square from top.
+                cropSize = srcW;
+                cropX = 0;
+                cropY = 0;
+            }
+
+            return new CropFilter(new Windows.Foundation.Rect(cropX, cropY, cropSize, cropSize));
+        }
+
         /// <summary>
         /// Renders a blurred version of the source image at the specified dimensions.
         /// Uses Lumia Imaging SDK BlurFilter for ARM NEON-accelerated blur.
@@ -154,17 +193,36 @@ namespace YTMusicWP.Services
             if (source != null && source.CanSeek) source.Position = 0;
             var bitmap = new WriteableBitmap(targetWidth, targetHeight);
             using (var imageSource = new StreamImageSource(source))
-            using (var filterEffect = new FilterEffect(imageSource))
             {
-                filterEffect.Filters = new IFilter[]
+                var info = await imageSource.GetInfoAsync();
+                var cropFilter = GetCenterCropFilter(info.ImageSize.Width, info.ImageSize.Height);
+
+                using (var filterEffect = new FilterEffect(imageSource))
                 {
-                    new BlurFilter(kernelSize),
-                    new BlurFilter(kernelSize),
-                    new BlurFilter(kernelSize)
-                };
-                using (var renderer = new WriteableBitmapRenderer(filterEffect, bitmap, OutputOption.Stretch))
-                {
-                    await renderer.RenderAsync();
+                    if (cropFilter != null)
+                    {
+                        filterEffect.Filters = new IFilter[]
+                        {
+                            cropFilter,
+                            new BlurFilter(kernelSize),
+                            new BlurFilter(kernelSize),
+                            new BlurFilter(kernelSize)
+                        };
+                    }
+                    else
+                    {
+                        filterEffect.Filters = new IFilter[]
+                        {
+                            new BlurFilter(kernelSize),
+                            new BlurFilter(kernelSize),
+                            new BlurFilter(kernelSize)
+                        };
+                    }
+
+                    using (var renderer = new WriteableBitmapRenderer(filterEffect, bitmap, OutputOption.Stretch))
+                    {
+                        await renderer.RenderAsync();
+                    }
                 }
             }
             bitmap.Invalidate();
@@ -181,9 +239,28 @@ namespace YTMusicWP.Services
             if (source != null && source.CanSeek) source.Position = 0;
             var bitmap = new WriteableBitmap(targetWidth, targetHeight);
             using (var imageSource = new StreamImageSource(source))
-            using (var renderer = new WriteableBitmapRenderer(imageSource, bitmap, OutputOption.Stretch))
             {
-                await renderer.RenderAsync();
+                var info = await imageSource.GetInfoAsync();
+                var cropFilter = GetCenterCropFilter(info.ImageSize.Width, info.ImageSize.Height);
+
+                if (cropFilter != null)
+                {
+                    using (var filterEffect = new FilterEffect(imageSource))
+                    {
+                        filterEffect.Filters = new IFilter[] { cropFilter };
+                        using (var renderer = new WriteableBitmapRenderer(filterEffect, bitmap, OutputOption.Stretch))
+                        {
+                            await renderer.RenderAsync();
+                        }
+                    }
+                }
+                else
+                {
+                    using (var renderer = new WriteableBitmapRenderer(imageSource, bitmap, OutputOption.Stretch))
+                    {
+                        await renderer.RenderAsync();
+                    }
+                }
             }
 
             try
