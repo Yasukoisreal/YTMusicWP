@@ -1,13 +1,11 @@
 Mozilla Public License Version 2.0
 ==================================
 
-Copyright (c) 2026 Yasuko (An)
-
 1. Definitions
 --------------
 
 1.1. "Contributor"
-    means each individual or entity that creates, contributes to
+    means each individual or legal entity that creates, contributes to
     the creation of, or owns Covered Software.
 
 1.2. "Contributor Version"
@@ -62,13 +60,20 @@ Copyright (c) 2026 Yasuko (An)
     means any patent claim(s), including without limitation, method,
     process, and apparatus claims, in any patent Licensable by such
     Contributor that would be infringed, but for the grant of the
-    License, whether sponsored, acquired, or later acquired by or on
-    behalf of such Contributor.
+    License, by the making, using, selling, offering for sale, having
+    made, import, or transfer of either its Contributions or its
+    Contributor Version.
 
-1.12. "Source Code Form"
+1.12. "Secondary License"
+    means either the GNU General Public License, Version 2.0, the GNU
+    Lesser General Public License, Version 2.1, the GNU Affero General
+    Public License, Version 3.0, or any later versions of those
+    licenses.
+
+1.13. "Source Code Form"
     means the form of the work preferred for making modifications.
 
-1.13. "You" (or "Your")
+1.14. "You" (or "Your")
     means an individual or a legal entity exercising rights under this
     License. For legal entities, "You" includes any entity that
     controls, is controlled by, or is under common control with You. For
@@ -92,8 +97,8 @@ non-exclusive license:
     Contributions, either on an unmodified basis, with Modifications, or
     as part of a Larger Work; and
 
-(b) under Patent Claims of such Contributor to make, use, sell, offer for
-    sale, have made, import, and otherwise transfer either its
+(b) under Patent Claims of such Contributor to make, use, sell, offer
+    for sale, have made, import, and otherwise transfer either its
     Contributions or its Contributor Version.
 
 2.2. Effective Date
@@ -105,11 +110,13 @@ distributes such Contribution.
 2.3. Limitations on Grant Scope
 
 The licenses granted in this Section 2 are the only rights granted under
-this License. No additional terms or conditions relating to patents or
-trademarks are granted under this License. Without limiting the
-foregoing, no licenses are granted:
+this License. No additional rights or licenses will be implied from the
+distribution or licensing of Covered Software under this License.
+Notwithstanding Section 2.1(b) above, no patent license is granted by a
+Contributor:
 
-(a) for any code that You delete from the Covered Software; or
+(a) for any code that a Contributor has removed from Covered Software;
+    or
 
 (b) for infringements caused by: (i) Your and any other third party's
     modifications of Covered Software, or (ii) the combination of its
@@ -336,7 +343,7 @@ If you create software not governed by this License, and you want to
 create a new license for such software, you may create and use a
 modified version of this License if you rename the license and remove
 any references to the name of the license steward (except to note that
-such license differs from this License).
+such modified license differs from this License).
 
 10.4. Distributing Source Code Form that is Incompatible With Secondary
 Licenses
