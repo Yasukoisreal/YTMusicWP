@@ -6,7 +6,8 @@
   <br>
   <br>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/actions/workflows/ci.yml"><img src="https://github.com/Yasukoisreal/YTMusicWP/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status"></a>
-  <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Unit%20Tests-43%20Passed-brightgreen?logo=csharp" alt="Unit Tests"></a>
+  <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Unit%20Tests-52%20Passed-brightgreen?logo=csharp" alt="Unit Tests"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MPL%202.0-blue.svg" alt="License: MPL 2.0"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Platform-Windows%20Phone%208.1%20%7C%20W10M-0078D7?logo=windows" alt="Platform"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Language-C%23%20%2F%20XAML-239120?logo=c-sharp" alt="Language"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/RAM%20Target-512MB%20Optimized-orange" alt="RAM Target"></a>
@@ -218,7 +219,7 @@ YTMusicWP is built upon and inspired by the incredible work of the open-source c
 - **[YouTube.js](https://github.com/LuanRT/YouTube.js)** by **[@LuanRT](https://github.com/LuanRT)**: Format specifications and InnerTube API architecture research.
 
 ## License
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [Mozilla Public License 2.0 (MPL 2.0)](LICENSE).
 
 <div align="center">
   Crafted with ❤️ for the Windows Phone & Lumia community by <strong>Yasuko (An)</strong>.
