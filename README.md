@@ -211,7 +211,7 @@ If you enjoy using YTMusicWP and want to support the development, consider buyin
 
 YTMusicWP is built upon and inspired by the incredible work of the open-source community. Sincere gratitude to:
 
-- **[SimpMusic](https://github.com/maxrave-dev/SimpMusic)** by **[@maxrave-dev](https://github.com/maxrave-dev)** (licensed under GPLv3): Great inspiration for the redesigned 4-tile Library layout, dynamic Moods & Genres cards, and Listen Together real-time room synchronization.
+- **[SimpMusic](https://github.com/maxrave-dev/SimpMusic)** by **[@maxrave-dev](https://github.com/maxrave-dev)** (licensed under GPLv3): Serves as a primary inspiration and reference for YTMusicWP's UI/UX design, feature architecture, and modern YouTube Music client experience — including Home shelves, 4-tile Library layout, Moods & Genres cards, player aesthetics, and Listen Together real-time room synchronization.
 - **[Metrolist](https://github.com/metrolistgroup/metrolist)** by **[@metrolistgroup](https://github.com/metrolistgroup)**: Inspiration for room protocol integration and audio streaming mechanics.
 - **[SponsorBlock](https://sponsor.ajay.app/)** by **[@ajayyy](https://github.com/ajayyy)**: Real-time sponsor segment skipping.
 - **[LRCLIB](https://lrclib.net/)** by **[@tranxuanthang](https://github.com/tranxuanthang)** & **[Lyrics API](https://lyrics-api.boidu.dev)** by **[@boidu](https://github.com/boidu)**: Synced lyrics data providers.
