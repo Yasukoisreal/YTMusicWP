@@ -36,7 +36,7 @@ export default function Footer({ onOpenDonate }) {
             <div className="mt-8 flex items-center gap-2 text-xs font-mono text-slate-500">
               <span>DESIGNED BY YASUKO (AN)</span>
               <span>&bull;</span>
-              <span>MPL 2.0 LICENSE</span>
+              <span>GPLv3 LICENSE</span>
             </div>
           </div>
 
