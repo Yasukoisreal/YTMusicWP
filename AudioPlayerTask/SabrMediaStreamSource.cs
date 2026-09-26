@@ -143,7 +143,7 @@ namespace AudioPlayerTask
 
             _mss = new MediaStreamSource(streamDescriptor);
             _mss.CanSeek = !_isLiveStream;
-            _mss.BufferTime = TimeSpan.FromSeconds(3);
+            _mss.BufferTime = TimeSpan.FromSeconds(2);
 
             _mss.SampleRequested += Mss_SampleRequested;
             _mss.Starting += Mss_Starting;
@@ -246,6 +246,28 @@ namespace AudioPlayerTask
                     _formatsInitialized = true;
                     _lastSuccessfulChunkTime = DateTime.UtcNow;
                     Log("Preload done: parsed " + samples0 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+
+                    if (_isLiveStream)
+                    {
+                        // For live streams, immediately preload rn=1 over HTTP Keep-Alive.
+                        // This provides ~10s of audio cushion (430 samples) before starting playback,
+                        // preventing Media Foundation audio sink clock-drift acceleration (catch-up "giật tua").
+                        try
+                        {
+                            int samples1 = await FetchChunkAsync(1, ct).ConfigureAwait(false);
+                            if (samples1 > 0)
+                            {
+                                _requestNumber = 2;
+                                _lastSuccessfulChunkTime = DateTime.UtcNow;
+                                Log("Live stream rn=1 preloaded: total " + (samples0 + samples1) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                            }
+                        }
+                        catch (Exception ex1)
+                        {
+                            Log("Warning: rn=1 preload failed (" + ex1.Message + "), will stream in background loop");
+                        }
+                    }
+
                     return true;
                 }
                 else if (samples0 == 0 && string.IsNullOrEmpty(LastError))
@@ -258,6 +280,25 @@ namespace AudioPlayerTask
                         _formatsInitialized = true;
                         _lastSuccessfulChunkTime = DateTime.UtcNow;
                         Log("Preload done at rn=1: parsed " + samples1 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+
+                        if (_isLiveStream)
+                        {
+                            try
+                            {
+                                int samples2 = await FetchChunkAsync(2, ct).ConfigureAwait(false);
+                                if (samples2 > 0)
+                                {
+                                    _requestNumber = 3;
+                                    _lastSuccessfulChunkTime = DateTime.UtcNow;
+                                    Log("Live stream rn=2 preloaded: total " + (samples1 + samples2) + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
+                                }
+                            }
+                            catch (Exception ex2)
+                            {
+                                Log("Warning: rn=2 preload failed (" + ex2.Message + "), will stream in background loop");
+                            }
+                        }
+
                         return true;
                     }
                     LastError = "No audio samples received in initial chunks";
@@ -418,15 +459,15 @@ namespace AudioPlayerTask
 
                     // Pacing guard: each chunk is ~5.0s of audio.
                     // The live encoder on YouTube generates chunks in real-time (~5.0s intervals).
-                    // If buffer is healthy (>= 350 samples, ~8.1s) and we just received a chunk less than 4.0s ago,
+                    // If buffer is healthy (>= 500 samples, ~11.6s) and we just received a chunk less than 3.5s ago,
                     // wait for the remaining time so the encoder has time to produce the next segment.
-                    // If buffer is low (< 350 samples), do NOT wait: fetch immediately to build up safety cushion!
-                    if (count >= 350 && _lastSuccessfulChunkTime > DateTime.MinValue)
+                    // If buffer is low (< 500 samples), do NOT wait: fetch immediately to build up safety cushion!
+                    if (_isLiveStream && count >= 500 && _lastSuccessfulChunkTime > DateTime.MinValue)
                     {
                         double elapsedSinceLast = (DateTime.UtcNow - _lastSuccessfulChunkTime).TotalSeconds;
-                        if (elapsedSinceLast < 4.0)
+                        if (elapsedSinceLast < 3.5)
                         {
-                            int waitMs = (int)((4.0 - elapsedSinceLast) * 1000);
+                            int waitMs = (int)((3.5 - elapsedSinceLast) * 1000);
                             if (waitMs > 100)
                             {
                                 await Task.Delay(waitMs, ct).ConfigureAwait(false);
