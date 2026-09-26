@@ -200,6 +200,18 @@ namespace AudioPlayerTask
             }
             else
             {
+                if (!_isLiveStream && request.StartPosition.HasValue && _currentPositionMs > 500)
+                {
+                    // User sought back to start (<= 500ms) from a later position
+                    Log("Mss_Starting seek to beginning (0s)");
+                    lock (_queueLock)
+                    {
+                        _sampleQueue.Clear();
+                        _sampleIndex = 0;
+                        _currentPositionMs = 0;
+                    }
+                    RestartStreamingAt(0);
+                }
                 request.SetActualStartPosition(TimeSpan.Zero);
             }
         }
@@ -649,6 +661,7 @@ namespace AudioPlayerTask
                         int headerId = part.Data[0];
                         byte[] segBytes = null;
                         ParsedMediaHeader segHeader = null;
+                        int segLen = 0;
                         lock (_queueLock)
                         {
                             MemoryStream ms;
@@ -656,13 +669,14 @@ namespace AudioPlayerTask
                             {
                                 _pendingSegments.Remove(headerId);
                                 segBytes = ms.ToArray();
+                                segLen = segBytes.Length;
                                 ms.Dispose();
                             }
                             _pendingMediaHeaders.TryGetValue(headerId, out segHeader);
                             _pendingMediaHeaders.Remove(headerId);
                         }
 
-                        if (segBytes != null && segBytes.Length > 0)
+                        if (segBytes != null && segLen > 0)
                         {
                             bool isInit = (segHeader != null) ? segHeader.IsInitSeg : false;
                             int seq = (segHeader != null) ? segHeader.SequenceNumber : -1;
@@ -672,7 +686,7 @@ namespace AudioPlayerTask
                             // Skip init segments (moov/ftyp only, no playable audio)
                             if (isInit)
                             {
-                                Log("Skipping init segment " + headerId + " (" + segBytes.Length + " bytes)");
+                                Log("Skipping init segment " + headerId + " (" + segLen + " bytes)");
                                 break;
                             }
 
@@ -702,7 +716,7 @@ namespace AudioPlayerTask
                                 }
                             }
 
-                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segLen);
                             if (samples > 0)
                             {
                                 if (seq >= 0)
@@ -729,11 +743,11 @@ namespace AudioPlayerTask
                                     }
                                 }
                                 _lastSuccessfulChunkTime = DateTime.UtcNow;
-                                Log("Segment " + headerId + " seq=" + seq + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
+                                Log("Segment " + headerId + " seq=" + seq + " finalized: " + samples + " samples parsed (" + segLen + " bytes)");
                             }
                             else
                             {
-                                Log("Segment " + headerId + " received (" + segBytes.Length + " bytes, no audio samples)");
+                                Log("Segment " + headerId + " received (" + segLen + " bytes, no audio samples)");
                             }
                         }
                     }

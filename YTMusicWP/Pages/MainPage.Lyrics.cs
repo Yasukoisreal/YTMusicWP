@@ -412,12 +412,21 @@ namespace YTMusicWP
             }
 
             parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
+            parsedLines.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
+
+            if (LyricsListView != null) LyricsListView.ItemsSource = null;
+            if (FullscreenLyricsListView != null) FullscreenLyricsListView.ItemsSource = null;
+
+            currentLyrics.Clear();
             foreach (var p in parsedLines) currentLyrics.Add(p);
-            currentLyrics.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
+
+            if (LyricsListView != null) LyricsListView.ItemsSource = currentLyrics;
+            if (FullscreenLyricsListView != null) FullscreenLyricsListView.ItemsSource = currentLyrics;
+
             UpdateLyricsVisualState();
         }
 
-        private async void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
+        private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var line = e.ClickedItem as LyricLine;
             if (line == null || line.Time >= TimeSpan.FromHours(1)) return;
@@ -438,7 +447,6 @@ namespace YTMusicWP
                 if (targetIndex < 0 || targetIndex == currentLyricIndex) return;
 
                 // Suppress timer ticks from reverting UI while IPC seek settles
-                _isSliderManipulating = true;
                 _lastSeekTarget = line.Time;
                 _lastSeekTimestamp = DateTime.UtcNow;
 
@@ -472,14 +480,8 @@ namespace YTMusicWP
                 int oldIndex = currentLyricIndex;
                 currentLyricIndex = targetIndex;
                 ForceUpdateLyricUI(oldIndex);
-
-                await Task.Delay(400);
-                _isSliderManipulating = false;
             }
-            catch
-            {
-                _isSliderManipulating = false;
-            }
+            catch { }
         }
         private void LyricsListView_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
@@ -494,13 +496,16 @@ namespace YTMusicWP
             {
                 // Spotify: scale + dim
                 args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.5;
-                var st = new Windows.UI.Xaml.Media.ScaleTransform
+                var st = args.ItemContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
+                if (st == null)
                 {
-                    ScaleX = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.85,
-                    ScaleY = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.85
-                };
-                args.ItemContainer.RenderTransformOrigin = new Point(0, 0.5);
-                args.ItemContainer.RenderTransform = st;
+                    st = new Windows.UI.Xaml.Media.ScaleTransform();
+                    args.ItemContainer.RenderTransformOrigin = new Point(0, 0.5);
+                    args.ItemContainer.RenderTransform = st;
+                }
+                double targetScale = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.85;
+                st.ScaleX = targetScale;
+                st.ScaleY = targetScale;
             }
         }
 

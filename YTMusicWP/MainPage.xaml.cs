@@ -189,7 +189,7 @@ namespace YTMusicWP
 
         private DispatcherTimer _typingTimer = new DispatcherTimer();
         private YouTubeTrack currentTrack = null;
-        private bool _isSliderManipulating = false;
+        private volatile bool _isSliderManipulating = false;
         private Timer _bgTimer;
         private CancellationTokenSource _toastCts;
         // [OPT-C2] Token riêng cho lyrics — dừng Task cũ khi bài đổi, tránh race condition

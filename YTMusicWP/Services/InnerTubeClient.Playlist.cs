@@ -23,7 +23,7 @@ namespace YTMusicWP
                         ["privacyStatus"] = "PRIVATE"
                     };
                     var json = await AuthInnerTubePostAsync("playlist/create", extra, accessToken, "WEB_REMIX", "1.20231214.00.00");
-                    if (json["_error"] == null)
+                    if (json != null && json["_error"] == null)
                     {
                         string newId = json["playlistId"]?.ToString();
                         if (!string.IsNullOrEmpty(newId)) return newId;
@@ -53,7 +53,7 @@ namespace YTMusicWP
             {
                 var extra = new JObject { ["playlistId"] = playlistId };
                 var json = await AuthInnerTubePostAsync("playlist/delete", extra, accessToken, "TVHTML5", "7.20241016.00.00");
-                return json["_error"] == null;
+                return json != null && json["_error"] == null;
             }
             catch (Exception ex)
             {
@@ -82,7 +82,7 @@ namespace YTMusicWP
                     }
                 };
                 var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00");
-                return json["_error"] == null;
+                return json != null && json["_error"] == null;
             }
             catch (Exception ex)
             {
@@ -113,7 +113,7 @@ namespace YTMusicWP
                 var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00");
                 
                 // Extract the setVideoId returned by YouTube
-                if (json["_error"] == null)
+                if (json != null && json["_error"] == null)
                 {
                     var editResults = json["playlistEditResults"] as JArray;
                     if (editResults != null && editResults.Count > 0)
@@ -153,7 +153,7 @@ namespace YTMusicWP
                     }
                 };
                 var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00");
-                return json["_error"] == null;
+                return json != null && json["_error"] == null;
             }
             catch (Exception ex)
             {
@@ -171,7 +171,7 @@ namespace YTMusicWP
                     ["target"] = new JObject { ["videoId"] = videoId }
                 };
                 var json = await AuthInnerTubePostAsync("like/like", extra, accessToken, "TVHTML5", "7.20241016.00.00");
-                return json["_error"] == null;
+                return json != null && json["_error"] == null;
             }
             catch (Exception ex)
             {
@@ -189,7 +189,7 @@ namespace YTMusicWP
                     ["target"] = new JObject { ["videoId"] = videoId }
                 };
                 var json = await AuthInnerTubePostAsync("like/removelike", extra, accessToken, "TVHTML5", "7.20241016.00.00");
-                return json["_error"] == null;
+                return json != null && json["_error"] == null;
             }
             catch (Exception ex)
             {

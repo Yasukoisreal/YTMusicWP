@@ -806,27 +806,30 @@ namespace YTMusicWP
                             scrollViewer = _cachedLyricsScrollViewer;
                         }
 
-                        var activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                        if (activeContainer == null)
+                        if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                         {
-                            // Item is virtualized out of view because user seeked far away.
-                            targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
-                            targetListView.UpdateLayout();
-                            activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-                        }
-                        
-                        if (scrollViewer != null && activeContainer != null)
-                        {
-                            var transform    = activeContainer.TransformToVisual(scrollViewer);
-                            var lyricPos     = transform.TransformPoint(new Point(0, 0));
-                            double targetOff = scrollViewer.VerticalOffset + lyricPos.Y
-                                            - (scrollViewer.ViewportHeight / 2.0)
-                                            + (activeContainer.ActualHeight / 2.0);
-                            scrollViewer.ChangeView(null, targetOff, null, false);
+                            var activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                            if (activeContainer == null)
+                            {
+                                // Item is virtualized out of view because user seeked far away.
+                                targetListView.ScrollIntoView(currentLyrics[currentLyricIndex]);
+                                targetListView.UpdateLayout();
+                                activeContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+                            }
+                            
+                            if (scrollViewer != null && activeContainer != null)
+                            {
+                                var transform    = activeContainer.TransformToVisual(scrollViewer);
+                                var lyricPos     = transform.TransformPoint(new Point(0, 0));
+                                double targetOff = scrollViewer.VerticalOffset + lyricPos.Y
+                                                - (scrollViewer.ViewportHeight / 2.0)
+                                                + (activeContainer.ActualHeight / 2.0);
+                                scrollViewer.ChangeView(null, targetOff, null, false);
+                            }
                         }
                         }
 
-                        if (isMainScreenVisible)
+                        if (isMainScreenVisible && currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                         {
                             UpdateMiniLyric(currentLyrics[currentLyricIndex].Text);
                         }
@@ -913,7 +916,9 @@ namespace YTMusicWP
                         PlayTrack(currentTrack, startPosition: resumePos);
                     }
                 }
-                else if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                else if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing ||
+                         _appMediaPlayer.CurrentState == MediaPlayerState.Buffering ||
+                         _appMediaPlayer.CurrentState == MediaPlayerState.Opening)
                 {
                     _appMediaPlayer.Pause();
                     OnPlayPauseChangedAsHost(false);
@@ -2279,9 +2284,13 @@ namespace YTMusicWP
             }
         }
 
+        private int _miniLyricSeq = 0;
+
         private async void UpdateMiniLyric(string newLyric, bool force = false)
         {
             if (MiniLyricText.Text == newLyric && !force) return;
+
+            int curSeq = ++_miniLyricSeq;
 
             var fadeOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0, Duration = TimeSpan.FromMilliseconds(200) };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOut, MiniLyricStack);
@@ -2293,6 +2302,19 @@ namespace YTMusicWP
             sbOut.Completed += (s, e) => tcsOut.TrySetResult(true);
             sbOut.Begin();
             await Task.WhenAny(tcsOut.Task, Task.Delay(300));
+
+            if (curSeq != _miniLyricSeq) return;
+
+            bool isMainScreenVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible && NowPlayingPivot != null && NowPlayingPivot.SelectedIndex == 0);
+            if (!isMainScreenVisible)
+            {
+                if (_miniLyricMarqueeStoryboard != null)
+                {
+                    _miniLyricMarqueeStoryboard.Stop();
+                    _miniLyricMarqueeStoryboard = null;
+                }
+                return;
+            }
 
             MiniLyricText.Text = newLyric;
             

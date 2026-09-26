@@ -165,6 +165,7 @@ namespace YTMusicWP
                 {
                     string name = file.Name.ToLowerInvariant();
                     if (name.StartsWith("thumb_")) continue; // Preserve offline downloaded covers
+                    if (name.StartsWith("tile_")) continue; // Preserve active live tile assets
                     if (name.EndsWith(".jpg") || name.EndsWith(".jpeg") || name.EndsWith(".png") || name.EndsWith(".webp"))
                     {
                         try { await file.DeleteAsync(); count++; } catch { }
@@ -246,27 +247,33 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    // Migrate from JSON if SQLite is empty
-                    StorageFolder folder = ApplicationData.Current.LocalFolder;
-                    try
+                    var localSettings = ApplicationData.Current.LocalSettings;
+                    bool isMigrated = localSettings.Values.ContainsKey("FavoritesMigrated_v1");
+                    if (!isMigrated)
                     {
-                        StorageFile file = await folder.GetFileAsync("favorites.json");
-                        string json = await FileIO.ReadTextAsync(file);
-                        JArray array = JArray.Parse(json);
-                        foreach (var item in array)
+                        localSettings.Values["FavoritesMigrated_v1"] = true;
+                        // Migrate from JSON if SQLite is empty
+                        StorageFolder folder = ApplicationData.Current.LocalFolder;
+                        try
                         {
-                            var t = new YouTubeTrack
+                            StorageFile file = await folder.GetFileAsync("favorites.json");
+                            string json = await FileIO.ReadTextAsync(file);
+                            JArray array = JArray.Parse(json);
+                            foreach (var item in array)
                             {
-                                VideoId = item["VideoId"]?.ToString(),
-                                Title = item["Title"]?.ToString(),
-                                ChannelName = item["ChannelName"]?.ToString(),
-                                ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
-                            };
-                            favoriteTracks.Add(t);
-                            await YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(t);
+                                var t = new YouTubeTrack
+                                {
+                                    VideoId = item["VideoId"]?.ToString(),
+                                    Title = item["Title"]?.ToString(),
+                                    ChannelName = item["ChannelName"]?.ToString(),
+                                    ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
+                                };
+                                favoriteTracks.Add(t);
+                                await YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(t);
+                            }
                         }
+                        catch { }
                     }
-                    catch { }
                 }
             }
             catch { }
@@ -285,28 +292,34 @@ namespace YTMusicWP
                 }
                 else
                 {
-                    // Migrate from JSON
-                    StorageFolder folder = ApplicationData.Current.LocalFolder;
-                    try
+                    var localSettings = ApplicationData.Current.LocalSettings;
+                    bool isMigrated = localSettings.Values.ContainsKey("HistoryMigrated_v1");
+                    if (!isMigrated)
                     {
-                        StorageFile file = await folder.GetFileAsync("history.json");
-                        string json = await FileIO.ReadTextAsync(file);
-                        JArray array = JArray.Parse(json);
-                        foreach (var item in array)
+                        localSettings.Values["HistoryMigrated_v1"] = true;
+                        // Migrate from JSON
+                        StorageFolder folder = ApplicationData.Current.LocalFolder;
+                        try
                         {
-                            var t = new YouTubeTrack
+                            StorageFile file = await folder.GetFileAsync("history.json");
+                            string json = await FileIO.ReadTextAsync(file);
+                            JArray array = JArray.Parse(json);
+                            foreach (var item in array)
                             {
-                                VideoId = item["VideoId"]?.ToString(),
-                                Title = item["Title"]?.ToString(),
-                                ChannelName = item["ChannelName"]?.ToString(),
-                                ChannelId = item["ChannelId"]?.ToString(),
-                                ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
-                            };
-                            historyTracks.Add(t);
-                            await YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(t);
+                                var t = new YouTubeTrack
+                                {
+                                    VideoId = item["VideoId"]?.ToString(),
+                                    Title = item["Title"]?.ToString(),
+                                    ChannelName = item["ChannelName"]?.ToString(),
+                                    ChannelId = item["ChannelId"]?.ToString(),
+                                    ThumbnailUrl = GetSquareThumbnail(item["ThumbnailUrl"]?.ToString())
+                                };
+                                historyTracks.Add(t);
+                                await YTMusicWP.Services.DatabaseHelper.AddOrUpdateHistoryAsync(t);
+                            }
                         }
+                        catch { }
                     }
-                    catch { }
                 }
                 RefreshHomeHistorySections();
             }
@@ -343,6 +356,7 @@ namespace YTMusicWP
                         {
                             track.ThumbnailUrl = squareArt;
                             hasUpdated = true;
+                            var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
                         }
                     }
                 }

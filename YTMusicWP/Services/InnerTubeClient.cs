@@ -299,61 +299,69 @@ namespace YTMusicWP
 
         public static async Task<JObject> PostWinrtJsonAsync(string url, JObject body, string userAgent = null, IDictionary<string, string> headers = null, bool isMusic = false)
         {
-            var resolved = await Services.SecureDnsResolver.RewriteUrlAsync(url).ConfigureAwait(false);
-            using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post, new Uri(resolved.Url)))
+            try
             {
-                if (resolved.WasResolved && !string.IsNullOrEmpty(resolved.OriginalHost))
+                var resolved = await Services.SecureDnsResolver.RewriteUrlAsync(url).ConfigureAwait(false);
+                using (var request = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Post, new Uri(resolved.Url)))
                 {
-                    request.Headers.Host = new Windows.Networking.HostName(resolved.OriginalHost);
-                }
-
-                if (body != null)
-                {
-                    request.Content = new Windows.Web.Http.HttpStringContent(
-                        body.ToString(),
-                        Windows.Storage.Streams.UnicodeEncoding.Utf8,
-                        "application/json"
-                    );
-                }
-
-                string ua = !string.IsNullOrEmpty(userAgent)
-                    ? userAgent
-                    : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36";
-                request.Headers.TryAppendWithoutValidation("User-Agent", ua);
-
-                if (!string.IsNullOrEmpty(CurrentLanguage))
-                {
-                    request.Headers.TryAppendWithoutValidation("Accept-Language", CurrentLanguage);
-                }
-
-                if (isMusic)
-                {
-                    request.Headers.TryAppendWithoutValidation("Origin", "https://music.youtube.com");
-                    request.Headers.TryAppendWithoutValidation("Referer", "https://music.youtube.com/");
-                }
-
-                if (headers != null)
-                {
-                    foreach (var kvp in headers)
+                    if (resolved.WasResolved && !string.IsNullOrEmpty(resolved.OriginalHost))
                     {
-                        request.Headers.TryAppendWithoutValidation(kvp.Key, kvp.Value);
+                        request.Headers.Host = new Windows.Networking.HostName(resolved.OriginalHost);
+                    }
+
+                    if (body != null)
+                    {
+                        request.Content = new Windows.Web.Http.HttpStringContent(
+                            body.ToString(Newtonsoft.Json.Formatting.None),
+                            Windows.Storage.Streams.UnicodeEncoding.Utf8,
+                            "application/json"
+                        );
+                    }
+
+                    string ua = !string.IsNullOrEmpty(userAgent)
+                        ? userAgent
+                        : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36";
+                    request.Headers.TryAppendWithoutValidation("User-Agent", ua);
+
+                    if (!string.IsNullOrEmpty(CurrentLanguage))
+                    {
+                        request.Headers.TryAppendWithoutValidation("Accept-Language", CurrentLanguage);
+                    }
+
+                    if (isMusic)
+                    {
+                        request.Headers.TryAppendWithoutValidation("Origin", "https://music.youtube.com");
+                        request.Headers.TryAppendWithoutValidation("Referer", "https://music.youtube.com/");
+                    }
+
+                    if (headers != null)
+                    {
+                        foreach (var kvp in headers)
+                        {
+                            request.Headers.TryAppendWithoutValidation(kvp.Key, kvp.Value);
+                        }
+                    }
+
+                    var client = GetWinrtClient();
+                    using (var resp = await client.SendRequestAsync(request).AsTask().ConfigureAwait(false))
+                    {
+                        if (!resp.IsSuccessStatusCode)
+                            return null;
+
+                        using (var stream = await resp.Content.ReadAsInputStreamAsync().AsTask().ConfigureAwait(false))
+                        using (var netStream = System.IO.WindowsRuntimeStreamExtensions.AsStreamForRead(stream))
+                        using (var reader = new System.IO.StreamReader(netStream))
+                        using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
+                        {
+                            return JObject.Load(jsonReader);
+                        }
                     }
                 }
-
-                var client = GetWinrtClient();
-                using (var resp = await client.SendRequestAsync(request).AsTask().ConfigureAwait(false))
-                {
-                    if (!resp.IsSuccessStatusCode)
-                        return null;
-
-                    using (var stream = await resp.Content.ReadAsInputStreamAsync().AsTask().ConfigureAwait(false))
-                    using (var netStream = System.IO.WindowsRuntimeStreamExtensions.AsStreamForRead(stream))
-                    using (var reader = new System.IO.StreamReader(netStream))
-                    using (var jsonReader = new Newtonsoft.Json.JsonTextReader(reader))
-                    {
-                        return JObject.Load(jsonReader);
-                    }
-                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[InnerTubeClient] PostWinrtJsonAsync error: " + ex.Message);
+                return null;
             }
         }
 

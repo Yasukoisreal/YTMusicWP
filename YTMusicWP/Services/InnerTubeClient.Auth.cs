@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -54,7 +55,7 @@ namespace YTMusicWP
             var buffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(
                 input, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
             var hashBuffer = provider.HashData(buffer);
-            string hash = Windows.Security.Cryptography.CryptographicBuffer.EncodeToHexString(hashBuffer);
+            string hash = Windows.Security.Cryptography.CryptographicBuffer.EncodeToHexString(hashBuffer).ToLowerInvariant();
 
             return "SAPISIDHASH " + timestamp + "_" + hash;
         }
@@ -87,7 +88,7 @@ namespace YTMusicWP
             string apiKey = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
             string url = $"https://music.youtube.com/youtubei/v1/{endpoint}?key={apiKey}&prettyPrint=false";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+            request.Content = new StringContent(body.ToString(Formatting.None), System.Text.Encoding.UTF8, "application/json");
 
             // Headers matching SimpMusic's WEB_REMIX approach
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
@@ -103,20 +104,28 @@ namespace YTMusicWP
             request.Headers.Add("Cookie", _cookieString);
             request.Headers.Add("Authorization", GenerateSAPISIDHash(_sapisid));
 
-            using (var response = await _client.SendAsync(request))
+            try
             {
-                if (!response.IsSuccessStatusCode)
+                using (var response = await _client.SendAsync(request))
                 {
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
-                }
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string resultJson = await response.Content.ReadAsStringAsync();
+                        return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
+                    }
 
-                using (var stream = await response.Content.ReadAsStreamAsync())
-                using (var reader = new StreamReader(stream))
-                using (var jsonReader = new JsonTextReader(reader))
-                {
-                    return JObject.Load(jsonReader);
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var reader = new StreamReader(stream))
+                    using (var jsonReader = new JsonTextReader(reader))
+                    {
+                        return JObject.Load(jsonReader);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[InnerTubeAuth] CookieInnerTubePostAsync error: " + ex.Message);
+                return new JObject { ["_error"] = -1, ["_message"] = ex.Message };
             }
         }
 
@@ -162,7 +171,7 @@ namespace YTMusicWP
             if (clientName == "ANDROID_MUSIC") apiKey = "AIzaSyA8eiZmM1FaDVjRy-df2KTyQ_vz_yYM39w";
             string url = $"https://{domain}/youtubei/v1/{endpoint}?key={apiKey}&prettyPrint=false";
             var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+            request.Content = new StringContent(body.ToString(Formatting.None), System.Text.Encoding.UTF8, "application/json");
             
             // Required headers for standard API calls
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -186,7 +195,7 @@ namespace YTMusicWP
                     clientObj["platform"] = "DESKTOP";
                     
                     // Rebuild Content with updated client context
-                    request.Content = new StringContent(body.ToString(), System.Text.Encoding.UTF8, "application/json");
+                    request.Content = new StringContent(body.ToString(Formatting.None), System.Text.Encoding.UTF8, "application/json");
                     
                     // Update URL API key for WEB_REMIX
                     apiKey = "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
@@ -198,20 +207,28 @@ namespace YTMusicWP
                 request.Headers.Add("X-Goog-Authuser", "0");
             }
 
-            using (var response = await _client.SendAsync(request))
+            try
             {
-                if (!response.IsSuccessStatusCode)
+                using (var response = await _client.SendAsync(request))
                 {
-                    string resultJson = await response.Content.ReadAsStringAsync();
-                    return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
-                }
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string resultJson = await response.Content.ReadAsStringAsync();
+                        return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
+                    }
 
-                using (var stream = await response.Content.ReadAsStreamAsync())
-                using (var reader = new StreamReader(stream))
-                using (var jsonReader = new JsonTextReader(reader))
-                {
-                    return JObject.Load(jsonReader);
+                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var reader = new StreamReader(stream))
+                    using (var jsonReader = new JsonTextReader(reader))
+                    {
+                        return JObject.Load(jsonReader);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[InnerTubeAuth] AuthInnerTubePostAsync error: " + ex.Message);
+                return new JObject { ["_error"] = -1, ["_message"] = ex.Message };
             }
         }
     }
