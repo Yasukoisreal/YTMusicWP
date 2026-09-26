@@ -1112,7 +1112,7 @@ namespace AudioPlayerTask
                         string url = _resolvedUrl;
                         _resolvedUrl = null;
                         _resolvedUrlVideoId = null;
-                        PlayUrl(url, vidId);
+                        await PlayUrl(url, vidId);
                         return;
                     }
                     _resolvedUrl = null;
