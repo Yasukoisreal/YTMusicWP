@@ -227,7 +227,7 @@ namespace YTMusicWP
             {
                 try
                 {
-                    resolvedUrl = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId) ?? "";
+                    resolvedUrl = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId, track.IsLive) ?? "";
                 }
                 catch { resolvedUrl = ""; }
             }
@@ -287,6 +287,10 @@ namespace YTMusicWP
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
                 { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }, { "FastUrl", urls[relativeStartIndex] }
             };
+            if (track.IsLive)
+            {
+                message.Add("IsLive", true);
+            }
             if (startPosition > 0)
             {
                 message.Add("StartPosition", startPosition);

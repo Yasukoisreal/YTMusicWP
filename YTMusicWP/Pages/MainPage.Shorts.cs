@@ -688,7 +688,7 @@ namespace YTMusicWP
                 string streamUrl = "";
                 try
                 {
-                    streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId) ?? "";
+                    streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId, track.IsLive) ?? "";
                 }
                 catch { }
 

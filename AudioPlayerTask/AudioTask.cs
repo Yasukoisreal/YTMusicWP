@@ -217,8 +217,10 @@ namespace AudioPlayerTask
                     }
 
                     bool hasFastUrl = _innerTubeAttempted; // set true bởi FastUrl ở trên
+                    bool isLiveMsg = e.Data.ContainsKey("IsLive") && Convert.ToBoolean(e.Data["IsLive"]);
                     ResetRetryState();
                     if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
+                    if (isLiveMsg) _isCurrentTrackLive = true;
                     _currentLoadedVidId = "";
                     _startPaused = e.Data.ContainsKey("StartPaused") && Convert.ToBoolean(e.Data["StartPaused"]);
                     StartPlaybackAsync();
@@ -668,11 +670,27 @@ namespace AudioPlayerTask
         {
             string initVd = await GetVisitorDataAsync(videoId);
             _innerTubeDebug = "vd:" + (!string.IsNullOrEmpty(initVd) ? "OK" : "NULL");
+
+            // Nếu bài hát là livestream hoặc đã biết cần SABR, thử ngay VISIONOS có poToken để không mất 8s thử các client vô ích
+            if (_isCurrentTrackLive)
+            {
+                string liveUrl = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
+                if (!string.IsNullOrEmpty(liveUrl)) return liveUrl;
+            }
             
             // 0. InnerTube ANDROID v20.49.37 (Ưu tiên số 1 - không bị bóp băng thông/throttling, lấy itag 18)
             string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
                 "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
+
+            // Nếu ANDROID phát hiện đây là stream SABR/live, nhảy thẳng tới VISIONOS có poToken
+            if (_isCurrentTrackLive)
+            {
+                url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
+                if (!string.IsNullOrEmpty(url)) return url;
+            }
 
             // 0.5. InnerTube ANDROID v21.02.35 (Dự phòng phiên bản Android mới nhất Pixel 7)
             url = await TryInnerTubeClient(videoId, "ANDROID", "21.02.35", "3", "Google", "Pixel 7", "Android", "11",
@@ -928,40 +946,47 @@ namespace AudioPlayerTask
 
                         // 3. Fallback cho SABR stream: serverAbrStreamingUrl (Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource)
                         // Bỏ qua client ANDROID vì YouTube yêu cầu DroidGuard attestation sau 30s (SPS code 3)
-                        if (streamingData.ContainsKey("serverAbrStreamingUrl") && (clientName != "ANDROID" || forceSabr))
+                        if (streamingData.ContainsKey("serverAbrStreamingUrl"))
                         {
-                            string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
-                            if (!string.IsNullOrEmpty(sabrUrl))
+                            if (clientName == "ANDROID" && !forceSabr)
                             {
-                                string ustreamerConfig = "";
-                                if (streamingData.ContainsKey("ustreamerConfig"))
+                                _isCurrentTrackLive = true;
+                            }
+                            else
+                            {
+                                string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
+                                if (!string.IsNullOrEmpty(sabrUrl))
                                 {
-                                    ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
-                                }
-                                else if (data.ContainsKey("playerConfig"))
-                                {
-                                    try
+                                    string ustreamerConfig = "";
+                                    if (streamingData.ContainsKey("ustreamerConfig"))
                                     {
-                                        var pcfg = data.GetNamedObject("playerConfig");
-                                        var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
-                                        var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
-                                        ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
+                                        ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
                                     }
-                                    catch { }
-                                }
+                                    else if (data.ContainsKey("playerConfig"))
+                                    {
+                                        try
+                                        {
+                                            var pcfg = data.GetNamedObject("playerConfig");
+                                            var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
+                                            var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
+                                            ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
+                                        }
+                                        catch { }
+                                    }
 
-                                string effectivePo = (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken)) ? tokenInfo.PoToken : "";
-                                if (string.IsNullOrEmpty(effectivePo))
-                                {
-                                    try
+                                    string effectivePo = (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken)) ? tokenInfo.PoToken : "";
+                                    if (string.IsNullOrEmpty(effectivePo))
                                     {
-                                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                                        if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
+                                        try
+                                        {
+                                            var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                            if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
+                                        }
+                                        catch { }
                                     }
-                                    catch { }
+                                    _innerTubeDebug += " [" + clientName + ":SABR:OK]";
+                                    return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + effectivePo;
                                 }
-                                _innerTubeDebug += " [" + clientName + ":SABR:OK]";
-                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + effectivePo;
                             }
                         }
 
@@ -1667,7 +1692,7 @@ namespace AudioPlayerTask
                     trackUrl = trackUrl.Substring(0, sqIdx);
                 }
 
-                _isCurrentTrackLive = IsLiveStreamUrl(trackUrl);
+                _isCurrentTrackLive = _isCurrentTrackLive || IsLiveStreamUrl(trackUrl);
                 _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
                 if (_isCurrentTrackLive) try { _liveBaseUrlStopwatch.Restart(); } catch { }
                 if (!_isCurrentTrackLive)

@@ -246,24 +246,6 @@ namespace AudioPlayerTask
                     _formatsInitialized = true;
                     _lastSuccessfulChunkTime = DateTime.UtcNow;
                     Log("Preload done: parsed " + samples0 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
-
-                    if (_isLiveStream)
-                    {
-                        Log("Preloading rn=1 to build live buffer cushion...");
-                        for (int attempt = 0; attempt < 5; attempt++)
-                        {
-                            if (ct.IsCancellationRequested) break;
-                            await Task.Delay(1000, ct).ConfigureAwait(false);
-                            int samples1 = await FetchChunkAsync(1, ct).ConfigureAwait(false);
-                            if (samples1 > 0)
-                            {
-                                _requestNumber = 2;
-                                _lastSuccessfulChunkTime = DateTime.UtcNow;
-                                Log("Live cushion ready: parsed " + (samples0 + samples1) + " total samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
-                                break;
-                            }
-                        }
-                    }
                     return true;
                 }
                 else if (samples0 == 0 && string.IsNullOrEmpty(LastError))
@@ -276,24 +258,6 @@ namespace AudioPlayerTask
                         _formatsInitialized = true;
                         _lastSuccessfulChunkTime = DateTime.UtcNow;
                         Log("Preload done at rn=1: parsed " + samples1 + " samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
-
-                        if (_isLiveStream)
-                        {
-                            Log("Preloading rn=2 to build live buffer cushion...");
-                            for (int attempt = 0; attempt < 5; attempt++)
-                            {
-                                if (ct.IsCancellationRequested) break;
-                                await Task.Delay(1000, ct).ConfigureAwait(false);
-                                int samples2 = await FetchChunkAsync(2, ct).ConfigureAwait(false);
-                                if (samples2 > 0)
-                                {
-                                    _requestNumber = 3;
-                                    _lastSuccessfulChunkTime = DateTime.UtcNow;
-                                    Log("Live cushion ready: parsed " + (samples1 + samples2) + " total samples (~" + BufferedSeconds.ToString("F1") + "s buffered)");
-                                    break;
-                                }
-                            }
-                        }
                         return true;
                     }
                     LastError = "No audio samples received in initial chunks";

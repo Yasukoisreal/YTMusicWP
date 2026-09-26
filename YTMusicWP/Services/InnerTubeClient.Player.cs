@@ -219,18 +219,41 @@ namespace YTMusicWP
             }
         };
 
-        public static async Task<string> ResolveStreamUrlAsync(string videoId)
+        public static async Task<string> ResolveStreamUrlAsync(string videoId, bool isLive = false)
         {
             LastResolveDebug = "";
             if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:") || videoId.StartsWith("CHANNEL:") || videoId.StartsWith("PLAYLIST:"))
                 return null;
 
+            // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
+            bool forceSabr = false;
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
+            }
+            catch { }
+
             // Lấy visitorData giống MetroTube (sw.js_data hoặc homepage)
             string defaultVd = await GetVisitorDataAsync();
             LastResolveDebug = "vd:" + (defaultVd != null ? "OK" : "NULL");
 
-            foreach (var client in _playerClients)
+            var clientsToTry = new List<PlayerClientConfig>(_playerClients);
+            if (isLive || forceSabr)
             {
+                // Đối với livestream hoặc ép SABR, VISIONOS có poToken là client duy nhất hoạt động không bị DroidGuard SPS code 3.
+                // Đưa lên đầu danh sách để tránh lãng phí 8 giây thử các client không hỗ trợ.
+                var sabrClient = clientsToTry.FirstOrDefault(c => c.ClientName == "VISIONOS" && c.SupportsPoToken);
+                if (sabrClient != null)
+                {
+                    clientsToTry.Remove(sabrClient);
+                    clientsToTry.Insert(0, sabrClient);
+                }
+            }
+
+            for (int clientIdx = 0; clientIdx < clientsToTry.Count; clientIdx++)
+            {
+                var client = clientsToTry[clientIdx];
                 if (client.RequireCookie && !HasCookieAuth)
                     continue; // Bỏ qua nếu client yêu cầu cookie mà chưa đăng nhập
 
@@ -321,15 +344,6 @@ namespace YTMusicWP
                         _cachedCaptionsVideoId = videoId;
                         _cachedCaptionsData = data["captions"];
                     }
-
-                    // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
-                    bool forceSabr = false;
-                    try
-                    {
-                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                        if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
-                    }
-                    catch { }
 
                     string serverAbrUrl = data["streamingData"]?["serverAbrStreamingUrl"]?.ToString();
                     if (forceSabr && !string.IsNullOrEmpty(serverAbrUrl))
@@ -432,6 +446,18 @@ namespace YTMusicWP
                         LastResolveDebug += " SABR:OK";
                         string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (effectivePo ?? "");
                         return sabrDescriptor;
+                    }
+
+                    // Tự động phát hiện livestream/SABR-only khi client ANDROID không có format trực tiếp nào
+                    // nhưng có serverAbrStreamingUrl. Thay vì lãng phí 6-8s thử tiếp ANDROID v21, WEB_REMIX, VISIONOS không po, ANDROID_VR,
+                    // nhảy thẳng tới VISIONOS có poToken!
+                    if (candidateFormats.Count == 0 && !string.IsNullOrEmpty(serverAbrUrl) && client.ClientName == "ANDROID")
+                    {
+                        int sabrIdx = clientsToTry.FindIndex(c => c.ClientName == "VISIONOS" && c.SupportsPoToken);
+                        if (sabrIdx > clientIdx)
+                        {
+                            clientIdx = sabrIdx - 1; // Vòng lặp sẽ tăng clientIdx lên sabrIdx ở lần lặp tiếp theo
+                        }
                     }
 
                     // 4. Fallback cho Live stream qua DASH: [TẠM THỜI VÔ HIỆU HÓA để test SABR theo yêu cầu người dùng]
