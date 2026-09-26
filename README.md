@@ -81,10 +81,7 @@
 ## Data    
 - This app safely connects directly to YouTube Music to get your songs and playlists using hidden APIs without needing a web browser.
 - Login is handled securely using Google's official device login method (`google.com/device`). We never see or store your password.
-- Thanks to [SimpMusic](https://github.com/maxrave-dev/SimpMusic) and [Metrolist](https://github.com/metrolistgroup/metrolist). These repos are my inspiration to upgrade UI and add more features to this app.
-- My app is using [SponsorBlock](https://sponsor.ajay.app/) to skip sponsor in YouTube videos.
-- Main lyrics data from YouTube subtitles and [Lyrics API](https://lyrics-api.boidu.dev).
-- Alternative lyrics data from [LRCLIB](https://lrclib.net/).
+- Synced lyrics are fetched directly from YouTube subtitles, [Lyrics API](https://lyrics-api.boidu.dev), and [LRCLIB](https://lrclib.net/).
  
 ## Privacy    
 YTMusicWP is a completely free, open-source application. We do not include any third-party trackers, analytics, or hidden data collection. Your data stays on your device. The app communicates directly and only with YouTube's servers to fetch your music, playlists, and provide playback. No middleman servers are used to stream your music.
@@ -209,6 +206,16 @@ If you enjoy using YTMusicWP and want to support the development, consider buyin
 - **Account Name:** NGUYEN TRUONG AN
 
 <img src="Pictures/donate_qr.jpg" width="300" alt="Donate QR Code">
+
+## Acknowledgements & Special Thanks
+
+YTMusicWP is built upon and inspired by the incredible work of the open-source community. Sincere gratitude to:
+
+- **[SimpMusic](https://github.com/maxrave-dev/SimpMusic)** by **[@maxrave-dev](https://github.com/maxrave-dev)** (licensed under GPLv3): Great inspiration for the redesigned 4-tile Library layout, dynamic Moods & Genres cards, and Listen Together real-time room synchronization.
+- **[Metrolist](https://github.com/metrolistgroup/metrolist)** by **[@metrolistgroup](https://github.com/metrolistgroup)**: Inspiration for room protocol integration and audio streaming mechanics.
+- **[SponsorBlock](https://sponsor.ajay.app/)** by **[@ajayyy](https://github.com/ajayyy)**: Real-time sponsor segment skipping.
+- **[LRCLIB](https://lrclib.net/)** by **[@tranxuanthang](https://github.com/tranxuanthang)** & **[Lyrics API](https://lyrics-api.boidu.dev)** by **[@boidu](https://github.com/boidu)**: Synced lyrics data providers.
+- **[YouTube.js](https://github.com/LuanRT/YouTube.js)** by **[@LuanRT](https://github.com/LuanRT)**: Format specifications and InnerTube API architecture research.
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
