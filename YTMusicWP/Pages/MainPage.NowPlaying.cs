@@ -1077,6 +1077,17 @@ namespace YTMusicWP
                             var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             amBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
                             amBmp.UriSource = new Uri(amThumb, UriKind.Absolute);
+                            amBmp.ImageFailed += (s, args) =>
+                            {
+                                try
+                                {
+                                    if (amThumb.Contains("maxresdefault.jpg"))
+                                    {
+                                        amBmp.UriSource = new Uri(amThumb.Replace("maxresdefault.jpg", "hqdefault.jpg"), UriKind.Absolute);
+                                    }
+                                }
+                                catch { }
+                            };
                             if (AppleMusicArtwork != null) AppleMusicArtwork.Source = amBmp;
                             if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                         }

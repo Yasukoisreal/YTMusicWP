@@ -207,9 +207,51 @@ namespace YTMusicWP
             return url;
         }
 
+        public static string ExtractYouTubeVideoId(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return null;
+
+            int viIdx = url.IndexOf("/vi/");
+            if (viIdx >= 0)
+            {
+                int start = viIdx + 4;
+                int end = url.IndexOf('/', start);
+                if (end > start)
+                {
+                    return url.Substring(start, end - start);
+                }
+                int qIdx = url.IndexOf('?', start);
+                if (qIdx > start)
+                {
+                    return url.Substring(start, qIdx - start);
+                }
+                return url.Substring(start);
+            }
+
+            int viWebpIdx = url.IndexOf("/vi_webp/");
+            if (viWebpIdx >= 0)
+            {
+                int start = viWebpIdx + 9;
+                int end = url.IndexOf('/', start);
+                if (end > start)
+                {
+                    return url.Substring(start, end - start);
+                }
+                int qIdx = url.IndexOf('?', start);
+                if (qIdx > start)
+                {
+                    return url.Substring(start, qIdx - start);
+                }
+                return url.Substring(start);
+            }
+
+            return null;
+        }
+
         /// <summary>
-        /// True square high-res thumbnail for Apple Music Now Playing (360×360 full bleed).
-        /// Avoids 16:9 letterbox/pillarbox bars from YouTube.
+        /// True high-res thumbnail for Apple Music Now Playing.
+        /// Targets maxresdefault.jpg (1280x720) for YouTube video tracks, or w500-h500 square for Google CDN.
+        /// Non-square ratios are center-cropped to 1:1 by LumiaBlurHelper without black bars.
         /// </summary>
         public static string GetAppleMusicThumbnail(string url)
         {
@@ -225,19 +267,14 @@ namespace YTMusicWP
 
             if (url.Contains("ytimg.com") || url.Contains("img.youtube.com"))
             {
-                int viIdx = url.IndexOf("/vi/");
-                if (viIdx > 0)
+                string vidId = ExtractYouTubeVideoId(url);
+                if (!string.IsNullOrEmpty(vidId))
                 {
-                    int endIdx = url.IndexOf("/", viIdx + 4);
-                    if (endIdx > 0)
-                    {
-                        string vidId = url.Substring(viIdx + 4, endIdx - (viIdx + 4));
-                        return "https://i.ytimg.com/vi/" + vidId + "/mqdefault.jpg";
-                    }
+                    return "https://i.ytimg.com/vi/" + vidId + "/maxresdefault.jpg";
                 }
-                if (url.Contains("hqdefault.jpg")) return url.Replace("hqdefault.jpg", "mqdefault.jpg");
-                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "mqdefault.jpg");
-                if (url.Contains("maxresdefault.jpg")) return url.Replace("maxresdefault.jpg", "mqdefault.jpg");
+                if (url.Contains("hqdefault.jpg")) return url.Replace("hqdefault.jpg", "maxresdefault.jpg");
+                if (url.Contains("sddefault.jpg")) return url.Replace("sddefault.jpg", "maxresdefault.jpg");
+                if (url.Contains("mqdefault.jpg")) return url.Replace("mqdefault.jpg", "maxresdefault.jpg");
             }
 
             return url;

@@ -1033,7 +1033,19 @@ namespace YTMusicWP
                                 {
                                     var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                                     amBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
-                                    amBmp.UriSource = new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute);
+                                    string amUrl = GetAppleMusicThumbnail(thumb);
+                                    amBmp.UriSource = new Uri(amUrl, UriKind.Absolute);
+                                    amBmp.ImageFailed += (s, args) =>
+                                    {
+                                        try
+                                        {
+                                            if (amUrl.Contains("maxresdefault.jpg"))
+                                            {
+                                                amBmp.UriSource = new Uri(amUrl.Replace("maxresdefault.jpg", "hqdefault.jpg"), UriKind.Absolute);
+                                            }
+                                        }
+                                        catch { }
+                                    };
                                     AppleMusicArtwork.Source = amBmp;
                                     if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                                 }
@@ -1162,8 +1174,20 @@ namespace YTMusicWP
                                     else
                                     {
                                         var amBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                                        amBmp.DecodePixelWidth = 480;
-                                        amBmp.UriSource = new Uri(GetAppleMusicThumbnail(thumb), UriKind.Absolute);
+                                        amBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                                        string amUrl = GetAppleMusicThumbnail(thumb);
+                                        amBmp.UriSource = new Uri(amUrl, UriKind.Absolute);
+                                        amBmp.ImageFailed += (s, args) =>
+                                        {
+                                            try
+                                            {
+                                                if (amUrl.Contains("maxresdefault.jpg"))
+                                                {
+                                                    amBmp.UriSource = new Uri(amUrl.Replace("maxresdefault.jpg", "hqdefault.jpg"), UriKind.Absolute);
+                                                }
+                                            }
+                                            catch { }
+                                        };
                                         AppleMusicArtwork.Source = amBmp;
                                         if (AppleMusicArtworkFade != null) AppleMusicArtworkFade.Visibility = Visibility.Visible;
                                     }
@@ -1462,6 +1486,72 @@ namespace YTMusicWP
             return Windows.UI.Color.FromArgb(255, 30, 50, 70);
         }
 
+        private static async Task<byte[]> DownloadArtworkBytesAsync(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return null;
+
+            // Google CDN images (YouTube Music albums, singles, artist covers)
+            if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
+            {
+                string cdnUrl = GetAppleMusicThumbnail(url);
+                try
+                {
+                    return await _dominantHttpClient.GetByteArrayAsync(cdnUrl);
+                }
+                catch
+                {
+                    try
+                    {
+                        return await _dominantHttpClient.GetByteArrayAsync(url);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }
+
+            // YouTube CDN video thumbnails: try maxresdefault (1280x720) -> sddefault (640x480) -> hqdefault (480x360)
+            if (url.Contains("ytimg.com") || url.Contains("img.youtube.com"))
+            {
+                string vidId = ExtractYouTubeVideoId(url);
+                if (!string.IsNullOrEmpty(vidId))
+                {
+                    string[] candidates = new[]
+                    {
+                        "https://i.ytimg.com/vi/" + vidId + "/maxresdefault.jpg",
+                        "https://i.ytimg.com/vi/" + vidId + "/sddefault.jpg",
+                        "https://i.ytimg.com/vi/" + vidId + "/hqdefault.jpg"
+                    };
+
+                    for (int i = 0; i < candidates.Length; i++)
+                    {
+                        try
+                        {
+                            using (var resp = await _dominantHttpClient.GetAsync(candidates[i]))
+                            {
+                                if (resp.IsSuccessStatusCode)
+                                {
+                                    return await resp.Content.ReadAsByteArrayAsync();
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+
+            // Generic fallback
+            try
+            {
+                return await _dominantHttpClient.GetByteArrayAsync(url);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private int _appleMusicBackdropSeq = 0;
 
         private async Task UpdateAppleMusicBackdropAsync(string thumbnailUrl, Windows.UI.Color seedColor)
@@ -1514,11 +1604,9 @@ namespace YTMusicWP
                 return;
             }
 
-            string cleanUrl = GetAppleMusicThumbnail(thumbnailUrl);
-
             try
             {
-                var bytes = await _dominantHttpClient.GetByteArrayAsync(cleanUrl);
+                var bytes = await DownloadArtworkBytesAsync(thumbnailUrl);
                 if (currentSeq != _appleMusicBackdropSeq) return;
 
                 if (bytes != null && bytes.Length > 0)
@@ -1611,8 +1699,7 @@ namespace YTMusicWP
         {
             try
             {
-                string cleanUrl = GetAppleMusicThumbnail(thumbUrl);
-                var bytes = await _dominantHttpClient.GetByteArrayAsync(cleanUrl);
+                var bytes = await DownloadArtworkBytesAsync(thumbUrl);
                 if (bytes != null && bytes.Length > 0)
                 {
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Low, async () =>
