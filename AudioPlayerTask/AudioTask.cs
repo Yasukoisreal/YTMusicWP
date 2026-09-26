@@ -843,6 +843,13 @@ namespace AudioPlayerTask
                         return null;
                     }
 
+                    if (data.ContainsKey("videoDetails"))
+                    {
+                        var vd = data.GetNamedObject("videoDetails");
+                        if (vd.ContainsKey("isLiveContent") && vd.GetNamedBoolean("isLiveContent")) _isCurrentTrackLive = true;
+                        if (vd.ContainsKey("isLive") && vd.GetNamedBoolean("isLive")) _isCurrentTrackLive = true;
+                    }
+
                     int[] preferredItags = new[] { 18, 140, 141, 139 };
 
                     if (data.ContainsKey("streamingData"))

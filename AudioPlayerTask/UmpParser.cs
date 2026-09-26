@@ -367,6 +367,125 @@ namespace AudioPlayerTask
             return "Unparseable SABR error payload (" + data.Length + " bytes: " + BitConverter.ToString(data) + ")";
         }
 
+        internal struct ParsedLiveMetadata
+        {
+            public long HeadSequenceNumber;
+            public long HeadTimeMs;
+            public long WallTimeMs;
+        }
+
+        /// <summary>
+        /// Extracts head_sequence_number and timestamps from a LIVE_METADATA (type 31) protobuf payload.
+        /// </summary>
+        internal static ParsedLiveMetadata ExtractLiveMetadata(byte[] data)
+        {
+            var result = new ParsedLiveMetadata { HeadSequenceNumber = -1, HeadTimeMs = -1, WallTimeMs = -1 };
+            if (data == null || data.Length == 0) return result;
+            try
+            {
+                int idx = 0;
+                while (idx < data.Length)
+                {
+                    byte tag = data[idx++];
+                    int fieldNum = tag >> 3;
+                    int wireType = tag & 0x07;
+
+                    if (wireType == 0) // varint
+                    {
+                        long val = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            val |= (long)(b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        if (fieldNum == 3) result.HeadSequenceNumber = val;
+                        else if (fieldNum == 4) result.HeadTimeMs = val;
+                        else if (fieldNum == 5) result.WallTimeMs = val;
+                    }
+                    else if (wireType == 2)
+                    {
+                        int len = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            len |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        idx += len;
+                    }
+                    else if (wireType == 1) { idx += 8; }
+                    else if (wireType == 5) { idx += 4; }
+                    else break;
+                }
+            }
+            catch { }
+            return result;
+        }
+
+        internal struct ParsedNextRequestPolicy
+        {
+            public byte[] PlaybackCookie;
+            public int BackoffTimeMs;
+        }
+
+        /// <summary>
+        /// Extracts playback cookie and backoff policy from a NEXT_REQUEST_POLICY (type 35) protobuf payload.
+        /// </summary>
+        internal static ParsedNextRequestPolicy ExtractNextRequestPolicy(byte[] data)
+        {
+            var result = new ParsedNextRequestPolicy();
+            if (data == null || data.Length == 0) return result;
+            try
+            {
+                int idx = 0;
+                while (idx < data.Length)
+                {
+                    byte tag = data[idx++];
+                    int fieldNum = tag >> 3;
+                    int wireType = tag & 0x07;
+
+                    if (wireType == 0)
+                    {
+                        long val = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            val |= (long)(b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+                        if (fieldNum == 4) result.BackoffTimeMs = (int)val;
+                    }
+                    else if (wireType == 2)
+                    {
+                        int len = 0; int shift = 0;
+                        while (idx < data.Length)
+                        {
+                            byte b = data[idx++];
+                            len |= (b & 0x7F) << shift;
+                            if ((b & 0x80) == 0) break;
+                            shift += 7;
+                        }
+
+                        if (fieldNum == 7 && len > 0 && idx + len <= data.Length)
+                        {
+                            result.PlaybackCookie = new byte[len];
+                            Buffer.BlockCopy(data, idx, result.PlaybackCookie, 0, len);
+                        }
+                        idx += len;
+                    }
+                    else if (wireType == 1) { idx += 8; }
+                    else if (wireType == 5) { idx += 4; }
+                    else break;
+                }
+            }
+            catch { }
+            return result;
+        }
+
         /// <summary>
         /// Extracts the playback cookie bytes from a NEXT_REQUEST_POLICY (type 35) protobuf payload.
         /// Wire format: field 7 (PlaybackCookie) wireType 2: tag = (7 << 3) | 2 = 0x3A (58)

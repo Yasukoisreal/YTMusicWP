@@ -95,5 +95,68 @@ namespace YTMusicWP.Tests
 
             Assert.AreEqual(0, receivedParts.Count);
         }
+
+        [TestMethod]
+        public void ExtractLiveMetadata_ValidProtobuf_ExtractsHeadSeqAndTimes()
+        {
+            // Build a small protobuf with:
+            // Field 3 (head_sequence_number) = 649264
+            // Field 4 (head_time_ms) = 1710000000000
+            // Field 5 (wall_time_ms) = 1710000005000
+            byte[] payload;
+            using (var writer = new MiniProtoWriter())
+            {
+                writer.WriteVarintField(3, 649264);
+                writer.WriteVarintField(4, 1710000000000L);
+                writer.WriteVarintField(5, 1710000005000L);
+                payload = writer.ToByteArray();
+            }
+
+            var meta = UmpParser.ExtractLiveMetadata(payload);
+            Assert.AreEqual(649264L, meta.HeadSequenceNumber);
+            Assert.AreEqual(1710000000000L, meta.HeadTimeMs);
+            Assert.AreEqual(1710000005000L, meta.WallTimeMs);
+        }
+
+        [TestMethod]
+        public void ExtractLiveMetadata_NullOrEmpty_ReturnsDefault()
+        {
+            var metaNull = UmpParser.ExtractLiveMetadata(null);
+            Assert.AreEqual(-1L, metaNull.HeadSequenceNumber);
+
+            var metaEmpty = UmpParser.ExtractLiveMetadata(new byte[0]);
+            Assert.AreEqual(-1L, metaEmpty.HeadSequenceNumber);
+        }
+
+        [TestMethod]
+        public void ExtractNextRequestPolicy_ValidProtobuf_ExtractsCookieAndBackoff()
+        {
+            // Field 4 (backoff_time_ms) = 2500
+            // Field 7 (playback_cookie) = [0xAA, 0xBB, 0xCC]
+            byte[] cookieData = new byte[] { 0xAA, 0xBB, 0xCC };
+            byte[] payload;
+            using (var writer = new MiniProtoWriter())
+            {
+                writer.WriteVarintField(4, 2500);
+                writer.WriteBytesField(7, cookieData);
+                payload = writer.ToByteArray();
+            }
+
+            var policy = UmpParser.ExtractNextRequestPolicy(payload);
+            Assert.AreEqual(2500, policy.BackoffTimeMs);
+            CollectionAssert.AreEqual(cookieData, policy.PlaybackCookie);
+        }
+
+        [TestMethod]
+        public void ExtractNextRequestPolicy_NullOrEmpty_ReturnsDefault()
+        {
+            var policyNull = UmpParser.ExtractNextRequestPolicy(null);
+            Assert.AreEqual(0, policyNull.BackoffTimeMs);
+            Assert.IsNull(policyNull.PlaybackCookie);
+
+            var policyEmpty = UmpParser.ExtractNextRequestPolicy(new byte[0]);
+            Assert.AreEqual(0, policyEmpty.BackoffTimeMs);
+            Assert.IsNull(policyEmpty.PlaybackCookie);
+        }
     }
 }

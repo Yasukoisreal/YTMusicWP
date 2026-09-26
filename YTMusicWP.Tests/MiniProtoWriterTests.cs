@@ -116,5 +116,30 @@ namespace YTMusicWP.Tests
                 CollectionAssert.AreEqual(expected, result);
             }
         }
+
+        [TestMethod]
+        public void BuildAudioAbrRequest_LiveStreamParams_GeneratesValidProtobuf()
+        {
+            byte[] dummyConfig = new byte[] { 0x01, 0x02 };
+            byte[] cookie = new byte[] { 0xAA, 0xBB };
+
+            byte[] request = MiniProtoWriter.BuildAudioAbrRequest(
+                ustreamerConfig: dummyConfig,
+                playerTimeMs: 12000,
+                playbackRate: 1.0f,
+                preferredItag: 140,
+                clientNameInt: 3,
+                clientVersion: "19.29.35",
+                poToken: null,
+                playbackCookie: cookie,
+                formatsInitialized: true,
+                bufferedDurationMs: 10000,
+                startSegmentIndex: 649264,
+                endSegmentIndex: 649265,
+                startTimeMs: 3246320);
+
+            Assert.IsNotNull(request);
+            Assert.IsTrue(request.Length > 0);
+        }
     }
 }

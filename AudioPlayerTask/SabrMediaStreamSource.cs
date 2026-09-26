@@ -34,6 +34,16 @@ namespace AudioPlayerTask
         private readonly List<PendingRequest> _pendingRequests = new List<PendingRequest>();
         private readonly Dictionary<int, MemoryStream> _pendingSegments = new Dictionary<int, MemoryStream>();
 
+        private class ParsedMediaHeader
+        {
+            public int HeaderId;
+            public bool IsInitSeg;
+            public int SequenceNumber = -1;
+            public long StartMs;
+            public long DurationMs;
+        }
+        private readonly Dictionary<int, ParsedMediaHeader> _pendingMediaHeaders = new Dictionary<int, ParsedMediaHeader>();
+
         private string _serverAbrUrl;
         private byte[] _ustreamerConfig;
         private string _userAgent;
@@ -57,7 +67,12 @@ namespace AudioPlayerTask
         private readonly HashSet<int> _downloadedSequences = new HashSet<int>();
         private int _firstMediaHeaderSeqNum = -1;
         private int _lastMediaHeaderSeqNum = -1;
-        private bool _lastMediaHeaderIsInit = false;
+        private long _lastMediaHeaderStartMs = 0;
+        private long _lastMediaHeaderDurationMs = 0;
+        private int _lastEnqueuedLiveSeqNum = -1;
+        private int _liveHeadSeq = -1;
+        private long _liveHeadTimeMs = -1;
+        private int _serverBackoffMs = 0;
         private DateTime _lastSuccessfulChunkTime = DateTime.MinValue;
         private readonly bool _isLiveStream;
 
@@ -337,7 +352,13 @@ namespace AudioPlayerTask
             _downloadedSequences.Clear();
             _firstMediaHeaderSeqNum = -1;
             _lastMediaHeaderSeqNum = -1;
-            _lastMediaHeaderIsInit = false;
+            _lastMediaHeaderStartMs = 0;
+            _lastMediaHeaderDurationMs = 0;
+            _lastEnqueuedLiveSeqNum = -1;
+            _liveHeadSeq = -1;
+            _liveHeadTimeMs = -1;
+            _serverBackoffMs = 0;
+            _pendingMediaHeaders.Clear();
             _lastSuccessfulChunkTime = DateTime.MinValue;
 
             var token = _cts.Token;
@@ -373,9 +394,18 @@ namespace AudioPlayerTask
                 fetchedPositionMs = (long)(_sampleIndex * 1024.0 / 44100.0 * 1000.0);
             }
 
-            int startSeq = (_isLiveStream && _lastMediaHeaderSeqNum >= 0) ? _lastMediaHeaderSeqNum : _firstMediaHeaderSeqNum;
+            int startSeq = _firstMediaHeaderSeqNum;
             int endSeq = _lastMediaHeaderSeqNum;
-            long segDurationMs = _isLiveStream ? 5000 : fetchedPositionMs;
+            long segStartTimeMs = 0;
+            long segDurationMs = fetchedPositionMs;
+
+            if (_isLiveStream && _lastMediaHeaderSeqNum >= 0)
+            {
+                startSeq = _lastMediaHeaderSeqNum;
+                endSeq = _lastMediaHeaderSeqNum;
+                segStartTimeMs = _lastMediaHeaderStartMs;
+                segDurationMs = _lastMediaHeaderDurationMs > 0 ? _lastMediaHeaderDurationMs : 5000;
+            }
 
             // Build Protobuf VideoPlaybackAbrRequest
             byte[] requestBody = MiniProtoWriter.BuildAudioAbrRequest(
@@ -390,7 +420,8 @@ namespace AudioPlayerTask
                 _formatsInitialized,
                 segDurationMs,
                 startSeq,
-                endSeq);
+                endSeq,
+                segStartTimeMs);
 
             var resolvedInfo = await SecureDnsResolver.RewriteUrlAsync(requestUrl).ConfigureAwait(false);
 
@@ -457,12 +488,21 @@ namespace AudioPlayerTask
                         continue;
                     }
 
+                    // Respect server backoff policy if specified
+                    if (_serverBackoffMs > 0)
+                    {
+                        int backoff = _serverBackoffMs;
+                        _serverBackoffMs = 0;
+                        Log("Respecting server backoff policy: waiting " + backoff + "ms...");
+                        await Task.Delay(backoff, ct).ConfigureAwait(false);
+                    }
+
                     // Pacing guard: each chunk is ~5.0s of audio.
                     // The live encoder on YouTube generates chunks in real-time (~5.0s intervals).
-                    // If buffer is healthy (>= 500 samples, ~11.6s) and we just received a chunk less than 3.5s ago,
+                    // If buffer is healthy (>= 430 samples, ~10s) and we just received a chunk less than 3.5s ago,
                     // wait for the remaining time so the encoder has time to produce the next segment.
-                    // If buffer is low (< 500 samples), do NOT wait: fetch immediately to build up safety cushion!
-                    if (_isLiveStream && count >= 500 && _lastSuccessfulChunkTime > DateTime.MinValue)
+                    // If buffer is low (< 430 samples), do NOT wait: fetch immediately to build up safety cushion!
+                    if (_isLiveStream && count >= 430 && _lastSuccessfulChunkTime > DateTime.MinValue)
                     {
                         double elapsedSinceLast = (DateTime.UtcNow - _lastSuccessfulChunkTime).TotalSeconds;
                         if (elapsedSinceLast < 3.5)
@@ -475,10 +515,13 @@ namespace AudioPlayerTask
                         }
                     }
 
-                    int newSamples = await FetchChunkAsync(_requestNumber, ct).ConfigureAwait(false);
+                    int currentRn = _requestNumber;
+                    _requestNumber++;
+
+                    int newSamples = await FetchChunkAsync(currentRn, ct).ConfigureAwait(false);
                     if (newSamples < 0)
                     {
-                        // HTTP/network error: wait 2s and retry the same rn
+                        // HTTP/network error: wait 2s and retry next request
                         await Task.Delay(2000, ct).ConfigureAwait(false);
                         continue;
                     }
@@ -507,9 +550,8 @@ namespace AudioPlayerTask
                         }
 
                         // Server returned 0 audio samples (e.g. reached live head or duplicate chunk skipped).
-                        // DO NOT advance _requestNumber! Wait for live encoder to generate the next chunk.
                         int waitMs = _isLiveStream ? Math.Min(1000 + _consecutiveEmptyChunks * 200, 2200) : 1500;
-                        Log("No audio in rn=" + _requestNumber + " (attempt " + _consecutiveEmptyChunks + "), waiting " + (waitMs / 1000.0).ToString("F1") + "s for next live segment...");
+                        Log("No audio in rn=" + currentRn + " (attempt " + _consecutiveEmptyChunks + "), waiting " + (waitMs / 1000.0).ToString("F1") + "s for next live segment...");
                         await Task.Delay(waitMs, ct).ConfigureAwait(false);
                         continue;
                     }
@@ -517,9 +559,6 @@ namespace AudioPlayerTask
                     _consecutiveEmptyChunks = 0;
                     _formatsInitialized = true;
                     _lastSuccessfulChunkTime = DateTime.UtcNow;
-
-                    // Audio samples received successfully, advance request sequence
-                    _requestNumber++;
 
                     // Periodically trigger GC every 8 chunks (~40s) to reclaim native COM wrappers and prevent OOM on 512MB WP8.1
                     if (_requestNumber % 8 == 0)
@@ -581,6 +620,7 @@ namespace AudioPlayerTask
                     {
                         int headerId = part.Data[0];
                         byte[] segBytes = null;
+                        ParsedMediaHeader segHeader = null;
                         lock (_queueLock)
                         {
                             MemoryStream ms;
@@ -590,38 +630,69 @@ namespace AudioPlayerTask
                                 segBytes = ms.ToArray();
                                 ms.Dispose();
                             }
+                            _pendingMediaHeaders.TryGetValue(headerId, out segHeader);
+                            _pendingMediaHeaders.Remove(headerId);
                         }
 
                         if (segBytes != null && segBytes.Length > 0)
                         {
+                            bool isInit = (segHeader != null) ? segHeader.IsInitSeg : false;
+                            int seq = (segHeader != null) ? segHeader.SequenceNumber : -1;
+                            long startMs = (segHeader != null) ? segHeader.StartMs : 0;
+                            long durMs = (segHeader != null) ? segHeader.DurationMs : 0;
+
                             // Skip init segments (moov/ftyp only, no playable audio)
-                            if (_lastMediaHeaderIsInit)
+                            if (isInit)
                             {
                                 Log("Skipping init segment " + headerId + " (" + segBytes.Length + " bytes)");
                                 break;
                             }
 
-                            // Deduplicate: skip if we already parsed this sequence number
-                            if (_lastMediaHeaderSeqNum >= 0 && _downloadedSequences.Contains(_lastMediaHeaderSeqNum))
+                            if (_isLiveStream)
                             {
-                                Log("Skipping duplicate seq=" + _lastMediaHeaderSeqNum + " (" + segBytes.Length + " bytes)");
-                                break;
+                                // Discard stale DVR history from rn=0 (e.g. 33 minutes in the past)
+                                if (_liveHeadSeq > 0 && seq >= 0 && seq < _liveHeadSeq - 2)
+                                {
+                                    Log("Discarding stale DVR segment seq=" + seq + " (" + segBytes.Length + " bytes, live head is " + _liveHeadSeq + ")");
+                                    break;
+                                }
+
+                                // Enforce monotonic sequence order in live streams (never jump backwards or replay)
+                                if (_lastEnqueuedLiveSeqNum >= 0 && seq >= 0 && seq <= _lastEnqueuedLiveSeqNum)
+                                {
+                                    Log("Skipping duplicate/out-of-order live seq=" + seq + " (last enqueued was " + _lastEnqueuedLiveSeqNum + ")");
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                // Deduplicate for VOD: skip if we already parsed this sequence number
+                                if (seq >= 0 && _downloadedSequences.Contains(seq))
+                                {
+                                    Log("Skipping duplicate seq=" + seq + " (" + segBytes.Length + " bytes)");
+                                    break;
+                                }
                             }
 
                             int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
                             if (samples > 0)
                             {
-                                if (_lastMediaHeaderSeqNum >= 0)
+                                if (seq >= 0)
                                 {
-                                    if (_firstMediaHeaderSeqNum < 0) _firstMediaHeaderSeqNum = _lastMediaHeaderSeqNum;
-                                    _downloadedSequences.Add(_lastMediaHeaderSeqNum);
+                                    if (_firstMediaHeaderSeqNum < 0) _firstMediaHeaderSeqNum = seq;
+                                    _lastMediaHeaderSeqNum = seq;
+                                    _lastMediaHeaderStartMs = startMs;
+                                    _lastMediaHeaderDurationMs = durMs;
+                                    _downloadedSequences.Add(seq);
+                                    if (_isLiveStream) _lastEnqueuedLiveSeqNum = seq;
+
                                     if (_downloadedSequences.Count > 80)
                                     {
-                                        int threshold = _lastMediaHeaderSeqNum - 40;
+                                        int threshold = seq - 40;
                                         var toRemove = new List<int>();
-                                        foreach (int seq in _downloadedSequences)
+                                        foreach (int s in _downloadedSequences)
                                         {
-                                            if (seq < threshold) toRemove.Add(seq);
+                                            if (s < threshold) toRemove.Add(s);
                                         }
                                         for (int r = 0; r < toRemove.Count; r++)
                                         {
@@ -630,7 +701,7 @@ namespace AudioPlayerTask
                                     }
                                 }
                                 _lastSuccessfulChunkTime = DateTime.UtcNow;
-                                Log("Segment " + headerId + " seq=" + _lastMediaHeaderSeqNum + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
+                                Log("Segment " + headerId + " seq=" + seq + " finalized: " + samples + " samples parsed (" + segBytes.Length + " bytes)");
                             }
                             else
                             {
@@ -641,9 +712,8 @@ namespace AudioPlayerTask
                     break;
 
                 case UmpPartId.MEDIA_HEADER:
-                    // Parse MediaHeader protobuf: field 8 = isInitSeg (bool), field 9 = sequenceNumber (varint)
-                    _lastMediaHeaderIsInit = false;
-                    _lastMediaHeaderSeqNum = -1;
+                    // Parse MediaHeader protobuf: field 1 = header_id, field 8 = isInitSeg, field 9 = sequenceNumber, field 11 = start_ms, field 12 = duration_ms
+                    var parsedHeader = new ParsedMediaHeader();
                     if (part.Data != null && part.Data.Length > 2)
                     {
                         int idx = 0;
@@ -662,8 +732,11 @@ namespace AudioPlayerTask
                                     if ((vb & 0x80) == 0) break;
                                     shift += 7;
                                 }
-                                if (fld == 8) _lastMediaHeaderIsInit = (val != 0);
-                                else if (fld == 9) _lastMediaHeaderSeqNum = (int)val;
+                                if (fld == 1) parsedHeader.HeaderId = (int)val;
+                                else if (fld == 8) parsedHeader.IsInitSeg = (val != 0);
+                                else if (fld == 9) parsedHeader.SequenceNumber = (int)val;
+                                else if (fld == 11) parsedHeader.StartMs = val;
+                                else if (fld == 12) parsedHeader.DurationMs = val;
                             }
                             else if (wt == 2) // length-delimited
                             {
@@ -682,7 +755,41 @@ namespace AudioPlayerTask
                             else break;
                         }
                     }
-                    Log("Received MEDIA_HEADER (seq=" + _lastMediaHeaderSeqNum + ", init=" + _lastMediaHeaderIsInit + ", " + part.Size + " bytes)");
+                    lock (_queueLock)
+                    {
+                        _pendingMediaHeaders[parsedHeader.HeaderId] = parsedHeader;
+                    }
+                    Log("Received MEDIA_HEADER (headerId=" + parsedHeader.HeaderId + ", seq=" + parsedHeader.SequenceNumber + ", startMs=" + parsedHeader.StartMs + ", dur=" + parsedHeader.DurationMs + "ms, init=" + parsedHeader.IsInitSeg + ")");
+                    break;
+
+                case UmpPartId.LIVE_METADATA:
+                    var liveMeta = UmpParser.ExtractLiveMetadata(part.Data);
+                    if (liveMeta.HeadSequenceNumber > 0)
+                    {
+                        _liveHeadSeq = (int)liveMeta.HeadSequenceNumber;
+                        _liveHeadTimeMs = liveMeta.HeadTimeMs;
+                        Log("Received LIVE_METADATA: headSeq=" + _liveHeadSeq + ", headTimeMs=" + _liveHeadTimeMs + " (" + part.Size + " bytes)");
+
+                        // If queue contains stale DVR audio before live head, purge immediately
+                        if (_isLiveStream)
+                        {
+                            lock (_queueLock)
+                            {
+                                if (_lastEnqueuedLiveSeqNum > 0 && _lastEnqueuedLiveSeqNum < _liveHeadSeq - 2)
+                                {
+                                    Log("Purging " + _sampleQueue.Count + " stale DVR samples (lastSeq=" + _lastEnqueuedLiveSeqNum + " vs head=" + _liveHeadSeq + ")");
+                                    _sampleQueue.Clear();
+                                    _sampleIndex = 0;
+                                    _currentPositionMs = 0;
+                                    _lastEnqueuedLiveSeqNum = -1;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Log("Received LIVE_METADATA (" + part.Size + " bytes)");
+                    }
                     break;
 
                 case UmpPartId.FORMAT_INITIALIZATION_METADATA:
@@ -705,16 +812,21 @@ namespace AudioPlayerTask
                     break;
 
                 case UmpPartId.NEXT_REQUEST_POLICY:
-                    byte[] cookie = UmpParser.ExtractPlaybackCookie(part.Data);
-                    if (cookie != null && cookie.Length > 0)
+                    var nrp = UmpParser.ExtractNextRequestPolicy(part.Data);
+                    if (nrp.PlaybackCookie != null && nrp.PlaybackCookie.Length > 0)
                     {
-                        _playbackCookieBytes = cookie;
-                        Log("Extracted playback cookie (" + cookie.Length + " bytes)");
+                        _playbackCookieBytes = nrp.PlaybackCookie;
+                        Log("Extracted playback cookie (" + nrp.PlaybackCookie.Length + " bytes)");
                     }
-                    else
+                    if (nrp.BackoffTimeMs > 0)
                     {
-                        Log("Received NEXT_REQUEST_POLICY (" + part.Size + " bytes)");
+                        _serverBackoffMs = nrp.BackoffTimeMs;
+                        Log("Server requested backoff: " + _serverBackoffMs + "ms");
                     }
+                    break;
+
+                case UmpPartId.SABR_SEEK:
+                    Log("Received SABR_SEEK (" + part.Size + " bytes)");
                     break;
 
                 case UmpPartId.STREAM_PROTECTION_STATUS:
@@ -742,20 +854,43 @@ namespace AudioPlayerTask
                     _pendingSegments.Remove(hid);
                     byte[] segBytes = ms.ToArray();
                     ms.Dispose();
+
+                    ParsedMediaHeader segHeader = null;
+                    _pendingMediaHeaders.TryGetValue(hid, out segHeader);
+                    _pendingMediaHeaders.Remove(hid);
+
                     if (segBytes.Length > 0)
                     {
-                        if (!_lastMediaHeaderIsInit && (_lastMediaHeaderSeqNum < 0 || !_downloadedSequences.Contains(_lastMediaHeaderSeqNum)))
+                        bool isInit = (segHeader != null) ? segHeader.IsInitSeg : false;
+                        int seq = (segHeader != null) ? segHeader.SequenceNumber : -1;
+                        long startMs = (segHeader != null) ? segHeader.StartMs : 0;
+                        long durMs = (segHeader != null) ? segHeader.DurationMs : 0;
+
+                        if (isInit) continue;
+
+                        if (_isLiveStream)
                         {
-                            int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
-                            if (samples > 0)
+                            if (_liveHeadSeq > 0 && seq >= 0 && seq < _liveHeadSeq - 2) continue;
+                            if (_lastEnqueuedLiveSeqNum >= 0 && seq >= 0 && seq <= _lastEnqueuedLiveSeqNum) continue;
+                        }
+                        else
+                        {
+                            if (seq >= 0 && _downloadedSequences.Contains(seq)) continue;
+                        }
+
+                        int samples = ParseAndEnqueueFmp4(segBytes, 0, segBytes.Length);
+                        if (samples > 0)
+                        {
+                            if (seq >= 0)
                             {
-                                if (_lastMediaHeaderSeqNum >= 0)
-                                {
-                                    if (_firstMediaHeaderSeqNum < 0) _firstMediaHeaderSeqNum = _lastMediaHeaderSeqNum;
-                                    _downloadedSequences.Add(_lastMediaHeaderSeqNum);
-                                }
-                                Log("Flushed segment " + hid + ": " + samples + " samples (" + segBytes.Length + " bytes)");
+                                if (_firstMediaHeaderSeqNum < 0) _firstMediaHeaderSeqNum = seq;
+                                _lastMediaHeaderSeqNum = seq;
+                                _lastMediaHeaderStartMs = startMs;
+                                _lastMediaHeaderDurationMs = durMs;
+                                _downloadedSequences.Add(seq);
+                                if (_isLiveStream) _lastEnqueuedLiveSeqNum = seq;
                             }
+                            Log("Flushed segment " + hid + " seq=" + seq + ": " + samples + " samples (" + segBytes.Length + " bytes)");
                         }
                     }
                 }
@@ -921,6 +1056,7 @@ namespace AudioPlayerTask
                     try { kvp.Value.Dispose(); } catch { }
                 }
                 _pendingSegments.Clear();
+                _pendingMediaHeaders.Clear();
             }
 
             if (_httpClient != null)

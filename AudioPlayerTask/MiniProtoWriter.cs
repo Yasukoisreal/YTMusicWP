@@ -128,7 +128,8 @@ namespace AudioPlayerTask
             bool formatsInitialized = false,
             long bufferedDurationMs = 0,
             int startSegmentIndex = -1,
-            int endSegmentIndex = -1)
+            int endSegmentIndex = -1,
+            long startTimeMs = 0)
         {
             using (var requestWriter = new MiniProtoWriter(512))
             {
@@ -185,8 +186,8 @@ namespace AudioPlayerTask
                         }
                         brWriter.WriteSubMessage(1, brFmtBytes);
 
-                        // Sub-field 2: startTimeMs = 0
-                        brWriter.WriteVarintField(2, 0);
+                        // Sub-field 2: startTimeMs
+                        brWriter.WriteVarintField(2, (ulong)Math.Max(0, startTimeMs));
 
                         // Sub-field 3: durationMs = bufferedDurationMs
                         brWriter.WriteVarintField(3, (ulong)bufferedDurationMs);
