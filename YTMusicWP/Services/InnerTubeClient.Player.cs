@@ -225,35 +225,46 @@ namespace YTMusicWP
             if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:") || videoId.StartsWith("CHANNEL:") || videoId.StartsWith("PLAYLIST:"))
                 return null;
 
-            // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
-            bool forceSabr = false;
-            try
-            {
-                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
-            }
-            catch { }
-
             // Lấy visitorData giống MetroTube (sw.js_data hoặc homepage)
             string defaultVd = await GetVisitorDataAsync();
             LastResolveDebug = "vd:" + (defaultVd != null ? "OK" : "NULL");
 
-            var clientsToTry = new List<PlayerClientConfig>(_playerClients);
-            if (isLive || forceSabr)
+            IEnumerable<PlayerClientConfig> clientsToTry = _playerClients;
+            if (isLive)
             {
-                // Đối với livestream hoặc ép SABR, VISIONOS có poToken là client duy nhất hoạt động không bị DroidGuard SPS code 3.
-                // Đưa lên đầu danh sách để tránh lãng phí 8 giây thử các client không hỗ trợ.
-                var sabrClient = clientsToTry.FirstOrDefault(c => c.ClientName == "VISIONOS" && c.SupportsPoToken);
-                if (sabrClient != null)
+                // Đối với livestream, YouTube không cung cấp direct progressive format (itag 18/140),
+                // và cấm client ANDROID/ANDROID_VR dùng SABR (do SPS code 3 DroidGuard).
+                // Do đó, sắp xếp các client hỗ trợ SABR + poToken lên đầu để phát ngay lập tức.
+                var liveClients = new List<PlayerClientConfig>();
+                // Ưu tiên 1: VISIONOS với poToken (client 101)
+                foreach (var c in _playerClients)
                 {
-                    clientsToTry.Remove(sabrClient);
-                    clientsToTry.Insert(0, sabrClient);
+                    if (c.ClientName == "VISIONOS" && c.SupportsPoToken) liveClients.Add(c);
                 }
+                // Ưu tiên 2: WEB_REMIX với poToken (client 67)
+                foreach (var c in _playerClients)
+                {
+                    if (c.ClientName == "WEB_REMIX" && c.SupportsPoToken && !c.RequireCookie) liveClients.Add(c);
+                }
+                // Ưu tiên 3: VISIONOS không poToken
+                foreach (var c in _playerClients)
+                {
+                    if (c.ClientName == "VISIONOS" && !c.SupportsPoToken) liveClients.Add(c);
+                }
+                // Ưu tiên 4: Các client khác (loại trừ ANDROID và ANDROID_VR)
+                foreach (var c in _playerClients)
+                {
+                    if (c.ClientName != "ANDROID" && c.ClientName != "ANDROID_VR" && !liveClients.Contains(c))
+                        liveClients.Add(c);
+                }
+                clientsToTry = liveClients;
             }
 
-            for (int clientIdx = 0; clientIdx < clientsToTry.Count; clientIdx++)
+            foreach (var client in clientsToTry)
             {
-                var client = clientsToTry[clientIdx];
+                if (isLive && (client.ClientName == "ANDROID" || client.ClientName == "ANDROID_VR"))
+                    continue;
+
                 if (client.RequireCookie && !HasCookieAuth)
                     continue; // Bỏ qua nếu client yêu cầu cookie mà chưa đăng nhập
 
@@ -345,6 +356,15 @@ namespace YTMusicWP
                         _cachedCaptionsData = data["captions"];
                     }
 
+                    // Kiểm tra setting ForceSabr: ép dùng SABR cho toàn bộ bài hát để kiểm thử
+                    bool forceSabr = false;
+                    try
+                    {
+                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                        if (ls.ContainsKey("ForceSabr") && (bool)ls["ForceSabr"]) forceSabr = true;
+                    }
+                    catch { }
+
                     string serverAbrUrl = data["streamingData"]?["serverAbrStreamingUrl"]?.ToString();
                     if (forceSabr && !string.IsNullOrEmpty(serverAbrUrl))
                     {
@@ -422,6 +442,14 @@ namespace YTMusicWP
                         return PrepareStreamUrl(bestFormat.Url);
                     }
 
+                    // Nếu không có candidateFormats nhưng có serverAbrUrl -> đây là livestream!
+                    // Đánh dấu isLive = true để bỏ qua các client Android ở các vòng lặp sau.
+                    if (!isLive && candidateFormats.Count == 0 && !string.IsNullOrEmpty(serverAbrUrl))
+                    {
+                        isLive = true;
+                        LastResolveDebug += " (live)";
+                    }
+
                     // 3. Fallback cho SABR streams (Google Server-side Adaptive Bitrate) - Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource
                     // Bỏ qua client ANDROID vì YouTube yêu cầu DroidGuard attestation sau 30s (SPS code 3)
                     if (!string.IsNullOrEmpty(serverAbrUrl) && (client.ClientName != "ANDROID" || forceSabr))
@@ -446,18 +474,6 @@ namespace YTMusicWP
                         LastResolveDebug += " SABR:OK";
                         string sabrDescriptor = "SABR:" + serverAbrUrl + "|" + (ustreamerConfig ?? "") + "|" + (client.UserAgent ?? "") + "|" + (client.RequestClientNameHeader ?? "") + "|" + (client.ClientVersion ?? "") + "|" + (effectivePo ?? "");
                         return sabrDescriptor;
-                    }
-
-                    // Tự động phát hiện livestream/SABR-only khi client ANDROID không có format trực tiếp nào
-                    // nhưng có serverAbrStreamingUrl. Thay vì lãng phí 6-8s thử tiếp ANDROID v21, WEB_REMIX, VISIONOS không po, ANDROID_VR,
-                    // nhảy thẳng tới VISIONOS có poToken!
-                    if (candidateFormats.Count == 0 && !string.IsNullOrEmpty(serverAbrUrl) && client.ClientName == "ANDROID")
-                    {
-                        int sabrIdx = clientsToTry.FindIndex(c => c.ClientName == "VISIONOS" && c.SupportsPoToken);
-                        if (sabrIdx > clientIdx)
-                        {
-                            clientIdx = sabrIdx - 1; // Vòng lặp sẽ tăng clientIdx lên sabrIdx ở lần lặp tiếp theo
-                        }
                     }
 
                     // 4. Fallback cho Live stream qua DASH: [TẠM THỜI VÔ HIỆU HÓA để test SABR theo yêu cầu người dùng]

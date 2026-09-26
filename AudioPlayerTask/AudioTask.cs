@@ -671,11 +671,21 @@ namespace AudioPlayerTask
             string initVd = await GetVisitorDataAsync(videoId);
             _innerTubeDebug = "vd:" + (!string.IsNullOrEmpty(initVd) ? "OK" : "NULL");
 
-            // Nếu bài hát là livestream hoặc đã biết cần SABR, thử ngay VISIONOS có poToken để không mất 8s thử các client vô ích
             if (_isCurrentTrackLive)
             {
+                // Ưu tiên cao nhất cho livestream: VISIONOS với poToken (client 101) - hỗ trợ SABR ngay lập tức
                 string liveUrl = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
                     "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
+                if (!string.IsNullOrEmpty(liveUrl)) return liveUrl;
+
+                // Dự phòng 1: WEB_REMIX với poToken (client 67)
+                liveUrl = await TryInnerTubeClient(videoId, "WEB_REMIX", "1.20260304.03.00", "67", "Windows", "PC", "Windows", "10",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36", true, null, null, "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30");
+                if (!string.IsNullOrEmpty(liveUrl)) return liveUrl;
+
+                // Dự phòng 2: VISIONOS không poToken
+                liveUrl = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", false);
                 if (!string.IsNullOrEmpty(liveUrl)) return liveUrl;
             }
             
@@ -683,14 +693,6 @@ namespace AudioPlayerTask
             string url = await TryInnerTubeClient(videoId, "ANDROID", "20.49.37", "3", "Nokia", "LumiaWP", "Android", "11",
                 "com.google.android.youtube/20.49.37 (Linux; U; Android 11) gzip", false);
             if (!string.IsNullOrEmpty(url)) return url;
-
-            // Nếu ANDROID phát hiện đây là stream SABR/live, nhảy thẳng tới VISIONOS có poToken
-            if (_isCurrentTrackLive)
-            {
-                url = await TryInnerTubeClient(videoId, "VISIONOS", "1.02", "101", "Apple", "RealityDevice14,1", "visionOS", "1.0.2.21O209",
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15", true, null, null, "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc");
-                if (!string.IsNullOrEmpty(url)) return url;
-            }
 
             // 0.5. InnerTube ANDROID v21.02.35 (Dự phòng phiên bản Android mới nhất Pixel 7)
             url = await TryInnerTubeClient(videoId, "ANDROID", "21.02.35", "3", "Google", "Pixel 7", "Android", "11",
@@ -946,47 +948,40 @@ namespace AudioPlayerTask
 
                         // 3. Fallback cho SABR stream: serverAbrStreamingUrl (Ưu tiên số 1 cho livestream thay cho LiveMediaStreamSource)
                         // Bỏ qua client ANDROID vì YouTube yêu cầu DroidGuard attestation sau 30s (SPS code 3)
-                        if (streamingData.ContainsKey("serverAbrStreamingUrl"))
+                        if (streamingData.ContainsKey("serverAbrStreamingUrl") && (clientName != "ANDROID" || forceSabr))
                         {
-                            if (clientName == "ANDROID" && !forceSabr)
+                            string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
+                            if (!string.IsNullOrEmpty(sabrUrl))
                             {
-                                _isCurrentTrackLive = true;
-                            }
-                            else
-                            {
-                                string sabrUrl = streamingData.GetNamedString("serverAbrStreamingUrl");
-                                if (!string.IsNullOrEmpty(sabrUrl))
+                                string ustreamerConfig = "";
+                                if (streamingData.ContainsKey("ustreamerConfig"))
                                 {
-                                    string ustreamerConfig = "";
-                                    if (streamingData.ContainsKey("ustreamerConfig"))
-                                    {
-                                        ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
-                                    }
-                                    else if (data.ContainsKey("playerConfig"))
-                                    {
-                                        try
-                                        {
-                                            var pcfg = data.GetNamedObject("playerConfig");
-                                            var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
-                                            var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
-                                            ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
-                                        }
-                                        catch { }
-                                    }
-
-                                    string effectivePo = (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken)) ? tokenInfo.PoToken : "";
-                                    if (string.IsNullOrEmpty(effectivePo))
-                                    {
-                                        try
-                                        {
-                                            var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                                            if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
-                                        }
-                                        catch { }
-                                    }
-                                    _innerTubeDebug += " [" + clientName + ":SABR:OK]";
-                                    return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + effectivePo;
+                                    ustreamerConfig = streamingData.GetNamedString("ustreamerConfig");
                                 }
+                                else if (data.ContainsKey("playerConfig"))
+                                {
+                                    try
+                                    {
+                                        var pcfg = data.GetNamedObject("playerConfig");
+                                        var mcfg = pcfg.GetNamedObject("mediaCommonConfig");
+                                        var ucfg = mcfg.GetNamedObject("mediaUstreamerRequestConfig");
+                                        ustreamerConfig = ucfg.GetNamedString("videoPlaybackUstreamerConfig");
+                                    }
+                                    catch { }
+                                }
+
+                                string effectivePo = (tokenInfo != null && !string.IsNullOrEmpty(tokenInfo.PoToken)) ? tokenInfo.PoToken : "";
+                                if (string.IsNullOrEmpty(effectivePo))
+                                {
+                                    try
+                                    {
+                                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                        if (ls.ContainsKey("CachedPoToken")) effectivePo = ls["CachedPoToken"]?.ToString() ?? "";
+                                    }
+                                    catch { }
+                                }
+                                _innerTubeDebug += " [" + clientName + ":SABR:OK]";
+                                return "SABR:" + sabrUrl + "|" + (ustreamerConfig ?? "") + "|" + (userAgent ?? "") + "|" + (clientId ?? "") + "|" + (clientVersion ?? "") + "|" + effectivePo;
                             }
                         }
 

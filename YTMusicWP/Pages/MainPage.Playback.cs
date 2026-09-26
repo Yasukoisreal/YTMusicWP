@@ -287,7 +287,7 @@ namespace YTMusicWP
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
                 { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }, { "FastUrl", urls[relativeStartIndex] }
             };
-            if (track.IsLive)
+            if (track.IsLive || (!string.IsNullOrEmpty(resolvedUrl) && resolvedUrl.StartsWith("SABR:")))
             {
                 message.Add("IsLive", true);
             }
