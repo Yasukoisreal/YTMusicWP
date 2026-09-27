@@ -695,8 +695,8 @@ namespace YTMusicWP
                     };
                     try
                     {
-                        if (Resources.ContainsKey("MontserratSemiBold"))
-                            tb.FontFamily = (Windows.UI.Xaml.Media.FontFamily)Resources["MontserratSemiBold"];
+                        if (Application.Current.Resources.ContainsKey("MontserratSemiBold"))
+                            tb.FontFamily = (Windows.UI.Xaml.Media.FontFamily)Application.Current.Resources["MontserratSemiBold"];
                     }
                     catch { }
                     border.Child = tb;

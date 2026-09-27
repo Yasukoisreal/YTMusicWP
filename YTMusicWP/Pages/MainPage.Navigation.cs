@@ -21,10 +21,10 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseLoginWeb_Click(null, null);
             }
-            else if (SongCreditsDialog.Visibility == Visibility.Visible)
+            else if (SongCreditsDialog.IsOpen)
             {
                 e.Handled = true;
-                CloseSongCreditsDialog_Click(null, null);
+                SongCreditsDialog.Close();
             }
             else if (LiveDebugDialog != null && LiveDebugDialog.Visibility == Visibility.Visible)
             {

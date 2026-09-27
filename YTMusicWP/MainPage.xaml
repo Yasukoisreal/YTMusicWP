@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:YTMusicWP"
     xmlns:converters="using:YTMusicWP.Converters"
+    xmlns:controls="using:YTMusicWP.Controls"
     xmlns:gif="using:XamlAnimatedGif"
     RequestedTheme="Dark"
     Background="#121212">
@@ -23,11 +24,7 @@
         <converters:SquareThumbnailConverter x:Key="SquareThumbConverter"/>
         <converters:IsPlayingToColorConverter x:Key="IsPlayingToColorConverter"/>
 
-        <!-- ═══════ SPOTIFY FONT SYSTEM ═══════ -->
-        <FontFamily x:Key="MontserratRegular">/Assets/Fonts/Montserrat-Regular.ttf#Montserrat</FontFamily>
-        <FontFamily x:Key="MontserratMedium">/Assets/Fonts/Montserrat-Medium.ttf#Montserrat</FontFamily>
-        <FontFamily x:Key="MontserratSemiBold">/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat</FontFamily>
-        <FontFamily x:Key="MontserratBold">/Assets/Fonts/Montserrat-Bold.ttf#Montserrat</FontFamily>
+        <!-- ═══════ SPOTIFY FONT SYSTEM: Montserrat FontFamily resources are defined in App.xaml ═══════ -->
 
         <!-- Global TextBlock style: Montserrat everywhere -->
         <Style TargetType="TextBlock">
@@ -3972,102 +3969,7 @@
         </Grid>
 
         <!-- ═══════════════════════════════════ SONG CREDITS DIALOG ═══════════════════════════════════ -->
-        <Grid x:Name="SongCreditsDialog" Visibility="Collapsed" Canvas.ZIndex="260" Background="#A0000000" Grid.RowSpan="3">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Button Grid.Row="0" Click="CloseSongCreditsDialog_Click" Style="{StaticResource IconButtonStyle}" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <Border Grid.Row="1" Background="#202020" CornerRadius="20,20,0,0" Padding="20,15,20,15" MaxHeight="520">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    
-                    <!-- Drag handle & Header -->
-                    <StackPanel Grid.Row="0">
-                        <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,0,0,12" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Song credits" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="SongCreditsTrackTitle" Text="" FontSize="14" Foreground="#1DB954" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"/>
-                        <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
-                    </StackPanel>
-
-                    <!-- Loading indicator -->
-                    <StackPanel x:Name="SongCreditsLoading" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,30">
-                        <ProgressRing IsActive="True" Width="36" Height="36" Foreground="#1DB954"/>
-                        <TextBlock Text="Loading credits..." FontSize="13" Foreground="#888888" Margin="0,10,0,0" HorizontalAlignment="Center"/>
-                    </StackPanel>
-
-                    <!-- Content -->
-                    <ScrollViewer x:Name="SongCreditsContent" Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,5,0,10">
-                            <!-- Performed By -->
-                            <StackPanel x:Name="CreditsPerformedBySection" Margin="0,0,0,14">
-                                <TextBlock Text="PERFORMED BY" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
-                                <TextBlock x:Name="CreditsPerformedByText" Text="" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
-                            </StackPanel>
-
-                            <!-- Written By -->
-                            <StackPanel x:Name="CreditsWrittenBySection" Margin="0,0,0,14">
-                                <TextBlock Text="WRITTEN BY" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
-                                <TextBlock x:Name="CreditsWrittenByText" Text="" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
-                            </StackPanel>
-
-                            <!-- Produced By -->
-                            <StackPanel x:Name="CreditsProducedBySection" Margin="0,0,0,14">
-                                <TextBlock Text="PRODUCED BY" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
-                                <TextBlock x:Name="CreditsProducedByText" Text="" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
-                            </StackPanel>
-
-                            <!-- Source / Provided By -->
-                            <StackPanel x:Name="CreditsProvidedBySection" Margin="0,0,0,14">
-                                <TextBlock Text="SOURCE" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
-                                <TextBlock x:Name="CreditsProvidedByText" Text="" FontSize="13" Foreground="#B3B3B3" TextWrapping="Wrap"/>
-                            </StackPanel>
-
-                            <!-- Details / Stats (Views, Released, Quality) -->
-                            <Rectangle Height="1" Fill="#2E2E2E" Margin="0,4,0,14"/>
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                    <TextBlock Text="PLAYS / VIEWS" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
-                                    <TextBlock x:Name="CreditsViewsText" Text="--" FontSize="13" Foreground="White"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                    <TextBlock Text="RELEASED" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
-                                    <TextBlock x:Name="CreditsDateText" Text="--" FontSize="13" Foreground="White"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <Grid Margin="0,4,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                    <TextBlock Text="ALBUM" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
-                                    <TextBlock x:Name="CreditsAlbumText" Text="Single / Album" FontSize="13" Foreground="White" TextTrimming="CharacterEllipsis"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                    <TextBlock Text="AUDIO STREAM" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
-                                    <TextBlock x:Name="CreditsAudioText" Text="Opus / AAC" FontSize="13" Foreground="#1DB954"/>
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <!-- Close Button -->
-                    <Button Grid.Row="2" Click="CloseSongCreditsDialog_Click" Style="{StaticResource IconButtonStyle}" Height="46" Margin="0,8,0,0" Background="#2A2A2A">
-                        <TextBlock Text="Done" FontSize="15" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Button>
-                </Grid>
-            </Border>
-        </Grid>
+        <controls:SongCreditsDialog x:Name="SongCreditsDialog" Visibility="Collapsed" Canvas.ZIndex="260" Grid.RowSpan="3"/>
 
         <!-- ═══════════════════════════════════ LIVE DEBUG DIALOG ═══════════════════════════════════ -->
         <Grid x:Name="LiveDebugDialog" Visibility="Collapsed" Canvas.ZIndex="270" Background="#A0000000" Grid.RowSpan="3">

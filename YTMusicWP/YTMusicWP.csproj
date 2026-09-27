@@ -100,6 +100,9 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\SongCreditsDialog.xaml.cs">
+      <DependentUpon>SongCreditsDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Pages\MainPage.Playback.cs" />
     <Compile Include="Pages\MainPage.Search.cs" />
     <Compile Include="Pages\MainPage.Auth.cs" />
@@ -204,6 +207,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="MainPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\SongCreditsDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

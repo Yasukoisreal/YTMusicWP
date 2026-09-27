@@ -9,6 +9,13 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Fonts live here (not in the merged dictionary) so code can look them up with
+                 Application.Current.Resources["..."] and UserControls can use them via StaticResource -->
+            <FontFamily x:Key="MontserratRegular">/Assets/Fonts/Montserrat-Regular.ttf#Montserrat</FontFamily>
+            <FontFamily x:Key="MontserratMedium">/Assets/Fonts/Montserrat-Medium.ttf#Montserrat</FontFamily>
+            <FontFamily x:Key="MontserratSemiBold">/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat</FontFamily>
+            <FontFamily x:Key="MontserratBold">/Assets/Fonts/Montserrat-Bold.ttf#Montserrat</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 
