@@ -225,36 +225,20 @@ namespace YTMusicWP
         {
             if (currentTrack != null)
             {
-                NowPlayingDownloadBtn.Visibility = currentTrack.VideoId.StartsWith("LOCAL:") ? Visibility.Collapsed : Visibility.Visible;
+                NowPlayingMenuDialog.NowPlayingDownloadBtn.Visibility = currentTrack.VideoId.StartsWith("LOCAL:") ? Visibility.Collapsed : Visibility.Visible;
             }
 
-            NowPlayingMenuDialog.Visibility = Visibility.Visible;
-            if (this.Resources.ContainsKey("MenuSlideUpStoryboard"))
-            {
-                var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["MenuSlideUpStoryboard"];
-                storyboard.Begin();
-            }
+            NowPlayingMenuDialog.Open();
         }
 
         private void CloseNowPlayingMenu_Click(object sender, RoutedEventArgs e)
         {
             if (SearchBox != null) SearchBox.IsTabStop = false;
-            
-            if (this.Resources.ContainsKey("MenuSlideDownStoryboard"))
-            {
-                var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["MenuSlideDownStoryboard"];
-                storyboard.Begin();
-            }
-            else
-            {
-                NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
-                RestoreSearchBoxFocus();
-            }
+            NowPlayingMenuDialog.Hide();
         }
 
-        private void MenuSlideDownStoryboard_Completed(object sender, object e)
+        private void NowPlayingMenu_Closed(object sender, EventArgs e)
         {
-            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
             RestoreSearchBoxFocus();
         }
 
@@ -603,7 +587,7 @@ namespace YTMusicWP
         {
             _playbackSpeedIndex = (_playbackSpeedIndex + 1) % _playbackSpeeds.Length;
             double speed = _playbackSpeeds[_playbackSpeedIndex];
-            MenuPlaybackSpeedStatus.Text = speed.ToString("0.0#") + "x";
+            NowPlayingMenuDialog.MenuPlaybackSpeedStatus.Text = speed.ToString("0.0#") + "x";
 
             try
             {

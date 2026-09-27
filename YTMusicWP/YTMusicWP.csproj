@@ -112,6 +112,9 @@
     <Compile Include="Controls\SettingsView.xaml.cs">
       <DependentUpon>SettingsView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\NowPlayingMenu.xaml.cs">
+      <DependentUpon>NowPlayingMenu.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\SongCreditsDialog.xaml.cs">
       <DependentUpon>SongCreditsDialog.xaml</DependentUpon>
     </Compile>
@@ -235,6 +238,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Controls\SettingsView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\NowPlayingMenu.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

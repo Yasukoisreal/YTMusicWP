@@ -792,8 +792,8 @@ namespace YTMusicWP
                 BigTitle.Text = ytTrack.Title;
                 MiniArtist.Text = ytTrack.ChannelName;
                 BigArtist.Text = ytTrack.ChannelName;
-                MenuTitle.Text = ytTrack.Title;
-                MenuArtist.Text = ytTrack.ChannelName;
+                NowPlayingMenuDialog.MenuTitle.Text = ytTrack.Title;
+                NowPlayingMenuDialog.MenuArtist.Text = ytTrack.ChannelName;
 
                 if (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
                 {
@@ -811,7 +811,7 @@ namespace YTMusicWP
                         bigBmp.UriSource = new Uri(GetNowPlayingThumbnail(ytTrack.ThumbnailUrl), UriKind.Absolute);
                         BigCoverImage.ImageSource = bigBmp;
                         if (AlbumArtEntranceStoryboard != null) AlbumArtEntranceStoryboard.Begin();
-                        MenuCoverImage.ImageSource = bigBmp;
+                        NowPlayingMenuDialog.MenuCoverImage.ImageSource = bigBmp;
 
                         var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                         miniBmp.DecodePixelWidth = 100;

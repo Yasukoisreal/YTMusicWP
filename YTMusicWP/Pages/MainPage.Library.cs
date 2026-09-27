@@ -936,13 +936,13 @@ namespace YTMusicWP
             {
                 _sleepTimer.Stop();
                 _sleepTimerMode = 0;
-                MenuSleepTimerStatus.Text = "Off";
+                NowPlayingMenuDialog.MenuSleepTimerStatus.Text = "Off";
                 try { _appMediaPlayer.Pause(); } catch { }
                 ShowToast("Sleep Timer: Music paused.");
             }
             else
             {
-                MenuSleepTimerStatus.Text = _sleepMinutesLeft + " min left";
+                NowPlayingMenuDialog.MenuSleepTimerStatus.Text = _sleepMinutesLeft + " min left";
             }
         }
 
@@ -957,7 +957,7 @@ namespace YTMusicWP
             if (_sleepTimerMode == 0)
             {
                 _sleepMinutesLeft = 0;
-                MenuSleepTimerStatus.Text = "Off";
+                NowPlayingMenuDialog.MenuSleepTimerStatus.Text = "Off";
                 ShowToast("Sleep Timer: Off");
                 try { BackgroundMediaPlayer.SendMessageToBackground(new Windows.Foundation.Collections.ValueSet { { "SetSleepTimer", 0 } }); } catch { }
             }
@@ -967,7 +967,7 @@ namespace YTMusicWP
                 else if (_sleepTimerMode == 2) _sleepMinutesLeft = 30;
                 else if (_sleepTimerMode == 3) _sleepMinutesLeft = 60;
 
-                MenuSleepTimerStatus.Text = _sleepMinutesLeft + " min left";
+                NowPlayingMenuDialog.MenuSleepTimerStatus.Text = _sleepMinutesLeft + " min left";
                 _sleepTimer.Start();
                 ShowToast("Sleep Timer set for " + _sleepMinutesLeft + " minutes");
                 try { BackgroundMediaPlayer.SendMessageToBackground(new Windows.Foundation.Collections.ValueSet { { "SetSleepTimer", _sleepMinutesLeft } }); } catch { }

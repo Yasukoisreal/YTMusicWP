@@ -172,9 +172,9 @@ namespace YTMusicWP
                 if (speedIdx >= 0 && speedIdx < _playbackSpeeds.Length)
                 {
                     _playbackSpeedIndex = speedIdx;
-                    if (MenuPlaybackSpeedStatus != null)
+                    if (NowPlayingMenuDialog.MenuPlaybackSpeedStatus != null)
                     {
-                        MenuPlaybackSpeedStatus.Text = _playbackSpeeds[_playbackSpeedIndex].ToString("0.0#") + "x";
+                        NowPlayingMenuDialog.MenuPlaybackSpeedStatus.Text = _playbackSpeeds[_playbackSpeedIndex].ToString("0.0#") + "x";
                     }
                 }
 

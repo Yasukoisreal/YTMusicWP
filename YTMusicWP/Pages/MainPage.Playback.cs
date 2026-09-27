@@ -197,8 +197,8 @@ namespace YTMusicWP
             }
             MiniArtist.Text = track.ChannelName; BigArtist.Text = track.ChannelName;
             SetPlayPauseIcon(true);
-            MenuTitle.Text = track.Title;
-            MenuArtist.Text = track.ChannelName;
+            NowPlayingMenuDialog.MenuTitle.Text = track.Title;
+            NowPlayingMenuDialog.MenuArtist.Text = track.ChannelName;
 
             if (!string.IsNullOrEmpty(track.ThumbnailUrl))
             {
@@ -209,7 +209,7 @@ namespace YTMusicWP
                 bigBmp.UriSource = new Uri(GetNowPlayingThumbnail(track.ThumbnailUrl), UriKind.Absolute);
                 BigCoverImage.ImageSource  = bigBmp;
                 AlbumArtEntranceStoryboard.Begin();
-                MenuCoverImage.ImageSource = bigBmp;
+                NowPlayingMenuDialog.MenuCoverImage.ImageSource = bigBmp;
 
                 var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                 miniBmp.DecodePixelWidth = 100;
@@ -1113,8 +1113,8 @@ namespace YTMusicWP
                 MiniTitle.Text = title; BigTitle.Text = title;
                 MiniArtist.Text = artist; BigArtist.Text = artist;
 
-                MenuTitle.Text = title;
-                MenuArtist.Text = artist;
+                NowPlayingMenuDialog.MenuTitle.Text = title;
+                NowPlayingMenuDialog.MenuArtist.Text = artist;
 
                 if (!string.IsNullOrEmpty(thumb))
                 {
@@ -1187,7 +1187,7 @@ namespace YTMusicWP
                             }
                         }
                         AlbumArtEntranceStoryboard.Begin();
-                        MenuCoverImage.ImageSource = bigBmp;
+                        NowPlayingMenuDialog.MenuCoverImage.ImageSource = bigBmp;
 
                         var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                         miniBmp.DecodePixelWidth = isWide ? 150 : 100;
@@ -1255,8 +1255,8 @@ namespace YTMusicWP
                     MiniTitle.Text = title; BigTitle.Text = title;
                     MiniArtist.Text = artist; BigArtist.Text = artist;
 
-                    MenuTitle.Text = title;
-                    MenuArtist.Text = artist;
+                    NowPlayingMenuDialog.MenuTitle.Text = title;
+                    NowPlayingMenuDialog.MenuArtist.Text = artist;
 
                     if (!string.IsNullOrEmpty(thumb))
                     {
@@ -1330,7 +1330,7 @@ namespace YTMusicWP
                                 }
                             }
                             AlbumArtEntranceStoryboard.Begin();
-                            MenuCoverImage.ImageSource = bigBmp;
+                            NowPlayingMenuDialog.MenuCoverImage.ImageSource = bigBmp;
 
                             var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             miniBmp.DecodePixelWidth = isWide ? 150 : 100;
