@@ -86,9 +86,9 @@ namespace YTMusicWP
             else if (ListenTogetherView != null && ListenTogetherView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
-                if (LtSettingsPanel != null && LtSettingsPanel.Visibility == Visibility.Visible)
+                if (ListenTogetherView.LtSettingsPanel != null && ListenTogetherView.LtSettingsPanel.Visibility == Visibility.Visible)
                 {
-                    LtSettingsPanel.Visibility = Visibility.Collapsed;
+                    ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Collapsed;
                 }
                 else
                 {

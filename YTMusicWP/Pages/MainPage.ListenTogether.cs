@@ -45,15 +45,15 @@ namespace YTMusicWP
             if (ListenTogetherView == null) return;
 
             // Pre-fill user name if not set
-            if (string.IsNullOrWhiteSpace(LtDisplayNameBox.Text))
+            if (string.IsNullOrWhiteSpace(ListenTogetherView.LtDisplayNameBox.Text))
             {
-                LtDisplayNameBox.Text = string.IsNullOrWhiteSpace(HomeAvatarLetter?.Text) ? "Lumia User" : ("Lumia " + HomeAvatarLetter.Text);
+                ListenTogetherView.LtDisplayNameBox.Text = string.IsNullOrWhiteSpace(HomeAvatarLetter?.Text) ? "Lumia User" : ("Lumia " + HomeAvatarLetter.Text);
             }
 
             ListenTogetherView.Visibility = Visibility.Visible;
-            if (ListenTogetherSlideInStoryboard != null)
+            if (ListenTogetherView.ListenTogetherSlideInStoryboard != null)
             {
-                ListenTogetherSlideInStoryboard.Begin();
+                ListenTogetherView.ListenTogetherSlideInStoryboard.Begin();
             }
 
             UpdateListenTogetherUI();
@@ -61,7 +61,7 @@ namespace YTMusicWP
 
         private void CloseListenTogetherView_Click(object sender, RoutedEventArgs e)
         {
-            if (LtSettingsPanel != null) LtSettingsPanel.Visibility = Visibility.Collapsed;
+            if (ListenTogetherView.LtSettingsPanel != null) ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Collapsed;
             if (ListenTogetherView != null)
             {
                 ListenTogetherView.Visibility = Visibility.Collapsed;
@@ -90,7 +90,7 @@ namespace YTMusicWP
             if (ListenTogetherView == null || ListenTogetherView.Visibility != Visibility.Visible) return;
 
             // 2. Server connection status
-            if (LtConnectionDot != null)
+            if (ListenTogetherView.LtConnectionDot != null)
             {
                 SolidColorBrush dotBrush;
                 string statusText;
@@ -113,108 +113,108 @@ namespace YTMusicWP
                         statusText = "Not connected";
                         break;
                 }
-                LtConnectionDot.Fill = dotBrush;
-                if (LtConnectionStatusText != null) LtConnectionStatusText.Text = statusText;
-                if (LtConnectBtn != null)
+                ListenTogetherView.LtConnectionDot.Fill = dotBrush;
+                if (ListenTogetherView.LtConnectionStatusText != null) ListenTogetherView.LtConnectionStatusText.Text = statusText;
+                if (ListenTogetherView.LtConnectBtn != null)
                 {
-                    LtConnectBtn.Content = (mgr.Connection == ConnectionState.Connected) ? "Disconnect" : "Connect";
+                    ListenTogetherView.LtConnectBtn.Content = (mgr.Connection == ConnectionState.Connected) ? "Disconnect" : "Connect";
                 }
             }
 
             // 3. Lobby vs Room Panel
             if (mgr.InRoom)
             {
-                if (LtLobbyPanel != null) LtLobbyPanel.Visibility = Visibility.Collapsed;
-                if (LtRoomPanel != null) LtRoomPanel.Visibility = Visibility.Visible;
+                if (ListenTogetherView.LtLobbyPanel != null) ListenTogetherView.LtLobbyPanel.Visibility = Visibility.Collapsed;
+                if (ListenTogetherView.LtRoomPanel != null) ListenTogetherView.LtRoomPanel.Visibility = Visibility.Visible;
 
                 // Room Code Poster
-                if (LtRoomCodePoster != null)
+                if (ListenTogetherView.LtRoomCodePoster != null)
                 {
                     string code = mgr.RoomCode ?? "";
                     if (code.Length == 8)
                     {
-                        LtRoomCodePoster.Text = code.Substring(0, 4) + " " + code.Substring(4, 4);
+                        ListenTogetherView.LtRoomCodePoster.Text = code.Substring(0, 4) + " " + code.Substring(4, 4);
                     }
                     else
                     {
-                        LtRoomCodePoster.Text = code;
+                        ListenTogetherView.LtRoomCodePoster.Text = code;
                     }
                 }
 
                 // Host subtitle
-                if (LtRoomRoleText != null)
+                if (ListenTogetherView.LtRoomRoleText != null)
                 {
                     if (mgr.IsHost)
                     {
-                        LtRoomRoleText.Text = "You are the host · " + mgr.Members.Count + " listening";
+                        ListenTogetherView.LtRoomRoleText.Text = "You are the host · " + mgr.Members.Count + " listening";
                     }
                     else
                     {
                         var host = mgr.Members.FirstOrDefault(m => m.IsHost);
-                        LtRoomRoleText.Text = (host != null ? host.Username : "Host") + " is controlling playback";
+                        ListenTogetherView.LtRoomRoleText.Text = (host != null ? host.Username : "Host") + " is controlling playback";
                     }
                 }
 
                 // Buffer barrier banner
-                if (LtBufferBanner != null)
+                if (ListenTogetherView.LtBufferBanner != null)
                 {
                     if (mgr.WaitingFor != null && mgr.WaitingFor.Count > 0)
                     {
                         var names = mgr.Members.Where(m => mgr.WaitingFor.Contains(m.UserId)).Select(m => m.Username).ToList();
                         string nameList = names.Count > 0 ? string.Join(", ", names) : "everyone";
-                        LtBufferBannerText.Text = "Waiting for " + nameList + "…";
-                        LtBufferBanner.Visibility = Visibility.Visible;
+                        ListenTogetherView.LtBufferBannerText.Text = "Waiting for " + nameList + "…";
+                        ListenTogetherView.LtBufferBanner.Visibility = Visibility.Visible;
                     }
                     else
                     {
-                        LtBufferBanner.Visibility = Visibility.Collapsed;
+                        ListenTogetherView.LtBufferBanner.Visibility = Visibility.Collapsed;
                     }
                 }
 
                 // Join Requests Section (Host only)
-                if (LtJoinRequestsSection != null)
+                if (ListenTogetherView.LtJoinRequestsSection != null)
                 {
-                    LtJoinRequestsSection.Visibility = (mgr.IsHost && mgr.JoinRequests.Count > 0) ? Visibility.Visible : Visibility.Collapsed;
-                    if (LtJoinRequestsList != null) LtJoinRequestsList.ItemsSource = mgr.JoinRequests;
+                    ListenTogetherView.LtJoinRequestsSection.Visibility = (mgr.IsHost && mgr.JoinRequests.Count > 0) ? Visibility.Visible : Visibility.Collapsed;
+                    if (ListenTogetherView.LtJoinRequestsList != null) ListenTogetherView.LtJoinRequestsList.ItemsSource = mgr.JoinRequests;
                 }
 
                 // Members list
-                if (LtMembersList != null)
+                if (ListenTogetherView.LtMembersList != null)
                 {
-                    LtMembersList.ItemsSource = null;
-                    LtMembersList.ItemsSource = mgr.Members;
+                    ListenTogetherView.LtMembersList.ItemsSource = null;
+                    ListenTogetherView.LtMembersList.ItemsSource = mgr.Members;
                 }
             }
             else
             {
-                if (LtLobbyPanel != null) LtLobbyPanel.Visibility = Visibility.Visible;
-                if (LtRoomPanel != null) LtRoomPanel.Visibility = Visibility.Collapsed;
+                if (ListenTogetherView.LtLobbyPanel != null) ListenTogetherView.LtLobbyPanel.Visibility = Visibility.Visible;
+                if (ListenTogetherView.LtRoomPanel != null) ListenTogetherView.LtRoomPanel.Visibility = Visibility.Collapsed;
 
                 // Waiting for approval state
-                if (LtWaitingApprovalCard != null)
+                if (ListenTogetherView.LtWaitingApprovalCard != null)
                 {
                     if (!string.IsNullOrEmpty(mgr.PendingJoinCode))
                     {
-                        LtWaitingApprovalCard.Visibility = Visibility.Visible;
-                        LtWaitingCodeText.Text = mgr.PendingJoinCode;
+                        ListenTogetherView.LtWaitingApprovalCard.Visibility = Visibility.Visible;
+                        ListenTogetherView.LtWaitingCodeText.Text = mgr.PendingJoinCode;
                     }
                     else
                     {
-                        LtWaitingApprovalCard.Visibility = Visibility.Collapsed;
+                        ListenTogetherView.LtWaitingApprovalCard.Visibility = Visibility.Collapsed;
                     }
                 }
 
                 // Error message
-                if (LtErrorBanner != null)
+                if (ListenTogetherView.LtErrorBanner != null)
                 {
                     if (!string.IsNullOrEmpty(mgr.ErrorMessage))
                     {
-                        LtErrorBanner.Visibility = Visibility.Visible;
-                        LtErrorMessageText.Text = mgr.ErrorMessage;
+                        ListenTogetherView.LtErrorBanner.Visibility = Visibility.Visible;
+                        ListenTogetherView.LtErrorMessageText.Text = mgr.ErrorMessage;
                     }
                     else
                     {
-                        LtErrorBanner.Visibility = Visibility.Collapsed;
+                        ListenTogetherView.LtErrorBanner.Visibility = Visibility.Collapsed;
                     }
                 }
             }
@@ -239,7 +239,7 @@ namespace YTMusicWP
 
         private async void LtCreateRoom_Click(object sender, RoutedEventArgs e)
         {
-            string name = LtDisplayNameBox.Text.Trim();
+            string name = ListenTogetherView.LtDisplayNameBox.Text.Trim();
             if (string.IsNullOrEmpty(name))
             {
                 ShowToast("Please enter a display name");
@@ -262,7 +262,7 @@ namespace YTMusicWP
 
         private async void LtJoinRoom_Click(object sender, RoutedEventArgs e)
         {
-            string name = LtDisplayNameBox.Text.Trim();
+            string name = ListenTogetherView.LtDisplayNameBox.Text.Trim();
             if (string.IsNullOrEmpty(name))
             {
                 ShowToast("Please enter a display name");
@@ -366,21 +366,21 @@ namespace YTMusicWP
 
         private string GetEnteredRoomCode()
         {
-            return (LtHiddenCodeBox != null) ? LtHiddenCodeBox.Text : "";
+            return (ListenTogetherView.LtHiddenCodeBox != null) ? ListenTogetherView.LtHiddenCodeBox.Text : "";
         }
 
         private void LtHiddenCodeBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            string text = LtHiddenCodeBox.Text.ToUpper();
+            string text = ListenTogetherView.LtHiddenCodeBox.Text.ToUpper();
             if (text.Length > 8)
             {
                 text = text.Substring(0, 8);
-                LtHiddenCodeBox.Text = text;
+                ListenTogetherView.LtHiddenCodeBox.Text = text;
             }
 
             // Update 8 separate boxes
-            TextBlock[] boxes = new[] { LtDigit0, LtDigit1, LtDigit2, LtDigit3, LtDigit4, LtDigit5, LtDigit6, LtDigit7 };
-            Border[] borders = new[] { LtBorder0, LtBorder1, LtBorder2, LtBorder3, LtBorder4, LtBorder5, LtBorder6, LtBorder7 };
+            TextBlock[] boxes = new[] { ListenTogetherView.LtDigit0, ListenTogetherView.LtDigit1, ListenTogetherView.LtDigit2, ListenTogetherView.LtDigit3, ListenTogetherView.LtDigit4, ListenTogetherView.LtDigit5, ListenTogetherView.LtDigit6, ListenTogetherView.LtDigit7 };
+            Border[] borders = new[] { ListenTogetherView.LtBorder0, ListenTogetherView.LtBorder1, ListenTogetherView.LtBorder2, ListenTogetherView.LtBorder3, ListenTogetherView.LtBorder4, ListenTogetherView.LtBorder5, ListenTogetherView.LtBorder6, ListenTogetherView.LtBorder7 };
 
             for (int i = 0; i < 8; i++)
             {
@@ -398,9 +398,9 @@ namespace YTMusicWP
 
         private void LtCodeBoxes_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
-            if (LtHiddenCodeBox != null)
+            if (ListenTogetherView.LtHiddenCodeBox != null)
             {
-                LtHiddenCodeBox.Focus(FocusState.Programmatic);
+                ListenTogetherView.LtHiddenCodeBox.Focus(FocusState.Programmatic);
             }
         }
 
@@ -979,7 +979,7 @@ namespace YTMusicWP
                     if (!string.IsNullOrWhiteSpace(name))
                     {
                         mgr.SelfUsername = name;
-                        if (LtDisplayNameBox != null) LtDisplayNameBox.Text = name;
+                        if (ListenTogetherView.LtDisplayNameBox != null) ListenTogetherView.LtDisplayNameBox.Text = name;
                     }
                 }
 
@@ -987,21 +987,21 @@ namespace YTMusicWP
                 {
                     bool autoApprove = (bool)settings["LtAutoApprove"];
                     mgr.AutoApproveJoins = autoApprove;
-                    if (LtAutoApproveToggle != null) LtAutoApproveToggle.IsOn = autoApprove;
+                    if (ListenTogetherView.LtAutoApproveToggle != null) ListenTogetherView.LtAutoApproveToggle.IsOn = autoApprove;
                 }
 
                 if (settings.ContainsKey("LtAutoApproveSuggestions"))
                 {
                     bool autoSug = (bool)settings["LtAutoApproveSuggestions"];
                     mgr.AutoApproveSuggestions = autoSug;
-                    if (LtAutoApproveSuggestionsToggle != null) LtAutoApproveSuggestionsToggle.IsOn = autoSug;
+                    if (ListenTogetherView.LtAutoApproveSuggestionsToggle != null) ListenTogetherView.LtAutoApproveSuggestionsToggle.IsOn = autoSug;
                 }
 
                 if (settings.ContainsKey("LtSyncVolume"))
                 {
                     bool syncVol = (bool)settings["LtSyncVolume"];
                     mgr.SyncVolume = syncVol;
-                    if (LtSyncVolumeToggle != null) LtSyncVolumeToggle.IsOn = syncVol;
+                    if (ListenTogetherView.LtSyncVolumeToggle != null) ListenTogetherView.LtSyncVolumeToggle.IsOn = syncVol;
                 }
 
                 if (settings.ContainsKey("LtServerUrl"))
@@ -1018,57 +1018,57 @@ namespace YTMusicWP
 
         private void LtOpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            if (LtSettingsPanel == null) return;
+            if (ListenTogetherView.LtSettingsPanel == null) return;
             var mgr = ListenTogetherManager.Instance;
 
-            if (LtSettingsNicknameBox != null)
+            if (ListenTogetherView.LtSettingsNicknameBox != null)
             {
-                LtSettingsNicknameBox.Text = string.IsNullOrWhiteSpace(LtDisplayNameBox?.Text) ? mgr.SelfUsername : LtDisplayNameBox.Text;
+                ListenTogetherView.LtSettingsNicknameBox.Text = string.IsNullOrWhiteSpace(ListenTogetherView.LtDisplayNameBox?.Text) ? mgr.SelfUsername : ListenTogetherView.LtDisplayNameBox.Text;
             }
 
-            if (LtSettingsServerUrlBox != null)
+            if (ListenTogetherView.LtSettingsServerUrlBox != null)
             {
-                LtSettingsServerUrlBox.Text = mgr.Client.ServerUrl;
+                ListenTogetherView.LtSettingsServerUrlBox.Text = mgr.Client.ServerUrl;
             }
 
-            if (LtAutoApproveToggle != null)
+            if (ListenTogetherView.LtAutoApproveToggle != null)
             {
-                LtAutoApproveToggle.IsOn = mgr.AutoApproveJoins;
+                ListenTogetherView.LtAutoApproveToggle.IsOn = mgr.AutoApproveJoins;
             }
 
-            if (LtAutoApproveSuggestionsToggle != null)
+            if (ListenTogetherView.LtAutoApproveSuggestionsToggle != null)
             {
-                LtAutoApproveSuggestionsToggle.IsOn = mgr.AutoApproveSuggestions;
+                ListenTogetherView.LtAutoApproveSuggestionsToggle.IsOn = mgr.AutoApproveSuggestions;
             }
 
-            if (LtSyncVolumeToggle != null)
+            if (ListenTogetherView.LtSyncVolumeToggle != null)
             {
-                LtSyncVolumeToggle.IsOn = mgr.SyncVolume;
+                ListenTogetherView.LtSyncVolumeToggle.IsOn = mgr.SyncVolume;
             }
 
-            if (LtSettingsActiveServerText != null)
+            if (ListenTogetherView.LtSettingsActiveServerText != null)
             {
                 string sUrl = mgr.Client.ServerUrl;
                 if (string.Equals(sUrl, ListenTogetherClient.DefaultServerUrl, StringComparison.OrdinalIgnoreCase))
                 {
-                    LtSettingsActiveServerText.Text = "The Meowery · Poland (Default)";
-                    LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
+                    ListenTogetherView.LtSettingsActiveServerText.Text = "The Meowery · Poland (Default)";
+                    ListenTogetherView.LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
                 }
                 else
                 {
-                    LtSettingsActiveServerText.Text = sUrl;
-                    LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 229, 255));
+                    ListenTogetherView.LtSettingsActiveServerText.Text = sUrl;
+                    ListenTogetherView.LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 229, 255));
                 }
             }
 
-            LtSettingsPanel.Visibility = Visibility.Visible;
+            ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Visible;
         }
 
         private void LtCloseSettings_Click(object sender, RoutedEventArgs e)
         {
-            if (LtSettingsPanel != null)
+            if (ListenTogetherView.LtSettingsPanel != null)
             {
-                LtSettingsPanel.Visibility = Visibility.Collapsed;
+                ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -1079,44 +1079,44 @@ namespace YTMusicWP
 
         private void LtAutoApproveToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            if (LtAutoApproveToggle == null) return;
+            if (ListenTogetherView.LtAutoApproveToggle == null) return;
             var mgr = ListenTogetherManager.Instance;
-            mgr.AutoApproveJoins = LtAutoApproveToggle.IsOn;
+            mgr.AutoApproveJoins = ListenTogetherView.LtAutoApproveToggle.IsOn;
             try
             {
-                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtAutoApprove"] = LtAutoApproveToggle.IsOn;
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtAutoApprove"] = ListenTogetherView.LtAutoApproveToggle.IsOn;
             }
             catch { }
         }
 
         private void LtAutoApproveSuggestionsToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            if (LtAutoApproveSuggestionsToggle == null) return;
+            if (ListenTogetherView.LtAutoApproveSuggestionsToggle == null) return;
             var mgr = ListenTogetherManager.Instance;
-            mgr.AutoApproveSuggestions = LtAutoApproveSuggestionsToggle.IsOn;
+            mgr.AutoApproveSuggestions = ListenTogetherView.LtAutoApproveSuggestionsToggle.IsOn;
             try
             {
-                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtAutoApproveSuggestions"] = LtAutoApproveSuggestionsToggle.IsOn;
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtAutoApproveSuggestions"] = ListenTogetherView.LtAutoApproveSuggestionsToggle.IsOn;
             }
             catch { }
         }
 
         private void LtSyncVolumeToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            if (LtSyncVolumeToggle == null) return;
+            if (ListenTogetherView.LtSyncVolumeToggle == null) return;
             var mgr = ListenTogetherManager.Instance;
-            mgr.SyncVolume = LtSyncVolumeToggle.IsOn;
+            mgr.SyncVolume = ListenTogetherView.LtSyncVolumeToggle.IsOn;
             try
             {
-                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtSyncVolume"] = LtSyncVolumeToggle.IsOn;
+                Windows.Storage.ApplicationData.Current.LocalSettings.Values["LtSyncVolume"] = ListenTogetherView.LtSyncVolumeToggle.IsOn;
             }
             catch { }
         }
 
         private void LtSaveNickname_Click(object sender, RoutedEventArgs e)
         {
-            if (LtSettingsNicknameBox == null) return;
-            string name = LtSettingsNicknameBox.Text.Trim();
+            if (ListenTogetherView.LtSettingsNicknameBox == null) return;
+            string name = ListenTogetherView.LtSettingsNicknameBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(name))
             {
                 ShowToast("Name cannot be empty");
@@ -1125,7 +1125,7 @@ namespace YTMusicWP
 
             var mgr = ListenTogetherManager.Instance;
             mgr.SelfUsername = name;
-            if (LtDisplayNameBox != null) LtDisplayNameBox.Text = name;
+            if (ListenTogetherView.LtDisplayNameBox != null) ListenTogetherView.LtDisplayNameBox.Text = name;
 
             try
             {
@@ -1138,8 +1138,8 @@ namespace YTMusicWP
 
         private async void LtSettingsApplyServer_Click(object sender, RoutedEventArgs e)
         {
-            if (LtSettingsServerUrlBox == null) return;
-            string newUrl = LtSettingsServerUrlBox.Text.Trim();
+            if (ListenTogetherView.LtSettingsServerUrlBox == null) return;
+            string newUrl = ListenTogetherView.LtSettingsServerUrlBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(newUrl) || (!newUrl.StartsWith("ws://") && !newUrl.StartsWith("wss://")))
             {
                 ShowToast("Enter a valid ws:// or wss:// URL");
@@ -1154,10 +1154,10 @@ namespace YTMusicWP
             }
             catch { }
 
-            if (LtSettingsActiveServerText != null)
+            if (ListenTogetherView.LtSettingsActiveServerText != null)
             {
-                LtSettingsActiveServerText.Text = newUrl;
-                LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 229, 255));
+                ListenTogetherView.LtSettingsActiveServerText.Text = newUrl;
+                ListenTogetherView.LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 229, 255));
             }
 
             if (mgr.Connection == ConnectionState.Connected || mgr.Connection == ConnectionState.Connecting)
@@ -1174,7 +1174,7 @@ namespace YTMusicWP
             var mgr = ListenTogetherManager.Instance;
             string defaultUrl = ListenTogetherClient.DefaultServerUrl;
             mgr.Client.ServerUrl = defaultUrl;
-            if (LtSettingsServerUrlBox != null) LtSettingsServerUrlBox.Text = defaultUrl;
+            if (ListenTogetherView.LtSettingsServerUrlBox != null) ListenTogetherView.LtSettingsServerUrlBox.Text = defaultUrl;
 
             try
             {
@@ -1182,10 +1182,10 @@ namespace YTMusicWP
             }
             catch { }
 
-            if (LtSettingsActiveServerText != null)
+            if (ListenTogetherView.LtSettingsActiveServerText != null)
             {
-                LtSettingsActiveServerText.Text = "The Meowery · Poland (Default)";
-                LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
+                ListenTogetherView.LtSettingsActiveServerText.Text = "The Meowery · Poland (Default)";
+                ListenTogetherView.LtSettingsActiveServerText.Foreground = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
             }
 
             if (mgr.Connection == ConnectionState.Connected || mgr.Connection == ConnectionState.Connecting)

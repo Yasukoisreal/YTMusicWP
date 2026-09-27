@@ -1,0 +1,396 @@
+<UserControl
+    x:Class="YTMusicWP.Controls.ListenTogetherPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Listen Together screen. Named elements are x:FieldModifier="internal" because MainPage.ListenTogether.cs
+         still drives them directly, e.g. ListenTogetherView.LtRoomPanel. -->
+
+    <UserControl.Resources>
+        <!-- Same implicit fonts as MainPage (page-level implicit styles are not guaranteed to reach inside a UserControl) -->
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MontserratRegular}"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="FontFamily" Value="{StaticResource MontserratRegular}"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="{StaticResource MontserratMedium}"/>
+        </Style>
+
+        <Storyboard x:Name="ListenTogetherSlideInStoryboard" x:FieldModifier="internal">
+            <DoubleAnimation Storyboard.TargetName="ListenTogetherTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.3">
+                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+    </UserControl.Resources>
+
+    <Grid Background="#0C0F14">
+        <Grid.RenderTransform>
+            <TranslateTransform x:Name="ListenTogetherTransform" Y="1000"/>
+        </Grid.RenderTransform>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Header (Back + Settings) -->
+        <Grid Grid.Row="0" Margin="10,15,10,0">
+            <Button Click="CloseListenTogetherView_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" HorizontalAlignment="Left" AutomationProperties.Name="Back">
+                <Viewbox Width="18" Height="18">
+                    <Path Data="M20,11V13H8L13.5,18.5 12.08,19.92 4.16,12 12.08,4.08 13.5,5.5 8,11H20Z" Fill="White"/>
+                </Viewbox>
+            </Button>
+            <Button Click="LtOpenSettings_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" HorizontalAlignment="Right" AutomationProperties.Name="Settings">
+                <SymbolIcon Symbol="Setting" Foreground="White"/>
+            </Button>
+        </Grid>
+
+        <!-- Main Scroll Content -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="20,0,20,30">
+            <StackPanel>
+                <!-- Title Block -->
+                <TextBlock Text="Listen Together" FontSize="28" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,4,0,4"/>
+                <TextBlock Text="One song, one position, together. Create a room and share the code with friends." FontSize="13" Foreground="#A0A0A0" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                <!-- Server Connection Card -->
+                <Border Background="#1C212B" CornerRadius="12" Padding="14,10" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Ellipse x:Name="LtConnectionDot" x:FieldModifier="internal" Width="8" Height="8" Fill="#888888" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="LtConnectionStatusText" x:FieldModifier="internal" Text="Not connected" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White"/>
+                            <TextBlock Text="The Meowery · Poland" FontSize="11" Foreground="#888888"/>
+                        </StackPanel>
+                        <Button x:Name="LtConnectBtn" x:FieldModifier="internal" Grid.Column="2" Content="Connect" Click="LtConnect_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="#00E5FF" FontSize="12" Padding="12,6" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Error Banner -->
+                <Border x:Name="LtErrorBanner" x:FieldModifier="internal" Visibility="Collapsed" Background="#3D1A1A" BorderBrush="#FF5B5B" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="LtErrorMessageText" x:FieldModifier="internal" Foreground="#FF5B5B" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        <Button Grid.Column="1" Content="✕" Click="LtDismissError_Click" Style="{StaticResource IconButtonStyle}" Foreground="#FF5B5B" FontSize="12" Width="30" Height="30"/>
+                    </Grid>
+                </Border>
+
+                <!-- ── LOBBY PANEL (When not in a room) ── -->
+                <StackPanel x:Name="LtLobbyPanel" x:FieldModifier="internal">
+                    <!-- Waiting for Host Approval Card -->
+                    <Border x:Name="LtWaitingApprovalCard" x:FieldModifier="internal" Visibility="Collapsed" Background="#262115" BorderBrush="#FFB800" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="Waiting for host approval…" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#FFB800" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="LtWaitingCodeText" x:FieldModifier="internal" Text="ABCD EFGH" FontSize="26" FontFamily="Consolas" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="0,6,0,6"/>
+                            <TextBlock Text="The host must accept your request before playback can sync." FontSize="11" Foreground="#A0A0A0" TextWrapping="Wrap" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,10"/>
+                            <Button Content="Cancel request" Click="LtCancelJoin_Click" Style="{StaticResource ChipButtonStyle}" Background="#3A301A" Foreground="#FFB800" Padding="12,6" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Display Name Field -->
+                    <TextBlock Text="Display name" FontSize="12" Foreground="#A0A0A0" Margin="0,0,0,6"/>
+                    <TextBox x:Name="LtDisplayNameBox" x:FieldModifier="internal" PlaceholderText="Enter your nickname" Background="#1C212B" Foreground="White" BorderThickness="1" BorderBrush="#2B3242" Height="44" Padding="12,8" Margin="0,0,0,4"/>
+                    <TextBlock Text="The name everyone in the room sees" FontSize="11" Foreground="#666666" Margin="0,0,0,14"/>
+
+                    <!-- Create Room Button -->
+                    <Button x:Name="LtCreateRoomBtn" x:FieldModifier="internal" Content="Create room" Click="LtCreateRoom_Click" Style="{StaticResource ChipButtonStyle}" Background="White" Foreground="#0F0F0F" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Height="46" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
+
+                    <!-- Divider -->
+                    <Grid Margin="0,0,0,16">
+                        <Rectangle Height="1" Fill="#2B3242" VerticalAlignment="Center"/>
+                        <Border Background="#0C0F14" HorizontalAlignment="Center" Padding="10,0">
+                            <TextBlock Text="or join with a code" FontSize="12" Foreground="#888888"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- OTP Code Input Boxes -->
+                    <Grid Tapped="LtCodeBoxes_Tapped" Margin="0,0,0,14">
+                        <!-- Hidden input box taking the actual focus & typing -->
+                        <TextBox x:Name="LtHiddenCodeBox" x:FieldModifier="internal" Opacity="0.01" Height="44" HorizontalAlignment="Stretch" TextChanged="LtHiddenCodeBox_TextChanged" MaxLength="8"/>
+
+                        <!-- 8 Visible stylized boxes -->
+                        <Grid HorizontalAlignment="Stretch" IsHitTestVisible="False">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="4"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="LtBorder0" x:FieldModifier="internal" Grid.Column="0" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit0" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="LtBorder1" x:FieldModifier="internal" Grid.Column="2" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit1" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="LtBorder2" x:FieldModifier="internal" Grid.Column="4" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit2" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="LtBorder3" x:FieldModifier="internal" Grid.Column="6" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit3" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+
+                            <Border x:Name="LtBorder4" x:FieldModifier="internal" Grid.Column="8" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit4" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="LtBorder5" x:FieldModifier="internal" Grid.Column="10" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit5" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="LtBorder6" x:FieldModifier="internal" Grid.Column="12" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit6" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border x:Name="LtBorder7" x:FieldModifier="internal" Grid.Column="14" Background="#1C212B" BorderBrush="#2B3242" BorderThickness="1" CornerRadius="8" Height="46">
+                                <TextBlock x:Name="LtDigit7" x:FieldModifier="internal" Text="" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Join Room Button -->
+                    <Button x:Name="LtJoinRoomBtn" x:FieldModifier="internal" Content="Join room" Click="LtJoinRoom_Click" Style="{StaticResource ChipButtonStyle}" Background="#1C212B" Foreground="White" BorderBrush="#2B3242" BorderThickness="1" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Height="46" HorizontalAlignment="Stretch" Margin="0,0,0,16"/>
+
+                    <!-- Settings Link Card -->
+                    <Border Background="#1C212B" CornerRadius="12" Padding="14,12" Margin="0,0,0,16" Tapped="LtSettingsCard_Tapped">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Width="36" Height="36" CornerRadius="18" Background="#2B3242" Margin="0,0,12,0">
+                                <SymbolIcon Symbol="Setting" Foreground="#00E5FF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Settings" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White"/>
+                                <TextBlock Text="Server URL, Auto-approval &amp; Sync" FontSize="11" Foreground="#888888"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="#666666" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Warning Notice -->
+                    <TextBlock Text="Leaving the app or switching away for too long will disconnect you from the room." FontSize="11" Foreground="#666666" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <!-- ── ROOM PANEL (When active in a room) ── -->
+                <StackPanel x:Name="LtRoomPanel" x:FieldModifier="internal" Visibility="Collapsed">
+                    <!-- Room Code Poster -->
+                    <Border Background="#1C212B" CornerRadius="16" Padding="18,14" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="ROOM CODE" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954"/>
+                            <TextBlock x:Name="LtRoomCodePoster" x:FieldModifier="internal" Text="ABCD EFGH" FontSize="36" FontFamily="Consolas" FontWeight="Bold" Foreground="White" Margin="0,2,0,4"/>
+                            <TextBlock x:Name="LtRoomRoleText" x:FieldModifier="internal" Text="You are the host · 1 listening" FontSize="12" Foreground="#A0A0A0" Margin="0,0,0,12"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="📋 Copy Code" Click="LtCopyCode_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="White" FontSize="12" Padding="12,6" Margin="0,0,8,0"/>
+                                <Button Content="↗ Share" Click="LtShareCode_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="White" FontSize="12" Padding="12,6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Buffer Barrier Banner -->
+                    <Border x:Name="LtBufferBanner" x:FieldModifier="internal" Visibility="Collapsed" Background="#262115" BorderBrush="#FFB800" BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock x:Name="LtBufferBannerText" x:FieldModifier="internal" Text="Waiting for everyone…" FontSize="13" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#FFB800"/>
+                            <TextBlock Text="Playback resumes when everyone finishes loading" FontSize="11" Foreground="#A0A0A0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Join Requests Section (Host only) -->
+                    <StackPanel x:Name="LtJoinRequestsSection" x:FieldModifier="internal" Visibility="Collapsed" Margin="0,0,0,14">
+                        <TextBlock Text="JOIN REQUESTS" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954" Margin="0,0,0,8"/>
+                        <ItemsControl x:Name="LtJoinRequestsList" x:FieldModifier="internal">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#1C212B" CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="32" Height="32" CornerRadius="16" Background="#2B3242" Margin="0,0,10,0">
+                                                <TextBlock Text="{Binding Initial}" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Username}" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White"/>
+                                                <TextBlock Text="Wants to join" FontSize="11" Foreground="#888888"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Content="✓" Click="LtApproveJoin_Click" Style="{StaticResource ChipButtonStyle}" Background="#1DB954" Foreground="Black" FontWeight="Bold" Width="32" Height="32" Padding="0" Margin="0,0,6,0"/>
+                                            <Button Grid.Column="3" Content="✕" Click="LtRejectJoin_Click" Style="{StaticResource ChipButtonStyle}" Background="#FF3B30" Foreground="White" FontWeight="Bold" Width="32" Height="32" Padding="0"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Room Members Section -->
+                    <TextBlock Text="MEMBERS IN ROOM" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                    <ItemsControl x:Name="LtMembersList" x:FieldModifier="internal">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#1C212B" CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="34" Height="34" CornerRadius="17" Background="#2B3242" Margin="0,0,10,0">
+                                            <TextBlock Text="{Binding Initial}" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Username}" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White"/>
+                                            <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="#A0A0A0"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Content="Remove" Click="LtKickMember_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="#FF5B5B" FontSize="11" Padding="8,4" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Leave Room Button -->
+                    <Button Content="Leave room" Click="LtLeaveRoom_Click" Style="{StaticResource ChipButtonStyle}" Background="#3D1A1A" Foreground="#FF5B5B" BorderBrush="#FF5B5B" BorderThickness="1" FontWeight="Bold" FontSize="13" Height="44" HorizontalAlignment="Stretch" Margin="0,20,0,0"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ── SETTINGS OVERLAY PANEL ── -->
+        <Grid x:Name="LtSettingsPanel" x:FieldModifier="internal" Grid.Row="0" Grid.RowSpan="2" Canvas.ZIndex="10" Visibility="Collapsed" Background="#0C0F14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Settings Header -->
+            <Grid Grid.Row="0" Margin="10,15,10,10">
+                <Button Click="LtCloseSettings_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" HorizontalAlignment="Left" AutomationProperties.Name="Back">
+                    <Viewbox Width="18" Height="18">
+                        <Path Data="M20,11V13H8L13.5,18.5 12.08,19.92 4.16,12 12.08,4.08 13.5,5.5 8,11H20Z" Fill="White"/>
+                    </Viewbox>
+                </Button>
+                <TextBlock Text="Settings" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" Margin="55,0,0,0"/>
+            </Grid>
+
+            <!-- Settings Content -->
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Padding="20,0,20,30">
+                <StackPanel>
+                    <!-- PROFILE / NICKNAME -->
+                    <TextBlock Text="PROFILE" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                    <Border Background="#1C212B" CornerRadius="12" Padding="14,14" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Default Display Name" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            <TextBlock Text="The name others see in room lobby and member list" Foreground="#666666" FontSize="11" Margin="0,2,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="LtSettingsNicknameBox" x:FieldModifier="internal" PlaceholderText="Enter nickname" Background="#2B3242" Foreground="White" BorderThickness="0" Height="40" Padding="10,6" Margin="0,0,8,0"/>
+                                <Button Grid.Column="1" Content="Save" Click="LtSaveNickname_Click" Style="{StaticResource ChipButtonStyle}" Background="#1DB954" Foreground="Black" FontWeight="Bold" Height="40" Padding="14,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- HOST PREFERENCES -->
+                    <TextBlock Text="HOST OPTIONS" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                    <Border Background="#1C212B" CornerRadius="12" Padding="14,12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <!-- Auto-approve Joins -->
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="Auto-approve joins" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Automatically accept join requests from friends" Foreground="#666666" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="LtAutoApproveToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center" Toggled="LtAutoApproveToggle_Toggled"/>
+                            </Grid>
+                            <Rectangle Height="1" Fill="#2B3242" Margin="0,10,0,10"/>
+
+                            <!-- Auto-approve Suggestions -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                    <TextBlock Text="Auto-approve suggestions" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                    <TextBlock Text="Allow members to queue recommended songs" Foreground="#666666" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch x:Name="LtAutoApproveSuggestionsToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center" Toggled="LtAutoApproveSuggestionsToggle_Toggled"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- PLAYBACK SYNC -->
+                    <TextBlock Text="PLAYBACK SYNC" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                    <Border Background="#1C212B" CornerRadius="12" Padding="14,12" Margin="0,0,0,16">
+                        <Grid Margin="0,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                <TextBlock Text="Sync host volume" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock Text="Keep device volume synchronized with host" Foreground="#666666" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="LtSyncVolumeToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center" Toggled="LtSyncVolumeToggle_Toggled"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- SERVER CONFIGURATION -->
+                    <TextBlock Text="SERVER CONFIGURATION" FontSize="11" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,8"/>
+                    <Border Background="#1C212B" CornerRadius="12" Padding="14,14" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Active Server" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}"/>
+                            <TextBlock x:Name="LtSettingsActiveServerText" x:FieldModifier="internal" Text="The Meowery · Poland (Default)" Foreground="#1DB954" FontSize="12" Margin="0,2,0,10"/>
+
+                            <TextBlock Text="Custom Server URL" Foreground="#A0A0A0" FontSize="12" Margin="0,0,0,6"/>
+                            <TextBox x:Name="LtSettingsServerUrlBox" x:FieldModifier="internal" PlaceholderText="wss://..." Background="#2B3242" Foreground="White" BorderThickness="0" Height="40" Padding="10,6" Margin="0,0,0,10"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="LtSettingsApplyServerBtn" x:FieldModifier="internal" Grid.Column="0" Content="Apply URL" Click="LtSettingsApplyServer_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="#00E5FF" Height="38" HorizontalAlignment="Stretch"/>
+                                <Button x:Name="LtSettingsResetServerBtn" x:FieldModifier="internal" Grid.Column="2" Content="Reset Default" Click="LtSettingsResetServer_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="#A0A0A0" Height="38" HorizontalAlignment="Stretch"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- PROTOCOL INFO -->
+                    <Border Background="#141820" CornerRadius="12" Padding="14,12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Compatible with MetroList &amp; SimpMusic" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                            <TextBlock Text="Protocol: metroproto v1 (Binary Proto3 over WebSocket)" FontSize="11" Foreground="#666666" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>
