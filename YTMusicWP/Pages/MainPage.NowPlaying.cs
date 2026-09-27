@@ -98,7 +98,7 @@ namespace YTMusicWP
         {
             for (int i = 0; i < currentLyrics.Count; i++)
             {
-                currentLyrics[i].FontSize = currentLyrics[i].IsInterlude ? (_lyricFontSize * 1.35) : _lyricFontSize;
+                currentLyrics[i].FontSize = GetLyricLineFontSize(currentLyrics[i]);
             }
         }
 

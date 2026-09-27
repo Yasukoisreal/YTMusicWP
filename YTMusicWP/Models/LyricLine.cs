@@ -9,6 +9,7 @@ namespace YTMusicWP
         public TimeSpan Time { get; set; }
         public TimeSpan EndTime { get; set; }
         public bool IsInterlude { get; set; }
+        public bool IsBackground { get; set; }
         public System.Collections.Generic.List<LyricWord> Words { get; set; }
         public bool HasWords { get { return Words != null && Words.Count > 0; } }
 
@@ -35,6 +36,13 @@ namespace YTMusicWP
 
         private Windows.UI.Text.FontWeight _fontWeight = Windows.UI.Text.FontWeights.Normal;
         public Windows.UI.Text.FontWeight FontWeight { get { return _fontWeight; } set { if (_fontWeight.Weight != value.Weight) { _fontWeight = value; OnPropertyChanged("FontWeight"); } } }
+
+        private Windows.UI.Text.FontStyle _fontStyle = Windows.UI.Text.FontStyle.Normal;
+        public Windows.UI.Text.FontStyle FontStyle { get { return _fontStyle; } set { if (_fontStyle != value) { _fontStyle = value; OnPropertyChanged("FontStyle"); } } }
+
+        // Dòng dấu chấm dạo nhạc chỉ hiện khi đang tới lượt nó; ngoài ra thu gọn hẳn (không chiếm chỗ)
+        private Windows.UI.Xaml.Visibility _lineVisibility = Windows.UI.Xaml.Visibility.Visible;
+        public Windows.UI.Xaml.Visibility LineVisibility { get { return _lineVisibility; } set { if (_lineVisibility != value) { _lineVisibility = value; OnPropertyChanged("LineVisibility"); } } }
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name)

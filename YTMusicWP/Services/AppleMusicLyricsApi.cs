@@ -140,11 +140,18 @@ namespace YTMusicWP.Services
                     TimeSpan lineStartTime = TimeSpan.FromSeconds(startTime);
                     TimeSpan lineEndTimeVal = endTime > 0 ? TimeSpan.FromSeconds(endTime) : (words.Count > 0 ? words[words.Count - 1].EndTime : TimeSpan.Zero);
 
+                    // Apple TTML đánh dấu giọng bè bằng ttm:role="x-bg", thường đặt trên <span> bọc cả dòng chứ không phải trên <p>
+                    bool isSecondary = IsBackgroundRole(GetRoleAttribute(el))
+                                    || IsWholeLineBackgroundSpan(el)
+                                    || (lineText.StartsWith("(") && lineText.EndsWith(")"));
+
                     parsedLines.Add(new LyricLine
                     {
                         Time = lineStartTime,
                         EndTime = lineEndTimeVal,
                         Text = lineText,
+                        IsBackground = isSecondary,
+                        FontStyle = isSecondary ? Windows.UI.Text.FontStyle.Italic : Windows.UI.Text.FontStyle.Normal,
                         Words = (words.Count > 0) ? words : null
                     });
                 }
@@ -166,12 +173,12 @@ namespace YTMusicWP.Services
                     {
                         Time = TimeSpan.FromSeconds(introStart),
                         EndTime = parsedLines[0].Time,
-                        Text = "•   •   •",
+                        Text = "• • •",
                         IsInterlude = true,
                         Words = new List<LyricWord>
                         {
-                            new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(introStart), EndTime = TimeSpan.FromSeconds(introStart + step) },
-                            new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(introStart + step), EndTime = TimeSpan.FromSeconds(introStart + step * 2) },
+                            new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(introStart), EndTime = TimeSpan.FromSeconds(introStart + step) },
+                            new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(introStart + step), EndTime = TimeSpan.FromSeconds(introStart + step * 2) },
                             new LyricWord { Text = "•",     StartTime = TimeSpan.FromSeconds(introStart + step * 2), EndTime = parsedLines[0].Time }
                         }
                     });
@@ -205,12 +212,12 @@ namespace YTMusicWP.Services
                             {
                                 Time = TimeSpan.FromSeconds(dotsStart),
                                 EndTime = next.Time,
-                                Text = "•   •   •",
+                                Text = "• • •",
                                 IsInterlude = true,
                                 Words = new List<LyricWord>
                                 {
-                                    new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(dotsStart), EndTime = TimeSpan.FromSeconds(dotsStart + step) },
-                                    new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(dotsStart + step), EndTime = TimeSpan.FromSeconds(dotsStart + step * 2) },
+                                    new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(dotsStart), EndTime = TimeSpan.FromSeconds(dotsStart + step) },
+                                    new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(dotsStart + step), EndTime = TimeSpan.FromSeconds(dotsStart + step * 2) },
                                     new LyricWord { Text = "•",     StartTime = TimeSpan.FromSeconds(dotsStart + step * 2), EndTime = next.Time }
                                 }
                             });
@@ -245,6 +252,43 @@ namespace YTMusicWP.Services
                 Debug.WriteLine("TTML Parse Error: " + ex.Message);
             }
             return null;
+        }
+
+        private static string GetRoleAttribute(XmlElement el)
+        {
+            string role = el.GetAttribute("ttm:role");
+            if (string.IsNullOrEmpty(role)) role = el.GetAttribute("role");
+            return role;
+        }
+
+        private static bool IsBackgroundRole(string role)
+        {
+            if (string.IsNullOrEmpty(role)) return false;
+            return role.IndexOf("x-bg", StringComparison.OrdinalIgnoreCase) >= 0
+                || role.IndexOf("background", StringComparison.OrdinalIgnoreCase) >= 0
+                || role.IndexOf("secondary", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>True khi mọi phần tử con của &lt;p&gt; đều là span mang vai trò giọng bè.</summary>
+        private static bool IsWholeLineBackgroundSpan(XmlElement p)
+        {
+            if (p.ChildNodes == null) return false;
+            bool sawElement = false;
+            foreach (var child in p.ChildNodes)
+            {
+                if (child.NodeType == NodeType.ElementNode)
+                {
+                    var el = child as XmlElement;
+                    if (el == null || !IsBackgroundRole(GetRoleAttribute(el))) return false;
+                    sawElement = true;
+                }
+                else if (child.NodeType == NodeType.TextNode)
+                {
+                    var txt = child.NodeValue as string;
+                    if (!string.IsNullOrWhiteSpace(txt)) return false;
+                }
+            }
+            return sawElement;
         }
 
         private static void CollectSpans(IXmlNode node, List<LyricWord> words, double lineStart, double lineEnd)

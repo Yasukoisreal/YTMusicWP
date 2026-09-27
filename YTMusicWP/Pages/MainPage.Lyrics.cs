@@ -41,10 +41,52 @@ namespace YTMusicWP
         {
             public TimeSpan StartTime;
             public TimeSpan EndTime;
+            public int WordIndex;
         }
 
-        private readonly List<LyricCharInfo> _regularActiveLineChars = new List<LyricCharInfo>(128);
-        private readonly List<LyricCharInfo> _fsActiveLineChars = new List<LyricCharInfo>(128);
+
+        // ── Spicy-Lyrics-style per-word animation overlay ──
+        // Run trong TextBlock không có transform riêng, nên khi một dòng word-by-word được hát, ta đo vị trí thật
+        // của từng từ (TextPointer.GetCharacterRect) rồi phủ lên đúng chỗ đó mỗi từ một TextBlock riêng:
+        //   • từ:        gradient trắng quét mượt (mép mềm 20%), phóng 1.00 → 1.045 → 1.00 + nhấc rất nhẹ, dừng kiểu lò xo
+        //   • dấu chấm:  nghỉ ở 0.75 / 35% → tới lượt thì nảy lên 1.05 + nhấc + sáng dần; cuối đoạn cả nhóm thu lại rồi biến mất
+        // Toàn bộ chạy bằng Storyboard (60fps), timer 60ms chỉ quyết định khi nào từ nào bắt đầu.
+        private static readonly Windows.UI.Color _wordDimColor = Windows.UI.Color.FromArgb(92, 255, 255, 255);
+        private static readonly SolidColorBrush _wordHiddenBrush = new SolidColorBrush(Windows.UI.Colors.Transparent);
+        private static readonly SolidColorBrush _dotBrush = new SolidColorBrush(Windows.UI.Colors.White);
+
+        private sealed class WordVisual
+        {
+            public TextBlock Text;
+            public CompositeTransform Transform;
+            public GradientStop LitStop, DimStop;           // null với dấu chấm
+            public Windows.UI.Xaml.Media.Animation.Storyboard Anim;
+            public TimeSpan Start, End;
+            public int State = -1;                           // 0 = chưa hát, 1 = đang hát, 2 = đã hát
+        }
+
+        private sealed class WordOverlayState
+        {
+            public int LineIndex = -1;
+            public bool Pending;                             // đã dựng run từng ký tự, chờ layout để đo vị trí từ
+            public readonly List<LyricCharInfo> Chars = new List<LyricCharInfo>(128);
+            public TextBlock Sharp;
+            public Canvas Layer;
+            public bool IsInterlude;
+            public double BuiltWidth, BuiltFontSize;
+            public TimeSpan LineEnd;
+            public Windows.UI.Xaml.Media.Animation.Storyboard GroupExit; // chỉ dùng cho dấu chấm
+            public bool GroupExitStarted;
+            public readonly List<WordVisual> Words = new List<WordVisual>(16);
+        }
+
+        // Nhiều dòng chạy song song: dòng hiện tại + dòng vừa qua đang chạy nốt chữ cuối + dòng hát chồng (song ca/bè)
+        private readonly List<WordOverlayState> _regularOverlays = new List<WordOverlayState>(3);
+        private readonly List<WordOverlayState> _fsOverlays = new List<WordOverlayState>(3);
+        private readonly List<int> _liveLineScratch = new List<int>(4);
+        private readonly Dictionary<Canvas, Windows.UI.Xaml.Media.Animation.Storyboard> _retiringLayers =
+            new Dictionary<Canvas, Windows.UI.Xaml.Media.Animation.Storyboard>();
+        private const double RetireFadeMs = 280;
 
         private DispatcherTimer _lyricsWordTimer;
 
@@ -223,11 +265,29 @@ namespace YTMusicWP
                     return new string[] { null, arr[0]["plainLyrics"]?.ToString() };
                 };
 
+                // Lưu vào LRU cache
+                Action<string, string, List<LyricLine>> cacheLyrics = (synced, plain, lines) =>
+                {
+                    if (_lyricsCache.ContainsKey(cacheKey))
+                    {
+                        _lyricsCacheOrder.Remove(cacheKey);
+                    }
+                    else if (_lyricsCacheOrder.Count >= MAX_LYRICS_CACHE)
+                    {
+                        string oldest = _lyricsCacheOrder[0];
+                        _lyricsCacheOrder.RemoveAt(0);
+                        _lyricsCache.Remove(oldest);
+                    }
+                    _lyricsCacheOrder.Add(cacheKey);
+                    _lyricsCache[cacheKey] = new LyricsCacheEntry { Synced = synced, Plain = plain, Lines = lines };
+                };
+
                 // --- APPLE MUSIC LYRICS (TTML) ---
                 AppleMusicLyricsResult amResult = null;
+                List<LyricLine> amLineSyncedLines = null; // Apple Music chỉ có đồng bộ theo dòng → để dành, ưu tiên thử KuGou word-by-word trước
+                int durSecs = 0;
                 try
                 {
-                    int durSecs = 0;
                     for (int attempt = 0; attempt < 5; attempt++)
                     {
                         try { durSecs = (int)Math.Round(_appMediaPlayer.NaturalDuration.TotalSeconds); } catch { }
@@ -249,33 +309,52 @@ namespace YTMusicWP
                             var displayLines = new List<LyricLine>(amResult.Lines.Count + 2);
                             foreach (var l in amResult.Lines)
                             {
-                                l.FontSize = l.IsInterlude ? (_lyricFontSize * 1.35) : _lyricFontSize;
+                                l.FontSize = l.IsInterlude ? (_lyricFontSize * InterludeFontScale) : _lyricFontSize;
                                 displayLines.Add(l);
                             }
                             displayLines.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "Lyrics provided by Apple Music", FontSize = _lyricFontSize * 0.65 });
                             displayLines.Add(new LyricLine { Time = TimeSpan.FromHours(2), Text = "", FontSize = _lyricFontSize });
 
-                            // Cache for later (LRU)
-                            if (_lyricsCache.ContainsKey(cacheKey))
+                            if (amResult.HasWordSync)
                             {
-                                _lyricsCacheOrder.Remove(cacheKey);
+                                cacheLyrics(syncedLyrics, plainLyrics, displayLines);
+                                DisplayLoadedLyrics(displayLines);
+                                LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                                return;
                             }
-                            else if (_lyricsCacheOrder.Count >= MAX_LYRICS_CACHE)
-                            {
-                                string oldest = _lyricsCacheOrder[0];
-                                _lyricsCacheOrder.RemoveAt(0);
-                                _lyricsCache.Remove(oldest);
-                            }
-                            _lyricsCacheOrder.Add(cacheKey);
-                            _lyricsCache[cacheKey] = new LyricsCacheEntry { Synced = syncedLyrics, Plain = plainLyrics, Lines = displayLines };
-
-                            DisplayLoadedLyrics(displayLines);
-                            LyricsLoadingBar.Visibility = Visibility.Collapsed;
-                            return;
+                            amLineSyncedLines = displayLines;
                         }
                     }
                 }
                 catch { }
+
+                // --- KUGOU (KRC word-by-word) — khi Apple Music không có lyrics theo từ ---
+                KuGouLyricsApi.Result kgResult = null;
+                try
+                {
+                    kgResult = await KuGouLyricsApi.GetLyricsAsync(cleanTitle, cleanArtist, durSecs, token);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch { }
+                token.ThrowIfCancellationRequested();
+
+                if (kgResult != null && kgResult.HasWordSync)
+                {
+                    System.Diagnostics.Debug.WriteLine("Fetched word-synced lyrics from KuGou (KRC)");
+                    string kgSynced = kgResult.Lrc + "\n[99:99.99] Lyrics provided by KuGou";
+                    cacheLyrics(kgSynced, null, null);
+                    ParseAndDisplaySyncedLyrics(kgSynced);
+                    LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                if (amLineSyncedLines != null)
+                {
+                    cacheLyrics(syncedLyrics, plainLyrics, amLineSyncedLines);
+                    DisplayLoadedLyrics(amLineSyncedLines);
+                    LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                    return;
+                }
 
                 if (string.IsNullOrWhiteSpace(syncedLyrics) && string.IsNullOrWhiteSpace(plainLyrics))
                 {
@@ -366,6 +445,12 @@ namespace YTMusicWP
 
                 }
                 token.ThrowIfCancellationRequested();
+
+                // KuGou LRC theo dòng: mạnh ở nhạc châu Á, dùng khi LRCLIB không có bản đồng bộ
+                if (string.IsNullOrWhiteSpace(syncedLyrics) && kgResult != null && !string.IsNullOrWhiteSpace(kgResult.Lrc))
+                {
+                    syncedLyrics = kgResult.Lrc + "\n[99:99.99] Lyrics provided by KuGou";
+                }
 
                 if (!string.IsNullOrWhiteSpace(syncedLyrics) || !string.IsNullOrWhiteSpace(plainLyrics))
                 {
@@ -517,13 +602,13 @@ namespace YTMusicWP
                     {
                         Time = TimeSpan.FromSeconds(introStart),
                         EndTime = parsedLines[0].Time,
-                        Text = "•   •   •",
+                        Text = "• • •",
                         IsInterlude = true,
-                        FontSize = _lyricFontSize * 1.35,
+                        FontSize = _lyricFontSize * InterludeFontScale,
                         Words = new List<LyricWord>
                         {
-                            new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(introStart), EndTime = TimeSpan.FromSeconds(introStart + step) },
-                            new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(introStart + step), EndTime = TimeSpan.FromSeconds(introStart + step * 2) },
+                            new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(introStart), EndTime = TimeSpan.FromSeconds(introStart + step) },
+                            new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(introStart + step), EndTime = TimeSpan.FromSeconds(introStart + step * 2) },
                             new LyricWord { Text = "•",     StartTime = TimeSpan.FromSeconds(introStart + step * 2), EndTime = parsedLines[0].Time }
                         }
                     });
@@ -544,13 +629,13 @@ namespace YTMusicWP
                             {
                                 Time = TimeSpan.FromSeconds(curEnd),
                                 EndTime = next.Time,
-                                Text = "•   •   •",
+                                Text = "• • •",
                                 IsInterlude = true,
-                                FontSize = _lyricFontSize * 1.35,
+                                FontSize = _lyricFontSize * InterludeFontScale,
                                 Words = new List<LyricWord>
                                 {
-                                    new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(curEnd), EndTime = TimeSpan.FromSeconds(curEnd + step) },
-                                    new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(curEnd + step), EndTime = TimeSpan.FromSeconds(curEnd + step * 2) },
+                                    new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(curEnd), EndTime = TimeSpan.FromSeconds(curEnd + step) },
+                                    new LyricWord { Text = "• ", StartTime = TimeSpan.FromSeconds(curEnd + step), EndTime = TimeSpan.FromSeconds(curEnd + step * 2) },
                                     new LyricWord { Text = "•",     StartTime = TimeSpan.FromSeconds(curEnd + step * 2), EndTime = next.Time }
                                 }
                             });
@@ -567,6 +652,7 @@ namespace YTMusicWP
 
         private void DisplayLoadedLyrics(List<LyricLine> lines)
         {
+            ResetAllLyricEffects();
             if (LyricsListView != null) LyricsListView.ItemsSource = null;
             if (FullscreenLyricsListView != null) FullscreenLyricsListView.ItemsSource = null;
 
@@ -575,11 +661,15 @@ namespace YTMusicWP
             {
                 for (int i = 0; i < lines.Count; i++)
                 {
-                    if (lines[i].IsInterlude)
+                    var l = lines[i];
+                    // Lời bè "(Ah-ah, ah-ah)": nhận diện cho mọi nguồn lyrics, không chỉ TTML của Apple Music
+                    if (!l.IsInterlude && !l.IsBackground && IsParenthesizedLine(l.Text))
                     {
-                        lines[i].FontSize = _lyricFontSize * 1.35;
+                        l.IsBackground = true;
+                        l.FontStyle = Windows.UI.Text.FontStyle.Italic;
                     }
-                    currentLyrics.Add(lines[i]);
+                    l.FontSize = GetLyricLineFontSize(l);
+                    currentLyrics.Add(l);
                 }
             }
 
@@ -681,24 +771,16 @@ namespace YTMusicWP
                 st.ScaleY = targetScale;
             }
 
+            SyncRecycledContainerVisibility(args);
+            ReleaseLyricEffectsInContainer(args.ItemContainer, args.ItemIndex, false);
+
+            // Dòng không có overlay đang sống → trả chữ gốc. Dòng đang hát do bộ quản lý overlay dựng ở tick kế tiếp.
             var sharpText = FindChildByName(args.ItemContainer, "LyricSharpText") as TextBlock;
-            if (sharpText != null)
+            if (sharpText != null && !IsSharpInOverlay(sharpText, false) && sharpText.Inlines.Count > 0)
             {
                 var line = args.Item as LyricLine;
-                if (args.ItemIndex != currentLyricIndex)
-                {
-                    if (sharpText.Inlines.Count > 0)
-                    {
-                        sharpText.Inlines.Clear();
-                        if (line != null) sharpText.Text = line.Text ?? "";
-                    }
-                }
-                else if (line != null && line.HasWords)
-                {
-                    TimeSpan pos = TimeSpan.Zero;
-                    try { if (_appMediaPlayer != null) pos = _appMediaPlayer.Position; } catch { }
-                    SetupWordInlines(sharpText, line, pos, false);
-                }
+                sharpText.Inlines.Clear();
+                if (line != null) sharpText.Text = line.Text ?? "";
             }
         }
 
@@ -827,6 +909,27 @@ namespace YTMusicWP
         {
             if (currentLyrics == null || currentLyrics.Count == 0) return;
 
+            // Dấu chấm dạo nhạc: chỉ hiện đúng lúc tới đoạn đó, còn lại thu gọn hẳn.
+            // Phải ẩn cả ListViewItem (container) vì container mặc định vẫn giữ chiều cao khi nội dung bị ẩn.
+            bool regularChanged = false, fsChanged = false;
+            for (int i = 0; i < currentLyrics.Count; i++)
+            {
+                if (currentLyrics[i].IsInterlude)
+                {
+                    var vis = (i == currentLyricIndex) ? Visibility.Visible : Visibility.Collapsed;
+                    currentLyrics[i].LineVisibility = vis;
+                    regularChanged |= SetLyricContainerVisibility(LyricsListView, i, vis);
+                    fsChanged |= SetLyricContainerVisibility(FullscreenLyricsListView, i, vis);
+                }
+            }
+            // Tính lại layout ngay: auto-scroll căn giữa và phép đo vị trí từ/chấm ngay sau đó cần kích thước mới
+            try
+            {
+                if (regularChanged && LyricsListView != null) LyricsListView.UpdateLayout();
+                if (fsChanged && FullscreenLyricsListView != null) FullscreenLyricsListView.UpdateLayout();
+            }
+            catch { }
+
             if (_isAppleMusicStyle)
             {
                 int startIdx = 0;
@@ -844,14 +947,14 @@ namespace YTMusicWP
 
                     if (currentLyricIndex < 0)
                     {
-                        currentLyrics[i].Opacity = 0.50;
+                        currentLyrics[i].Opacity = LineOpacity(currentLyrics[i], 0.50);
                         currentLyrics[i].BlurOpacity = 0.0;
                         currentLyrics[i].FarBlurOpacity = 0.0;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
                     }
                     else if (i == currentLyricIndex)
                     {
-                        currentLyrics[i].Opacity = 1.0;
+                        currentLyrics[i].Opacity = LineOpacity(currentLyrics[i], 1.0);
                         currentLyrics[i].BlurOpacity = 0.0;
                         currentLyrics[i].FarBlurOpacity = 0.0;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
@@ -915,7 +1018,7 @@ namespace YTMusicWP
                             }
                         }
 
-                        currentLyrics[i].Opacity = coreOp;
+                        currentLyrics[i].Opacity = LineOpacity(currentLyrics[i], coreOp);
                         currentLyrics[i].BlurOpacity = nearBlur;
                         currentLyrics[i].FarBlurOpacity = farBlur;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
@@ -930,14 +1033,14 @@ namespace YTMusicWP
                     {
                         currentLyrics[oldIndex].BlurOpacity = 0.0;
                         currentLyrics[oldIndex].FarBlurOpacity = 0.0;
-                        currentLyrics[oldIndex].Opacity = 1.0;
+                        currentLyrics[oldIndex].Opacity = LineOpacity(currentLyrics[oldIndex], 1.0);
                         currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
                     }
                     if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                     {
                         currentLyrics[currentLyricIndex].BlurOpacity = 0.0;
                         currentLyrics[currentLyricIndex].FarBlurOpacity = 0.0;
-                        currentLyrics[currentLyricIndex].Opacity = 1.0;
+                        currentLyrics[currentLyricIndex].Opacity = LineOpacity(currentLyrics[currentLyricIndex], 1.0);
                         currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
                     }
                 }
@@ -947,7 +1050,7 @@ namespace YTMusicWP
                     {
                         currentLyrics[i].BlurOpacity = 0.0;
                         currentLyrics[i].FarBlurOpacity = 0.0;
-                        currentLyrics[i].Opacity = 1.0;
+                        currentLyrics[i].Opacity = LineOpacity(currentLyrics[i], 1.0);
                         if (i == currentLyricIndex)
                         {
                             currentLyrics[i].ColorBrush = _lyricActiveBrush;
@@ -1068,24 +1171,15 @@ namespace YTMusicWP
                 // Set all non-active lines to dim, active line to bright
                 args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.5;
 
+                SyncRecycledContainerVisibility(args);
+                ReleaseLyricEffectsInContainer(args.ItemContainer, args.ItemIndex, true);
+
                 var sharpText = FindChildByName(args.ItemContainer, "FullscreenLyricSharpText") as TextBlock;
-                if (sharpText != null)
+                if (sharpText != null && !IsSharpInOverlay(sharpText, true) && sharpText.Inlines.Count > 0)
                 {
                     var line = args.Item as LyricLine;
-                    if (args.ItemIndex != currentLyricIndex)
-                    {
-                        if (sharpText.Inlines.Count > 0)
-                        {
-                            sharpText.Inlines.Clear();
-                            if (line != null) sharpText.Text = line.Text ?? "";
-                        }
-                    }
-                    else if (line != null && line.HasWords)
-                    {
-                        TimeSpan pos = TimeSpan.Zero;
-                        try { if (_appMediaPlayer != null) pos = _appMediaPlayer.Position; } catch { }
-                        SetupWordInlines(sharpText, line, pos, true);
-                    }
+                    sharpText.Inlines.Clear();
+                    if (line != null) sharpText.Text = line.Text ?? "";
                 }
             }
         }
@@ -1234,12 +1328,11 @@ namespace YTMusicWP
             return list;
         }
 
-        private void SetupWordInlines(TextBlock tb, LyricLine line, TimeSpan pos, bool isFullscreen)
+        private void SetupWordInlines(TextBlock tb, LyricLine line, TimeSpan pos, List<LyricCharInfo> charList)
         {
-            if (tb == null || line == null || line.Words == null) return;
+            if (tb == null || line == null || line.Words == null || charList == null) return;
             tb.Text = "";
             tb.Inlines.Clear();
-            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
             charList.Clear();
 
             if (line.IsInterlude)
@@ -1253,7 +1346,7 @@ namespace YTMusicWP
                     else run.Foreground = _lyricDotPendingBrush;
 
                     tb.Inlines.Add(run);
-                    charList.Add(new LyricCharInfo { StartTime = w.StartTime, EndTime = w.EndTime });
+                    charList.Add(new LyricCharInfo { StartTime = w.StartTime, EndTime = w.EndTime, WordIndex = i });
                 }
                 return;
             }
@@ -1270,7 +1363,7 @@ namespace YTMusicWP
                 {
                     var run = new Run { Text = rawText, Foreground = _lyricPendingBrush };
                     tb.Inlines.Add(run);
-                    charList.Add(new LyricCharInfo { StartTime = w.StartTime, EndTime = w.EndTime });
+                    charList.Add(new LyricCharInfo { StartTime = w.StartTime, EndTime = w.EndTime, WordIndex = i });
                     continue;
                 }
 
@@ -1294,19 +1387,18 @@ namespace YTMusicWP
                     else run.Foreground = _lyricPendingBrush;
 
                     tb.Inlines.Add(run);
-                    charList.Add(new LyricCharInfo { StartTime = cStart, EndTime = cEnd });
+                    charList.Add(new LyricCharInfo { StartTime = cStart, EndTime = cEnd, WordIndex = i });
                 }
             }
         }
 
-        private void UpdateWordInlines(TextBlock tb, LyricLine line, TimeSpan pos, bool isFullscreen)
+        private void UpdateWordInlines(TextBlock tb, LyricLine line, TimeSpan pos, List<LyricCharInfo> charList)
         {
-            if (tb == null || line == null || line.Words == null) return;
-            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
+            if (tb == null || line == null || line.Words == null || charList == null) return;
             int count = tb.Inlines.Count;
             if (count != charList.Count || count == 0)
             {
-                SetupWordInlines(tb, line, pos, isFullscreen);
+                SetupWordInlines(tb, line, pos, charList);
                 return;
             }
 
@@ -1331,15 +1423,7 @@ namespace YTMusicWP
                 return;
             }
 
-            int activeCharIndex = -1;
-            for (int i = 0; i < count; i++)
-            {
-                if (pos >= charList[i].StartTime && pos < charList[i].EndTime)
-                {
-                    activeCharIndex = i;
-                    break;
-                }
-            }
+            int activeCharIndex = FindActiveCharIndex(charList, pos);
 
             for (int i = 0; i < count; i++)
             {
@@ -1382,12 +1466,14 @@ namespace YTMusicWP
             }
         }
 
+        /// <summary>
+        /// Gọi khi dòng active đổi. Dòng cũ nếu còn chữ đang chạy thì để bộ quản lý overlay tự cho "về hưu"
+        /// (mờ dần sau khi chữ cuối chạy xong); nếu không có overlay thì trả chữ gốc ngay.
+        /// </summary>
         public void ResetWordInlines(int index, bool isFullscreen)
         {
-            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
-            charList.Clear();
-
             if (currentLyrics == null || index < 0 || index >= currentLyrics.Count) return;
+            if (FindOverlay(isFullscreen ? _fsOverlays : _regularOverlays, index) != null) return;
 
             var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
             if (targetListView == null) return;
@@ -1404,32 +1490,640 @@ namespace YTMusicWP
             }
         }
 
+        private static WordOverlayState FindOverlay(List<WordOverlayState> overlays, int lineIndex)
+        {
+            for (int i = 0; i < overlays.Count; i++)
+            {
+                if (overlays[i].LineIndex == lineIndex) return overlays[i];
+            }
+            return null;
+        }
+
+        /// <summary>Dòng còn cần hiệu ứng: từ lúc bắt đầu (sớm 0.2s) tới khi chữ cuối hát xong + phần lò xo.</summary>
+        private static bool IsLineAnimating(LyricLine l, TimeSpan pos)
+        {
+            if (l == null || !l.HasWords) return false;
+            TimeSpan end = TimeSpan.Zero;
+            for (int i = 0; i < l.Words.Count; i++)
+            {
+                var w = l.Words[i];
+                if (!string.IsNullOrEmpty(w.Text) && w.EndTime > end) end = w.EndTime;
+            }
+            if (end <= l.Time) end = l.EndTime > l.Time ? l.EndTime : l.Time + TimeSpan.FromSeconds(1);
+            end += TimeSpan.FromMilliseconds(SpringTailMs + 80);
+            return pos >= l.Time - TimeSpan.FromMilliseconds(200) && pos <= end;
+        }
+
+        /// <summary>
+        /// Mỗi tick: quyết định các dòng đang "sống" (dòng hiện tại + dòng liền trước còn chạy nốt / hát chồng),
+        /// dựng overlay cho dòng mới, cập nhật mọi overlay, và cho overlay hết sống mờ dần rồi gỡ.
+        /// </summary>
         public void UpdateActiveLineWordProgress(TimeSpan pos, bool isFullscreen)
         {
-            if (currentLyrics == null || currentLyricIndex < 0 || currentLyricIndex >= currentLyrics.Count) return;
-
-            var line = currentLyrics[currentLyricIndex];
-            if (!line.HasWords || line.Words == null || line.Words.Count == 0) return;
-
+            if (currentLyrics == null || currentLyrics.Count == 0) return;
             var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
             if (targetListView == null) return;
-
-            var container = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
-            if (container == null) return;
-
+            var overlays = isFullscreen ? _fsOverlays : _regularOverlays;
             string sharpName = isFullscreen ? "FullscreenLyricSharpText" : "LyricSharpText";
-            var sharpText = FindChildByName(container, sharpName) as TextBlock;
-            if (sharpText == null) return;
 
-            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
-            if (sharpText.Inlines.Count == 0 || sharpText.Inlines.Count != charList.Count)
+            // 1. Dòng đang sống
+            _liveLineScratch.Clear();
+            int cur = currentLyricIndex;
+            if (cur >= 0 && cur < currentLyrics.Count)
             {
-                SetupWordInlines(sharpText, line, pos, isFullscreen);
+                for (int i = Math.Max(0, cur - 2); i <= cur; i++)
+                {
+                    var l = currentLyrics[i];
+                    if (!l.HasWords) continue;
+                    if (i == cur || IsLineAnimating(l, pos)) _liveLineScratch.Add(i);
+                }
+            }
+
+            // 2. Overlay hết sống / container đã bị recycle / đổi cỡ chữ → gỡ (mờ dần nếu vẫn đang hiển thị đúng dòng)
+            for (int k = overlays.Count - 1; k >= 0; k--)
+            {
+                var ov = overlays[k];
+                TextBlock sharpNow = null;
+                var c = targetListView.ContainerFromIndex(ov.LineIndex) as FrameworkElement;
+                if (c != null) sharpNow = FindChildByName(c, sharpName) as TextBlock;
+
+                bool recycled = sharpNow == null || !object.ReferenceEquals(sharpNow, ov.Sharp);
+                bool resized = !ov.Pending && ov.Sharp != null &&
+                               (Math.Abs(ov.BuiltWidth - ov.Sharp.ActualWidth) > 0.5 || Math.Abs(ov.BuiltFontSize - ov.Sharp.FontSize) > 0.01);
+                bool alive = _liveLineScratch.Contains(ov.LineIndex);
+                if (!alive || recycled || resized)
+                {
+                    RetireWordOverlay(ov, alive == false && !recycled && !resized);
+                    overlays.RemoveAt(k);
+                }
+            }
+
+            // 3. Dựng overlay cho dòng sống chưa có, rồi cập nhật tất cả
+            for (int n = 0; n < _liveLineScratch.Count; n++)
+            {
+                int idx = _liveLineScratch[n];
+                var line = currentLyrics[idx];
+                var ov = FindOverlay(overlays, idx);
+                if (ov == null)
+                {
+                    var container = targetListView.ContainerFromIndex(idx) as FrameworkElement;
+                    var sharp = container != null ? FindChildByName(container, sharpName) as TextBlock : null;
+                    if (sharp == null) continue;
+                    ov = new WordOverlayState { LineIndex = idx, Sharp = sharp, Pending = true };
+                    SetupWordInlines(sharp, line, pos, ov.Chars); // vị trí từ chỉ đo được sau khi layout xong → tick sau
+                    overlays.Add(ov);
+                    continue;
+                }
+
+                if (ov.Pending)
+                {
+                    if (ov.Sharp.Inlines.Count != ov.Chars.Count)
+                    {
+                        SetupWordInlines(ov.Sharp, line, pos, ov.Chars);
+                        continue;
+                    }
+                    if (TryBuildWordOverlay(ov, line))
+                    {
+                        ov.Pending = false;
+                    }
+                    else
+                    {
+                        UpdateWordInlines(ov.Sharp, line, pos, ov.Chars); // dự phòng: tô màu từng ký tự như cũ
+                        continue;
+                    }
+                }
+                UpdateWordOverlay(ov, pos);
+            }
+        }
+
+        private static int FindActiveCharIndex(List<LyricCharInfo> charList, TimeSpan pos)
+        {
+            for (int i = 0; i < charList.Count; i++)
+            {
+                if (pos >= charList[i].StartTime && pos < charList[i].EndTime) return i;
+            }
+            return -1;
+        }
+
+        // ── Per-word overlay engine (Spicy Lyrics parity) ──
+
+        private static readonly Windows.UI.Xaml.Media.Animation.CubicEase _wordEaseOut =
+            new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
+        private static readonly Windows.UI.Xaml.Media.Animation.ElasticEase _wordSpring =
+            new Windows.UI.Xaml.Media.Animation.ElasticEase { Oscillations = 1, Springiness = 6, EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut };
+
+        private const double WordPeakScale = 1.045;       // Spicy: 1.05 ở 70% thời lượng từ
+        private const double WordLiftFactor = 0.045;      // nhấc tối đa = 4.5% cỡ chữ (~1px ở cỡ 22)
+        private const double DotRestScale = 0.75;         // Spicy: dấu chấm nghỉ ở 0.75 / 35%
+        private const double DotRestOpacity = 0.35;
+        private const double DotLiftFactor = 0.12;        // Spicy: dấu chấm nhấc -0.12em khi tới lượt
+        private const double SpringTailMs = 320;          // phần "lò xo" sau khi từ hát xong
+
+        private static Windows.UI.Xaml.Media.Animation.DoubleAnimationUsingKeyFrames KeyFrames(
+            DependencyObject target, string property, double v0, double t1, double v1, double t2, double v2,
+            Windows.UI.Xaml.Media.Animation.EasingFunctionBase ease1, Windows.UI.Xaml.Media.Animation.EasingFunctionBase ease2)
+        {
+            var a = new Windows.UI.Xaml.Media.Animation.DoubleAnimationUsingKeyFrames();
+            a.KeyFrames.Add(new Windows.UI.Xaml.Media.Animation.DiscreteDoubleKeyFrame
+            {
+                KeyTime = Windows.UI.Xaml.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.Zero), Value = v0
+            });
+            a.KeyFrames.Add(new Windows.UI.Xaml.Media.Animation.EasingDoubleKeyFrame
+            {
+                KeyTime = Windows.UI.Xaml.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(t1)), Value = v1, EasingFunction = ease1
+            });
+            a.KeyFrames.Add(new Windows.UI.Xaml.Media.Animation.EasingDoubleKeyFrame
+            {
+                KeyTime = Windows.UI.Xaml.Media.Animation.KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(t2)), Value = v2, EasingFunction = ease2
+            });
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(a, target);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(a, property);
+            return a;
+        }
+
+        private static Windows.UI.Xaml.Media.Animation.DoubleAnimation OffsetSweep(GradientStop stop, double from, double to, double durMs)
+        {
+            var a = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                From = from, To = to, Duration = TimeSpan.FromMilliseconds(durMs),
+                EnableDependentAnimation = true // GradientStop.Offset là dependent animation
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(a, stop);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(a, "Offset");
+            return a;
+        }
+
+        private WordVisual CreateWordVisual(string text, TextBlock sharp, bool isDot, TimeSpan start, TimeSpan end)
+        {
+            double fs = sharp.FontSize;
+            var tb = new TextBlock
+            {
+                Text = text,
+                FontSize = fs,
+                FontFamily = sharp.FontFamily,
+                FontWeight = sharp.FontWeight,
+                FontStyle = sharp.FontStyle,
+                CharacterSpacing = sharp.CharacterSpacing,
+                TextWrapping = TextWrapping.NoWrap,
+                IsHitTestVisible = false
+            };
+            var ct = new CompositeTransform();
+            tb.RenderTransform = ct;
+            tb.RenderTransformOrigin = new Point(0.5, 0.6);
+
+            var w = new WordVisual { Text = tb, Transform = ct, Start = start, End = end };
+            double d = Math.Max(120, (end - start).TotalMilliseconds);
+            double tail = d + SpringTailMs;
+            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard { FillBehavior = Windows.UI.Xaml.Media.Animation.FillBehavior.Stop };
+
+            if (isDot)
+            {
+                tb.Foreground = _dotBrush;
+                sb.Children.Add(KeyFrames(tb, "Opacity", DotRestOpacity, d * 0.6, 1.0, tail, 1.0, _wordEaseOut, _wordEaseOut));
+                sb.Children.Add(KeyFrames(ct, "ScaleX", DotRestScale, d * 0.7, 1.05, tail, 1.0, _wordEaseOut, _wordSpring));
+                sb.Children.Add(KeyFrames(ct, "ScaleY", DotRestScale, d * 0.7, 1.05, tail, 1.0, _wordEaseOut, _wordSpring));
+                sb.Children.Add(KeyFrames(ct, "TranslateY", 0, d * 0.9, -fs * DotLiftFactor, tail, 0, _wordEaseOut, _wordEaseOut));
             }
             else
             {
-                UpdateWordInlines(sharpText, line, pos, isFullscreen);
+                // Gradient quét trái → phải: trắng tới LitStop, mờ dần sang màu chờ trong 20% chiều rộng từ
+                w.LitStop = new GradientStop { Color = Windows.UI.Colors.White, Offset = -0.2 };
+                w.DimStop = new GradientStop { Color = _wordDimColor, Offset = 0.0 };
+                var brush = new LinearGradientBrush { StartPoint = new Point(0, 0.5), EndPoint = new Point(1, 0.5) };
+                brush.GradientStops.Add(w.LitStop);
+                brush.GradientStops.Add(w.DimStop);
+                tb.Foreground = brush;
+
+                sb.Children.Add(OffsetSweep(w.LitStop, -0.2, 1.0, d));
+                sb.Children.Add(OffsetSweep(w.DimStop, 0.0, 1.2, d));
+                sb.Children.Add(KeyFrames(ct, "ScaleX", 1.0, d * 0.7, WordPeakScale, tail, 1.0, _wordEaseOut, _wordSpring));
+                sb.Children.Add(KeyFrames(ct, "ScaleY", 1.0, d * 0.7, WordPeakScale, tail, 1.0, _wordEaseOut, _wordSpring));
+                sb.Children.Add(KeyFrames(ct, "TranslateY", 0, d * 0.9, -fs * WordLiftFactor, tail, 0, _wordEaseOut, _wordEaseOut));
             }
+
+            w.Anim = sb;
+            ApplyWordState(w, 0, isDot);
+            return w;
+        }
+
+        /// <summary>Đặt giá trị tĩnh (local) của một từ. Storyboard dùng FillBehavior.Stop nên khi kết thúc sẽ về đúng giá trị này.</summary>
+        private static void ApplyWordState(WordVisual w, int state, bool isDot)
+        {
+            bool sung = state == 2;
+            w.Transform.TranslateY = 0;
+            if (isDot)
+            {
+                w.Text.Opacity = sung ? 1.0 : DotRestOpacity;
+                w.Transform.ScaleX = sung ? 1.0 : DotRestScale;
+                w.Transform.ScaleY = sung ? 1.0 : DotRestScale;
+            }
+            else
+            {
+                w.Transform.ScaleX = 1.0;
+                w.Transform.ScaleY = 1.0;
+                w.LitStop.Offset = sung ? 1.0 : -0.2;
+                w.DimStop.Offset = sung ? 1.2 : 0.0;
+            }
+        }
+
+        private bool TryBuildWordOverlay(WordOverlayState ov, LyricLine line)
+        {
+            Canvas layer = null;
+            var sharp = ov.Sharp;
+            try
+            {
+                if (sharp == null) return false;
+                var panel = sharp.Parent as Panel;
+                if (panel != null)
+                {
+                    for (int c = 0; c < panel.Children.Count && layer == null; c++) layer = panel.Children[c] as Canvas;
+                }
+                if (layer == null || sharp.ActualWidth <= 0 || layer.ActualWidth <= 0) return false; // chưa layout (vd dòng vừa hiện lại)
+                StopLayerRetire(layer); // Canvas này có thể đang mờ dần overlay của dòng cũ (container tái sử dụng)
+
+                var chars = ov.Chars;
+                var inlines = sharp.Inlines;
+                if (inlines.Count == 0 || inlines.Count != chars.Count) return false;
+
+                var toLayer = sharp.TransformToVisual(layer);
+                bool isDot = line.IsInterlude;
+                double minX = double.MaxValue, maxX = double.MinValue, minY = double.MaxValue, maxY = double.MinValue;
+
+                int i = 0;
+                while (i < chars.Count)
+                {
+                    int word = chars[i].WordIndex;
+                    int j = i;
+                    var sbText = new System.Text.StringBuilder();
+                    while (j < chars.Count && chars[j].WordIndex == word)
+                    {
+                        var r = inlines[j] as Run;
+                        if (r != null) sbText.Append(r.Text);
+                        j++;
+                    }
+
+                    string text = sbText.ToString().Trim();
+                    int k = i;
+                    while (k < j && string.IsNullOrWhiteSpace((inlines[k] as Run) != null ? ((Run)inlines[k]).Text : null)) k++;
+                    if (text.Length > 0 && k < j)
+                    {
+                        var rc = ((Run)inlines[k]).ContentStart.GetCharacterRect(LogicalDirection.Forward);
+                        if (rc.IsEmpty || rc.Height <= 0)
+                        {
+                            ClearPartialOverlay(ov, layer);
+                            return false; // chưa layout xong → thử lại tick sau
+                        }
+                        var p = toLayer.TransformPoint(new Point(rc.X, rc.Y));
+                        var wv = CreateWordVisual(text, sharp, isDot, chars[i].StartTime, chars[j - 1].EndTime);
+                        Canvas.SetLeft(wv.Text, p.X);
+                        Canvas.SetTop(wv.Text, p.Y);
+                        layer.Children.Add(wv.Text);
+                        ov.Words.Add(wv);
+
+                        wv.Text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                        minX = Math.Min(minX, p.X); maxX = Math.Max(maxX, p.X + wv.Text.DesiredSize.Width);
+                        minY = Math.Min(minY, p.Y); maxY = Math.Max(maxY, p.Y + rc.Height);
+                    }
+                    i = j;
+                }
+                if (ov.Words.Count == 0)
+                {
+                    ClearPartialOverlay(ov, layer);
+                    return false;
+                }
+
+                // Lớp chữ gốc giữ nguyên layout nhưng ẩn đi, chỉ lớp phủ hiển thị
+                for (int r = 0; r < inlines.Count; r++)
+                {
+                    var run = inlines[r] as Run;
+                    if (run != null) run.Foreground = _wordHiddenBrush;
+                }
+
+                ov.Layer = layer;
+                ov.IsInterlude = isDot;
+                ov.BuiltWidth = sharp.ActualWidth;
+                ov.BuiltFontSize = sharp.FontSize;
+                ov.LineEnd = line.EndTime > line.Time ? line.EndTime : chars[chars.Count - 1].EndTime;
+                ov.GroupExitStarted = false;
+                layer.Opacity = LineOpacity(line, 1.0);
+
+                if (isDot && layer.ActualWidth > 0 && layer.ActualHeight > 0)
+                {
+                    // Cuối đoạn dạo nhạc: cả nhóm chấm phồng nhẹ rồi thu về 0 và mờ đi (Spicy DotGroup)
+                    var lct = layer.RenderTransform as CompositeTransform;
+                    if (lct == null)
+                    {
+                        lct = new CompositeTransform();
+                        layer.RenderTransform = lct;
+                    }
+                    layer.RenderTransformOrigin = new Point(
+                        Math.Max(0, Math.Min(1, (minX + maxX) / 2 / layer.ActualWidth)),
+                        Math.Max(0, Math.Min(1, (minY + maxY) / 2 / layer.ActualHeight)));
+                    var exit = new Windows.UI.Xaml.Media.Animation.Storyboard(); // HoldEnd: giữ ẩn tới khi đổi dòng
+                    exit.Children.Add(KeyFrames(lct, "ScaleX", 1.0, 110, 1.12, 400, 0.0, _wordEaseOut, _wordEaseOut));
+                    exit.Children.Add(KeyFrames(lct, "ScaleY", 1.0, 110, 1.12, 400, 0.0, _wordEaseOut, _wordEaseOut));
+                    exit.Children.Add(KeyFrames(layer, "Opacity", layer.Opacity, 150, layer.Opacity, 400, 0.0, _wordEaseOut, _wordEaseOut));
+                    ov.GroupExit = exit;
+                }
+                return true;
+            }
+            catch
+            {
+                ClearPartialOverlay(ov, layer);
+                return false;
+            }
+        }
+
+        /// <summary>Hoàn tác phần overlay dựng dở (đo thất bại) nhưng giữ trạng thái chờ để thử lại ở tick sau.</summary>
+        private static void ClearPartialOverlay(WordOverlayState ov, Canvas layer)
+        {
+            if (layer != null) layer.Children.Clear();
+            ov.Words.Clear();
+            if (ov.GroupExit != null)
+            {
+                try { ov.GroupExit.Stop(); } catch { }
+                ov.GroupExit = null;
+            }
+        }
+
+        private void UpdateWordOverlay(WordOverlayState ov, TimeSpan pos)
+        {
+            for (int i = 0; i < ov.Words.Count; i++)
+            {
+                var w = ov.Words[i];
+                int state = pos < w.Start ? 0 : (pos < w.End ? 1 : 2);
+                if (state == w.State) continue;
+                int prev = w.State;
+                w.State = state;
+
+                // Bắt đầu hát — kể cả khi từ quá ngắn bị lọt giữa 2 tick (0 → 2 trong < 250ms)
+                bool startAnim = state == 1 || (state == 2 && prev == 0 && (pos - w.End).TotalMilliseconds < 250);
+                if (startAnim)
+                {
+                    w.Anim.Stop();
+                    ApplyWordState(w, 2, ov.IsInterlude);
+                    w.Anim.Begin();
+                    var elapsed = pos - w.Start;
+                    if (elapsed.TotalMilliseconds > 30) w.Anim.Seek(elapsed); // vào giữa từ (seek / vừa mở lyrics)
+                }
+                else if (state == 2)
+                {
+                    if (prev != 1)
+                    {
+                        w.Anim.Stop();
+                        ApplyWordState(w, 2, ov.IsInterlude); // tua qua: hiện trạng thái đã hát ngay
+                    }
+                    // prev == 1: để animation tự chạy nốt phần lò xo
+                }
+                else
+                {
+                    w.Anim.Stop();
+                    ApplyWordState(w, 0, ov.IsInterlude); // tua ngược
+                }
+            }
+
+            if (ov.IsInterlude && ov.GroupExit != null && !ov.GroupExitStarted &&
+                ov.LineEnd > TimeSpan.Zero && pos >= ov.LineEnd - TimeSpan.FromMilliseconds(400))
+            {
+                ov.GroupExitStarted = true;
+                ov.GroupExit.Begin();
+            }
+        }
+
+        /// <summary>Gỡ overlay ngay lập tức (đổi bài, container bị recycle, đo lại vị trí).</summary>
+        private void TeardownWordOverlay(WordOverlayState ov, Canvas layerOverride = null)
+        {
+            if (ov.GroupExit != null)
+            {
+                try { ov.GroupExit.Stop(); } catch { }
+                ov.GroupExit = null;
+            }
+            for (int i = 0; i < ov.Words.Count; i++)
+            {
+                try { ov.Words[i].Anim.Stop(); } catch { }
+            }
+
+            var layer = layerOverride ?? ov.Layer;
+            if (layer != null)
+            {
+                StopLayerRetire(layer);
+                layer.Children.Clear();
+                layer.Opacity = 1.0;
+                var lct = layer.RenderTransform as CompositeTransform;
+                if (lct != null) { lct.ScaleX = 1.0; lct.ScaleY = 1.0; }
+            }
+
+            RestoreSharpText(ov);
+            ov.Words.Clear();
+            ov.Chars.Clear();
+            ov.LineIndex = -1;
+            ov.Sharp = null;
+            ov.Layer = null;
+            ov.Pending = false;
+            ov.GroupExitStarted = false;
+        }
+
+        /// <summary>
+        /// Dòng đã chạy xong hiệu ứng: trả chữ gốc (đang ở trạng thái mờ của dòng không active) ở dưới,
+        /// còn lớp phủ sáng phía trên mờ dần → chuyển mượt thay vì tắt phụt.
+        /// </summary>
+        private void RetireWordOverlay(WordOverlayState ov, bool fade)
+        {
+            var layer = ov.Layer;
+            if (!fade || ov.Pending || layer == null || layer.Children.Count == 0 || ov.GroupExitStarted)
+            {
+                TeardownWordOverlay(ov); // dấu chấm đã tự thu lại/biến mất, hoặc không cần mờ dần
+                return;
+            }
+
+            for (int i = 0; i < ov.Words.Count; i++)
+            {
+                try { ov.Words[i].Anim.Stop(); } catch { }
+            }
+            if (ov.GroupExit != null)
+            {
+                try { ov.GroupExit.Stop(); } catch { }
+                ov.GroupExit = null;
+            }
+            RestoreSharpText(ov);
+
+            StopLayerRetire(layer);
+            var fadeOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 0.0, Duration = TimeSpan.FromMilliseconds(RetireFadeMs), EasingFunction = _wordEaseOut
+            };
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOut, layer);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeOut, "Opacity");
+            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+            sb.Children.Add(fadeOut);
+            sb.Completed += (s, e) =>
+            {
+                Windows.UI.Xaml.Media.Animation.Storyboard current;
+                if (_retiringLayers.TryGetValue(layer, out current) && object.ReferenceEquals(current, sb))
+                {
+                    _retiringLayers.Remove(layer);
+                    try { sb.Stop(); } catch { }
+                    layer.Children.Clear();
+                    layer.Opacity = 1.0;
+                }
+            };
+            _retiringLayers[layer] = sb;
+            sb.Begin();
+
+            ov.Words.Clear();
+            ov.Chars.Clear();
+            ov.LineIndex = -1;
+            ov.Sharp = null;
+            ov.Layer = null;
+            ov.GroupExitStarted = false;
+        }
+
+        /// <summary>Nếu Canvas đang mờ dần overlay cũ → dừng ngay và dọn sạch (để dựng overlay mới lên).</summary>
+        private void StopLayerRetire(Canvas layer)
+        {
+            Windows.UI.Xaml.Media.Animation.Storyboard sb;
+            if (layer != null && _retiringLayers.TryGetValue(layer, out sb))
+            {
+                _retiringLayers.Remove(layer);
+                try { sb.Stop(); } catch { }
+                layer.Children.Clear();
+                layer.Opacity = 1.0;
+            }
+        }
+
+        /// <summary>Trả lại chữ gốc cho TextBlock của dòng (các run đang bị ẩn / tô màu dự phòng).</summary>
+        private static void RestoreSharpText(WordOverlayState ov)
+        {
+            if (ov.Sharp == null || ov.LineIndex < 0) return;
+            try
+            {
+                var bound = ov.Sharp.DataContext as LyricLine;
+                ov.Sharp.Inlines.Clear();
+                ov.Sharp.Text = bound != null ? (bound.Text ?? "") : "";
+            }
+            catch { }
+        }
+
+        private bool IsSharpInOverlay(TextBlock sharp, bool isFullscreen)
+        {
+            var overlays = isFullscreen ? _fsOverlays : _regularOverlays;
+            for (int i = 0; i < overlays.Count; i++)
+            {
+                if (object.ReferenceEquals(overlays[i].Sharp, sharp)) return true;
+            }
+            return false;
+        }
+
+        private static bool SetLyricContainerVisibility(ListViewBase lv, int index, Visibility vis)
+        {
+            if (lv == null) return false;
+            var container = lv.ContainerFromIndex(index) as UIElement;
+            if (container == null || container.Visibility == vis) return false;
+            container.Visibility = vis;
+            return true;
+        }
+
+        /// <summary>Container được recycle: đồng bộ lại trạng thái ẩn/hiện theo dòng mới (tránh dòng thường bị "kẹt" ẩn).</summary>
+        private static void SyncRecycledContainerVisibility(ContainerContentChangingEventArgs args)
+        {
+            var line = args.Item as LyricLine;
+            var vis = line != null ? line.LineVisibility : Visibility.Visible;
+            if (args.ItemContainer.Visibility != vis) args.ItemContainer.Visibility = vis;
+        }
+
+        private static bool IsDescendantOf(DependencyObject child, DependencyObject ancestor)
+        {
+            var cur = child;
+            for (int depth = 0; cur != null && depth < 16; depth++)
+            {
+                if (object.ReferenceEquals(cur, ancestor)) return true;
+                cur = VisualTreeHelper.GetParent(cur);
+            }
+            return false;
+        }
+
+        /// <summary>Container bị recycle sang dòng khác → gỡ lớp phủ để không "dính" từ của dòng cũ.</summary>
+        private void ReleaseLyricEffectsInContainer(FrameworkElement container, int itemIndex, bool isFullscreen)
+        {
+            if (container == null) return;
+            var overlays = isFullscreen ? _fsOverlays : _regularOverlays;
+            for (int k = overlays.Count - 1; k >= 0; k--)
+            {
+                var ov = overlays[k];
+                if (ov.Sharp != null && itemIndex != ov.LineIndex && IsDescendantOf(ov.Sharp, container))
+                {
+                    TeardownWordOverlay(ov);
+                    overlays.RemoveAt(k);
+                }
+            }
+
+            var layer = FindChildByName(container, isFullscreen ? "FullscreenLyricWordLayer" : "LyricWordLayer") as Canvas;
+            if (layer == null) return;
+            for (int k = 0; k < overlays.Count; k++)
+            {
+                if (object.ReferenceEquals(overlays[k].Layer, layer)) return; // đang dùng bởi overlay còn sống
+            }
+            StopLayerRetire(layer);
+            if (layer.Children.Count > 0)
+            {
+                layer.Children.Clear();
+                layer.Opacity = 1.0;
+            }
+        }
+
+        private void ResetAllLyricEffects()
+        {
+            foreach (var overlays in new[] { _regularOverlays, _fsOverlays })
+            {
+                for (int k = 0; k < overlays.Count; k++) TeardownWordOverlay(overlays[k]);
+                overlays.Clear();
+            }
+            foreach (var kv in new List<KeyValuePair<Canvas, Windows.UI.Xaml.Media.Animation.Storyboard>>(_retiringLayers))
+            {
+                try { kv.Value.Stop(); } catch { }
+                kv.Key.Children.Clear();
+                kv.Key.Opacity = 1.0;
+            }
+            _retiringLayers.Clear();
+        }
+
+        // ── Background vocals (lời bè) ──
+
+        // Cỡ chữ dòng dấu chấm dạo nhạc so với lyric thường (glyph "•" vốn nhỏ nên cần phóng to hơn chữ)
+        private const double InterludeFontScale = 1.9;
+
+        private const double BackgroundVocalOpacityFactor = 0.72;
+
+        private static double LineOpacity(LyricLine l, double value)
+        {
+            return l.IsBackground ? value * BackgroundVocalOpacityFactor : value;
+        }
+
+        private double GetLyricLineFontSize(LyricLine l)
+        {
+            if (l.IsInterlude) return _lyricFontSize * InterludeFontScale;
+            if (l.Time >= TimeSpan.FromHours(1) && !string.IsNullOrEmpty(l.Text)) return _lyricFontSize * 0.65; // dòng ghi công nguồn lyrics
+            if (l.IsBackground) return _lyricFontSize * 0.82;
+            return _lyricFontSize;
+        }
+
+        /// <summary>True khi CẢ dòng nằm trong một cặp ngoặc, vd "(Ah-ah, ah-ah)" — không tính "(Ah) I love you (yeah)".</summary>
+        private static bool IsParenthesizedLine(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return false;
+            string t = text.Trim();
+            if (t.Length < 3 || t[0] != '(' || t[t.Length - 1] != ')') return false;
+            int depth = 0;
+            for (int i = 0; i < t.Length; i++)
+            {
+                if (t[i] == '(') depth++;
+                else if (t[i] == ')')
+                {
+                    depth--;
+                    if (depth == 0 && i < t.Length - 1) return false;
+                }
+            }
+            return depth == 0;
         }
 
     }
