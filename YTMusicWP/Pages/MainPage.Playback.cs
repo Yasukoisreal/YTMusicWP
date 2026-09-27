@@ -824,7 +824,11 @@ namespace YTMusicWP
                                 double targetOff = scrollViewer.VerticalOffset + lyricPos.Y
                                                 - (scrollViewer.ViewportHeight / 2.0)
                                                 + (activeContainer.ActualHeight / 2.0);
-                                scrollViewer.ChangeView(null, targetOff, null, false);
+                                targetOff = Math.Max(0, Math.Min(targetOff, scrollViewer.ScrollableHeight));
+                                if (Math.Abs(scrollViewer.VerticalOffset - targetOff) > 1.0)
+                                {
+                                    scrollViewer.ChangeView(null, targetOff, null, false);
+                                }
                             }
                         }
                         }
@@ -2266,7 +2270,11 @@ namespace YTMusicWP
                     var transform = activeContainer.TransformToVisual(scrollViewer);
                     var lyricPos = transform.TransformPoint(new Point(0, 0));
                     double targetOff = scrollViewer.VerticalOffset + lyricPos.Y - (scrollViewer.ViewportHeight / 2.0) + (activeContainer.ActualHeight / 2.0);
-                    scrollViewer.ChangeView(null, targetOff, null, false);
+                    targetOff = Math.Max(0, Math.Min(targetOff, scrollViewer.ScrollableHeight));
+                    if (Math.Abs(scrollViewer.VerticalOffset - targetOff) > 1.0)
+                    {
+                        scrollViewer.ChangeView(null, targetOff, null, false);
+                    }
                 }
             }
             

@@ -426,7 +426,7 @@ namespace YTMusicWP
             UpdateLyricsVisualState();
         }
 
-        private void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
+        private async void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
         {
             var line = e.ClickedItem as LyricLine;
             if (line == null || line.Time >= TimeSpan.FromHours(1)) return;
@@ -476,9 +476,16 @@ namespace YTMusicWP
                     AppleMusicRemainingTime.Text = "-" + string.Format("{0}:{1:D2}", (int)remain / 60, (int)remain % 60);
                 }
 
-                // Immediately highlight and center the clicked lyric
+                // Immediately highlight the clicked lyric text
                 int oldIndex = currentLyricIndex;
                 currentLyricIndex = targetIndex;
+                UpdateLyricsVisualState(oldIndex);
+
+                // Yield to allow the tap/pointer-up interaction on the ListView to fully finish,
+                // so DirectManipulation doesn't abort the smooth scroll animation.
+                await Task.Delay(30);
+                if (currentLyricIndex != targetIndex) return;
+
                 ForceUpdateLyricUI(oldIndex);
             }
             catch { }
