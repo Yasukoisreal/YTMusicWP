@@ -107,8 +107,14 @@
                         <Button x:Name="NowPlayingDownloadBtn" x:FieldModifier="internal" Click="Download_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">
                             <Grid Margin="20,0">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" Fill="White"/></Viewbox>
-                                <TextBlock Grid.Column="1" Text="Download" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left">
+                                    <Grid>
+                                        <Path x:Name="DownloadIcon" Data="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" Fill="White"/>
+                                        <!-- Shown instead of the arrow once the track is saved on the device -->
+                                        <Path x:Name="DownloadedIcon" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M10,17L5,12L6.41,10.59L10,14.17L17.59,6.58L19,8L10,17Z" Fill="#1DB954" Visibility="Collapsed"/>
+                                    </Grid>
+                                </Viewbox>
+                                <TextBlock x:Name="DownloadText" Grid.Column="1" Text="Download" FontSize="16" Foreground="White" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                             </Grid>
                         </Button>
                         <Button x:Name="MenuLikeNowPlayingBtn" x:FieldModifier="internal" Click="Like_Click" Style="{StaticResource IconButtonStyle}" Height="50" HorizontalContentAlignment="Stretch">

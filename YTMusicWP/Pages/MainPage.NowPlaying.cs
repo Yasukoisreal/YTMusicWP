@@ -225,7 +225,7 @@ namespace YTMusicWP
         {
             if (currentTrack != null)
             {
-                NowPlayingMenuDialog.NowPlayingDownloadBtn.Visibility = currentTrack.VideoId.StartsWith("LOCAL:") ? Visibility.Collapsed : Visibility.Visible;
+                NowPlayingMenuDialog.SetDownloaded(IsTrackDownloaded(currentTrack));
             }
 
             NowPlayingMenuDialog.Open();
@@ -245,7 +245,31 @@ namespace YTMusicWP
         private async void MenuDownloadNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             CloseNowPlayingMenu_Click(null, null);
-            if (currentTrack != null) await DownloadTrackAsync(currentTrack);
+            var track = currentTrack;
+            if (track == null) return;
+            if (!IsTrackDownloaded(track))
+            {
+                await DownloadTrackAsync(track);
+                return;
+            }
+
+            // "Downloaded" state: tapping it removes the download, after confirmation
+            bool isLocal = track.VideoId.StartsWith("LOCAL:");
+            var confirm = new Windows.UI.Popups.MessageDialog(
+                isLocal ? "Delete \"" + track.Title + "\" from this device?"
+                        : "Remove the downloaded copy of \"" + track.Title + "\"? You can still stream it.",
+                "Remove download");
+            confirm.Commands.Add(new Windows.UI.Popups.UICommand("Remove") { Id = 0 });
+            confirm.Commands.Add(new Windows.UI.Popups.UICommand("Cancel") { Id = 1 });
+            confirm.DefaultCommandIndex = 1;
+            confirm.CancelCommandIndex = 1;
+            var choice = await confirm.ShowAsync();
+            if (choice == null || (int)choice.Id != 0) return;
+
+            if (isLocal)
+                await DeleteLocalTrackAsync(track);
+            else
+                await RemoveDownloadedCopyAsync(track);
         }
 
         private void DotPlayer_Tapped(object sender, TappedRoutedEventArgs e)
@@ -437,7 +461,15 @@ namespace YTMusicWP
         private async void BottomSheetDelete_Click(object sender, RoutedEventArgs e)
         {
             CloseBottomSheet_Click(null, null);
-            var track = _bottomSheetTrack;
+            await DeleteLocalTrackAsync(_bottomSheetTrack);
+        }
+
+        /// <summary>
+        /// Deletes an offline (LOCAL:) track from the device. If it is the track being played, playback skips
+        /// to the next track (or pauses) first so the player releases the file.
+        /// </summary>
+        private async Task DeleteLocalTrackAsync(YouTubeTrack track)
+        {
             if (track == null || !track.VideoId.StartsWith("LOCAL:")) return;
 
             try

@@ -37,6 +37,15 @@ namespace YTMusicWP.Controls
             get { return Visibility == Visibility.Visible; }
         }
 
+        /// <summary>Switches the Download item between "Download" and a green "Downloaded" state.</summary>
+        public void SetDownloaded(bool downloaded)
+        {
+            DownloadIcon.Visibility = downloaded ? Visibility.Collapsed : Visibility.Visible;
+            DownloadedIcon.Visibility = downloaded ? Visibility.Visible : Visibility.Collapsed;
+            DownloadText.Text = downloaded ? "Downloaded" : "Download";
+            DownloadText.Foreground = downloaded ? DownloadedIcon.Fill : DownloadIcon.Fill;
+        }
+
         public void Open()
         {
             Visibility = Visibility.Visible;

@@ -1227,6 +1227,73 @@ namespace YTMusicWP
             catch { }
         }
 
+        /// <summary>Base name a download of this track is saved under in LocalFolder ("{name}.m4a", "thumb_{name}.jpg").</summary>
+        private static string GetDownloadBaseName(YouTubeTrack track)
+        {
+            string safeTitle = string.Join("", (track.Title ?? "").Split(System.IO.Path.GetInvalidFileNameChars())).Trim();
+            if (string.IsNullOrEmpty(safeTitle)) safeTitle = track.VideoId;
+            return safeTitle;
+        }
+
+        /// <summary>
+        /// True if the track is an offline file or a stream that has already been downloaded.
+        /// Downloads are matched by file name, so it works without the SQLite metadata too.
+        /// </summary>
+        private bool IsTrackDownloaded(YouTubeTrack track)
+        {
+            if (track == null || string.IsNullOrEmpty(track.VideoId)) return false;
+            if (track.VideoId.StartsWith("LOCAL:")) return true;
+
+            string localId = "LOCAL:" + GetDownloadBaseName(track) + ".m4a";
+            foreach (var t in downloadedTracks)
+            {
+                if (string.Equals(t.VideoId, localId, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Deletes the downloaded file (and its artwork/metadata) of a streamed track. Playback is not affected
+        /// because the stream does not use the file. Favorites/history keep the YouTube track.
+        /// </summary>
+        private async Task RemoveDownloadedCopyAsync(YouTubeTrack track)
+        {
+            string baseName = GetDownloadBaseName(track);
+            string fileName = baseName + ".m4a";
+            try
+            {
+                var file = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
+                await file.DeleteAsync();
+
+                try
+                {
+                    var thumbFile = await ApplicationData.Current.LocalFolder.GetFileAsync("thumb_" + baseName + ".jpg");
+                    await thumbFile.DeleteAsync();
+                }
+                catch { }
+
+                await Services.DatabaseHelper.RemoveDownloadedAsync(fileName);
+
+                string localId = "LOCAL:" + fileName;
+                for (int i = downloadedTracks.Count - 1; i >= 0; i--)
+                {
+                    if (string.Equals(downloadedTracks[i].VideoId, localId, StringComparison.OrdinalIgnoreCase))
+                        downloadedTracks.RemoveAt(i);
+                }
+
+                if (PlaylistDetailsView.Visibility == Visibility.Visible && PlaylistDetailsTitle.Text == "Downloaded Songs")
+                {
+                    PlaylistDetailsTrackCount.Text = downloadedTracks.Count + " tracks";
+                }
+
+                ShowToast("Removed from downloads");
+            }
+            catch
+            {
+                ShowToast("Failed to remove download");
+            }
+        }
+
         private async Task DownloadTrackAsync(YouTubeTrack track, bool isSilent = false)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
@@ -1259,8 +1326,7 @@ namespace YTMusicWP
                     return;
                 }
 
-                string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars())).Trim();
-                if (string.IsNullOrEmpty(safeTitle)) safeTitle = track.VideoId;
+                string safeTitle = GetDownloadBaseName(track);
                 destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(safeTitle + ".m4a", CreationCollisionOption.ReplaceExisting);
 
                 BackgroundDownloader downloader = new BackgroundDownloader();
@@ -1393,9 +1459,7 @@ namespace YTMusicWP
 
                     if (downloadedIds.Contains(track.VideoId)) continue;
 
-                    string safeTitle = string.Join("", track.Title.Split(System.IO.Path.GetInvalidFileNameChars())).Trim();
-                    if (string.IsNullOrEmpty(safeTitle)) safeTitle = track.VideoId;
-                    string targetFileName = safeTitle + ".m4a";
+                    string targetFileName = GetDownloadBaseName(track) + ".m4a";
 
                     if (downloadedMap.ContainsKey(targetFileName))
                     {
