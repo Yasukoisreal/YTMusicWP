@@ -299,7 +299,8 @@ namespace YTMusicWP
                         "\"videoId\":\"" + videoId + "\"" +
                     "}";
 
-                    string playerUrl = "https://www.youtube.com/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig,captions";
+                    string playerHost = client.ClientName == "WEB_REMIX" ? "https://music.youtube.com" : "https://www.youtube.com";
+                    string playerUrl = playerHost + "/youtubei/v1/player?key=" + client.ApiKey + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig,captions";
                     var resolved = await Services.SecureDnsResolver.RewriteUrlAsync(playerUrl).ConfigureAwait(false);
 
                     string json = null;
@@ -317,11 +318,13 @@ namespace YTMusicWP
 
                         req.Headers.TryAppendWithoutValidation("X-YouTube-Client-Version", client.ClientVersion);
 
-                        if (HasCookieAuth)
+                        if (client.RequireCookie && HasCookieAuth)
                         {
                             req.Headers.TryAppendWithoutValidation("Cookie", _cookieString);
-                            req.Headers.TryAppendWithoutValidation("Authorization", GenerateSAPISIDHash(_sapisid, "https://www.youtube.com"));
-                            req.Headers.TryAppendWithoutValidation("Origin", "https://www.youtube.com");
+                            string origin = client.ClientName == "WEB_REMIX" ? "https://music.youtube.com" : "https://www.youtube.com";
+                            req.Headers.TryAppendWithoutValidation("Authorization", GenerateSAPISIDHash(_sapisid, origin));
+                            req.Headers.TryAppendWithoutValidation("Origin", origin);
+                            req.Headers.TryAppendWithoutValidation("Referer", origin + "/");
                         }
 
                         var httpClient = GetWinrtClient();

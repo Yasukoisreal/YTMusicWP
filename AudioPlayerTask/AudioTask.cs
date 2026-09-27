@@ -187,6 +187,7 @@ namespace AudioPlayerTask
             {
                 if (e.Data.ContainsKey("UpdatePlaylist"))
                 {
+                    bool hasFastUrl = false;
                     lock (_playlistLock)
                     {
                         _trackList = new List<string>((string[])e.Data["Urls"]);
@@ -207,17 +208,16 @@ namespace AudioPlayerTask
 
                         if (e.Data.ContainsKey("FastUrl"))
                         {
-                            string fastUrl = e.Data["FastUrl"].ToString();
-                            if (!string.IsNullOrEmpty(fastUrl) && _currentTrackIndex < _trackList.Count)
+                            string fastUrl = e.Data["FastUrl"]?.ToString();
+                            if (!string.IsNullOrEmpty(fastUrl) && _currentTrackIndex >= 0 && _currentTrackIndex < _trackList.Count)
                             {
                                 _trackList[_currentTrackIndex] = fastUrl;
                                 // Foreground đã resolve → skip InnerTube trong AudioTask
-                                _innerTubeAttempted = true;
+                                hasFastUrl = true;
                             }
                         }
                     }
 
-                    bool hasFastUrl = _innerTubeAttempted; // set true bởi FastUrl ở trên
                     bool isLiveMsg = e.Data.ContainsKey("IsLive") && Convert.ToBoolean(e.Data["IsLive"]);
                     ResetRetryState();
                     if (hasFastUrl) _innerTubeAttempted = true; // giữ lại → skip double-resolve
@@ -663,7 +663,7 @@ namespace AudioPlayerTask
             var buffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(
                 input, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
             var hashBuffer = provider.HashData(buffer);
-            string hash = Windows.Security.Cryptography.CryptographicBuffer.EncodeToHexString(hashBuffer);
+            string hash = Windows.Security.Cryptography.CryptographicBuffer.EncodeToHexString(hashBuffer).ToLowerInvariant();
             return "SAPISIDHASH " + timestamp + "_" + hash;
         }
 
@@ -709,8 +709,8 @@ namespace AudioPlayerTask
                 if (!string.IsNullOrEmpty(cookie) && !string.IsNullOrEmpty(sapisid))
                 {
                     string auth = GenerateSAPISIDHash(sapisid);
-                    string urlCookie = await TryInnerTubeClient(videoId, "WEB_REMIX", "1.20231214.00.00", "86", "Windows", "PC", "Windows", "10",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", false, cookie, auth);
+                    string urlCookie = await TryInnerTubeClient(videoId, "WEB_REMIX", "1.20260304.03.00", "67", "Windows", "PC", "Windows", "10",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36", false, cookie, auth, "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30");
                     if (!string.IsNullOrEmpty(urlCookie)) return urlCookie;
                 }
             }
@@ -787,8 +787,9 @@ namespace AudioPlayerTask
                     "\"videoId\":\"" + videoId + "\"" +
                 "}";
 
-                string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" || clientName == "VISIONOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI");
-                string playerUrl = "https://www.youtube.com/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig";
+                string host = (clientName == "WEB_REMIX") ? "https://music.youtube.com" : "https://www.youtube.com";
+                string key = !string.IsNullOrEmpty(apiKey) ? apiKey : (clientName == "IOS" || clientName == "VISIONOS" ? "AIzaSyB-63vPrdThhKuerbB2N_l7Kwwcxj6yUAc" : (clientName == "WEB_REMIX" ? "AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30" : "AIzaSyDSXy9qVx1CzG2S7hYy7G-F6-HQ8_kB4vI"));
+                string playerUrl = host + "/youtubei/v1/player?key=" + key + "&prettyPrint=false&fields=playabilityStatus,streamingData,playerConfig";
                 var resolvedPlayer = await SecureDnsResolver.RewriteUrlAsync(playerUrl);
                 string json;
                 using (var content = new Windows.Web.Http.HttpStringContent(
@@ -813,6 +814,7 @@ namespace AudioPlayerTask
                         request.Headers.Add("Cookie", cookie);
                         request.Headers.Add("Authorization", auth);
                         request.Headers.Add("Origin", "https://music.youtube.com");
+                        request.Headers.Add("Referer", "https://music.youtube.com/");
                     }
 
                     using (var reqCts = new CancellationTokenSource(5000))
