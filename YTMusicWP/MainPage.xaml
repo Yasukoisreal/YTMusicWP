@@ -1569,29 +1569,29 @@
                                             <GridView.ItemTemplate>
                                                 <DataTemplate>
                                                     <Border CornerRadius="12" Background="{Binding BackgroundBrush}" Height="82" HorizontalAlignment="Stretch">
-                                                        <Grid SizeChanged="MoodCategoryCard_SizeChanged">
+                                                        <Grid>
                                                             <!-- Top Right YTMusicWP Badge -->
                                                             <Border Width="18" Height="18" CornerRadius="9" Background="#35FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,6,7,0">
                                                                 <Image Source="ms-appx:///Assets/BadgeLogo.scale-240.png" Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Opacity="0.95"/>
                                                             </Border>
 
                                                             <!-- Tilted Cover Art (SimpMusic style) -->
-                                                            <Grid HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-10,-12" Visibility="{Binding ThumbnailVisibility}">
-                                                                <Border Width="70" Height="70" CornerRadius="8" Background="#35000000" Margin="2,2,-2,-2">
+                                                            <Grid HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6" Visibility="{Binding ThumbnailVisibility}">
+                                                                <Border Width="60" Height="60" CornerRadius="8" Background="#35000000" Margin="2,2,-2,-2">
                                                                     <Border.RenderTransform>
-                                                                        <RotateTransform Angle="18" CenterX="35" CenterY="35"/>
+                                                                        <RotateTransform Angle="16" CenterX="30" CenterY="30"/>
                                                                     </Border.RenderTransform>
                                                                 </Border>
-                                                                <Border Width="70" Height="70" CornerRadius="8">
+                                                                <Border Width="60" Height="60" CornerRadius="8">
                                                                     <Border.Background>
                                                                         <ImageBrush Stretch="UniformToFill">
                                                                             <ImageBrush.ImageSource>
-                                                                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="140"/>
+                                                                                <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="120"/>
                                                                             </ImageBrush.ImageSource>
                                                                         </ImageBrush>
                                                                     </Border.Background>
                                                                     <Border.RenderTransform>
-                                                                        <RotateTransform Angle="18" CenterX="35" CenterY="35"/>
+                                                                        <RotateTransform Angle="16" CenterX="30" CenterY="30"/>
                                                                     </Border.RenderTransform>
                                                                 </Border>
                                                             </Grid>

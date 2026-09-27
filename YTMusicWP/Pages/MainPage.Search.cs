@@ -794,18 +794,6 @@ namespace YTMusicWP
             });
         }
 
-        private void MoodCategoryCard_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            var grid = sender as Grid;
-            if (grid != null && e.NewSize.Width > 0 && e.NewSize.Height > 0)
-            {
-                grid.Clip = new Windows.UI.Xaml.Media.RectangleGeometry
-                {
-                    Rect = new Windows.Foundation.Rect(0, 0, e.NewSize.Width, e.NewSize.Height)
-                };
-            }
-        }
-
         private void MoodsSubGridView_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             var gv = sender as GridView;
