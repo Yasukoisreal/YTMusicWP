@@ -141,6 +141,7 @@
     <Compile Include="Services\DatabaseHelper.cs" />
     <Compile Include="Models\LibraryItem.cs" />
     <Compile Include="Models\LyricLine.cs" />
+    <Compile Include="Models\LyricWord.cs" />
     <Compile Include="Models\UserPlaylist.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Models\SponsorBlockSegment.cs" />

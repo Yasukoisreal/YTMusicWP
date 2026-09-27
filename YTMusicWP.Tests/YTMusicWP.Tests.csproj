@@ -65,6 +65,9 @@
     <Compile Include="..\YTMusicWP\Services\LrcParser.cs">
       <Link>Sources\LrcParser.cs</Link>
     </Compile>
+    <Compile Include="..\YTMusicWP\Models\LyricWord.cs">
+      <Link>Sources\LyricWord.cs</Link>
+    </Compile>
     <Compile Include="..\YTMusicWP\Services\FormatSelector.cs">
       <Link>Sources\FormatSelector.cs</Link>
     </Compile>

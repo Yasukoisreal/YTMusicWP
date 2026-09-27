@@ -9,13 +9,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Media.Playback;
+using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Documents;
+using Windows.UI.Xaml.Media;
+using YTMusicWP.Services;
 
 namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
+        private static readonly SolidColorBrush _lyricPendingBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(130, 255, 255, 255));
+        private DispatcherTimer _lyricsWordTimer;
+
         private bool TryParseLrcTime(string timeStr, out TimeSpan result)
         {
             return Services.LrcParser.TryParseLrcTime(timeStr, out result);
@@ -29,9 +36,10 @@ namespace YTMusicWP
         {
             public string Synced { get; set; }
             public string Plain { get; set; }
+            public List<LyricLine> Lines { get; set; }
         }
 
-        // â”€â”€ Lyrics Cache (in-memory LRU, keyed by cleaned title+artist) â”€â”€
+        // ── Lyrics Cache (in-memory LRU, keyed by cleaned title+artist) ──
         private static readonly Dictionary<string, LyricsCacheEntry> _lyricsCache = new Dictionary<string, LyricsCacheEntry>();
         private static readonly List<string> _lyricsCacheOrder = new List<string>();
         private const int MAX_LYRICS_CACHE = 20;
@@ -61,6 +69,7 @@ namespace YTMusicWP
             ClearMiniLyric();
             _cachedLyricsScrollViewer = null;
             _cachedFullscreenLyricsScrollViewer = null;
+            UpdateWordTimerState();
 
             LyricsFallbackScrollViewer.Visibility = Visibility.Collapsed;
             LyricsListView.Visibility = Visibility.Visible;
@@ -117,13 +126,19 @@ namespace YTMusicWP
 
                 string cacheKey = (cleanTitle + "|" + cleanArtist).ToLowerInvariant();
 
-                // â”€â”€ Check Cache First (LRU Touch) â”€â”€
+                // ── Check Cache First (LRU Touch) ──
                 LyricsCacheEntry cachedEntry;
                 if (_lyricsCache.TryGetValue(cacheKey, out cachedEntry))
                 {
                     _lyricsCacheOrder.Remove(cacheKey);
                     _lyricsCacheOrder.Add(cacheKey);
 
+                    if (cachedEntry.Lines != null && cachedEntry.Lines.Count > 0)
+                    {
+                        DisplayLoadedLyrics(cachedEntry.Lines);
+                        LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                        return;
+                    }
                     if (!string.IsNullOrWhiteSpace(cachedEntry.Synced))
                     {
                         ParseAndDisplaySyncedLyrics(cachedEntry.Synced);
@@ -184,6 +199,7 @@ namespace YTMusicWP
                 };
 
                 // --- APPLE MUSIC LYRICS (TTML) ---
+                AppleMusicLyricsResult amResult = null;
                 try
                 {
                     int durSecs = 0;
@@ -194,14 +210,44 @@ namespace YTMusicWP
                         await Task.Delay(100);
                     }
 
-                    var amLyrics = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsAsync(cleanTitle, cleanArtist, durSecs);
-                    if (amLyrics != null && amLyrics.Length >= 2 && (!string.IsNullOrWhiteSpace(amLyrics[0]) || !string.IsNullOrWhiteSpace(amLyrics[1])))
+                    amResult = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsResultAsync(cleanTitle, cleanArtist, durSecs);
+                    if (amResult != null && (amResult.Lines != null || !string.IsNullOrWhiteSpace(amResult.SyncedLrc) || !string.IsNullOrWhiteSpace(amResult.PlainLyrics)))
                     {
-                        syncedLyrics = amLyrics[0];
-                        plainLyrics = amLyrics[1];
+                        syncedLyrics = amResult.SyncedLrc;
+                        plainLyrics = amResult.PlainLyrics;
                         if (!string.IsNullOrWhiteSpace(syncedLyrics)) syncedLyrics += "\n[99:99.99] Lyrics provided by Apple Music";
                         if (!string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics += "\n\nLyrics provided by Apple Music";
-                        System.Diagnostics.Debug.WriteLine("Fetched lyrics from Apple Music");
+                        System.Diagnostics.Debug.WriteLine("Fetched lyrics from Apple Music (HasWordSync=" + amResult.HasWordSync + ")");
+
+                        if (amResult.Lines != null && amResult.Lines.Count > 0)
+                        {
+                            var displayLines = new List<LyricLine>(amResult.Lines.Count + 2);
+                            foreach (var l in amResult.Lines)
+                            {
+                                l.FontSize = _lyricFontSize;
+                                displayLines.Add(l);
+                            }
+                            displayLines.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "Lyrics provided by Apple Music", FontSize = _lyricFontSize * 0.65 });
+                            displayLines.Add(new LyricLine { Time = TimeSpan.FromHours(2), Text = "", FontSize = _lyricFontSize });
+
+                            // Cache for later (LRU)
+                            if (_lyricsCache.ContainsKey(cacheKey))
+                            {
+                                _lyricsCacheOrder.Remove(cacheKey);
+                            }
+                            else if (_lyricsCacheOrder.Count >= MAX_LYRICS_CACHE)
+                            {
+                                string oldest = _lyricsCacheOrder[0];
+                                _lyricsCacheOrder.RemoveAt(0);
+                                _lyricsCache.Remove(oldest);
+                            }
+                            _lyricsCacheOrder.Add(cacheKey);
+                            _lyricsCache[cacheKey] = new LyricsCacheEntry { Synced = syncedLyrics, Plain = plainLyrics, Lines = displayLines };
+
+                            DisplayLoadedLyrics(displayLines);
+                            LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                            return;
+                        }
                     }
                 }
                 catch { }
@@ -406,7 +452,21 @@ namespace YTMusicWP
                     foreach (var t in times)
                     {
                         double fSize = text.StartsWith("Lyrics provided by") ? _lyricFontSize * 0.65 : _lyricFontSize;
-                        parsedLines.Add(new LyricLine { Time = t, Text = text, FontSize = fSize });
+                        string linePlainText = text;
+                        List<LyricWord> lineWords = null;
+                        if (text.IndexOf('<') >= 0 && text.IndexOf('>') >= 0)
+                        {
+                            if (Services.LrcParser.TryParseEnhancedWords(text, t, out linePlainText, out lineWords))
+                            {
+                                text = linePlainText;
+                            }
+                        }
+                        var lyricLine = new LyricLine { Time = t, Text = linePlainText, FontSize = fSize };
+                        if (lineWords != null && lineWords.Count > 0)
+                        {
+                            lyricLine.Words = lineWords;
+                        }
+                        parsedLines.Add(lyricLine);
                     }
                 }
             }
@@ -414,16 +474,28 @@ namespace YTMusicWP
             parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
             parsedLines.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
 
+            DisplayLoadedLyrics(parsedLines);
+        }
+
+        private void DisplayLoadedLyrics(List<LyricLine> lines)
+        {
             if (LyricsListView != null) LyricsListView.ItemsSource = null;
             if (FullscreenLyricsListView != null) FullscreenLyricsListView.ItemsSource = null;
 
             currentLyrics.Clear();
-            foreach (var p in parsedLines) currentLyrics.Add(p);
+            if (lines != null)
+            {
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    currentLyrics.Add(lines[i]);
+                }
+            }
 
             if (LyricsListView != null) LyricsListView.ItemsSource = currentLyrics;
             if (FullscreenLyricsListView != null) FullscreenLyricsListView.ItemsSource = currentLyrics;
 
             UpdateLyricsVisualState();
+            UpdateWordTimerState();
         }
 
         private async void LyricsListView_ItemClick(object sender, ItemClickEventArgs e)
@@ -479,6 +551,7 @@ namespace YTMusicWP
                 // Immediately highlight the clicked lyric text
                 int oldIndex = currentLyricIndex;
                 currentLyricIndex = targetIndex;
+                ResetWordInlines(oldIndex, false);
                 UpdateLyricsVisualState(oldIndex);
 
                 // Yield to allow the tap/pointer-up interaction on the ListView to fully finish,
@@ -487,6 +560,7 @@ namespace YTMusicWP
                 if (currentLyricIndex != targetIndex) return;
 
                 ForceUpdateLyricUI(oldIndex);
+                UpdateActiveLineWordProgress(line.Time, false);
             }
             catch { }
         }
@@ -513,6 +587,26 @@ namespace YTMusicWP
                 double targetScale = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.85;
                 st.ScaleX = targetScale;
                 st.ScaleY = targetScale;
+            }
+
+            var sharpText = FindChildByName(args.ItemContainer, "LyricSharpText") as TextBlock;
+            if (sharpText != null)
+            {
+                var line = args.Item as LyricLine;
+                if (args.ItemIndex != currentLyricIndex)
+                {
+                    if (sharpText.Inlines.Count > 0)
+                    {
+                        sharpText.Inlines.Clear();
+                        if (line != null) sharpText.Text = line.Text ?? "";
+                    }
+                }
+                else if (line != null && line.HasWords)
+                {
+                    TimeSpan pos = TimeSpan.Zero;
+                    try { if (_appMediaPlayer != null) pos = _appMediaPlayer.Position; } catch { }
+                    SetupWordInlines(sharpText, line, pos);
+                }
             }
         }
 
@@ -589,7 +683,9 @@ namespace YTMusicWP
                                         + (activeContainer.ActualHeight / 2.0);
                         _cachedFullscreenLyricsScrollViewer.ChangeView(null, targetOff, null, false);
                     }
+                    UpdateActiveLineWordProgress(_appMediaPlayer != null ? _appMediaPlayer.Position : TimeSpan.Zero, true);
                 }
+                UpdateWordTimerState();
             };
             fadeIn.Begin();
         }
@@ -617,6 +713,7 @@ namespace YTMusicWP
                 UpdateStatusBarColor(npOpen, animate: false);
                 // Refresh regular lyrics containers to match current sync state
                 RefreshRegularLyricsContainers();
+                UpdateWordTimerState();
             };
             fadeOut.Begin();
         }
@@ -853,6 +950,22 @@ namespace YTMusicWP
                                     + (activeContainer.ActualHeight / 2.0);
                     _cachedLyricsScrollViewer.ChangeView(null, targetOff, null, false);
                 }
+                UpdateActiveLineWordProgress(_appMediaPlayer != null ? _appMediaPlayer.Position : TimeSpan.Zero, false);
+            }
+
+            for (int i = 0; i < currentLyrics.Count; i++)
+            {
+                if (i == currentLyricIndex) continue;
+                var c = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                if (c != null)
+                {
+                    var st = FindChildByName(c, "LyricSharpText") as TextBlock;
+                    if (st != null && st.Inlines.Count > 0)
+                    {
+                        st.Inlines.Clear();
+                        st.Text = currentLyrics[i].Text ?? "";
+                    }
+                }
             }
         }
 
@@ -862,6 +975,223 @@ namespace YTMusicWP
             {
                 // Set all non-active lines to dim, active line to bright
                 args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.5;
+
+                var sharpText = FindChildByName(args.ItemContainer, "FullscreenLyricSharpText") as TextBlock;
+                if (sharpText != null)
+                {
+                    var line = args.Item as LyricLine;
+                    if (args.ItemIndex != currentLyricIndex)
+                    {
+                        if (sharpText.Inlines.Count > 0)
+                        {
+                            sharpText.Inlines.Clear();
+                            if (line != null) sharpText.Text = line.Text ?? "";
+                        }
+                    }
+                    else if (line != null && line.HasWords)
+                    {
+                        TimeSpan pos = TimeSpan.Zero;
+                        try { if (_appMediaPlayer != null) pos = _appMediaPlayer.Position; } catch { }
+                        SetupWordInlines(sharpText, line, pos);
+                    }
+                }
+            }
+        }
+
+        // ── Word-by-Word Lyrics Synchronization Engine (SimpMusic v2.2.0 Parity) ──
+        public void UpdateWordTimerState()
+        {
+            bool isFs = FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible;
+            bool isNpLyrics = NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible
+                           && NowPlayingPivot != null && NowPlayingPivot.SelectedIndex == 1
+                           && LyricsListView != null && LyricsListView.Visibility == Visibility.Visible;
+
+            bool isVisible = isFs || isNpLyrics;
+            bool isPlaying = false;
+            try
+            {
+                if (_appMediaPlayer != null)
+                {
+                    var st = _appMediaPlayer.CurrentState;
+                    isPlaying = (st == MediaPlayerState.Playing || st == MediaPlayerState.Buffering || st == MediaPlayerState.Opening);
+                }
+            }
+            catch { }
+
+            if (isVisible && isPlaying && currentLyrics != null && currentLyrics.Count > 0)
+            {
+                if (_lyricsWordTimer == null)
+                {
+                    _lyricsWordTimer = new DispatcherTimer();
+                    _lyricsWordTimer.Interval = TimeSpan.FromMilliseconds(80);
+                    _lyricsWordTimer.Tick += LyricsWordTimer_Tick;
+                }
+                if (!_lyricsWordTimer.IsEnabled)
+                {
+                    _lyricsWordTimer.Start();
+                }
+            }
+            else
+            {
+                if (_lyricsWordTimer != null && _lyricsWordTimer.IsEnabled)
+                {
+                    _lyricsWordTimer.Stop();
+                }
+            }
+        }
+
+        private void LyricsWordTimer_Tick(object sender, object e)
+        {
+            try
+            {
+                if (_isSliderManipulating) return;
+                if (_appMediaPlayer == null) return;
+                if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing)
+                {
+                    UpdateWordTimerState();
+                    return;
+                }
+
+                TimeSpan pos = _appMediaPlayer.Position;
+
+                // Guard against stale position reads right after a seek
+                if (_lastSeekTimestamp != DateTime.MinValue)
+                {
+                    if ((DateTime.UtcNow - _lastSeekTimestamp).TotalMilliseconds < 1500)
+                    {
+                        if (Math.Abs((pos - _lastSeekTarget).TotalSeconds) > 1.5)
+                        {
+                            return;
+                        }
+                        else
+                        {
+                            _lastSeekTimestamp = DateTime.MinValue;
+                        }
+                    }
+                    else
+                    {
+                        _lastSeekTimestamp = DateTime.MinValue;
+                    }
+                }
+
+                if (currentLyrics == null || currentLyrics.Count == 0) return;
+
+                bool isFs = FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible;
+                bool isNpLyrics = NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible
+                               && NowPlayingPivot != null && NowPlayingPivot.SelectedIndex == 1
+                               && LyricsListView != null && LyricsListView.Visibility == Visibility.Visible;
+
+                if (!isFs && !isNpLyrics)
+                {
+                    UpdateWordTimerState();
+                    return;
+                }
+
+                int newIndex = -1;
+                for (int i = 0; i < currentLyrics.Count; i++)
+                {
+                    if (pos >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIndex = i;
+                    else break;
+                }
+
+                if (newIndex != currentLyricIndex && newIndex >= 0)
+                {
+                    int oldIndex = currentLyricIndex;
+                    currentLyricIndex = newIndex;
+
+                    ResetWordInlines(oldIndex, isFs);
+                    UpdateLyricsVisualState(oldIndex);
+                    ForceUpdateLyricUI(oldIndex);
+                    UpdateActiveLineWordProgress(pos, isFs);
+                }
+                else if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
+                {
+                    UpdateActiveLineWordProgress(pos, isFs);
+                }
+            }
+            catch { }
+        }
+
+        private void SetupWordInlines(TextBlock tb, LyricLine line, TimeSpan pos)
+        {
+            if (tb == null || line == null || line.Words == null) return;
+            tb.Text = "";
+            tb.Inlines.Clear();
+            for (int i = 0; i < line.Words.Count; i++)
+            {
+                var w = line.Words[i];
+                bool isSung = pos >= w.StartTime;
+                var run = new Run
+                {
+                    Text = w.Text ?? "",
+                    Foreground = isSung ? _lyricActiveBrush : _lyricPendingBrush
+                };
+                tb.Inlines.Add(run);
+            }
+        }
+
+        private void UpdateWordInlines(TextBlock tb, LyricLine line, TimeSpan pos)
+        {
+            if (tb == null || line == null || line.Words == null) return;
+            for (int i = 0; i < line.Words.Count; i++)
+            {
+                var w = line.Words[i];
+                var run = tb.Inlines[i] as Run;
+                if (run != null)
+                {
+                    bool isSung = pos >= w.StartTime;
+                    var targetBrush = isSung ? _lyricActiveBrush : _lyricPendingBrush;
+                    if (!object.ReferenceEquals(run.Foreground, targetBrush))
+                    {
+                        run.Foreground = targetBrush;
+                    }
+                }
+            }
+        }
+
+        public void ResetWordInlines(int index, bool isFullscreen)
+        {
+            if (currentLyrics == null || index < 0 || index >= currentLyrics.Count) return;
+
+            var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
+            if (targetListView == null) return;
+
+            var container = targetListView.ContainerFromIndex(index) as FrameworkElement;
+            if (container == null) return;
+
+            string sharpName = isFullscreen ? "FullscreenLyricSharpText" : "LyricSharpText";
+            var sharpText = FindChildByName(container, sharpName) as TextBlock;
+            if (sharpText != null && sharpText.Inlines.Count > 0)
+            {
+                sharpText.Inlines.Clear();
+                sharpText.Text = currentLyrics[index].Text ?? "";
+            }
+        }
+
+        public void UpdateActiveLineWordProgress(TimeSpan pos, bool isFullscreen)
+        {
+            if (currentLyrics == null || currentLyricIndex < 0 || currentLyricIndex >= currentLyrics.Count) return;
+
+            var line = currentLyrics[currentLyricIndex];
+            if (!line.HasWords || line.Words == null || line.Words.Count == 0) return;
+
+            var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
+            if (targetListView == null) return;
+
+            var container = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
+            if (container == null) return;
+
+            string sharpName = isFullscreen ? "FullscreenLyricSharpText" : "LyricSharpText";
+            var sharpText = FindChildByName(container, sharpName) as TextBlock;
+            if (sharpText == null) return;
+
+            if (sharpText.Inlines.Count != line.Words.Count)
+            {
+                SetupWordInlines(sharpText, line, pos);
+            }
+            else
+            {
+                UpdateWordInlines(sharpText, line, pos);
             }
         }
 

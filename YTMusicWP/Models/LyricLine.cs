@@ -7,6 +7,10 @@ namespace YTMusicWP
     public class LyricLine : INotifyPropertyChanged
     {
         public TimeSpan Time { get; set; }
+        public TimeSpan EndTime { get; set; }
+        public bool IsInterlude { get; set; }
+        public System.Collections.Generic.List<LyricWord> Words { get; set; }
+        public bool HasWords { get { return Words != null && Words.Count > 0; } }
 
         private string _text;
         public string Text { get { return _text; } set { if (_text != value) { _text = value; OnPropertyChanged("Text"); } } }

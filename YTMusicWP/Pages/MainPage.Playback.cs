@@ -662,6 +662,7 @@ namespace YTMusicWP
                         var state = sender.CurrentState;
                         bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
                         SetPlayPauseIcon(isPlaying);
+                        UpdateWordTimerState();
                     }
                     catch { }
                 });
@@ -809,6 +810,7 @@ namespace YTMusicWP
 
                         int oldIndex = currentLyricIndex;
                         currentLyricIndex = newIndex;
+                        ResetWordInlines(oldIndex, isFullscreen);
 
                         if (isLyricsUIVisible)
                         {
@@ -936,6 +938,7 @@ namespace YTMusicWP
                                 }
                             }
                         }
+                        UpdateActiveLineWordProgress(pos, isFullscreen);
                         }
 
                         if (isMainScreenVisible && currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
@@ -1037,6 +1040,7 @@ namespace YTMusicWP
                     _appMediaPlayer.Play();
                     OnPlayPauseChangedAsHost(true);
                 }
+                UpdateWordTimerState();
             }
             catch { }
         }
@@ -2243,6 +2247,25 @@ namespace YTMusicWP
                 var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
                 
                 UpdateLyricsVisualState(oldIndex);
+
+                if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex)
+                {
+                    ResetWordInlines(oldIndex, isFullscreen);
+                }
+                TimeSpan currentPos = TimeSpan.Zero;
+                try
+                {
+                    if (_lastSeekTimestamp != DateTime.MinValue && (DateTime.UtcNow - _lastSeekTimestamp).TotalMilliseconds < 1500)
+                    {
+                        currentPos = _lastSeekTarget;
+                    }
+                    else if (_appMediaPlayer != null)
+                    {
+                        currentPos = _appMediaPlayer.Position;
+                    }
+                }
+                catch { }
+                UpdateActiveLineWordProgress(currentPos, isFullscreen);
                 
                 if (!_isAppleMusicStyle && !isFullscreen)
                 {

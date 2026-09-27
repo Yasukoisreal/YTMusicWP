@@ -173,6 +173,7 @@ namespace YTMusicWP
             }
             // Start marquee after panel is visible and laid out
             var ignored3 = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
+            UpdateWordTimerState();
 
             if (currentTrack != null)
             {
@@ -196,6 +197,7 @@ namespace YTMusicWP
                 _miniLyricMarqueeStoryboard.Stop();
                 _miniLyricMarqueeStoryboard = null;
             }
+            UpdateWordTimerState();
 
             if (AppleMusicGrabber != null)
             {
@@ -342,6 +344,7 @@ namespace YTMusicWP
             }
             
             ForceUpdateLyricUI();
+            UpdateWordTimerState();
         }
 
         private void SlideDownStoryboard_Completed(object sender, object e)
