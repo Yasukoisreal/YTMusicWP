@@ -162,7 +162,7 @@ namespace YTMusicWP
                 Duration = new Duration(TimeSpan.FromMilliseconds(250)),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
-            Storyboard.SetTarget(anim, ShortsTransform);
+            Storyboard.SetTarget(anim, ShortsView.ShortsTransform);
             Storyboard.SetTargetProperty(anim, "Y");
             sb.Children.Add(anim);
             sb.Begin();
@@ -213,7 +213,7 @@ namespace YTMusicWP
                 Duration = new Duration(TimeSpan.FromMilliseconds(250)),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
-            Storyboard.SetTarget(anim, ShortsTransform);
+            Storyboard.SetTarget(anim, ShortsView.ShortsTransform);
             Storyboard.SetTargetProperty(anim, "Y");
             sb.Children.Add(anim);
             sb.Begin();
@@ -284,7 +284,7 @@ namespace YTMusicWP
                 Duration = new Duration(TimeSpan.FromMilliseconds(200)),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
             };
-            Storyboard.SetTarget(anim, ShortsTransform);
+            Storyboard.SetTarget(anim, ShortsView.ShortsTransform);
             Storyboard.SetTargetProperty(anim, "Y");
             sb.Children.Add(anim);
             sb.Completed += (s, e) =>
@@ -292,10 +292,10 @@ namespace YTMusicWP
                 ShortsView.Visibility = Visibility.Collapsed;
                 try
                 {
-                    ShortsBlurBg.ImageSource = null;
-                    ShortsCoverArt.ImageSource = null;
-                    ShortsMiniCover.ImageSource = null;
-                    ShortsArtistAvatarBrush.ImageSource = null;
+                    ShortsView.ShortsBlurBg.ImageSource = null;
+                    ShortsView.ShortsCoverArt.ImageSource = null;
+                    ShortsView.ShortsMiniCover.ImageSource = null;
+                    ShortsView.ShortsArtistAvatarBrush.ImageSource = null;
                 }
                 catch { }
             };
@@ -314,7 +314,7 @@ namespace YTMusicWP
 
         private void BuildCategoryDots()
         {
-            ShortsCategoryDots.Children.Clear();
+            ShortsView.ShortsCategoryDots.Children.Clear();
             for (int i = 0; i < _shortsCategories.Length; i++)
             {
                 int idx = i;
@@ -327,22 +327,22 @@ namespace YTMusicWP
                     Margin = new Thickness(3, 0, 3, 0)
                 };
                 dot.Tapped += (s, e) => SwitchShortsCategory(idx);
-                ShortsCategoryDots.Children.Add(dot);
+                ShortsView.ShortsCategoryDots.Children.Add(dot);
             }
 
-            ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
+            ShortsView.ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
         }
 
         private void UpdateCategoryDots()
         {
-            for (int i = 0; i < ShortsCategoryDots.Children.Count; i++)
+            for (int i = 0; i < ShortsView.ShortsCategoryDots.Children.Count; i++)
             {
-                var dot = ShortsCategoryDots.Children[i] as Border;
+                var dot = ShortsView.ShortsCategoryDots.Children[i] as Border;
                 if (dot == null) continue;
                 dot.Width = i == _shortsCategoryIndex ? 20 : 8;
                 dot.Background = i == _shortsCategoryIndex ? _dotActiveBrush : _dotInactiveBrush;
             }
-            ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
+            ShortsView.ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
         }
 
         private async void SwitchShortsCategory(int index)
@@ -380,8 +380,8 @@ namespace YTMusicWP
             }
 
             // Show loading
-            ShortsSongTitle.Text = "Loading...";
-            ShortsSongArtist.Text = "";
+            ShortsView.ShortsSongTitle.Text = "Loading...";
+            ShortsView.ShortsSongArtist.Text = "";
 
             try
             {
@@ -412,8 +412,8 @@ namespace YTMusicWP
 
             if (myGeneration == _shortsLoadGeneration)
             {
-                ShortsSongTitle.Text = "No results";
-                ShortsSongArtist.Text = "Try another category";
+                ShortsView.ShortsSongTitle.Text = "No results";
+                ShortsView.ShortsSongArtist.Text = "Try another category";
             }
         }
 
@@ -430,18 +430,18 @@ namespace YTMusicWP
             var track = _shortsSongs[_shortsSongIndex];
 
             // Song info
-            ShortsSongTitle.Text = track.Title;
-            ShortsSongArtist.Text = track.ChannelName;
-            ShortsArtistName.Text = track.ChannelName;
-            ShortsArtistSub.Text = "";
+            ShortsView.ShortsSongTitle.Text = track.Title;
+            ShortsView.ShortsSongArtist.Text = track.ChannelName;
+            ShortsView.ShortsArtistName.Text = track.ChannelName;
+            ShortsView.ShortsArtistSub.Text = "";
 
             // Thumbnail — release previous image surfaces first to avoid RAM inflation during swipes
             try
             {
-                ShortsBlurBg.ImageSource = null;
-                ShortsCoverArt.ImageSource = null;
-                ShortsMiniCover.ImageSource = null;
-                ShortsArtistAvatarBrush.ImageSource = null;
+                ShortsView.ShortsBlurBg.ImageSource = null;
+                ShortsView.ShortsCoverArt.ImageSource = null;
+                ShortsView.ShortsMiniCover.ImageSource = null;
+                ShortsView.ShortsArtistAvatarBrush.ImageSource = null;
             }
             catch { }
 
@@ -454,26 +454,26 @@ namespace YTMusicWP
                     var blurBmp = new BitmapImage();
                     blurBmp.DecodePixelWidth = 30;
                     blurBmp.UriSource = new Uri(thumbUrl, UriKind.Absolute);
-                    ShortsBlurBg.ImageSource = blurBmp;
+                    ShortsView.ShortsBlurBg.ImageSource = blurBmp;
 
                     // Cover art in center (crisp)
                     var coverBmp = new BitmapImage();
                     coverBmp.DecodePixelWidth = 240;
                     coverBmp.UriSource = new Uri(thumbUrl, UriKind.Absolute);
-                    ShortsCoverArt.ImageSource = coverBmp;
-                    ShortsCoverArtPanel.Visibility = Visibility.Visible;
+                    ShortsView.ShortsCoverArt.ImageSource = coverBmp;
+                    ShortsView.ShortsCoverArtPanel.Visibility = Visibility.Visible;
 
                     // Mini cover
                     var miniCoverBmp = new BitmapImage();
                     miniCoverBmp.DecodePixelWidth = 50;
                     miniCoverBmp.UriSource = new Uri(track.ThumbnailUrl, UriKind.Absolute);
-                    ShortsMiniCover.ImageSource = miniCoverBmp;
+                    ShortsView.ShortsMiniCover.ImageSource = miniCoverBmp;
 
                     // Artist avatar
                     var avatarBmp = new BitmapImage();
                     avatarBmp.DecodePixelWidth = 40;
                     avatarBmp.UriSource = new Uri(track.ThumbnailUrl, UriKind.Absolute);
-                    ShortsArtistAvatarBrush.ImageSource = avatarBmp;
+                    ShortsView.ShortsArtistAvatarBrush.ImageSource = avatarBmp;
                 }
                 catch { }
             }
@@ -492,8 +492,8 @@ namespace YTMusicWP
 
             // Update heart state
             bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
-            ShortsHeartBtn.Text = isFav ? "♥" : "♡";
-            ShortsHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+            ShortsView.ShortsHeartBtn.Text = isFav ? "♥" : "♡";
+            ShortsView.ShortsHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
             UpdateShortsPauseIcon(true);
         }
 
@@ -510,8 +510,8 @@ namespace YTMusicWP
 
             var rand = new Random();
 
-            // Animate all waveform bars (children of the two StackPanels in ShortsCoverArtPanel)
-            foreach (var child in ShortsCoverArtPanel.Children)
+            // Animate all waveform bars (children of the two StackPanels in ShortsView.ShortsCoverArtPanel)
+            foreach (var child in ShortsView.ShortsCoverArtPanel.Children)
             {
                 var panel = child as StackPanel;
                 if (panel == null) continue;
@@ -558,7 +558,7 @@ namespace YTMusicWP
 
         private void UpdateShortsHashtags()
         {
-            ShortsHashtags.Children.Clear();
+            ShortsView.ShortsHashtags.Children.Clear();
             string[] tags = _shortsCategoryHashtags[GetRealCategoryIndex(_shortsCategoryIndex)].Split('|');
             var semiBoldFont = _shortsSemiBoldFont;
             foreach (var tag in tags)
@@ -571,7 +571,7 @@ namespace YTMusicWP
                     Margin = new Thickness(0, 0, 15, 0),
                     FontFamily = semiBoldFont
                 };
-                ShortsHashtags.Children.Add(tb);
+                ShortsView.ShortsHashtags.Children.Add(tb);
             }
         }
 
@@ -797,7 +797,7 @@ namespace YTMusicWP
 
         private void UpdateShortsPauseIcon(bool isPlaying)
         {
-            ShortsPauseBtn.Text = isPlaying ? "❚❚" : "▶";
+            ShortsView.ShortsPauseBtn.Text = isPlaying ? "❚❚" : "▶";
         }
 
         private async void ShortsHeart_Click(object sender, RoutedEventArgs e)
@@ -818,16 +818,16 @@ namespace YTMusicWP
             if (existing != null)
             {
                 favoriteTracks.Remove(existing);
-                ShortsHeartBtn.Text = "♡";
-                ShortsHeartBtn.Foreground = _whiteBrush;
+                ShortsView.ShortsHeartBtn.Text = "♡";
+                ShortsView.ShortsHeartBtn.Foreground = _whiteBrush;
                 ShowToast("Removed from Favorites");
                 var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
             }
             else
             {
                 favoriteTracks.Insert(0, track);
-                ShortsHeartBtn.Text = "♥";
-                ShortsHeartBtn.Foreground = _greenBrush;
+                ShortsView.ShortsHeartBtn.Text = "♥";
+                ShortsView.ShortsHeartBtn.Foreground = _greenBrush;
                 ShowToast("Added to Favorites");
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }

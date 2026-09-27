@@ -224,6 +224,9 @@ namespace YTMusicWP
         {
             this.InitializeComponent();
             LiveDebugDialog.ToastRequested += LiveDebugDialog_ToastRequested;
+            LoginWebContainer.LoginWebView.NavigationStarting += LoginWebView_NavigationStarting;
+            LoginWebContainer.LoginWebView.NavigationCompleted += LoginWebView_NavigationCompleted;
+            LoginWebContainer.LoginWebView.NavigationFailed += LoginWebView_NavigationFailed;
 
             _appMediaPlayer = BackgroundMediaPlayer.Current;
 

@@ -1,0 +1,131 @@
+<UserControl
+    x:Class="YTMusicWP.Controls.ShortsPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Music Shorts screen. Named elements are x:FieldModifier="internal" because MainPage still drives them directly. -->
+
+    <UserControl.Resources>
+        <!-- Same implicit TextBlock font as MainPage (page-level implicit styles are not guaranteed to reach inside a UserControl) -->
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MontserratRegular}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="#0A0A0A" ManipulationMode="TranslateX,TranslateY" ManipulationDelta="Shorts_ManipulationDelta" ManipulationCompleted="Shorts_ManipulationCompleted">
+        <Grid.RenderTransform>
+            <TranslateTransform x:Name="ShortsTransform" x:FieldModifier="internal" Y="1000"/>
+        </Grid.RenderTransform>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header: Back + Category + Pause -->
+        <Grid Grid.Row="0" Margin="0,30,0,0" Canvas.ZIndex="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="60"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="60"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Click="ShortsBack_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="12,0,0,0" Padding="8" AutomationProperties.Name="Back">
+                <TextBlock Text="←" FontSize="26" Foreground="White"/>
+            </Button>
+            <TextBlock x:Name="ShortsCategoryTitle" x:FieldModifier="internal" Grid.Column="1" Text="#edm" FontSize="17" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Button Grid.Column="2" Click="ShortsPlayCurrent_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" Padding="8" AutomationProperties.Name="Play or pause">
+                <TextBlock x:Name="ShortsPauseBtn" x:FieldModifier="internal" Text="❚❚" FontSize="22" Foreground="White"/>
+            </Button>
+        </Grid>
+
+        <!-- Category Dots -->
+        <StackPanel x:Name="ShortsCategoryDots" x:FieldModifier="internal" Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,72,0,5">
+            <!-- Dots populated dynamically -->
+        </StackPanel>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1" Margin="0">
+            <!-- Blurred background: very low-res image stretched = natural blur -->
+            <Grid.Background>
+                <ImageBrush x:Name="ShortsBlurBg" x:FieldModifier="internal" Stretch="UniformToFill" Opacity="0.6"/>
+            </Grid.Background>
+            <!-- Dark frost overlay on top of blurred bg -->
+            <Border Background="#88000000"/>
+
+            <!-- Cover Art (music-only mode) — centered with waveform bars -->
+            <Grid x:Name="ShortsCoverArtPanel" x:FieldModifier="internal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <!-- Fake waveform bars left -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="-65,0,0,0" Opacity="0.5">
+                    <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="55" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="25" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="65" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="40" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="50" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                </StackPanel>
+                <!-- Cover Art (square album style) -->
+                <Border Width="220" Height="220" CornerRadius="12">
+                    <Border.Background>
+                        <ImageBrush x:Name="ShortsCoverArt" x:FieldModifier="internal" Stretch="UniformToFill"/>
+                    </Border.Background>
+                </Border>
+                <!-- Fake waveform bars right -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-65,0" Opacity="0.5">
+                    <Border Width="4" Height="45" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="25" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="60" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="35" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="55" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                    <Border Width="4" Height="30" Background="#B3B3B3" CornerRadius="2" Margin="3,0"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <!-- Bottom Info Panel -->
+        <StackPanel Grid.Row="2" Margin="15,0,15,0">
+            <!-- Artist info -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Ellipse x:Name="ShortsArtistAvatar" x:FieldModifier="internal" Width="36" Height="36" VerticalAlignment="Center">
+                    <Ellipse.Fill><ImageBrush x:Name="ShortsArtistAvatarBrush" x:FieldModifier="internal" Stretch="UniformToFill"/></Ellipse.Fill>
+                </Ellipse>
+                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="ShortsArtistName" x:FieldModifier="internal" Text="Artist" FontSize="15" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock x:Name="ShortsArtistSub" x:FieldModifier="internal" Text="" FontSize="11" Foreground="#999999"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Hashtags -->
+            <StackPanel x:Name="ShortsHashtags" x:FieldModifier="internal" Orientation="Horizontal" Margin="0,0,0,10">
+                <!-- Populated dynamically -->
+            </StackPanel>
+
+            <!-- Mini player bar -->
+            <Border Background="#2A2A2A" CornerRadius="12" Margin="0,0,0,15" Padding="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="40"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Tappable song info → play in main player -->
+                    <Grid Grid.Column="0" Tapped="ShortsSongBar_Tapped">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="45"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="40" Height="40" CornerRadius="6">
+                            <Border.Background><ImageBrush x:Name="ShortsMiniCover" x:FieldModifier="internal" Stretch="UniformToFill"/></Border.Background>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                            <TextBlock x:Name="ShortsSongTitle" x:FieldModifier="internal" Text="Song Title" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="ShortsSongArtist" x:FieldModifier="internal" Text="Artist" FontSize="11" Foreground="#999999" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+                    <!-- Heart/Favorite button -->
+                    <Button Grid.Column="1" Click="ShortsHeart_Click" Style="{StaticResource IconButtonStyle}" VerticalAlignment="Center" AutomationProperties.Name="Favorite">
+                        <TextBlock x:Name="ShortsHeartBtn" x:FieldModifier="internal" Text="♡" FontSize="22" Foreground="White"/>
+                    </Button>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

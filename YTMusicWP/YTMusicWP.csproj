@@ -121,6 +121,12 @@
     <Compile Include="Controls\ListenTogetherPanel.xaml.cs">
       <DependentUpon>ListenTogetherPanel.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\ShortsPanel.xaml.cs">
+      <DependentUpon>ShortsPanel.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\LoginWebPanel.xaml.cs">
+      <DependentUpon>LoginWebPanel.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\SongCreditsDialog.xaml.cs">
       <DependentUpon>SongCreditsDialog.xaml</DependentUpon>
     </Compile>
@@ -256,6 +262,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Controls\ListenTogetherPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\ShortsPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\LoginWebPanel.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

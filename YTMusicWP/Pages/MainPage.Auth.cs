@@ -536,11 +536,11 @@ namespace YTMusicWP
         private async void LoginGoogle_Click(object sender, RoutedEventArgs e)
         {
             LoginWebContainer.Visibility = Visibility.Visible;
-            DeviceCodeText.Text = "----";
-            DeviceCodeQrImage.Source = null;
-            DeviceCodeQrLoading.Visibility = Visibility.Visible;
-            DeviceCodeStatus.Text = "Requesting code...";
-            DeviceCodeProgress.Visibility = Visibility.Visible;
+            LoginWebContainer.DeviceCodeText.Text = "----";
+            LoginWebContainer.DeviceCodeQrImage.Source = null;
+            LoginWebContainer.DeviceCodeQrLoading.Visibility = Visibility.Visible;
+            LoginWebContainer.DeviceCodeStatus.Text = "Requesting code...";
+            LoginWebContainer.DeviceCodeProgress.Visibility = Visibility.Visible;
 
             await StartDeviceCodeFlow();
         }
@@ -567,7 +567,7 @@ namespace YTMusicWP
             
             LoginWebContainer.Visibility = Visibility.Collapsed;
             _deviceCodePolling = false;
-            DeviceCodeQrImage.Source = null;
+            LoginWebContainer.DeviceCodeQrImage.Source = null;
         }
 
         private async Task StartDeviceCodeFlow()
@@ -595,8 +595,8 @@ namespace YTMusicWP
                         _deviceUserCode = userCode;
                         _deviceVerificationUrl = verificationUrl;
 
-                        DeviceCodeText.Text = userCode ?? "ERROR";
-                        DeviceCodeStatus.Text = "Waiting for you to sign in...";
+                        LoginWebContainer.DeviceCodeText.Text = userCode ?? "ERROR";
+                        LoginWebContainer.DeviceCodeStatus.Text = "Waiting for you to sign in...";
 
                         // Generate QR Code bitmap with auto-fill URL
                         string qrUrl = !string.IsNullOrEmpty(userCode)
@@ -606,13 +606,13 @@ namespace YTMusicWP
                         var qrBitmap = Services.QrCodeGenerator.GenerateQrBitmap(qrUrl, 4, 3);
                         if (qrBitmap != null)
                         {
-                            DeviceCodeQrImage.Source = qrBitmap;
+                            LoginWebContainer.DeviceCodeQrImage.Source = qrBitmap;
                         }
                         else
                         {
-                            DeviceCodeQrImage.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + Uri.EscapeDataString(qrUrl)));
+                            LoginWebContainer.DeviceCodeQrImage.Source = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri("https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + Uri.EscapeDataString(qrUrl)));
                         }
-                        DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
+                        LoginWebContainer.DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
 
                         // Start polling for user authorization
                         _deviceCodePolling = true;
@@ -620,19 +620,19 @@ namespace YTMusicWP
                     }
                     else
                     {
-                        DeviceCodeText.Text = "ERROR";
-                        DeviceCodeStatus.Text = "Failed to get code. Try again.";
-                        DeviceCodeProgress.Visibility = Visibility.Collapsed;
-                        DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
+                        LoginWebContainer.DeviceCodeText.Text = "ERROR";
+                        LoginWebContainer.DeviceCodeStatus.Text = "Failed to get code. Try again.";
+                        LoginWebContainer.DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                        LoginWebContainer.DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
                     }
                 }
             }
             catch
             {
-                DeviceCodeText.Text = "ERROR";
-                DeviceCodeStatus.Text = "Network error. Check your connection.";
-                DeviceCodeProgress.Visibility = Visibility.Collapsed;
-                DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
+                LoginWebContainer.DeviceCodeText.Text = "ERROR";
+                LoginWebContainer.DeviceCodeStatus.Text = "Network error. Check your connection.";
+                LoginWebContainer.DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                LoginWebContainer.DeviceCodeQrLoading.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -674,8 +674,8 @@ namespace YTMusicWP
                             settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresInSec - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
                             SettingsPanel.SyncNowBtn.Visibility = Visibility.Visible;
 
-                            DeviceCodeStatus.Text = "Success! Syncing...";
-                            DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                            LoginWebContainer.DeviceCodeStatus.Text = "Success! Syncing...";
+                            LoginWebContainer.DeviceCodeProgress.Visibility = Visibility.Collapsed;
 
                             UpdateAccountPanel(true, "Logged In & Syncing...");
                             SettingsPanel.LoginStatusText.Foreground = _greenBrush;
@@ -703,8 +703,8 @@ namespace YTMusicWP
                             {
                                 // access_denied, expired_token, etc.
                                 _deviceCodePolling = false;
-                                DeviceCodeStatus.Text = "Login failed: " + error;
-                                DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                                LoginWebContainer.DeviceCodeStatus.Text = "Login failed: " + error;
+                                LoginWebContainer.DeviceCodeProgress.Visibility = Visibility.Collapsed;
                                 return;
                             }
                         }
@@ -713,7 +713,7 @@ namespace YTMusicWP
                 catch
                 {
                     // Network error, retry
-                    DeviceCodeStatus.Text = "Network issue, retrying...";
+                    LoginWebContainer.DeviceCodeStatus.Text = "Network issue, retrying...";
                 }
             }
 
@@ -721,8 +721,8 @@ namespace YTMusicWP
             if (_deviceCodePolling)
             {
                 _deviceCodePolling = false;
-                DeviceCodeStatus.Text = "Code expired. Please try again.";
-                DeviceCodeProgress.Visibility = Visibility.Collapsed;
+                LoginWebContainer.DeviceCodeStatus.Text = "Code expired. Please try again.";
+                LoginWebContainer.DeviceCodeProgress.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -737,35 +737,35 @@ namespace YTMusicWP
             LoginWebContainer.Visibility = Visibility.Visible;
 
             // Hide the Device Code UI, show WebView instead
-            LoginWebView.Visibility = Visibility.Visible;
-            LoginWebLoading.Visibility = Visibility.Visible;
+            LoginWebContainer.LoginWebView.Visibility = Visibility.Visible;
+            LoginWebContainer.LoginWebLoading.Visibility = Visibility.Visible;
 
             // Hide device code elements
-            DeviceCodeStatus.Text = "Signing in via browser...";
-            DeviceCodeProgress.Visibility = Visibility.Collapsed;
+            LoginWebContainer.DeviceCodeStatus.Text = "Signing in via browser...";
+            LoginWebContainer.DeviceCodeProgress.Visibility = Visibility.Collapsed;
 
             // Navigate to Google login → redirect to YouTube Music
-            LoginWebView.Navigate(new Uri("https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com%2F&hl=en"));
+            LoginWebContainer.LoginWebView.Navigate(new Uri("https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com%2F&hl=en"));
         }
 
         private void LoginWebView_NavigationStarting(WebView sender, WebViewNavigationStartingEventArgs args)
         {
             if (_cookieLoginActive)
-                LoginWebLoading.Visibility = Visibility.Visible;
+                LoginWebContainer.LoginWebLoading.Visibility = Visibility.Visible;
         }
 
         private void LoginWebView_NavigationFailed(object sender, WebViewNavigationFailedEventArgs e)
         {
             if (_cookieLoginActive)
             {
-                LoginWebLoading.Visibility = Visibility.Collapsed;
-                DeviceCodeStatus.Text = "Navigation failed. Check your connection.";
+                LoginWebContainer.LoginWebLoading.Visibility = Visibility.Collapsed;
+                LoginWebContainer.DeviceCodeStatus.Text = "Navigation failed. Check your connection.";
             }
         }
 
         private async void LoginWebView_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs args)
         {
-            LoginWebLoading.Visibility = Visibility.Collapsed;
+            LoginWebContainer.LoginWebLoading.Visibility = Visibility.Collapsed;
 
             if (!_cookieLoginActive) return;
 
@@ -805,7 +805,7 @@ namespace YTMusicWP
                     // If they reached YouTube Music but still no cookie, maybe show an error
                     if (currentUrl.Contains("music.youtube.com") && !currentUrl.Contains("accounts.google.com"))
                     {
-                        DeviceCodeStatus.Text = "Login incomplete. Please try again.";
+                        LoginWebContainer.DeviceCodeStatus.Text = "Login incomplete. Please try again.";
                     }
                     return;
                 }
@@ -822,8 +822,8 @@ namespace YTMusicWP
 
                 // Hide WebView
                 _cookieLoginActive = false;
-                LoginWebView.Visibility = Visibility.Collapsed;
-                LoginWebLoading.Visibility = Visibility.Collapsed;
+                LoginWebContainer.LoginWebView.Visibility = Visibility.Collapsed;
+                LoginWebContainer.LoginWebLoading.Visibility = Visibility.Collapsed;
                 LoginWebContainer.Visibility = Visibility.Collapsed;
 
                 UpdateAccountPanel(true, "Logged in (Cookie)");
@@ -849,7 +849,7 @@ namespace YTMusicWP
             }
             catch
             {
-                DeviceCodeStatus.Text = "Failed to extract cookies. Try again.";
+                LoginWebContainer.DeviceCodeStatus.Text = "Failed to extract cookies. Try again.";
             }
         }
 
