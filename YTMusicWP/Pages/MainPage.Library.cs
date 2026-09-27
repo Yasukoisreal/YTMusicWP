@@ -38,7 +38,7 @@ namespace YTMusicWP
             _libraryFilter = btn.Tag as string ?? "all";
 
             // Reset all chips to inactive (YouTube Music style)
-            var chips = new[] { LibChipAll, LibChipPlaylists, LibChipSongs, LibChipArtists, LibChipDownloads };
+            var chips = new[] { LibraryPanel.LibChipAll, LibraryPanel.LibChipPlaylists, LibraryPanel.LibChipSongs, LibraryPanel.LibChipArtists, LibraryPanel.LibChipDownloads };
             foreach (var chip in chips)
             {
                 chip.Background = _ytmChipInactiveBgBrush;
@@ -54,39 +54,39 @@ namespace YTMusicWP
 
         private void RefreshLibraryList()
         {
-            LibraryUnifiedList.ItemsSource = null;
+            LibraryPanel.LibraryUnifiedList.ItemsSource = null;
             _libraryItems.Clear();
 
             bool showAll = _libraryFilter == "all";
 
-            if (LibQuickSection != null)
+            if (LibraryPanel.LibQuickSection != null)
             {
-                LibQuickSection.Visibility = showAll ? Visibility.Visible : Visibility.Collapsed;
+                LibraryPanel.LibQuickSection.Visibility = showAll ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            if (LibMostPlayedSection != null && !showAll)
+            if (LibraryPanel.LibMostPlayedSection != null && !showAll)
             {
-                LibMostPlayedSection.Visibility = Visibility.Collapsed;
+                LibraryPanel.LibMostPlayedSection.Visibility = Visibility.Collapsed;
             }
 
-            if (LibSectionTitle != null)
+            if (LibraryPanel.LibSectionTitle != null)
             {
                 switch (_libraryFilter)
                 {
                     case "playlists":
-                        LibSectionTitle.Text = "Playlists";
+                        LibraryPanel.LibSectionTitle.Text = "Playlists";
                         break;
                     case "songs":
-                        LibSectionTitle.Text = "Songs";
+                        LibraryPanel.LibSectionTitle.Text = "Songs";
                         break;
                     case "artists":
-                        LibSectionTitle.Text = "Artists";
+                        LibraryPanel.LibSectionTitle.Text = "Artists";
                         break;
                     case "downloads":
-                        LibSectionTitle.Text = "Downloads";
+                        LibraryPanel.LibSectionTitle.Text = "Downloads";
                         break;
                     default:
-                        LibSectionTitle.Text = (_librarySortMode == "activity") ? "Recent activity" :
+                        LibraryPanel.LibSectionTitle.Text = (_librarySortMode == "activity") ? "Recent activity" :
                                               (_librarySortMode == "played") ? "Recently played" : "Recently added";
                         break;
                 }
@@ -261,8 +261,8 @@ namespace YTMusicWP
                 }
             }
 
-            LibraryUnifiedList.ItemsSource = _libraryItems;
-            LibraryEmptyState.Visibility = _libraryItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            LibraryPanel.LibraryUnifiedList.ItemsSource = _libraryItems;
+            LibraryPanel.LibraryEmptyState.Visibility = _libraryItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void SetPlaylistViewTracks(IEnumerable<YouTubeTrack> tracks, string trackCountText = null)
@@ -457,25 +457,25 @@ namespace YTMusicWP
             string tag = item.Tag as string ?? "activity";
             _librarySortMode = tag;
 
-            if (LibSortLabel != null)
+            if (LibraryPanel.LibSortLabel != null)
             {
                 switch (tag)
                 {
                     case "added":
-                        LibSortLabel.Text = "Recently added";
+                        LibraryPanel.LibSortLabel.Text = "Recently added";
                         break;
                     case "played":
-                        LibSortLabel.Text = "Recently played";
+                        LibraryPanel.LibSortLabel.Text = "Recently played";
                         break;
                     default:
-                        LibSortLabel.Text = "Recent activity";
+                        LibraryPanel.LibSortLabel.Text = "Recent activity";
                         break;
                 }
             }
 
-            if (LibSortItemActivity != null) LibSortItemActivity.Text = (tag == "activity" ? "✓ " : "  ") + "Recent activity";
-            if (LibSortItemAdded != null) LibSortItemAdded.Text = (tag == "added" ? "✓ " : "  ") + "Recently added";
-            if (LibSortItemPlayed != null) LibSortItemPlayed.Text = (tag == "played" ? "✓ " : "  ") + "Recently played";
+            if (LibraryPanel.LibSortItemActivity != null) LibraryPanel.LibSortItemActivity.Text = (tag == "activity" ? "✓ " : "  ") + "Recent activity";
+            if (LibraryPanel.LibSortItemAdded != null) LibraryPanel.LibSortItemAdded.Text = (tag == "added" ? "✓ " : "  ") + "Recently added";
+            if (LibraryPanel.LibSortItemPlayed != null) LibraryPanel.LibSortItemPlayed.Text = (tag == "played" ? "✓ " : "  ") + "Recently played";
 
             RefreshLibraryList();
         }
@@ -487,7 +487,7 @@ namespace YTMusicWP
 
         private void LibTileFollowed_Click(object sender, RoutedEventArgs e)
         {
-            LibChip_Click(LibChipArtists, null);
+            LibChip_Click(LibraryPanel.LibChipArtists, null);
         }
 
         private async void LibTileMostPlayed_Click(object sender, RoutedEventArgs e)
@@ -529,27 +529,27 @@ namespace YTMusicWP
 
         private async Task LoadMostPlayedShelfAsync()
         {
-            if (LibMostPlayedSection == null || LibMostPlayedCarousel == null) return;
+            if (LibraryPanel.LibMostPlayedSection == null || LibraryPanel.LibMostPlayedCarousel == null) return;
             try
             {
                 var mostPlayed = await Services.DatabaseHelper.GetMostPlayedAsync(10);
                 if (mostPlayed != null && mostPlayed.Count > 0)
                 {
-                    LibMostPlayedCarousel.ItemsSource = mostPlayed;
+                    LibraryPanel.LibMostPlayedCarousel.ItemsSource = mostPlayed;
                     if (_libraryFilter == "all")
                     {
-                        LibMostPlayedSection.Visibility = Visibility.Visible;
+                        LibraryPanel.LibMostPlayedSection.Visibility = Visibility.Visible;
                     }
                 }
                 else
                 {
-                    LibMostPlayedSection.Visibility = Visibility.Collapsed;
+                    LibraryPanel.LibMostPlayedSection.Visibility = Visibility.Collapsed;
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine("LoadMostPlayedShelfAsync Error: " + ex.Message);
-                LibMostPlayedSection.Visibility = Visibility.Collapsed;
+                LibraryPanel.LibMostPlayedSection.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -1578,7 +1578,7 @@ namespace YTMusicWP
 
         private async void LibrarySync_Click(object sender, RoutedEventArgs e)
         {
-            LibrarySyncBtn.IsEnabled = false;
+            LibraryPanel.LibrarySyncBtn.IsEnabled = false;
             try
             {
                 string accessToken = await GetAccessTokenAsync();
@@ -1600,7 +1600,7 @@ namespace YTMusicWP
             }
             finally
             {
-                LibrarySyncBtn.IsEnabled = true;
+                LibraryPanel.LibrarySyncBtn.IsEnabled = true;
             }
         }
 

@@ -233,13 +233,13 @@ namespace YTMusicWP
             HomeQuickGrid.ItemsSource = historyQuickGridTracks;
             HomeQuickGrid.Visibility = Visibility.Collapsed;
 
-            FavoriteSongList.ItemsSource = favoriteTracks;
-            DownloadedSongList.ItemsSource = downloadedTracks;
+            LibraryPanel.FavoriteSongList.ItemsSource = favoriteTracks;
+            LibraryPanel.DownloadedSongList.ItemsSource = downloadedTracks;
             SuggestionList.ItemsSource = searchSuggestions;
-            HistorySongList.ItemsSource = historyTracks;
+            LibraryPanel.HistorySongList.ItemsSource = historyTracks;
             LyricsListView.ItemsSource = currentLyrics;
             QueueListView.ItemsSource = currentQueueTracks;
-            PlaylistsListView.ItemsSource = userPlaylists;
+            LibraryPanel.PlaylistsListView.ItemsSource = userPlaylists;
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
 
             _typingTimer.Interval = TimeSpan.FromMilliseconds(400);

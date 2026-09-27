@@ -139,10 +139,10 @@ namespace YTMusicWP
         {
             SwitchTab(2);
             // Bind synced data when switching to Library
-            if (YouTubePlaylistsListView.ItemsSource == null)
-                YouTubePlaylistsListView.ItemsSource = _youtubeUserPlaylists;
-            if (SubscriptionsListView.ItemsSource == null)
-                SubscriptionsListView.ItemsSource = _youtubeSubscriptions;
+            if (LibraryPanel.YouTubePlaylistsListView.ItemsSource == null)
+                LibraryPanel.YouTubePlaylistsListView.ItemsSource = _youtubeUserPlaylists;
+            if (LibraryPanel.SubscriptionsListView.ItemsSource == null)
+                LibraryPanel.SubscriptionsListView.ItemsSource = _youtubeSubscriptions;
             RefreshLibraryList();
         }
 
@@ -182,7 +182,7 @@ namespace YTMusicWP
             SettingsPanel.Visibility = Visibility.Collapsed;
             SuggestionPopup.Visibility = Visibility.Collapsed;
             // Fade-in animation for active panel
-            var panels = new[] { HomePanel, SearchPanel, LibraryPanel };
+            var panels = new FrameworkElement[] { HomePanel, SearchPanel, LibraryPanel };
             for (int i = 0; i < panels.Length; i++)
             {
                 if (i == tab)
