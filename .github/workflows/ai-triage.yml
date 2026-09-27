@@ -1,0 +1,102 @@
+name: AI Policy Triage
+
+# Enforces the "AI Policy" section of CONTRIBUTING.md: pull requests opened by coding agents,
+# or carrying AI co-author trailers / "Generated with ..." markers, are closed on sight.
+#
+# pull_request_target runs in the context of the base repository so it can comment on and close
+# PRs from forks. SECURITY: this workflow must NEVER check out or execute code from the PR —
+# it only reads PR metadata (author, body, commit messages) through the GitHub API.
+
+on:
+  pull_request_target:
+    types: [ opened, reopened, synchronize, edited ]
+    branches: [ main ]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ai-triage-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    name: AI Policy Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan PR author, description and commits
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+
+            // Bots that are allowed to open PRs (dependency updates etc.)
+            const allowedBots = ['dependabot[bot]', 'renovate[bot]', 'github-actions[bot]'];
+
+            // Known coding-agent accounts
+            const agentAccounts = /^(devin-ai-integration|google-labs-jules|jules|openhands(-agent)?|copilot|copilot-swe-agent|claude|sweep-ai|codegen-sh|cursor|coderabbitai|aider|codex|chatgpt-codex-connector)(\[bot\])?$/i;
+
+            // AI tool names that show up in co-author trailers and generated-by footers
+            const aiTools = 'claude|anthropic|copilot|cursor|devin|jules|openhands|codex|openai|chatgpt|gemini|aider|sweep|codegen|windsurf|cline|tabnine|amazon q|junie';
+            const coAuthorTrailer = new RegExp(`^\\s*co-authored-by:.*(${aiTools})`, 'im');
+            const generatedMarker = new RegExp(`(generated|created|written) (with|by) \\[?(${aiTools})`, 'i');
+            const aiEmail = /@(anthropic\.com|openai\.com)|copilot@github\.com|devin-ai-integration|google-labs-jules|openhands/i;
+
+            const reasons = [];
+            const login = pr.user.login;
+
+            if (!allowedBots.includes(login.toLowerCase())) {
+              if (agentAccounts.test(login)) {
+                reasons.push(`PR was opened by the coding-agent account \`${login}\`.`);
+              } else if (pr.user.type === 'Bot') {
+                reasons.push(`PR was opened by the bot account \`${login}\`.`);
+              }
+            }
+
+            const body = pr.body || '';
+            if (generatedMarker.test(body) || coAuthorTrailer.test(body)) {
+              reasons.push('PR description contains a "Generated with ..." marker or an AI co-author trailer.');
+            }
+
+            const commits = await github.paginate(github.rest.pulls.listCommits, {
+              owner, repo, pull_number: pr.number, per_page: 100
+            });
+
+            for (const c of commits) {
+              const sha = c.sha.substring(0, 7);
+              const msg = c.commit.message || '';
+              const emails = [c.commit.author && c.commit.author.email, c.commit.committer && c.commit.committer.email].join(' ');
+              const authorLogin = c.author ? c.author.login : '';
+
+              if (coAuthorTrailer.test(msg)) {
+                reasons.push(`Commit ${sha} carries an AI co-author trailer.`);
+              } else if (generatedMarker.test(msg)) {
+                reasons.push(`Commit ${sha} contains a "Generated with ..." marker.`);
+              } else if (aiEmail.test(emails) || (authorLogin && agentAccounts.test(authorLogin))) {
+                reasons.push(`Commit ${sha} was authored by an AI agent identity.`);
+              }
+            }
+
+            if (reasons.length === 0) {
+              core.info('No AI policy violations found.');
+              return;
+            }
+
+            const policyUrl = `https://github.com/${owner}/${repo}/blob/main/CONTRIBUTING.md#ai-policy`;
+            const comment = [
+              'This pull request was closed automatically because it does not follow the [AI Policy](' + policyUrl + '):',
+              '',
+              ...reasons.map(r => `- ${r}`),
+              '',
+              'AI-*assisted* work is welcome, but a human must have written or personally reviewed every line.',
+              'If that is the case, squash out the AI trailers / markers and open a new pull request.'
+            ].join('\n');
+
+            await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body: comment });
+            await github.rest.issues.addLabels({ owner, repo, issue_number: pr.number, labels: ['ai-policy'] });
+            await github.rest.pulls.update({ owner, repo, pull_number: pr.number, state: 'closed' });
+
+            core.setFailed(`Closed for AI policy violations:\n${reasons.join('\n')}`);
