@@ -114,42 +114,42 @@ namespace YTMusicWP
         {
             try
             {
-                if (StorageLoadingRing != null) StorageLoadingRing.IsActive = true;
-                if (StorageLoadingRing != null) StorageLoadingRing.Visibility = Visibility.Visible;
+                if (SettingsPanel.StorageLoadingRing != null) SettingsPanel.StorageLoadingRing.IsActive = true;
+                if (SettingsPanel.StorageLoadingRing != null) SettingsPanel.StorageLoadingRing.Visibility = Visibility.Visible;
 
                 var stats = await CalculateStorageStatsAsync();
 
-                if (StorageTotalText != null)
-                    StorageTotalText.Text = FormatFileSize(stats.TotalBytes) + " Used";
+                if (SettingsPanel.StorageTotalText != null)
+                    SettingsPanel.StorageTotalText.Text = FormatFileSize(stats.TotalBytes) + " Used";
 
-                if (StorageDownloadsSizeText != null)
-                    StorageDownloadsSizeText.Text = FormatFileSize(stats.DownloadedBytes);
+                if (SettingsPanel.StorageDownloadsSizeText != null)
+                    SettingsPanel.StorageDownloadsSizeText.Text = FormatFileSize(stats.DownloadedBytes);
 
-                if (StorageDownloadsCountText != null)
-                    StorageDownloadsCountText.Text = "(" + stats.DownloadedCount + " songs)";
+                if (SettingsPanel.StorageDownloadsCountText != null)
+                    SettingsPanel.StorageDownloadsCountText.Text = "(" + stats.DownloadedCount + " songs)";
 
-                if (StorageImagesSizeText != null)
-                    StorageImagesSizeText.Text = FormatFileSize(stats.ImageCacheBytes);
+                if (SettingsPanel.StorageImagesSizeText != null)
+                    SettingsPanel.StorageImagesSizeText.Text = FormatFileSize(stats.ImageCacheBytes);
 
-                if (StorageImagesCountText != null)
-                    StorageImagesCountText.Text = "(" + stats.ImageCacheCount + " files)";
+                if (SettingsPanel.StorageImagesCountText != null)
+                    SettingsPanel.StorageImagesCountText.Text = "(" + stats.ImageCacheCount + " files)";
 
-                if (StorageTempSizeText != null)
-                    StorageTempSizeText.Text = FormatFileSize(stats.TempStreamBytes);
+                if (SettingsPanel.StorageTempSizeText != null)
+                    SettingsPanel.StorageTempSizeText.Text = FormatFileSize(stats.TempStreamBytes);
 
-                if (StorageTempCountText != null)
-                    StorageTempCountText.Text = "(" + stats.TempStreamCount + " files)";
+                if (SettingsPanel.StorageTempCountText != null)
+                    SettingsPanel.StorageTempCountText.Text = "(" + stats.TempStreamCount + " files)";
 
-                if (StorageDataSizeText != null)
-                    StorageDataSizeText.Text = FormatFileSize(stats.DataCacheBytes);
+                if (SettingsPanel.StorageDataSizeText != null)
+                    SettingsPanel.StorageDataSizeText.Text = FormatFileSize(stats.DataCacheBytes);
             }
             catch { }
             finally
             {
-                if (StorageLoadingRing != null)
+                if (SettingsPanel.StorageLoadingRing != null)
                 {
-                    StorageLoadingRing.IsActive = false;
-                    StorageLoadingRing.Visibility = Visibility.Collapsed;
+                    SettingsPanel.StorageLoadingRing.IsActive = false;
+                    SettingsPanel.StorageLoadingRing.Visibility = Visibility.Collapsed;
                 }
             }
         }

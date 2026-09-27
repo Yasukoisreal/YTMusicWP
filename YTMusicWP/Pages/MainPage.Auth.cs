@@ -27,17 +27,17 @@ namespace YTMusicWP
         /// </summary>
         private void UpdateAccountPanel(bool isLoggedIn, string statusText = null)
         {
-            AccountSignedOutPanel.Visibility = isLoggedIn ? Visibility.Collapsed : Visibility.Visible;
-            AccountSignedInPanel.Visibility = isLoggedIn ? Visibility.Visible : Visibility.Collapsed;
+            SettingsPanel.AccountSignedOutPanel.Visibility = isLoggedIn ? Visibility.Collapsed : Visibility.Visible;
+            SettingsPanel.AccountSignedInPanel.Visibility = isLoggedIn ? Visibility.Visible : Visibility.Collapsed;
 
             if (isLoggedIn)
             {
                 var settings = ApplicationData.Current.LocalSettings.Values;
                 string userName = settings.ContainsKey("GoogleUserName") ? settings["GoogleUserName"]?.ToString() : null;
-                AccountUserName.Text = !string.IsNullOrEmpty(userName) ? userName : "Google Account";
+                SettingsPanel.AccountUserName.Text = !string.IsNullOrEmpty(userName) ? userName : "Google Account";
                 if (statusText != null)
                 {
-                    LoginStatusText.Text = statusText;
+                    SettingsPanel.LoginStatusText.Text = statusText;
                 }
             }
         }
@@ -88,8 +88,8 @@ namespace YTMusicWP
             try
             {
                 var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                ClientIdTextBox.Text = SafeGetString(settings, "GoogleClientId", "");
-                ClientSecretTextBox.Text = SafeGetString(settings, "GoogleClientSecret", "");
+                SettingsPanel.ClientIdTextBox.Text = SafeGetString(settings, "GoogleClientId", "");
+                SettingsPanel.ClientSecretTextBox.Text = SafeGetString(settings, "GoogleClientSecret", "");
 
                 string savedRegion = "US";
                 if (settings.ContainsKey("TrendingRegion"))
@@ -97,24 +97,24 @@ namespace YTMusicWP
                     string r = settings["TrendingRegion"].ToString();
                     savedRegion = r;
                     bool found = false;
-                    for (int i = 0; i < RegionComboBox.Items.Count; i++)
+                    for (int i = 0; i < SettingsPanel.RegionComboBox.Items.Count; i++)
                     {
-                        var tag = ((ComboBoxItem)RegionComboBox.Items[i]).Tag;
+                        var tag = ((ComboBoxItem)SettingsPanel.RegionComboBox.Items[i]).Tag;
                         if (tag != null && tag.ToString() == r)
                         {
-                            RegionComboBox.SelectedIndex = i;
+                            SettingsPanel.RegionComboBox.SelectedIndex = i;
                             found = true;
                             break;
                         }
                     }
-                    if (!found) RegionComboBox.SelectedIndex = 0; // Fallback: Auto-detect
+                    if (!found) SettingsPanel.RegionComboBox.SelectedIndex = 0; // Fallback: Auto-detect
                 }
                 else
                 {
                     string detected = DetectOsRegion();
                     settings["TrendingRegion"] = detected;
                     savedRegion = detected;
-                    RegionComboBox.SelectedIndex = 0;
+                    SettingsPanel.RegionComboBox.SelectedIndex = 0;
                 }
                 InnerTubeClient.SetRegion(savedRegion);
 
@@ -123,20 +123,20 @@ namespace YTMusicWP
                 {
                     savedLang = settings["AppLanguage"].ToString();
                 }
-                if (LanguageComboBox != null)
+                if (SettingsPanel.LanguageComboBox != null)
                 {
                     bool langFound = false;
-                    for (int i = 0; i < LanguageComboBox.Items.Count; i++)
+                    for (int i = 0; i < SettingsPanel.LanguageComboBox.Items.Count; i++)
                     {
-                        var tag = ((ComboBoxItem)LanguageComboBox.Items[i]).Tag;
+                        var tag = ((ComboBoxItem)SettingsPanel.LanguageComboBox.Items[i]).Tag;
                         if (tag != null && tag.ToString() == savedLang)
                         {
-                            LanguageComboBox.SelectedIndex = i;
+                            SettingsPanel.LanguageComboBox.SelectedIndex = i;
                             langFound = true;
                             break;
                         }
                     }
-                    if (!langFound) LanguageComboBox.SelectedIndex = 0; // Fallback: Auto
+                    if (!langFound) SettingsPanel.LanguageComboBox.SelectedIndex = 0; // Fallback: Auto
                 }
 
                 if (savedLang == "AUTO")
@@ -150,7 +150,7 @@ namespace YTMusicWP
                 {
                     string status = settings.ContainsKey("GoogleCookieString") ? "Logged in (Cookie)" : "Synced";
                     UpdateAccountPanel(true, status);
-                    LoginStatusText.Foreground = _greenBrush;
+                    SettingsPanel.LoginStatusText.Foreground = _greenBrush;
                     // Load cached avatar
                     LoadHomeAvatar();
                 }
@@ -163,9 +163,9 @@ namespace YTMusicWP
                 // Playback settings � set values BEFORE attaching handlers to avoid triggering saves on load
                 // Quality setting removed since only itag 18 is available
 
-                AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
-                GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
-                NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
+                SettingsPanel.AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
+                SettingsPanel.GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
+                SettingsPanel.NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
                 try { if (settings.ContainsKey("ForceSabr")) settings.Remove("ForceSabr"); } catch { }
 
                 int speedIdx = SafeGetInt(settings, "PlaybackSpeedIndex", 2);
@@ -185,53 +185,53 @@ namespace YTMusicWP
                     if (styleVal is int) npStyle = (int)styleVal;
                     else if (styleVal is string) int.TryParse((string)styleVal, out npStyle);
                 }
-                if (NowPlayingStyleComboBox != null)
+                if (SettingsPanel.NowPlayingStyleComboBox != null)
                 {
-                    NowPlayingStyleComboBox.SelectedIndex = (npStyle == 1) ? 1 : 0;
-                    NowPlayingStyleComboBox.SelectionChanged += NowPlayingStyleComboBox_SelectionChanged;
+                    SettingsPanel.NowPlayingStyleComboBox.SelectedIndex = (npStyle == 1) ? 1 : 0;
+                    SettingsPanel.NowPlayingStyleComboBox.SelectionChanged += NowPlayingStyleComboBox_SelectionChanged;
                 }
                 _isAppleMusicStyle = (npStyle == 1);
 
-                LiveTileToggle.IsOn = YTMusicWP.Services.TileService.IsLiveTileEnabled;
+                SettingsPanel.LiveTileToggle.IsOn = YTMusicWP.Services.TileService.IsLiveTileEnabled;
                 int tileMode = YTMusicWP.Services.TileService.LiveTileMode;
-                if (tileMode >= 0 && tileMode < LiveTileModeComboBox.Items.Count)
-                    LiveTileModeComboBox.SelectedIndex = tileMode;
+                if (tileMode >= 0 && tileMode < SettingsPanel.LiveTileModeComboBox.Items.Count)
+                    SettingsPanel.LiveTileModeComboBox.SelectedIndex = tileMode;
                 int tileSpeed = YTMusicWP.Services.TileService.LiveTileSpeed;
-                if (tileSpeed >= 0 && tileSpeed < LiveTileSpeedComboBox.Items.Count)
-                    LiveTileSpeedComboBox.SelectedIndex = tileSpeed;
+                if (tileSpeed >= 0 && tileSpeed < SettingsPanel.LiveTileSpeedComboBox.Items.Count)
+                    SettingsPanel.LiveTileSpeedComboBox.SelectedIndex = tileSpeed;
 
-                if (SplashAnimationToggle != null)
+                if (SettingsPanel.SplashAnimationToggle != null)
                 {
                     bool defaultSplash = !Services.MemoryHelper.IsLowMemoryDevice;
-                    SplashAnimationToggle.IsOn = SafeGetBool(settings, "EnableSplashAnimation", defaultSplash);
-                    SplashAnimationToggle.Toggled += SplashAnimationToggle_Toggled;
+                    SettingsPanel.SplashAnimationToggle.IsOn = SafeGetBool(settings, "EnableSplashAnimation", defaultSplash);
+                    SettingsPanel.SplashAnimationToggle.Toggled += SplashAnimationToggle_Toggled;
                 }
 
-                if (SmartDownloadsToggle != null)
+                if (SettingsPanel.SmartDownloadsToggle != null)
                 {
-                    SmartDownloadsToggle.IsOn = SafeGetBool(settings, "SmartDownloads", false);
-                    SmartDownloadsToggle.Toggled += SmartDownloadsToggle_Toggled;
+                    SettingsPanel.SmartDownloadsToggle.IsOn = SafeGetBool(settings, "SmartDownloads", false);
+                    SettingsPanel.SmartDownloadsToggle.Toggled += SmartDownloadsToggle_Toggled;
                 }
 
                 // Now attach handlers  changes will save & apply immediately
                 // Quality handler removed
 
-                AutoplayToggle.Toggled += AutoplayToggle_Toggled;
-                GaplessToggle.Toggled += GaplessToggle_Toggled;
-                NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
-                RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
-                if (LanguageComboBox != null)
-                    LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
-                LiveTileToggle.Toggled += LiveTileToggle_Toggled;
-                LiveTileModeComboBox.SelectionChanged += LiveTileModeComboBox_SelectionChanged;
-                LiveTileSpeedComboBox.SelectionChanged += LiveTileSpeedComboBox_SelectionChanged;
+                SettingsPanel.AutoplayToggle.Toggled += AutoplayToggle_Toggled;
+                SettingsPanel.GaplessToggle.Toggled += GaplessToggle_Toggled;
+                SettingsPanel.NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
+                SettingsPanel.RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
+                if (SettingsPanel.LanguageComboBox != null)
+                    SettingsPanel.LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
+                SettingsPanel.LiveTileToggle.Toggled += LiveTileToggle_Toggled;
+                SettingsPanel.LiveTileModeComboBox.SelectionChanged += LiveTileModeComboBox_SelectionChanged;
+                SettingsPanel.LiveTileSpeedComboBox.SelectionChanged += LiveTileSpeedComboBox_SelectionChanged;
             }
             catch { }
         }
 
         private async void RegionComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var selectedRegion = RegionComboBox.SelectedItem as ComboBoxItem;
+            var selectedRegion = SettingsPanel.RegionComboBox.SelectedItem as ComboBoxItem;
             if (selectedRegion == null || selectedRegion.Tag == null) return;
 
             string regionTag = selectedRegion.Tag.ToString();
@@ -267,8 +267,8 @@ namespace YTMusicWP
 
         private async void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (LanguageComboBox == null) return;
-            var selectedLang = LanguageComboBox.SelectedItem as ComboBoxItem;
+            if (SettingsPanel.LanguageComboBox == null) return;
+            var selectedLang = SettingsPanel.LanguageComboBox.SelectedItem as ComboBoxItem;
             if (selectedLang == null || selectedLang.Tag == null) return;
 
             string langTag = selectedLang.Tag.ToString();
@@ -308,33 +308,33 @@ namespace YTMusicWP
 
         private void AutoplayToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            ApplicationData.Current.LocalSettings.Values["Autoplay"] = AutoplayToggle.IsOn;
+            ApplicationData.Current.LocalSettings.Values["Autoplay"] = SettingsPanel.AutoplayToggle.IsOn;
         }
 
         private void GaplessToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = GaplessToggle.IsOn;
+            ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = SettingsPanel.GaplessToggle.IsOn;
         }
 
         private void NormalizeVolumeToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = NormalizeVolumeToggle.IsOn;
-            try { _appMediaPlayer.Volume = NormalizeVolumeToggle.IsOn ? 0.75 : 1.0; } catch { }
+            ApplicationData.Current.LocalSettings.Values["NormalizeVolume"] = SettingsPanel.NormalizeVolumeToggle.IsOn;
+            try { _appMediaPlayer.Volume = SettingsPanel.NormalizeVolumeToggle.IsOn ? 0.75 : 1.0; } catch { }
         }
 
         private void SplashAnimationToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            if (SplashAnimationToggle == null) return;
+            if (SettingsPanel.SplashAnimationToggle == null) return;
             var settings = ApplicationData.Current.LocalSettings.Values;
-            settings["EnableSplashAnimation"] = SplashAnimationToggle.IsOn;
+            settings["EnableSplashAnimation"] = SettingsPanel.SplashAnimationToggle.IsOn;
         }
 
         private async void SmartDownloadsToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            if (SmartDownloadsToggle == null) return;
+            if (SettingsPanel.SmartDownloadsToggle == null) return;
             var settings = ApplicationData.Current.LocalSettings.Values;
-            settings["SmartDownloads"] = SmartDownloadsToggle.IsOn;
-            if (SmartDownloadsToggle.IsOn)
+            settings["SmartDownloads"] = SettingsPanel.SmartDownloadsToggle.IsOn;
+            if (SettingsPanel.SmartDownloadsToggle.IsOn)
             {
                 await TriggerSmartDownloadsAsync();
             }
@@ -342,8 +342,8 @@ namespace YTMusicWP
 
         private void LiveTileToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            YTMusicWP.Services.TileService.IsLiveTileEnabled = LiveTileToggle.IsOn;
-            if (LiveTileToggle.IsOn && homeTracks != null && homeTracks.Count > 0)
+            YTMusicWP.Services.TileService.IsLiveTileEnabled = SettingsPanel.LiveTileToggle.IsOn;
+            if (SettingsPanel.LiveTileToggle.IsOn && homeTracks != null && homeTracks.Count > 0)
             {
                 YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks);
             }
@@ -351,12 +351,12 @@ namespace YTMusicWP
 
         private void LiveTileModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            YTMusicWP.Services.TileService.LiveTileMode = LiveTileModeComboBox.SelectedIndex;
-            if (LiveTileModeComboBox.SelectedIndex == 0 && homeTracks != null && homeTracks.Count > 0)
+            YTMusicWP.Services.TileService.LiveTileMode = SettingsPanel.LiveTileModeComboBox.SelectedIndex;
+            if (SettingsPanel.LiveTileModeComboBox.SelectedIndex == 0 && homeTracks != null && homeTracks.Count > 0)
             {
                 YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks, 5, true);
             }
-            else if (LiveTileModeComboBox.SelectedIndex == 1)
+            else if (SettingsPanel.LiveTileModeComboBox.SelectedIndex == 1)
             {
                 YTMusicWP.Services.TileService.ClearLiveTile();
                 if (currentTrack != null)
@@ -364,7 +364,7 @@ namespace YTMusicWP
                     YTMusicWP.Services.TileService.UpdateNowPlayingWithQueue(currentTrack.Title, currentTrack.ChannelName, currentTrack.ThumbnailUrl, currentQueueTracks);
                 }
             }
-            else if (LiveTileModeComboBox.SelectedIndex == 2)
+            else if (SettingsPanel.LiveTileModeComboBox.SelectedIndex == 2)
             {
                 YTMusicWP.Services.TileService.ClearLiveTile();
             }
@@ -372,8 +372,8 @@ namespace YTMusicWP
 
         private void LiveTileSpeedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            YTMusicWP.Services.TileService.LiveTileSpeed = LiveTileSpeedComboBox.SelectedIndex;
-            if (LiveTileToggle.IsOn && homeTracks != null && homeTracks.Count > 0)
+            YTMusicWP.Services.TileService.LiveTileSpeed = SettingsPanel.LiveTileSpeedComboBox.SelectedIndex;
+            if (SettingsPanel.LiveTileToggle.IsOn && homeTracks != null && homeTracks.Count > 0)
             {
                 YTMusicWP.Services.TileService.UpdateRecommendations(homeTracks, favoriteTracks, historyTracks, 5, true);
             }
@@ -381,9 +381,9 @@ namespace YTMusicWP
 
         private void NowPlayingStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (NowPlayingStyleComboBox == null) return;
-            int idx = NowPlayingStyleComboBox.SelectedIndex;
-            var item = NowPlayingStyleComboBox.SelectedItem as ComboBoxItem;
+            if (SettingsPanel.NowPlayingStyleComboBox == null) return;
+            int idx = SettingsPanel.NowPlayingStyleComboBox.SelectedIndex;
+            var item = SettingsPanel.NowPlayingStyleComboBox.SelectedItem as ComboBoxItem;
             string styleTag = (item != null && item.Tag != null) ? item.Tag.ToString() : idx.ToString();
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
             settings.Values["NowPlayingStyle"] = styleTag;
@@ -480,10 +480,10 @@ namespace YTMusicWP
             try { await YTMusicWP.Services.DatabaseHelper.ClearHistoryAsync(); } catch { }
             try { await YTMusicWP.Services.DatabaseHelper.ClearFavoritesAsync(); } catch { }
 
-            LoginStatusText.Text = "Not logged in";
-            LoginStatusText.Foreground = _authGrayBrush;
-            ClientIdTextBox.Text = "";
-            ClientSecretTextBox.Text = "";
+            SettingsPanel.LoginStatusText.Text = "Not logged in";
+            SettingsPanel.LoginStatusText.Foreground = _authGrayBrush;
+            SettingsPanel.ClientIdTextBox.Text = "";
+            SettingsPanel.ClientSecretTextBox.Text = "";
             UpdateAccountPanel(false);
 
             // Reset avatar to default
@@ -512,7 +512,7 @@ namespace YTMusicWP
 
         private async void CopyAuthLink_Click(object sender, RoutedEventArgs e)
         {
-            string clientId = ClientIdTextBox.Text.Trim();
+            string clientId = SettingsPanel.ClientIdTextBox.Text.Trim();
             if (string.IsNullOrEmpty(clientId))
             {
                 ShowToast("Please enter Client ID first!");
@@ -668,17 +668,17 @@ namespace YTMusicWP
 
                             var settings = ApplicationData.Current.LocalSettings.Values;
                             settings["GoogleAccessToken"] = accessToken;
-                            SyncNowBtn.Visibility = Visibility.Visible;
+                            SettingsPanel.SyncNowBtn.Visibility = Visibility.Visible;
                             settings["GoogleRefreshToken"] = refreshToken;
                             long expiresInSec = json["expires_in"]?.Value<long>() ?? 3600;
                             settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresInSec - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-                            SyncNowBtn.Visibility = Visibility.Visible;
+                            SettingsPanel.SyncNowBtn.Visibility = Visibility.Visible;
 
                             DeviceCodeStatus.Text = "Success! Syncing...";
                             DeviceCodeProgress.Visibility = Visibility.Collapsed;
 
                             UpdateAccountPanel(true, "Logged In & Syncing...");
-                            LoginStatusText.Foreground = _greenBrush;
+                            SettingsPanel.LoginStatusText.Foreground = _greenBrush;
                             ShowToast("Login successful! Syncing...");
 
                             await SyncAllAsync(accessToken);
@@ -827,8 +827,8 @@ namespace YTMusicWP
                 LoginWebContainer.Visibility = Visibility.Collapsed;
 
                 UpdateAccountPanel(true, "Logged in (Cookie)");
-                LoginStatusText.Foreground = _greenBrush;
-                SyncNowBtn.Visibility = Visibility.Visible;
+                SettingsPanel.LoginStatusText.Foreground = _greenBrush;
+                SettingsPanel.SyncNowBtn.Visibility = Visibility.Visible;
                 ShowToast("Login successful!");
 
                 // Fetch user info from cookie session
@@ -872,7 +872,7 @@ namespace YTMusicWP
                         if (!string.IsNullOrEmpty(name))
                         {
                             settings["GoogleUserName"] = name;
-                            AccountUserName.Text = name;
+                            SettingsPanel.AccountUserName.Text = name;
                         }
                         if (!string.IsNullOrEmpty(avatarUrl))
                         {
@@ -889,8 +889,8 @@ namespace YTMusicWP
             string clientId = _builtInClientId;
             string clientSecret = _builtInClientSecret;
 
-            LoginStatusText.Text = "Status: Authenticating...";
-            LoginStatusText.Foreground = _authOrangeBrush;
+            SettingsPanel.LoginStatusText.Text = "Status: Authenticating...";
+            SettingsPanel.LoginStatusText.Foreground = _authOrangeBrush;
 
             try
             {
@@ -914,7 +914,7 @@ namespace YTMusicWP
 
                         var settings = ApplicationData.Current.LocalSettings.Values;
                         settings["GoogleAccessToken"] = accessToken;
-                        SyncNowBtn.Visibility = Visibility.Visible;
+                        SettingsPanel.SyncNowBtn.Visibility = Visibility.Visible;
                         settings["GoogleRefreshToken"] = refreshToken;
                         settings["GoogleClientId"] = clientId;
                         settings["GoogleClientSecret"] = clientSecret;
@@ -927,16 +927,16 @@ namespace YTMusicWP
                     }
                     else
                     {
-                        LoginStatusText.Text = "Status: Auth Failed";
-                        LoginStatusText.Foreground = _authRedBrush;
+                        SettingsPanel.LoginStatusText.Text = "Status: Auth Failed";
+                        SettingsPanel.LoginStatusText.Foreground = _authRedBrush;
                         ShowToast("Auth Error! Please try again.");
                     }
                 }
             }
             catch
             {
-                LoginStatusText.Text = "Status: Network Error";
-                LoginStatusText.Foreground = _authRedBrush;
+                SettingsPanel.LoginStatusText.Text = "Status: Network Error";
+                SettingsPanel.LoginStatusText.Foreground = _authRedBrush;
                 ShowToast("Network error. Please try again.");
             }
         }
@@ -960,7 +960,7 @@ namespace YTMusicWP
         {
             try
             {
-                LoginStatusText.Text = "Status: Syncing Liked Songs...";
+                SettingsPanel.LoginStatusText.Text = "Status: Syncing Liked Songs...";
                 favoriteTracks.Clear();
                 _likedSongsContinuation = null;
 
@@ -970,8 +970,8 @@ namespace YTMusicWP
 
                 if (json["_error"] != null)
                 {
-                    LoginStatusText.Text = "Sync Error: " + json["_error"];
-                    LoginStatusText.Foreground = _authOrangeBrush;
+                    SettingsPanel.LoginStatusText.Text = "Sync Error: " + json["_error"];
+                    SettingsPanel.LoginStatusText.Foreground = _authOrangeBrush;
                     return;
                 }
 
@@ -983,8 +983,8 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                LoginStatusText.Text = "Sync Error: " + ex.Message;
-                LoginStatusText.Foreground = _authRedBrush;
+                SettingsPanel.LoginStatusText.Text = "Sync Error: " + ex.Message;
+                SettingsPanel.LoginStatusText.Foreground = _authRedBrush;
             }
         }
 
@@ -1117,8 +1117,8 @@ namespace YTMusicWP
 
             if (hasNew) SaveFavoritesAsync();
 
-            LoginStatusText.Text = "Synced! " + favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " liked songs";
-            LoginStatusText.Foreground = _greenBrush;
+            SettingsPanel.LoginStatusText.Text = "Synced! " + favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " liked songs";
+            SettingsPanel.LoginStatusText.Foreground = _greenBrush;
 
             // Update track count display if viewing liked songs
             try { PlaylistDetailsTrackCount.Text = favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs"; } catch { }
@@ -1578,30 +1578,30 @@ namespace YTMusicWP
 
         private async void SyncNow_Click(object sender, RoutedEventArgs e)
         {
-            SyncNowBtn.IsEnabled = false;
+            SettingsPanel.SyncNowBtn.IsEnabled = false;
             try
             {
                 string accessToken = await GetAccessTokenAsync();
                 if (!string.IsNullOrEmpty(accessToken) || InnerTubeClient.HasCookieAuth)
                 {
-                    LoginStatusText.Text = "Syncing...";
-                    LoginStatusText.Foreground = _authOrangeBrush;
+                    SettingsPanel.LoginStatusText.Text = "Syncing...";
+                    SettingsPanel.LoginStatusText.Foreground = _authOrangeBrush;
                     await SyncAllAsync(accessToken);
                 }
                 else
                 {
-                    LoginStatusText.Text = "Not logged in";
-                    LoginStatusText.Foreground = _authRedBrush;
+                    SettingsPanel.LoginStatusText.Text = "Not logged in";
+                    SettingsPanel.LoginStatusText.Foreground = _authRedBrush;
                 }
             }
             catch (Exception ex)
             {
-                LoginStatusText.Text = "Sync error: " + ex.Message;
-                LoginStatusText.Foreground = _authRedBrush;
+                SettingsPanel.LoginStatusText.Text = "Sync error: " + ex.Message;
+                SettingsPanel.LoginStatusText.Foreground = _authRedBrush;
             }
             finally
             {
-                SyncNowBtn.IsEnabled = true;
+                SettingsPanel.SyncNowBtn.IsEnabled = true;
             }
         }
 
