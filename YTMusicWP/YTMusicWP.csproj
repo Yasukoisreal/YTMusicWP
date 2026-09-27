@@ -100,6 +100,15 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\CreateSheet.xaml.cs">
+      <DependentUpon>CreateSheet.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\LiveDebugDialog.xaml.cs">
+      <DependentUpon>LiveDebugDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\TrackActionsSheet.xaml.cs">
+      <DependentUpon>TrackActionsSheet.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\SongCreditsDialog.xaml.cs">
       <DependentUpon>SongCreditsDialog.xaml</DependentUpon>
     </Compile>
@@ -207,6 +216,18 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="MainPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\CreateSheet.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\LiveDebugDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\TrackActionsSheet.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

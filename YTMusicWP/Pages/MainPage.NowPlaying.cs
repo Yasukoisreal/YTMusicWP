@@ -380,39 +380,12 @@ namespace YTMusicWP
             if (track == null) return;
 
             _bottomSheetTrack = track;
-            BottomSheetTitle.Text = track.Title;
-            BottomSheetArtist.Text = track.ChannelName;
-            if (!string.IsNullOrEmpty(track.ThumbnailUrl))
-            {
-                try {
-                    var bmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
-                    bmp.DecodePixelWidth = 100;
-                    bmp.UriSource = new Uri(track.ThumbnailUrl);
-                    BottomSheetCover.ImageSource = bmp;
-                } catch {}
-            }
-
-            // Show delete button only for downloaded (LOCAL:) tracks
-            BottomSheetDeleteBtn.Visibility = (track.VideoId != null && track.VideoId.StartsWith("LOCAL:"))
-                ? Visibility.Visible : Visibility.Collapsed;
-
-            CustomBottomSheet.Visibility = Visibility.Visible;
-            BottomSheetSlideUpStoryboard.Begin();
+            CustomBottomSheet.Show(track);
         }
 
         private void CloseBottomSheet_Click(object sender, RoutedEventArgs e)
         {
-            BottomSheetSlideDownStoryboard.Begin();
-        }
-
-        private void BottomSheetSlideDownStoryboard_Completed(object sender, object e)
-        {
-            CustomBottomSheet.Visibility = Visibility.Collapsed;
-        }
-
-        private void BottomSheetContent_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            e.Handled = true;
+            CustomBottomSheet.Hide();
         }
 
         private void BottomSheetPlay_Click(object sender, RoutedEventArgs e)
@@ -853,87 +826,12 @@ namespace YTMusicWP
         private void MenuLiveDebug_Click(object sender, RoutedEventArgs e)
         {
             CloseNowPlayingMenu_Click(null, null);
-            RefreshLiveDebugLogs();
-            LiveDebugDialog.Visibility = Visibility.Visible;
+            LiveDebugDialog.Open();
         }
 
-        private void CloseLiveDebugDialog_Click(object sender, RoutedEventArgs e)
+        private void LiveDebugDialog_ToastRequested(object sender, string message)
         {
-            if (LiveDebugTextBox != null) LiveDebugTextBox.IsReadOnly = true;
-            LiveDebugDialog.Visibility = Visibility.Collapsed;
-        }
-
-        private void ClearLiveDebugLogs_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                ls["LiveDebugLog"] = "";
-                LiveDebugTextBox.Text = "No livestream logs recorded yet.";
-                ShowToast("Cleared livestream logs.");
-            }
-            catch { }
-        }
-
-        private void RefreshLiveDebugLogs_Click(object sender, RoutedEventArgs e)
-        {
-            RefreshLiveDebugLogs();
-        }
-
-        private void RefreshLiveDebugLogs()
-        {
-            try
-            {
-                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                string log = ls.ContainsKey("LiveDebugLog") ? ls["LiveDebugLog"]?.ToString() : null;
-                LiveDebugTextBox.Text = !string.IsNullOrEmpty(log) ? log : "No livestream logs recorded yet.";
-            }
-            catch (Exception ex)
-            {
-                LiveDebugTextBox.Text = "Error reading logs: " + ex.Message;
-            }
-        }
-
-        private void SelectAllLiveDebugLogs_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                LiveDebugTextBox.IsReadOnly = false;
-                LiveDebugTextBox.Focus(FocusState.Programmatic);
-                LiveDebugTextBox.SelectAll();
-                ShowToast("All logs selected. Tap Copy on keyboard!");
-            }
-            catch { }
-        }
-
-        private async void SaveLiveDebugLogs_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                string text = LiveDebugTextBox.Text;
-                if (!string.IsNullOrEmpty(text))
-                {
-                    var file = await Windows.Storage.KnownFolders.MusicLibrary.CreateFileAsync("LiveStream_Debug.txt", Windows.Storage.CreationCollisionOption.ReplaceExisting);
-                    await Windows.Storage.FileIO.WriteTextAsync(file, text);
-                    ShowToast("Saved LiveStream_Debug.txt to Music folder!");
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowToast("Error saving file: " + ex.Message);
-            }
-        }
-
-        private void ShareLiveDebugLogs_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Windows.ApplicationModel.DataTransfer.DataTransferManager.ShowShareUI();
-            }
-            catch (Exception ex)
-            {
-                ShowToast("Lỗi Share: " + ex.Message);
-            }
+            ShowToast(message);
         }
 
         #region Apple Music NowPlaying Logic (Task 5)

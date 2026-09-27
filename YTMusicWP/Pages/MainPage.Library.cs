@@ -904,10 +904,10 @@ namespace YTMusicWP
                 return;
             }
 
-            if (LiveDebugDialog != null && LiveDebugDialog.Visibility == Visibility.Visible)
+            if (LiveDebugDialog.IsOpen)
             {
                 args.Request.Data.Properties.Title = "Live Stream Logs - YTMusicWP";
-                args.Request.Data.SetText(LiveDebugTextBox != null ? (LiveDebugTextBox.Text ?? "") : "");
+                args.Request.Data.SetText(LiveDebugDialog.LogText);
                 return;
             }
 

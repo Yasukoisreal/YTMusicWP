@@ -348,18 +348,6 @@
             </DoubleAnimation>
         </Storyboard>
 
-        <!-- BottomSheet Storyboards -->
-        <Storyboard x:Name="BottomSheetSlideUpStoryboard">
-            <DoubleAnimation Storyboard.TargetName="BottomSheetTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.25">
-                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-        <Storyboard x:Name="BottomSheetSlideDownStoryboard" Completed="BottomSheetSlideDownStoryboard_Completed">
-            <DoubleAnimation Storyboard.TargetName="BottomSheetTransform" Storyboard.TargetProperty="Y" To="800" Duration="0:0:0.25">
-                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseIn"/></DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-
         <!-- Artist Slide Storyboards -->
         <Storyboard x:Name="ArtistSlideInStoryboard">
             <DoubleAnimation Storyboard.TargetName="ArtistTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.3">
@@ -3214,91 +3202,8 @@
         </Border>
 
         <!-- ═══════════════════════════════════ CREATE FLOATING MENU ═══════════════════════════════════ -->
-        <Grid x:Name="CreateBottomSheet" Visibility="Collapsed" Canvas.ZIndex="90" Grid.RowSpan="3" Tapped="CloseCreateSheet_Tapped">
-            <Rectangle Fill="#80000000"/>
-            <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="#282828" CornerRadius="12,12,0,0" Padding="6,8,6,8" Margin="12,0,12,52">
-                <Border.RenderTransform>
-                    <TranslateTransform x:Name="CreateSheetTransform" Y="200"/>
-                </Border.RenderTransform>
-                <StackPanel>
-                    <!-- Option 1: Create Playlist -->
-                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Playlist_Click">
-                        <Grid Margin="6,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Width="48" Height="48" CornerRadius="24" Background="#3E3E3E">
-                                <Viewbox Width="20" Height="20">
-                                    <Path Fill="White" Stretch="Uniform" Data="M19,11 L13,11 L13,5 L11,5 L11,11 L5,11 L5,13 L11,13 L11,19 L13,19 L13,13 L19,13 Z"/>
-                                </Viewbox>
-                            </Border>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                                <TextBlock Text="Playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="Create a playlist with songs or podcast episodes" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Grid>
-                    </Button>
-
-                    <!-- Option 2: Collaborative Playlist -->
-                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Collab_Click">
-                        <Grid Margin="6,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Width="48" Height="48" CornerRadius="24" Background="#3E3E3E">
-                                <Viewbox Width="20" Height="20">
-                                    <Path Fill="White" Stretch="Uniform" Data="M16,11 C17.66,11 18.99,9.66 18.99,8 C18.99,6.34 17.66,5 16,5 C14.34,5 13,6.34 13,8 C13,9.66 14.34,11 16,11 Z M8,11 C9.66,11 10.99,9.66 10.99,8 C10.99,6.34 9.66,5 8,5 C6.34,5 5,6.34 5,8 C5,9.66 6.34,11 8,11 Z M8,13 C5.67,13 1,14.17 1,16.5 L1,19 L15,19 L15,16.5 C15,14.17 10.33,13 8,13 Z M16,13 C15.71,13 15.38,13.02 15.03,13.05 C16.19,13.89 17,15.02 17,16.5 L17,19 L23,19 L23,16.5 C23,14.17 18.33,13 16,13 Z"/>
-                                </Viewbox>
-                            </Border>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                                <TextBlock Text="Collaborative playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="Create a playlist together with friends" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Grid>
-                    </Button>
-
-                    <!-- Option 3: Blend -->
-                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="CreateSheet_Blend_Click">
-                        <Grid Margin="6,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Width="48" Height="48" CornerRadius="24" Background="#3E3E3E">
-                                <Viewbox Width="20" Height="20">
-                                    <Path Fill="White" Stretch="Uniform" Data="M12,3 C7.03,3 3,7.03 3,12 C3,16.97 7.03,21 12,21 C16.97,21 21,16.97 21,12 C21,7.03 16.97,3 12,3 Z M12,5 C13.66,5 15.17,5.58 16.38,6.53 L12,10.91 L7.62,6.53 C8.83,5.58 10.34,5 12,5 Z M5,12 C5,10.34 5.58,8.83 6.53,7.62 L10.91,12 L6.53,16.38 C5.58,15.17 5,13.66 5,12 Z M12,19 C10.34,19 8.83,18.42 7.62,17.47 L12,13.09 L16.38,17.47 C15.17,18.42 13.66,19 12,19 Z M17.47,16.38 L13.09,12 L17.47,7.62 C18.42,8.83 19,10.34 19,12 C19,13.66 18.42,15.17 17.47,16.38 Z"/>
-                                </Viewbox>
-                            </Border>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                                <TextBlock Text="Blend" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="Create a playlist that combines music tastes with friends" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Grid>
-                    </Button>
-
-                    <!-- Option 4: Listen Together -->
-                    <Button Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Click="OpenListenTogether_Click">
-                        <Grid Margin="6,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Width="48" Height="48" CornerRadius="24" Background="#3E3E3E">
-                                <Viewbox Width="20" Height="20">
-                                    <Path Fill="White" Stretch="Uniform" Data="M16,11 C17.66,11 18.99,9.66 18.99,8 C18.99,6.34 17.66,5 16,5 C14.34,5 13,6.34 13,8 C13,9.66 14.34,11 16,11 Z M8,11 C9.66,11 10.99,9.66 10.99,8 C10.99,6.34 9.66,5 8,5 C6.34,5 5,6.34 5,8 C5,9.66 6.34,11 8,11 Z M8,13 C5.67,13 1,14.17 1,16.5 L1,19 L15,19 L15,16.5 C15,14.17 10.33,13 8,13 Z M16,13 C15.71,13 15.38,13.02 15.03,13.05 C16.19,13.89 17,15.02 17,16.5 L17,19 L23,19 L23,16.5 C23,14.17 18.33,13 16,13 Z"/>
-                                </Viewbox>
-                            </Border>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                                <TextBlock Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                <TextBlock Text="Listen to music together with friends in real-time" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Grid>
-                    </Button>
-                </StackPanel>
-            </Border>
-        </Grid>
+        <controls:CreateSheet x:Name="CreateBottomSheet" Visibility="Collapsed" Canvas.ZIndex="90" Grid.RowSpan="3" Tapped="CloseCreateSheet_Tapped"
+            PlaylistClick="CreateSheet_Playlist_Click" CollabClick="CreateSheet_Collab_Click" BlendClick="CreateSheet_Blend_Click" ListenTogetherClick="OpenListenTogether_Click"/>
 
         <!-- ═══════════════════════════════════ NOW PLAYING VIEW ═══════════════════════════════════ -->
         <Grid x:Name="NowPlayingView" Background="#FF000000" Visibility="Collapsed" Canvas.ZIndex="100" Grid.RowSpan="3">
@@ -3972,150 +3877,12 @@
         <controls:SongCreditsDialog x:Name="SongCreditsDialog" Visibility="Collapsed" Canvas.ZIndex="260" Grid.RowSpan="3"/>
 
         <!-- ═══════════════════════════════════ LIVE DEBUG DIALOG ═══════════════════════════════════ -->
-        <Grid x:Name="LiveDebugDialog" Visibility="Collapsed" Canvas.ZIndex="270" Background="#A0000000" Grid.RowSpan="3">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Button Grid.Row="0" Click="CloseLiveDebugDialog_Click" Style="{StaticResource IconButtonStyle}" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <Border Grid.Row="1" Background="#1E1E1E" CornerRadius="20,20,0,0" Padding="20,15,20,15" MaxHeight="540">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <!-- Header -->
-                    <StackPanel Grid.Row="0">
-                        <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,0,0,10" HorizontalAlignment="Center"/>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Live Stream Logs" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#00E5FF" VerticalAlignment="Center"/>
-                            <Button Grid.Column="1" Click="SaveLiveDebugLogs_Click" Content="Save" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <Button Grid.Column="2" Click="ShareLiveDebugLogs_Click" Content="Share" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <Button Grid.Column="3" Click="SelectAllLiveDebugLogs_Click" Content="Select All" Style="{StaticResource ChipButtonStyle}" Background="#00E5FF" Foreground="Black" FontWeight="Bold" FontSize="12" Padding="10,6" VerticalAlignment="Center"/>
-                        </Grid>
-                        <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
-                    </StackPanel>
-
-                    <!-- Log text area -->
-                    <TextBox x:Name="LiveDebugTextBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" Background="#121212" Foreground="#00E5FF" FontFamily="Consolas" FontSize="11" BorderBrush="#333333" BorderThickness="1" MinHeight="220" MaxHeight="320" Margin="0,0,0,10" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
-
-                    <!-- Footer buttons -->
-                    <Grid Grid.Row="2" Margin="0,5,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Click="ClearLiveDebugLogs_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="0,0,4,0" Background="#282828">
-                            <TextBlock Text="Clear" FontSize="14" Foreground="#FF6666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Button>
-                        <Button Grid.Column="1" Click="RefreshLiveDebugLogs_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,4,0" Background="#282828">
-                            <TextBlock Text="Refresh" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Button>
-                        <Button Grid.Column="2" Click="CloseLiveDebugDialog_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,0,0" Background="#282828">
-                            <TextBlock Text="Close" FontSize="14" Foreground="#B3B3B3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Button>
-                    </Grid>
-                </Grid>
-            </Border>
-        </Grid>
+        <controls:LiveDebugDialog x:Name="LiveDebugDialog" Visibility="Collapsed" Canvas.ZIndex="270" Grid.RowSpan="3"/>
 
         <!-- ═══════════════════════════════════ CUSTOM BOTTOM SHEET ═══════════════════════════════════ -->
-        <Grid x:Name="CustomBottomSheet" Visibility="Collapsed" Canvas.ZIndex="200" Background="#A0000000" Grid.RowSpan="3">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <Button Grid.Row="0" Click="CloseBottomSheet_Click" Style="{StaticResource IconButtonStyle}" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <Border Grid.Row="1" Background="#252525" CornerRadius="20,20,0,0" Padding="0,10,0,0">
-                <Border.RenderTransform>
-                    <TranslateTransform x:Name="BottomSheetTransform" Y="800"/>
-                </Border.RenderTransform>
-                <StackPanel Tapped="BottomSheetContent_Tapped">
-                    <!-- Drag handle -->
-                    <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,10,0,10" HorizontalAlignment="Center"/>
-                    <Grid Margin="20,0,20,20">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Rectangle Grid.Column="0" Width="50" Height="50" RadiusX="6" RadiusY="6">
-                            <Rectangle.Fill>
-                                <ImageBrush x:Name="BottomSheetCover" Stretch="UniformToFill">
-                                    <ImageBrush.RelativeTransform>
-                                        <ScaleTransform CenterX="0.5" CenterY="0.5" ScaleX="1" ScaleY="1"/>
-                                    </ImageBrush.RelativeTransform>
-                                </ImageBrush>
-                            </Rectangle.Fill>
-                        </Rectangle>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
-                            <TextBlock x:Name="BottomSheetTitle" Text="Title" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock x:Name="BottomSheetArtist" Text="Artist" FontSize="14" Foreground="#B3B3B3" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
-                    </Grid>
-                    <Rectangle Height="1" Fill="#333333" Margin="0,0,0,5"/>
-                    <Button Click="BottomSheetPlay_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M8,5.14V19.14L19,12.14L8,5.14Z" Fill="White"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Play" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Click="BottomSheetAddToQueue_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M15,6H3V8H15V6M15,10H3V12H15V10M3,16H11V14H3V16M17,6V14.18C16.69,14.07 16.35,14 16,14A3,3 0 0,0 13,17A3,3 0 0,0 16,20A3,3 0 0,0 19,17V8H22V6H17Z" Fill="White"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Add to Queue" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Click="BottomSheetGoToRadio_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M9.5,16.5V7.5L16.5,12L9.5,16.5Z" Fill="White"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Go to Radio" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Click="BottomSheetAddToPlaylist_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" Fill="White"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Add to Playlist" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Click="BottomSheetGoToArtist_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" Fill="White"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Go to Artist" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Click="BottomSheetSleepTimer_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M12,20A7,7 0 0,1 5,13A7,7 0 0,1 12,6A7,7 0 0,1 19,13A7,7 0 0,1 12,20M12,4A9,9 0 0,0 3,13A9,9 0 0,0 12,22A9,9 0 0,0 21,13A9,9 0 0,0 12,4M12.5,8H11V14L16.25,17.15L17,15.92L12.5,13.25V8M7.88,3.39L6.6,1.86L2,5.71L3.29,7.24L7.88,3.39M22,5.72L17.4,1.86L16.11,3.39L20.71,7.25L22,5.72Z" Fill="White"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Sleep Timer" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Click="BottomSheetShare_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M18,16.08C17.24,16.08 16.56,16.38 16.04,16.85L8.91,12.7C8.96,12.47 9,12.24 9,12C9,11.76 8.96,11.53 8.91,11.3L15.96,7.19C16.5,7.69 17.21,8 18,8A3,3 0 0,0 21,5A3,3 0 0,0 18,2A3,3 0 0,0 15,5C15,5.24 15.04,5.47 15.09,5.7L8.04,9.81C7.5,9.31 6.79,9 6,9A3,3 0 0,0 3,12A3,3 0 0,0 6,15C6.79,15 7.5,14.69 8.04,14.19L15.16,18.34C15.11,18.55 15.08,18.77 15.08,19C15.08,20.61 16.39,21.91 18,21.91C19.61,21.91 20.92,20.61 20.92,19A2.92,2.92 0 0,0 18,16.08Z" Fill="White"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Share" FontSize="17" Foreground="White" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button x:Name="BottomSheetDeleteBtn" Click="BottomSheetDelete_Click" Style="{StaticResource IconButtonStyle}" Height="55" HorizontalContentAlignment="Stretch" Visibility="Collapsed">
-                        <Grid Margin="20,0"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Viewbox Grid.Column="0" Width="20" Height="20" HorizontalAlignment="Left"><Path Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" Fill="#FF4444"/></Viewbox>
-                            <TextBlock Grid.Column="1" Text="Delete from device" FontSize="17" Foreground="#FF4444" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Button Click="CloseBottomSheet_Click" Style="{StaticResource IconButtonStyle}" Height="55" Margin="0,5,0,15">
-                        <TextBlock Text="Close" FontSize="17" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold"/>
-                    </Button>
-                </StackPanel>
-            </Border>
-        </Grid>
+        <controls:TrackActionsSheet x:Name="CustomBottomSheet" Visibility="Collapsed" Canvas.ZIndex="200" Grid.RowSpan="3"
+            PlayClick="BottomSheetPlay_Click" AddToQueueClick="BottomSheetAddToQueue_Click" GoToRadioClick="BottomSheetGoToRadio_Click" AddToPlaylistClick="BottomSheetAddToPlaylist_Click"
+            GoToArtistClick="BottomSheetGoToArtist_Click" SleepTimerClick="BottomSheetSleepTimer_Click" ShareClick="BottomSheetShare_Click" DeleteClick="BottomSheetDelete_Click"/>
 
         <!-- ═══════════════════════════════════ ARTIST PICKER BOTTOM SHEET ═══════════════════════════════════ -->
         <Grid x:Name="ArtistPickerBottomSheet" Visibility="Collapsed" Canvas.ZIndex="250" Background="#A0000000" Grid.RowSpan="3">
@@ -4235,7 +4002,7 @@
 
 
         <!-- ═══════════════════════════════════ TOAST ═══════════════════════════════════ -->
-        <Border x:Name="ToastNotification" Canvas.ZIndex="200" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Padding="14,10" Margin="15,0,15,130" CornerRadius="12" Grid.RowSpan="3">
+        <Border x:Name="ToastNotification" Canvas.ZIndex="400" IsHitTestVisible="False" Visibility="Collapsed" Background="#1DB954" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Padding="14,10" Margin="15,0,15,130" CornerRadius="12" Grid.RowSpan="3">
             <TextBlock x:Name="ToastText" Text="Message" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" TextAlignment="Center"/>
         </Border>
 

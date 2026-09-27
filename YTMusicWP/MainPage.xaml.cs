@@ -223,6 +223,7 @@ namespace YTMusicWP
         public MainPage()
         {
             this.InitializeComponent();
+            LiveDebugDialog.ToastRequested += LiveDebugDialog_ToastRequested;
 
             _appMediaPlayer = BackgroundMediaPlayer.Current;
 

@@ -26,10 +26,10 @@ namespace YTMusicWP
                 e.Handled = true;
                 SongCreditsDialog.Close();
             }
-            else if (LiveDebugDialog != null && LiveDebugDialog.Visibility == Visibility.Visible)
+            else if (LiveDebugDialog.IsOpen)
             {
                 e.Handled = true;
-                CloseLiveDebugDialog_Click(null, null);
+                LiveDebugDialog.Close();
             }
             else if (NowPlayingMenuDialog.Visibility == Visibility.Visible)
             {
@@ -41,7 +41,7 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseArtistPicker_Click(null, null);
             }
-            else if (CustomBottomSheet.Visibility == Visibility.Visible)
+            else if (CustomBottomSheet.IsOpen)
             {
                 e.Handled = true;
                 CloseBottomSheet_Click(null, null);
@@ -73,7 +73,7 @@ namespace YTMusicWP
                     CloseNowPlaying_Click(null, null);
                 }
             }
-            else if (CreateBottomSheet.Visibility == Visibility.Visible)
+            else if (CreateBottomSheet.IsOpen)
             {
                 e.Handled = true;
                 CloseCreateSheet();
@@ -298,7 +298,7 @@ namespace YTMusicWP
                 Duration = TimeSpan.FromMilliseconds(250),
                 EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
             };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateSheetTransform);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateBottomSheet.SheetTransform);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
 
             // Fade in menu
@@ -366,7 +366,7 @@ namespace YTMusicWP
                 Duration = TimeSpan.FromMilliseconds(200),
                 EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn }
             };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateSheetTransform);
+            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateBottomSheet.SheetTransform);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
 
             // Fade out menu
