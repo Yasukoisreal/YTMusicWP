@@ -234,7 +234,7 @@ namespace YTMusicWP.Services
         /// This allows the sharp album artwork to seamlessly blend into the blurred backdrop behind it.
         /// </summary>
         public static async Task<WriteableBitmap> RenderFadedArtworkAsync(
-            Stream source, int targetWidth, int targetHeight, int fadeHeight)
+            Stream source, int targetWidth, int targetHeight, int fadeHeight, int fadeEndY = 0)
         {
             if (source != null && source.CanSeek) source.Position = 0;
             var bitmap = new WriteableBitmap(targetWidth, targetHeight);
@@ -269,7 +269,9 @@ namespace YTMusicWP.Services
                 {
                     int rowBytes = targetWidth * 4;
                     byte[] rowBuffer = new byte[rowBytes];
-                    int fadeStartY = Math.Max(0, targetHeight - fadeHeight);
+                    if (fadeEndY <= 0 || fadeEndY > targetHeight) fadeEndY = targetHeight;
+                    int fadeStartY = Math.Max(0, fadeEndY - fadeHeight);
+                    double fadeSpan = Math.Max(1.0, (double)(fadeEndY - fadeStartY));
 
                     for (int y = fadeStartY; y < targetHeight; y++)
                     {
@@ -285,19 +287,27 @@ namespace YTMusicWP.Services
 
                         if (read == rowBytes)
                         {
-                            double progress = (double)(y - fadeStartY) / fadeHeight;
-                            // Cosine ease: starts flat at 1.0, ends flat at 0.0 with 0 derivative at edges
-                            double alpha = 0.5 * (1.0 + Math.Cos(progress * Math.PI));
-                            int alphaI = (int)(alpha * 256.0);
-
-                            for (int x = 0; x < targetWidth; x++)
+                            if (y < fadeEndY)
                             {
-                                int idx = x * 4;
-                                // BGRA premultiplied alpha with integer shift
-                                rowBuffer[idx]     = (byte)((rowBuffer[idx] * alphaI) >> 8);     // B
-                                rowBuffer[idx + 1] = (byte)((rowBuffer[idx + 1] * alphaI) >> 8); // G
-                                rowBuffer[idx + 2] = (byte)((rowBuffer[idx + 2] * alphaI) >> 8); // R
-                                rowBuffer[idx + 3] = (byte)((rowBuffer[idx + 3] * alphaI) >> 8); // A
+                                double progress = (double)(y - fadeStartY) / fadeSpan;
+                                // Cosine ease: starts flat at 1.0, ends flat at 0.0 with 0 derivative at edges
+                                double alpha = 0.5 * (1.0 + Math.Cos(progress * Math.PI));
+                                int alphaI = (int)(alpha * 256.0);
+
+                                for (int x = 0; x < targetWidth; x++)
+                                {
+                                    int idx = x * 4;
+                                    // BGRA premultiplied alpha with integer shift
+                                    rowBuffer[idx]     = (byte)((rowBuffer[idx] * alphaI) >> 8);     // B
+                                    rowBuffer[idx + 1] = (byte)((rowBuffer[idx + 1] * alphaI) >> 8); // G
+                                    rowBuffer[idx + 2] = (byte)((rowBuffer[idx + 2] * alphaI) >> 8); // R
+                                    rowBuffer[idx + 3] = (byte)((rowBuffer[idx + 3] * alphaI) >> 8); // A
+                                }
+                            }
+                            else
+                            {
+                                // Beyond fadeEndY: 100% transparent so bottom cutoff never reveals a sharp edge
+                                Array.Clear(rowBuffer, 0, rowBytes);
                             }
 
                             pixelStream.Seek(rowOffset, SeekOrigin.Begin);

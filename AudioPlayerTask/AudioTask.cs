@@ -1660,6 +1660,8 @@ namespace AudioPlayerTask
                 _isCurrentTrackLive = _isCurrentTrackLive || IsLiveStreamUrl(trackUrl);
                 _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
                 if (_isCurrentTrackLive) try { _liveBaseUrlStopwatch.Restart(); } catch { }
+                // Ghi cờ live cho foreground đọc (trước đây chỉ từng được ghi = false nên UI không bao giờ biết là live)
+                try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = _isCurrentTrackLive; } catch { }
                 if (!_isCurrentTrackLive)
                 {
                     if (_liveMss != null)

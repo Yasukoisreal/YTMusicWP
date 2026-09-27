@@ -170,36 +170,13 @@ namespace YTMusicWP
 
             if (url.Contains("googleusercontent.com") || url.Contains("ggpht.com"))
             {
+                // [FIX #2] Luôn xin bản master VUÔNG (w480-h480) cho cover Now Playing.
+                // googleusercontent lưu ảnh album dạng master 1:1; tỉ lệ rộng (vd w1280-h720) trong URL nguồn
+                // chỉ là cách shelf yêu cầu và làm CDN CẮT sẵn trên/dưới của ảnh vuông. Ép vuông → lấy lại trọn ảnh bìa.
                 int eqIdx = url.LastIndexOf("=");
                 if (eqIdx > 0)
                 {
-                    string pars = url.Substring(eqIdx + 1);
-                    double ratio = 1.0;
-                    try
-                    {
-                        int wStart = pars.IndexOf("w") + 1;
-                        int wEnd = pars.IndexOf("-", wStart);
-                        int hStart = pars.IndexOf("h") + 1;
-                        int hEnd = pars.IndexOf("-", hStart);
-                        if (wStart > 0 && wEnd > wStart && hStart > 0 && hEnd > hStart)
-                        {
-                            int w = int.Parse(pars.Substring(wStart, wEnd - wStart));
-                            int h = int.Parse(pars.Substring(hStart, hEnd - hStart));
-                            if (h > 0) ratio = (double)w / h;
-                        }
-                    }
-                    catch { }
-
-                    if (ratio > 1.3)
-                    {
-                        // Preserve 16:9 ratio
-                        return url.Substring(0, eqIdx) + "=w540-h304-l90-rj";
-                    }
-                    else
-                    {
-                        // Square crop
-                        return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
-                    }
+                    return url.Substring(0, eqIdx) + "=w480-h480-l90-rj";
                 }
                 return url + "=w480-h480-l90-rj";
             }

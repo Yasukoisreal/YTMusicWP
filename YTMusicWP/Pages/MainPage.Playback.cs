@@ -54,6 +54,103 @@ namespace YTMusicWP
 
         private int _playTrackSequence = 0;
 
+        // [FIX #2] Chỉnh khung cover Now Playing (Spotify style) theo ĐÚNG tỉ lệ ảnh thật khi ảnh load xong,
+        // để ảnh bìa vuông 1:1 không bị khung landscape (UniformToFill) cắt trên/dưới — và video 16:9 cũng không bị cắt rìa.
+        // Fit tỉ lệ thật vào khung tối đa 360x300; vì khung khớp tỉ lệ ảnh nên UniformToFill không cắt, không viền đen.
+        private void SizeNowPlayingCover(Windows.UI.Xaml.Media.Imaging.BitmapImage bmp)
+        {
+            try
+            {
+                if (bmp == null) return;
+                int pw = bmp.PixelWidth, ph = bmp.PixelHeight;
+                if (pw <= 0 || ph <= 0) return;
+                double aspect = (double)pw / ph;
+                const double maxW = 360.0, maxH = 300.0;
+                double boxW = maxW, boxH = maxW / aspect;
+                if (boxH > maxH) { boxH = maxH; boxW = maxH * aspect; }
+                if (BigCoverRectangle != null) { BigCoverRectangle.Width = boxW; BigCoverRectangle.Height = boxH; }
+                if (BigCoverShadow != null) { BigCoverShadow.Width = Math.Max(0, boxW - 10); BigCoverShadow.Height = Math.Max(0, boxH - 10); }
+                if (MiniCoverRectangle != null) MiniCoverRectangle.Width = (aspect > 1.3) ? 82 : 46;
+            }
+            catch { }
+        }
+
+        // [FIX #4] Artwork Apple Music trước đây cao cứng 480: trên WVGA (399x666 epx) vùng phía trên hàng điều khiển
+        // chỉ ~358px nên khung bị layout-clip mất đúng phần đáy chứa fade (mất blend), còn ảnh rộng 479 trong khung 399
+        // bị xén 2 bên. Giờ khung = bề ngang màn, cao = min(bề ngang, vùng Row0+Row1) → fade luôn nằm trong vùng thấy được.
+        private void NowPlayingContentGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            LayoutAppleMusicArtwork();
+        }
+
+        private void LayoutAppleMusicArtwork()
+        {
+            try
+            {
+                if (AppleMusicArtworkGrid == null || AppleMusicArtwork == null) return;
+                var parent = AppleMusicArtworkGrid.Parent as Grid;
+                if (parent == null || parent.RowDefinitions.Count < 2) return;
+                double w = parent.ActualWidth;
+                double slot = parent.RowDefinitions[0].ActualHeight + parent.RowDefinitions[1].ActualHeight;
+                if (w <= 0 || slot <= 0) return;
+                double h = Math.Floor(Math.Min(w, slot));
+                if (double.IsNaN(AppleMusicArtworkGrid.Height) || Math.Abs(AppleMusicArtworkGrid.Height - h) > 1)
+                {
+                    AppleMusicArtworkGrid.Height = h;
+                    AppleMusicArtwork.Height = h;
+                }
+                if (double.IsNaN(AppleMusicArtwork.Width) || Math.Abs(AppleMusicArtwork.Width - w) > 1) AppleMusicArtwork.Width = w;
+                AppleMusicArtworkGrid.Clip = new Windows.UI.Xaml.Media.RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, w, h) };
+            }
+            catch { }
+        }
+
+        private int GetArtworkFadeEndY(int targetFadeSize)
+        {
+            try
+            {
+                double w = 0;
+                double slot = 0;
+                if (AppleMusicArtworkGrid != null)
+                {
+                    var parent = AppleMusicArtworkGrid.Parent as Grid;
+                    if (parent != null && parent.RowDefinitions.Count >= 2)
+                    {
+                        w = parent.ActualWidth;
+                        slot = parent.RowDefinitions[0].ActualHeight + parent.RowDefinitions[1].ActualHeight;
+                    }
+                }
+                if (w <= 0 || slot <= 0)
+                {
+                    try
+                    {
+                        var bounds = Windows.UI.Xaml.Window.Current.Bounds;
+                        if (bounds.Width > 0 && bounds.Height > 0)
+                        {
+                            w = bounds.Width;
+                            slot = Math.Max(0, bounds.Height - 306);
+                        }
+                    }
+                    catch { }
+                }
+                if (w > 0 && slot > 0 && slot < w)
+                {
+                    // On screens where available vertical slot is shorter than screen width (e.g. WVGA 360 < 399):
+                    // The 1:1 image scales to width w, so the visible portion in the slot is (slot / w) of the height.
+                    // End the fade 8px before the visible cutoff line so opacity is guaranteed 0 at the boundary.
+                    int visibleLimit = (int)Math.Floor(targetFadeSize * (slot / w)) - 8;
+                    return Math.Max(targetFadeSize / 2, visibleLimit);
+                }
+            }
+            catch { }
+            if (Services.MemoryHelper.IsLowMemoryDevice)
+            {
+                return (int)(targetFadeSize * 0.88) - 8;
+            }
+            return targetFadeSize;
+        }
+
+
         private async void PlayTrack(YouTubeTrack track, IEnumerable<YouTubeTrack> customQueue = null, double startPosition = 0)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
@@ -108,6 +205,7 @@ namespace YTMusicWP
                 // [OPT-M3] Dùng chung 1 BitmapImage cho BigCover + MenuCover (cùng src, cùng DecodePixelWidth)
                 var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                 bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? 320 : 480;
+                bigBmp.ImageOpened += (s, args) => SizeNowPlayingCover(bigBmp);
                 bigBmp.UriSource = new Uri(GetNowPlayingThumbnail(track.ThumbnailUrl), UriKind.Absolute);
                 BigCoverImage.ImageSource  = bigBmp;
                 AlbumArtEntranceStoryboard.Begin();
@@ -287,7 +385,10 @@ namespace YTMusicWP
                 { "UpdatePlaylist", "" }, { "Urls", urls }, { "Titles", titles }, { "Artists", artists },
                 { "VideoIds", videoIds }, { "Thumbnails", thumbnails }, { "StartIndex", relativeStartIndex }, { "FastUrl", urls[relativeStartIndex] }
             };
-            if (track.IsLive || (!string.IsNullOrEmpty(resolvedUrl) && resolvedUrl.StartsWith("SABR:")))
+            // SABR được dùng cho CẢ live lẫn VOD, nên KHÔNG suy ra live chỉ vì có tiền tố "SABR:".
+            // Chỉ đánh dấu live khi track.IsLive, hoặc URL chứa dấu hiệu live thật (live=1 / live/1) —
+            // dấu hiệu này xuất hiện trong serverAbrUrl của live nhưng không có ở SABR của bài thường.
+            if (track.IsLive || (!string.IsNullOrEmpty(resolvedUrl) && Services.FormatSelector.IsLiveStreamUrl(resolvedUrl)))
             {
                 message.Add("IsLive", true);
             }
@@ -686,6 +787,10 @@ namespace YTMusicWP
                             }
                         }
 
+                        if (NowPlayingView.Visibility == Visibility.Visible)
+                        {
+                            if (_isAppleMusicStyle) LayoutAppleMusicArtwork();
+                        }
                         if (NowPlayingView.Visibility != Visibility.Visible && FullscreenLyricsView.Visibility != Visibility.Visible) return;
                         bool isFullscreen = FullscreenLyricsView.Visibility == Visibility.Visible;
                         if (currentLyrics.Count == 0) return;
@@ -1033,6 +1138,7 @@ namespace YTMusicWP
 
                         var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                         bigBmp.DecodePixelWidth = Services.MemoryHelper.IsLowMemoryDevice ? (isWide ? 360 : 320) : (isWide ? 540 : 480);
+                        bigBmp.ImageOpened += (s, ev) => SizeNowPlayingCover(bigBmp);
                         bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                         BigCoverImage.ImageSource = bigBmp;
                         if (AppleMusicArtwork != null)
@@ -1175,6 +1281,7 @@ namespace YTMusicWP
                             var bigBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage();
                             int targetW = Services.MemoryHelper.IsLowMemoryDevice ? (isWide ? 360 : 320) : (isWide ? 540 : 480);
                             bigBmp.DecodePixelWidth = targetW;
+                            bigBmp.ImageOpened += (s, ev) => SizeNowPlayingCover(bigBmp);
                             bigBmp.UriSource = new Uri(finalThumbUrl, UriKind.Absolute);
                             BigCoverImage.ImageSource = bigBmp;
                             if (AppleMusicArtwork != null)
@@ -1662,9 +1769,10 @@ namespace YTMusicWP
                     {
                         int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
                         int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 135 : 180;
+                        int fadeEndY = GetArtworkFadeEndY(targetFadeSize);
                         using (var fadeStream = new System.IO.MemoryStream(bytes))
                         {
-                            faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight);
+                            faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight, fadeEndY);
                         }
                         if (currentSeq != _appleMusicBackdropSeq) return;
                         Services.LumiaBlurHelper.PutCachedFaded(thumbnailUrl, faded);
@@ -1739,9 +1847,10 @@ namespace YTMusicWP
 
                             int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
                             int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 135 : 180;
+                            int fadeEndY = GetArtworkFadeEndY(targetFadeSize);
                             using (var fadeStream = new System.IO.MemoryStream(bytes))
                             {
-                                var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight);
+                                var faded = await Services.LumiaBlurHelper.RenderFadedArtworkAsync(fadeStream, targetFadeSize, targetFadeSize, fadeHeight, fadeEndY);
                                 Services.LumiaBlurHelper.PutCachedFaded(thumbUrl, faded);
                             }
                         }
