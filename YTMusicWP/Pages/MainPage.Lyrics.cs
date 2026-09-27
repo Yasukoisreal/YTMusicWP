@@ -20,7 +20,32 @@ namespace YTMusicWP
 {
     public sealed partial class MainPage
     {
-        private static readonly SolidColorBrush _lyricPendingBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(130, 255, 255, 255));
+        // ── Word-by-Word Synchronized Lyrics Brushes (Apple Music & SimpMusic v2.2.0 Parity) ──
+        // Pending: future words/characters waiting to be sung (~36% opacity)
+        private static readonly SolidColorBrush _lyricPendingBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(92, 255, 255, 255));
+        // Flare Head: character immediately ahead of the travelling light (~55% opacity)
+        private static readonly SolidColorBrush _lyricFlareHeadBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(140, 255, 255, 255));
+        // Travelling Spotlight: the exact character being sung right now (100% pure blazing white flare)
+        private static readonly SolidColorBrush _lyricSpotlightBrush = new SolidColorBrush(Windows.UI.Colors.White);
+        // Flare Tail: character that just finished being sung (~92% opacity wake)
+        private static readonly SolidColorBrush _lyricFlareTailBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(235, 255, 255, 255));
+        // Past: words/characters already sung and settled (~78% clean soft white)
+        private static readonly SolidColorBrush _lyricPastBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(200, 255, 255, 255));
+
+        // Interlude Dots • • •:
+        private static readonly SolidColorBrush _lyricDotActiveBrush = new SolidColorBrush(Windows.UI.Colors.White);
+        private static readonly SolidColorBrush _lyricDotPastBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(180, 255, 255, 255));
+        private static readonly SolidColorBrush _lyricDotPendingBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(50, 255, 255, 255));
+
+        private struct LyricCharInfo
+        {
+            public TimeSpan StartTime;
+            public TimeSpan EndTime;
+        }
+
+        private readonly List<LyricCharInfo> _regularActiveLineChars = new List<LyricCharInfo>(128);
+        private readonly List<LyricCharInfo> _fsActiveLineChars = new List<LyricCharInfo>(128);
+
         private DispatcherTimer _lyricsWordTimer;
 
         private bool TryParseLrcTime(string timeStr, out TimeSpan result)
@@ -224,7 +249,7 @@ namespace YTMusicWP
                             var displayLines = new List<LyricLine>(amResult.Lines.Count + 2);
                             foreach (var l in amResult.Lines)
                             {
-                                l.FontSize = _lyricFontSize;
+                                l.FontSize = l.IsInterlude ? (_lyricFontSize * 1.35) : _lyricFontSize;
                                 displayLines.Add(l);
                             }
                             displayLines.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "Lyrics provided by Apple Music", FontSize = _lyricFontSize * 0.65 });
@@ -472,6 +497,69 @@ namespace YTMusicWP
             }
 
             parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
+
+            // Interlude dots injection for word-by-word synced lines
+            bool anyWords = false;
+            for (int i = 0; i < parsedLines.Count; i++)
+            {
+                if (parsedLines[i].HasWords) { anyWords = true; break; }
+            }
+
+            if (anyWords && parsedLines.Count > 0)
+            {
+                var finalEnhanced = new List<LyricLine>(parsedLines.Count + 4);
+                if (parsedLines[0].Time.TotalSeconds >= 5.0)
+                {
+                    double introStart = 1.0;
+                    double introEnd = parsedLines[0].Time.TotalSeconds;
+                    double step = (introEnd - introStart) / 3.0;
+                    finalEnhanced.Add(new LyricLine
+                    {
+                        Time = TimeSpan.FromSeconds(introStart),
+                        EndTime = parsedLines[0].Time,
+                        Text = "•   •   •",
+                        IsInterlude = true,
+                        FontSize = _lyricFontSize * 1.35,
+                        Words = new List<LyricWord>
+                        {
+                            new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(introStart), EndTime = TimeSpan.FromSeconds(introStart + step) },
+                            new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(introStart + step), EndTime = TimeSpan.FromSeconds(introStart + step * 2) },
+                            new LyricWord { Text = "•",     StartTime = TimeSpan.FromSeconds(introStart + step * 2), EndTime = parsedLines[0].Time }
+                        }
+                    });
+                }
+                for (int i = 0; i < parsedLines.Count; i++)
+                {
+                    var cur = parsedLines[i];
+                    finalEnhanced.Add(cur);
+                    if (i < parsedLines.Count - 1)
+                    {
+                        var next = parsedLines[i + 1];
+                        double curEnd = cur.EndTime > cur.Time ? cur.EndTime.TotalSeconds : (cur.HasWords ? cur.Words[cur.Words.Count - 1].EndTime.TotalSeconds : cur.Time.TotalSeconds + 3.0);
+                        double nextStart = next.Time.TotalSeconds;
+                        if (nextStart - curEnd >= 3.0)
+                        {
+                            double step = (nextStart - curEnd) / 3.0;
+                            finalEnhanced.Add(new LyricLine
+                            {
+                                Time = TimeSpan.FromSeconds(curEnd),
+                                EndTime = next.Time,
+                                Text = "•   •   •",
+                                IsInterlude = true,
+                                FontSize = _lyricFontSize * 1.35,
+                                Words = new List<LyricWord>
+                                {
+                                    new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(curEnd), EndTime = TimeSpan.FromSeconds(curEnd + step) },
+                                    new LyricWord { Text = "•   ", StartTime = TimeSpan.FromSeconds(curEnd + step), EndTime = TimeSpan.FromSeconds(curEnd + step * 2) },
+                                    new LyricWord { Text = "•",     StartTime = TimeSpan.FromSeconds(curEnd + step * 2), EndTime = next.Time }
+                                }
+                            });
+                        }
+                    }
+                }
+                parsedLines = finalEnhanced;
+            }
+
             parsedLines.Add(new LyricLine { Time = TimeSpan.FromHours(1), Text = "", FontSize = _lyricFontSize });
 
             DisplayLoadedLyrics(parsedLines);
@@ -487,6 +575,10 @@ namespace YTMusicWP
             {
                 for (int i = 0; i < lines.Count; i++)
                 {
+                    if (lines[i].IsInterlude)
+                    {
+                        lines[i].FontSize = _lyricFontSize * 1.35;
+                    }
                     currentLyrics.Add(lines[i]);
                 }
             }
@@ -605,7 +697,7 @@ namespace YTMusicWP
                 {
                     TimeSpan pos = TimeSpan.Zero;
                     try { if (_appMediaPlayer != null) pos = _appMediaPlayer.Position; } catch { }
-                    SetupWordInlines(sharpText, line, pos);
+                    SetupWordInlines(sharpText, line, pos, false);
                 }
             }
         }
@@ -992,7 +1084,7 @@ namespace YTMusicWP
                     {
                         TimeSpan pos = TimeSpan.Zero;
                         try { if (_appMediaPlayer != null) pos = _appMediaPlayer.Position; } catch { }
-                        SetupWordInlines(sharpText, line, pos);
+                        SetupWordInlines(sharpText, line, pos, true);
                     }
                 }
             }
@@ -1023,7 +1115,7 @@ namespace YTMusicWP
                 if (_lyricsWordTimer == null)
                 {
                     _lyricsWordTimer = new DispatcherTimer();
-                    _lyricsWordTimer.Interval = TimeSpan.FromMilliseconds(80);
+                    _lyricsWordTimer.Interval = TimeSpan.FromMilliseconds(60);
                     _lyricsWordTimer.Tick += LyricsWordTimer_Tick;
                 }
                 if (!_lyricsWordTimer.IsEnabled)
@@ -1099,58 +1191,202 @@ namespace YTMusicWP
                     int oldIndex = currentLyricIndex;
                     currentLyricIndex = newIndex;
 
-                    ResetWordInlines(oldIndex, isFs);
+                    if (isFs) ResetWordInlines(oldIndex, true);
+                    if (isNpLyrics) ResetWordInlines(oldIndex, false);
+
                     UpdateLyricsVisualState(oldIndex);
                     ForceUpdateLyricUI(oldIndex);
-                    UpdateActiveLineWordProgress(pos, isFs);
+
+                    if (isFs) UpdateActiveLineWordProgress(pos, true);
+                    if (isNpLyrics) UpdateActiveLineWordProgress(pos, false);
                 }
                 else if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                 {
-                    UpdateActiveLineWordProgress(pos, isFs);
+                    if (isFs) UpdateActiveLineWordProgress(pos, true);
+                    if (isNpLyrics) UpdateActiveLineWordProgress(pos, false);
                 }
             }
             catch { }
         }
 
-        private void SetupWordInlines(TextBlock tb, LyricLine line, TimeSpan pos)
+        private static List<string> SplitIntoGraphemes(string text, out int trailingSpaces)
+        {
+            trailingSpaces = 0;
+            if (string.IsNullOrEmpty(text)) return new List<string>(0);
+
+            string trimmed = text.TrimEnd(' ');
+            trailingSpaces = text.Length - trimmed.Length;
+            if (trimmed.Length == 0) return new List<string>(0);
+
+            var list = new List<string>(trimmed.Length);
+            for (int i = 0; i < trimmed.Length; i++)
+            {
+                if (char.IsHighSurrogate(trimmed[i]) && i + 1 < trimmed.Length && char.IsLowSurrogate(trimmed[i + 1]))
+                {
+                    list.Add(trimmed.Substring(i, 2));
+                    i++;
+                }
+                else
+                {
+                    list.Add(trimmed[i].ToString());
+                }
+            }
+            return list;
+        }
+
+        private void SetupWordInlines(TextBlock tb, LyricLine line, TimeSpan pos, bool isFullscreen)
         {
             if (tb == null || line == null || line.Words == null) return;
             tb.Text = "";
             tb.Inlines.Clear();
+            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
+            charList.Clear();
+
+            if (line.IsInterlude)
+            {
+                for (int i = 0; i < line.Words.Count; i++)
+                {
+                    var w = line.Words[i];
+                    var run = new Run { Text = w.Text ?? "" };
+                    if (pos >= w.EndTime) run.Foreground = _lyricDotPastBrush;
+                    else if (pos >= w.StartTime) run.Foreground = _lyricDotActiveBrush;
+                    else run.Foreground = _lyricDotPendingBrush;
+
+                    tb.Inlines.Add(run);
+                    charList.Add(new LyricCharInfo { StartTime = w.StartTime, EndTime = w.EndTime });
+                }
+                return;
+            }
+
             for (int i = 0; i < line.Words.Count; i++)
             {
                 var w = line.Words[i];
-                bool isSung = pos >= w.StartTime;
-                var run = new Run
+                string rawText = w.Text ?? "";
+                if (rawText.Length == 0) continue;
+
+                int trailingSpaces;
+                var graphemes = SplitIntoGraphemes(rawText, out trailingSpaces);
+                if (graphemes.Count == 0)
                 {
-                    Text = w.Text ?? "",
-                    Foreground = isSung ? _lyricActiveBrush : _lyricPendingBrush
-                };
-                tb.Inlines.Add(run);
+                    var run = new Run { Text = rawText, Foreground = _lyricPendingBrush };
+                    tb.Inlines.Add(run);
+                    charList.Add(new LyricCharInfo { StartTime = w.StartTime, EndTime = w.EndTime });
+                    continue;
+                }
+
+                int count = graphemes.Count;
+                double wordDurMs = (w.EndTime - w.StartTime).TotalMilliseconds;
+                if (wordDurMs <= 0) wordDurMs = 250;
+                double charDurMs = wordDurMs / count;
+
+                for (int c = 0; c < count; c++)
+                {
+                    string cText = (c == count - 1 && trailingSpaces > 0)
+                        ? (graphemes[c] + new string(' ', trailingSpaces))
+                        : graphemes[c];
+
+                    TimeSpan cStart = w.StartTime + TimeSpan.FromMilliseconds(c * charDurMs);
+                    TimeSpan cEnd = w.StartTime + TimeSpan.FromMilliseconds((c + 1) * charDurMs);
+
+                    var run = new Run { Text = cText };
+                    if (pos >= cEnd) run.Foreground = _lyricPastBrush;
+                    else if (pos >= cStart) run.Foreground = _lyricSpotlightBrush;
+                    else run.Foreground = _lyricPendingBrush;
+
+                    tb.Inlines.Add(run);
+                    charList.Add(new LyricCharInfo { StartTime = cStart, EndTime = cEnd });
+                }
             }
         }
 
-        private void UpdateWordInlines(TextBlock tb, LyricLine line, TimeSpan pos)
+        private void UpdateWordInlines(TextBlock tb, LyricLine line, TimeSpan pos, bool isFullscreen)
         {
             if (tb == null || line == null || line.Words == null) return;
-            for (int i = 0; i < line.Words.Count; i++)
+            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
+            int count = tb.Inlines.Count;
+            if (count != charList.Count || count == 0)
             {
-                var w = line.Words[i];
-                var run = tb.Inlines[i] as Run;
-                if (run != null)
+                SetupWordInlines(tb, line, pos, isFullscreen);
+                return;
+            }
+
+            if (line.IsInterlude)
+            {
+                for (int i = 0; i < count; i++)
                 {
-                    bool isSung = pos >= w.StartTime;
-                    var targetBrush = isSung ? _lyricActiveBrush : _lyricPendingBrush;
-                    if (!object.ReferenceEquals(run.Foreground, targetBrush))
+                    var run = tb.Inlines[i] as Run;
+                    if (run == null) continue;
+                    var info = charList[i];
+
+                    Brush target;
+                    if (pos >= info.EndTime) target = _lyricDotPastBrush;
+                    else if (pos >= info.StartTime) target = _lyricDotActiveBrush;
+                    else target = _lyricDotPendingBrush;
+
+                    if (!object.ReferenceEquals(run.Foreground, target))
                     {
-                        run.Foreground = targetBrush;
+                        run.Foreground = target;
                     }
+                }
+                return;
+            }
+
+            int activeCharIndex = -1;
+            for (int i = 0; i < count; i++)
+            {
+                if (pos >= charList[i].StartTime && pos < charList[i].EndTime)
+                {
+                    activeCharIndex = i;
+                    break;
+                }
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                var run = tb.Inlines[i] as Run;
+                if (run == null) continue;
+                var info = charList[i];
+
+                Brush target;
+                if (pos < info.StartTime)
+                {
+                    if (activeCharIndex >= 0 && i == activeCharIndex + 1)
+                    {
+                        target = _lyricFlareHeadBrush;
+                    }
+                    else
+                    {
+                        target = _lyricPendingBrush;
+                    }
+                }
+                else if (pos < info.EndTime)
+                {
+                    target = _lyricSpotlightBrush;
+                }
+                else
+                {
+                    if (activeCharIndex >= 0 && i == activeCharIndex - 1)
+                    {
+                        target = _lyricFlareTailBrush;
+                    }
+                    else
+                    {
+                        target = _lyricPastBrush;
+                    }
+                }
+
+                if (!object.ReferenceEquals(run.Foreground, target))
+                {
+                    run.Foreground = target;
                 }
             }
         }
 
         public void ResetWordInlines(int index, bool isFullscreen)
         {
+            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
+            charList.Clear();
+
             if (currentLyrics == null || index < 0 || index >= currentLyrics.Count) return;
 
             var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
@@ -1185,13 +1421,14 @@ namespace YTMusicWP
             var sharpText = FindChildByName(container, sharpName) as TextBlock;
             if (sharpText == null) return;
 
-            if (sharpText.Inlines.Count != line.Words.Count)
+            var charList = isFullscreen ? _fsActiveLineChars : _regularActiveLineChars;
+            if (sharpText.Inlines.Count == 0 || sharpText.Inlines.Count != charList.Count)
             {
-                SetupWordInlines(sharpText, line, pos);
+                SetupWordInlines(sharpText, line, pos, isFullscreen);
             }
             else
             {
-                UpdateWordInlines(sharpText, line, pos);
+                UpdateWordInlines(sharpText, line, pos, isFullscreen);
             }
         }
 
