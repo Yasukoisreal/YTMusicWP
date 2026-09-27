@@ -1,6 +1,6 @@
 <div align="center"> 
   <img src="Pictures/banner.png" alt="YTMusicWP Banner" width="100%" style="border-radius: 12px; margin-bottom: 24px;" />
-  <h1>YTMusicWP</h1>  
+  <h1>YTMusicWPP</h1>  
   A modern, lightning-fast native YouTube Music client crafted for Windows Phone 8.1 and Windows 10 Mobile.<br>
   Breathe new life into legacy Lumia devices with direct stream playback, synced lyrics, and iconic Live Tiles.
   <br>
