@@ -822,18 +822,15 @@ namespace YTMusicWP
                         bool isMainScreenVisible = (!isFullscreen && NowPlayingPivot.SelectedIndex == 0);
                         if (!isLyricsUIVisible && !isMainScreenVisible) return;
 
-                        int newIndex = -1;
-                        for (int i = 0; i < currentLyrics.Count; i++)
-                        {
-                            if (pos >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIndex = i;
-                            else break;
-                        }
+                        int newIndex = FindLyricIndexAt(pos);
 
                         if (newIndex == currentLyricIndex || newIndex < 0) return;
 
                         int oldIndex = currentLyricIndex;
                         currentLyricIndex = newIndex;
+                        RefreshLitLines(pos);
                         ResetWordInlines(oldIndex, isFullscreen);
+                        bool oldStillLit = IsLyricLineLit(oldIndex); // duet / background line: the previous line is still sung
 
                         if (isLyricsUIVisible)
                         {
@@ -844,10 +841,10 @@ namespace YTMusicWP
 
                         if (!_isAppleMusicStyle && !isFullscreen)
                         {
-                            // Defensive sweep: ensure all other realized containers outside active and old lines are reset to inactive scale/opacity
+                            // Defensive sweep: ensure all other realized containers outside the lines being sung and the old line are reset to inactive scale/opacity
                             for (int i = 0; i < currentLyrics.Count; i++)
                             {
-                                if (i == currentLyricIndex || i == oldIndex) continue;
+                                if (IsLyricLineLit(i) || i == oldIndex) continue;
                                 var c = targetListView.ContainerFromIndex(i) as FrameworkElement;
                                 if (c == null) continue;
                                 if (c.Opacity != 0.5) c.Opacity = 0.5;
@@ -859,19 +856,13 @@ namespace YTMusicWP
                                 }
                             }
 
-                            // Animate OLD lyric
-                            if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
+                            // Animate OLD lyric (a line still being sung keeps its full size)
+                            if (oldIndex >= 0 && oldIndex < currentLyrics.Count && !oldStillLit)
                             {
                                 var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                                 if (oldContainer != null)
                                 {
-                                    var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                    if (oldScale == null)
-                                    {
-                                        oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1, ScaleY = 1 };
-                                        oldContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                        oldContainer.RenderTransform = oldScale;
-                                    }
+                                    var oldScale = EnsureLyricScale(oldContainer, oldIndex, 1.0);
                                     // [OPT-1] Reuse cached easing + single storyboard
                                     AnimateLyricOut(oldContainer, oldScale);
                                 }
@@ -881,20 +872,14 @@ namespace YTMusicWP
                             var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                             if (newContainer != null)
                             {
-                                var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                                if (scaleTransform == null)
-                                {
-                                    scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                                    newContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                    newContainer.RenderTransform = scaleTransform;
-                                }
+                                var scaleTransform = EnsureLyricScale(newContainer, currentLyricIndex, 0.85);
                                 // [OPT-1] Reuse cached easing + single storyboard
                                 AnimateLyricIn(newContainer, scaleTransform);
                             }
                         }
                         else if (isFullscreen)
                         {
-                            if (oldIndex >= 0 && oldIndex < currentLyrics.Count)
+                            if (oldIndex >= 0 && oldIndex < currentLyrics.Count && !oldStillLit)
                             {
                                 var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                                 if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
@@ -966,7 +951,7 @@ namespace YTMusicWP
 
                         if (isMainScreenVisible && currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                         {
-                            UpdateMiniLyric(currentLyrics[currentLyricIndex].Text);
+                            UpdateMiniLyric(currentLyrics[MiniLyricIndex()].Text);
                         }
                     }
                     catch { }
@@ -1010,12 +995,7 @@ namespace YTMusicWP
                         if (currentLyrics != null && currentLyrics.Count > 0)
                         {
                             var seekTime = TimeSpan.FromSeconds(seekVal);
-                            int newIdx = -1;
-                            for (int i = 0; i < currentLyrics.Count; i++)
-                            {
-                                if (seekTime >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIdx = i;
-                                else break;
-                            }
+                            int newIdx = FindLyricIndexAt(seekTime);
                             if (newIdx >= 0 && newIdx < currentLyrics.Count)
                             {
                                 int oldIdx = currentLyricIndex;
@@ -2303,13 +2283,7 @@ namespace YTMusicWP
             if (isLyricsUIVisible)
             {
                 var targetListView = isFullscreen ? FullscreenLyricsListView : LyricsListView;
-                
-                UpdateLyricsVisualState(oldIndex);
 
-                if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex)
-                {
-                    ResetWordInlines(oldIndex, isFullscreen);
-                }
                 TimeSpan currentPos = TimeSpan.Zero;
                 try
                 {
@@ -2323,48 +2297,47 @@ namespace YTMusicWP
                     }
                 }
                 catch { }
+                // Lines sung together with the new current one (duet, background vocals) — also after a seek
+                RefreshLitLines(currentPos);
+                bool oldStillLit = oldIndex != currentLyricIndex && IsLyricLineLit(oldIndex);
+
+                UpdateLyricsVisualState(oldIndex);
+
+                if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex)
+                {
+                    ResetWordInlines(oldIndex, isFullscreen);
+                }
                 UpdateActiveLineWordProgress(currentPos, isFullscreen);
-                
+
                 if (!_isAppleMusicStyle && !isFullscreen)
                 {
-                    // Defensive sweep: ensure all other realized containers outside active and old lines are reset to inactive scale/opacity
+                    // Defensive sweep: every other realized container gets its resting scale/opacity: full for a line still
+                    // being sung with the current one, inactive otherwise
                     for (int i = 0; i < currentLyrics.Count; i++)
                     {
                         if (i == currentLyricIndex || (oldIndex >= 0 && i == oldIndex)) continue;
                         var container = targetListView.ContainerFromIndex(i) as FrameworkElement;
                         if (container == null) continue;
 
-                        var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (st == null)
+                        bool lit = IsLyricLineLit(i);
+                        double scale = lit ? 1.0 : 0.85;
+                        var st = EnsureLyricScale(container, i, scale);
+                        if (st.ScaleX != scale || st.ScaleY != scale)
                         {
-                            st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                            container.RenderTransformOrigin = new Point(0, 0.5);
-                            container.RenderTransform = st;
+                            st.ScaleX = scale;
+                            st.ScaleY = scale;
                         }
-                        else
-                        {
-                            if (st.ScaleX != 0.85 || st.ScaleY != 0.85)
-                            {
-                                st.ScaleX = 0.85;
-                                st.ScaleY = 0.85;
-                            }
-                        }
-                        if (container.Opacity != 0.5) container.Opacity = 0.5;
+                        double opacity = lit ? 1.0 : 0.5;
+                        if (container.Opacity != opacity) container.Opacity = opacity;
                     }
 
-                    // Animate OLD lyric
-                    if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex)
+                    // Animate OLD lyric (a line still being sung keeps its full size)
+                    if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex && !oldStillLit)
                     {
                         var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                         if (oldContainer != null)
                         {
-                            var oldScale = oldContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                            if (oldScale == null)
-                            {
-                                oldScale = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1.0, ScaleY = 1.0 };
-                                oldContainer.RenderTransformOrigin = new Point(0, 0.5);
-                                oldContainer.RenderTransform = oldScale;
-                            }
+                            var oldScale = EnsureLyricScale(oldContainer, oldIndex, 1.0);
                             AnimateLyricOut(oldContainer, oldScale);
                         }
                     }
@@ -2373,31 +2346,27 @@ namespace YTMusicWP
                     var newContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                     if (newContainer != null)
                     {
-                        var scaleTransform = newContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (scaleTransform == null)
-                        {
-                            scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                            newContainer.RenderTransformOrigin = new Point(0, 0.5);
-                            newContainer.RenderTransform = scaleTransform;
-                        }
-                        else
-                        {
-                            scaleTransform.ScaleX = 0.85;
-                            scaleTransform.ScaleY = 0.85;
-                        }
+                        var scaleTransform = EnsureLyricScale(newContainer, currentLyricIndex, 0.85);
+                        scaleTransform.ScaleX = 0.85;
+                        scaleTransform.ScaleY = 0.85;
                         newContainer.Opacity = 0.5;
                         AnimateLyricIn(newContainer, scaleTransform);
                     }
                 }
                 else if (isFullscreen)
                 {
-                    if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex)
+                    if (oldIndex >= 0 && oldIndex < currentLyrics.Count && oldIndex != currentLyricIndex && !oldStillLit)
                     {
                         var oldContainer = targetListView.ContainerFromIndex(oldIndex) as FrameworkElement;
                         if (oldContainer != null) AnimateOpacity(oldContainer, 0.5);
                     }
                     var fsContainer = targetListView.ContainerFromIndex(currentLyricIndex) as FrameworkElement;
                     if (fsContainer != null) AnimateOpacity(fsContainer, 1.0);
+                    for (int n = 0; n < _litLyricLines.Count; n++)
+                    {
+                        var litContainer = targetListView.ContainerFromIndex(_litLyricLines[n]) as FrameworkElement;
+                        if (litContainer != null && litContainer.Opacity < 1.0) AnimateOpacity(litContainer, 1.0);
+                    }
                 }
                 else if (_isAppleMusicStyle && !isFullscreen)
                 {
@@ -2438,18 +2407,9 @@ namespace YTMusicWP
 
                     if (activeContainer != null && !_isAppleMusicStyle && !isFullscreen)
                     {
-                        var scaleTransform = activeContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (scaleTransform == null)
-                        {
-                            scaleTransform = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                            activeContainer.RenderTransformOrigin = new Point(0, 0.5);
-                            activeContainer.RenderTransform = scaleTransform;
-                        }
-                        else
-                        {
-                            scaleTransform.ScaleX = 0.85;
-                            scaleTransform.ScaleY = 0.85;
-                        }
+                        var scaleTransform = EnsureLyricScale(activeContainer, currentLyricIndex, 0.85);
+                        scaleTransform.ScaleX = 0.85;
+                        scaleTransform.ScaleY = 0.85;
                         activeContainer.Opacity = 0.5;
                         AnimateLyricIn(activeContainer, scaleTransform);
                     }
@@ -2470,7 +2430,7 @@ namespace YTMusicWP
             
             if (isMainScreenVisible)
             {
-                UpdateMiniLyric(currentLyrics[currentLyricIndex].Text, force: true);
+                UpdateMiniLyric(currentLyrics[MiniLyricIndex()].Text, force: true);
             }
             else
             {

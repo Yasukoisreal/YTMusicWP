@@ -133,6 +133,7 @@ namespace YTMusicWP
 
             currentLyrics.Clear();
             currentLyricIndex = -1;
+            ClearLitLines();
             ClearMiniLyric();
             _cachedLyricsScrollViewer = null;
             _cachedFullscreenLyricsScrollViewer = null;
@@ -289,18 +290,34 @@ namespace YTMusicWP
                 double knownDuration = KnownDurationSeconds(title);
                 try
                 {
+                    // The Apple Music lyrics service only answers songs it has cached, and its cache is keyed by duration
+                    // (±2 s): without the right duration it returns 401 and the word-by-word lyrics are lost
                     if (knownDuration > 10) durSecs = (int)Math.Round(knownDuration);
-                    else
-                    {
-                        for (int attempt = 0; attempt < 5; attempt++)
-                        {
-                            try { durSecs = (int)Math.Round(_appMediaPlayer.NaturalDuration.TotalSeconds); } catch { }
-                            if (durSecs > 10) break;
-                            await Task.Delay(100);
-                        }
-                    }
+                    else durSecs = await WaitForTrackDurationAsync(currentTrack != null && currentTrack.Title == title ? currentTrack.VideoId : null, token);
+                    if (token.IsCancellationRequested) return;
 
                     amResult = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsResultAsync(cleanTitle, cleanArtist, durSecs);
+                    if (token.IsCancellationRequested) return;
+                    if (amResult == null)
+                    {
+                        // Its cache also keys the artist text: Apple joins several artists with ", " where YouTube Music
+                        // shows "A & B" (a duet like "Stay" is only found as "The Kid LAROI, Justin Bieber")
+                        var artists = SplitArtistNames(cleanArtist);
+                        string appleArtists = string.Join(", ", artists);
+                        if (artists.Count > 1 && !string.Equals(appleArtists, cleanArtist, StringComparison.OrdinalIgnoreCase))
+                        {
+                            amResult = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsResultAsync(cleanTitle, appleArtists, durSecs);
+                            if (token.IsCancellationRequested) return;
+                        }
+                    }
+                    if (amResult == null && durSecs > 10)
+                    {
+                        // A list duration can be a few seconds off the cached one: try either side once
+                        amResult = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsResultAsync(cleanTitle, cleanArtist, durSecs + 3);
+                        if (token.IsCancellationRequested) return;
+                        if (amResult == null)
+                            amResult = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsResultAsync(cleanTitle, cleanArtist, durSecs - 3);
+                    }
                     // The song changed while this request ran: its lyrics must not land on the new song
                     if (token.IsCancellationRequested) return;
                     if (amResult != null && (amResult.Lines != null || !string.IsNullOrWhiteSpace(amResult.SyncedLrc) || !string.IsNullOrWhiteSpace(amResult.PlainLyrics)))
@@ -373,6 +390,7 @@ namespace YTMusicWP
 
                 // Quick duration poll (max 500ms) — in parallel with searches
                 if (knownDuration > 10) trackDurationSec = knownDuration;
+                else if (durSecs > 10) trackDurationSec = durSecs; // already waited for the real one above
                 for (int attempt = 0; attempt < 5 && trackDurationSec <= 10; attempt++)
                 {
                     try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
@@ -563,6 +581,43 @@ namespace YTMusicWP
             return total;
         }
 
+        /// <summary>
+        /// This song's duration in seconds as the player reports it, waiting (up to 6 s) until the player is really on it.
+        /// Right after a song change the player still holds the previous song; the audio task records the new song's id in
+        /// LocalSettings as it switches, sometimes before it has even resolved the new URL (old song still loaded, paused).
+        /// So the id must match and the player must be playing (new source open). A player left paused (app reopened on a
+        /// paused song) never plays: after the wait its duration is taken anyway. 0 if nothing usable comes.
+        /// </summary>
+        private async Task<int> WaitForTrackDurationAsync(string videoId, CancellationToken token)
+        {
+            const int attempts = 30;
+            for (int attempt = 0; attempt <= attempts; attempt++)
+            {
+                try
+                {
+                    bool sameTrack = videoId == null;
+                    if (!sameTrack)
+                    {
+                        object stored;
+                        sameTrack = Windows.Storage.ApplicationData.Current.LocalSettings.Values.TryGetValue("CurrentVideoId", out stored)
+                                    && string.Equals(stored as string, videoId, StringComparison.Ordinal);
+                    }
+                    if (sameTrack && _appMediaPlayer != null)
+                    {
+                        var state = _appMediaPlayer.CurrentState;
+                        bool open = state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering;
+                        double seconds = _appMediaPlayer.NaturalDuration.TotalSeconds;
+                        if (seconds > 10 && (open || attempt == attempts)) return (int)Math.Round(seconds);
+                    }
+                }
+                catch { }
+                if (attempt == attempts) break;
+                try { await Task.Delay(200, token); }
+                catch (OperationCanceledException) { return 0; }
+            }
+            return 0;
+        }
+
         private void ParseAndDisplaySyncedLyrics(string syncedLyrics)
         {
             var lines = syncedLyrics.Split('\n');
@@ -686,6 +741,7 @@ namespace YTMusicWP
             if (FullscreenLyricsListView != null) FullscreenLyricsListView.ItemsSource = null;
 
             currentLyrics.Clear();
+            ClearLitLines();
             if (lines != null)
             {
                 for (int i = 0; i < lines.Count; i++)
@@ -786,16 +842,11 @@ namespace YTMusicWP
             }
             else
             {
-                // Spotify: scale + dim
-                args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.5;
-                var st = args.ItemContainer.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                if (st == null)
-                {
-                    st = new Windows.UI.Xaml.Media.ScaleTransform();
-                    args.ItemContainer.RenderTransformOrigin = new Point(0, 0.5);
-                    args.ItemContainer.RenderTransform = st;
-                }
-                double targetScale = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.85;
+                // Spotify: scale + dim (every line sung right now stays full size)
+                bool lit = IsLyricLineLit(args.ItemIndex);
+                args.ItemContainer.Opacity = lit ? 1.0 : 0.5;
+                double targetScale = lit ? 1.0 : 0.85;
+                var st = EnsureLyricScale(args.ItemContainer, args.ItemIndex, targetScale);
                 st.ScaleX = targetScale;
                 st.ScaleY = targetScale;
             }
@@ -864,7 +915,7 @@ namespace YTMusicWP
                 {
                     var container = FullscreenLyricsListView.ContainerFromIndex(i) as FrameworkElement;
                     if (container != null)
-                        container.Opacity = (i == currentLyricIndex) ? 1.0 : 0.5;
+                        container.Opacity = IsLyricLineLit(i) ? 1.0 : 0.5;
                 }
                 // Center-scroll to current lyric
                 if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
@@ -964,6 +1015,15 @@ namespace YTMusicWP
                 {
                     int minCandidate = (currentLyricIndex >= 0) ? Math.Min(oldIndex, currentLyricIndex) : oldIndex;
                     int maxCandidate = (currentLyricIndex >= 0) ? Math.Max(oldIndex, currentLyricIndex) : oldIndex;
+                    // Also the lines that are (or just stopped being) lit together with the current one
+                    foreach (var list in new[] { _litLyricLines, _litLyricLinesPrev })
+                    {
+                        for (int n = 0; n < list.Count; n++)
+                        {
+                            minCandidate = Math.Min(minCandidate, list[n]);
+                            maxCandidate = Math.Max(maxCandidate, list[n]);
+                        }
+                    }
                     startIdx = Math.Max(0, minCandidate - 3);
                     endIdx = Math.Min(currentLyrics.Count - 1, maxCandidate + 3);
                 }
@@ -978,7 +1038,7 @@ namespace YTMusicWP
                         currentLyrics[i].FarBlurOpacity = 0.0;
                         currentLyrics[i].ColorBrush = _lyricActiveBrush;
                     }
-                    else if (i == currentLyricIndex)
+                    else if (IsLyricLineLit(i))
                     {
                         currentLyrics[i].Opacity = LineOpacity(currentLyrics[i], 1.0);
                         currentLyrics[i].BlurOpacity = 0.0;
@@ -1060,7 +1120,7 @@ namespace YTMusicWP
                         currentLyrics[oldIndex].BlurOpacity = 0.0;
                         currentLyrics[oldIndex].FarBlurOpacity = 0.0;
                         currentLyrics[oldIndex].Opacity = LineOpacity(currentLyrics[oldIndex], 1.0);
-                        currentLyrics[oldIndex].ColorBrush = _lyricInactiveBrush;
+                        currentLyrics[oldIndex].ColorBrush = IsLyricLineLit(oldIndex) ? _lyricActiveBrush : _lyricInactiveBrush;
                     }
                     if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                     {
@@ -1068,6 +1128,16 @@ namespace YTMusicWP
                         currentLyrics[currentLyricIndex].FarBlurOpacity = 0.0;
                         currentLyrics[currentLyricIndex].Opacity = LineOpacity(currentLyrics[currentLyricIndex], 1.0);
                         currentLyrics[currentLyricIndex].ColorBrush = _lyricActiveBrush;
+                    }
+                    // Lines lit together with the current one, or that just stopped being lit
+                    foreach (var list in new[] { _litLyricLines, _litLyricLinesPrev })
+                    {
+                        for (int n = 0; n < list.Count; n++)
+                        {
+                            int i = list[n];
+                            if (i < currentLyrics.Count)
+                                currentLyrics[i].ColorBrush = IsLyricLineLit(i) ? _lyricActiveBrush : _lyricInactiveBrush;
+                        }
                     }
                 }
                 else
@@ -1077,7 +1147,7 @@ namespace YTMusicWP
                         currentLyrics[i].BlurOpacity = 0.0;
                         currentLyrics[i].FarBlurOpacity = 0.0;
                         currentLyrics[i].Opacity = LineOpacity(currentLyrics[i], 1.0);
-                        if (i == currentLyricIndex)
+                        if (IsLyricLineLit(i))
                         {
                             currentLyrics[i].ColorBrush = _lyricActiveBrush;
                         }
@@ -1119,36 +1189,11 @@ namespace YTMusicWP
                 {
                     var container = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
                     if (container == null) continue;
-                    if (i == currentLyricIndex)
-                    {
-                        container.Opacity = 1.0;
-                        var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (st == null)
-                        {
-                            st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 1.0, ScaleY = 1.0 };
-                            container.RenderTransformOrigin = new Point(0, 0.5);
-                            container.RenderTransform = st;
-                        }
-                        else
-                        {
-                            st.ScaleX = 1.0; st.ScaleY = 1.0;
-                        }
-                    }
-                    else
-                    {
-                        container.Opacity = 0.5;
-                        var st = container.RenderTransform as Windows.UI.Xaml.Media.ScaleTransform;
-                        if (st == null)
-                        {
-                            st = new Windows.UI.Xaml.Media.ScaleTransform { ScaleX = 0.85, ScaleY = 0.85 };
-                            container.RenderTransformOrigin = new Point(0, 0.5);
-                            container.RenderTransform = st;
-                        }
-                        else
-                        {
-                            st.ScaleX = 0.85; st.ScaleY = 0.85;
-                        }
-                    }
+                    bool lit = IsLyricLineLit(i);
+                    double scale = lit ? 1.0 : 0.85;
+                    container.Opacity = lit ? 1.0 : 0.5;
+                    var st = EnsureLyricScale(container, i, scale);
+                    st.ScaleX = scale; st.ScaleY = scale;
                 }
             }
 
@@ -1176,12 +1221,13 @@ namespace YTMusicWP
 
             for (int i = 0; i < currentLyrics.Count; i++)
             {
-                if (i == currentLyricIndex) continue;
+                if (IsLyricLineLit(i)) continue;
                 var c = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
                 if (c != null)
                 {
                     var st = FindChildByName(c, "LyricSharpText") as TextBlock;
-                    if (st != null && st.Inlines.Count > 0)
+                    // A line still animating its last words keeps its hidden runs under the word overlay
+                    if (st != null && st.Inlines.Count > 0 && !IsSharpInOverlay(st, false))
                     {
                         st.Inlines.Clear();
                         st.Text = currentLyrics[i].Text ?? "";
@@ -1194,8 +1240,8 @@ namespace YTMusicWP
         {
             if (args.ItemContainer != null)
             {
-                // Set all non-active lines to dim, active line to bright
-                args.ItemContainer.Opacity = (args.ItemIndex == currentLyricIndex) ? 1.0 : 0.5;
+                // Set all non-active lines to dim, lines being sung to bright
+                args.ItemContainer.Opacity = IsLyricLineLit(args.ItemIndex) ? 1.0 : 0.5;
 
                 SyncRecycledContainerVisibility(args);
                 ReleaseLyricEffectsInContainer(args.ItemContainer, args.ItemIndex, true);
@@ -1350,17 +1396,13 @@ namespace YTMusicWP
                     return;
                 }
 
-                int newIndex = -1;
-                for (int i = 0; i < currentLyrics.Count; i++)
-                {
-                    if (pos >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIndex = i;
-                    else break;
-                }
+                int newIndex = FindLyricIndexAt(pos);
 
                 if (newIndex != currentLyricIndex && newIndex >= 0)
                 {
                     int oldIndex = currentLyricIndex;
                     currentLyricIndex = newIndex;
+                    RefreshLitLines(pos);
 
                     if (isFs) ResetWordInlines(oldIndex, true);
                     if (isNpLyrics) ResetWordInlines(oldIndex, false);
@@ -1373,6 +1415,8 @@ namespace YTMusicWP
                 }
                 else if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.Count)
                 {
+                    // Same line followed, but an overlapping line (duet / background vocals) may have started or ended
+                    if (RefreshLitLines(pos)) ApplyLitLinesChange(isFs, isNpLyrics);
                     if (isFs) UpdateActiveLineWordProgress(pos, true);
                     if (isNpLyrics) UpdateActiveLineWordProgress(pos, false);
                 }
@@ -1603,12 +1647,13 @@ namespace YTMusicWP
             var overlays = isFullscreen ? _fsOverlays : _regularOverlays;
             string sharpName = isFullscreen ? "FullscreenLyricSharpText" : "LyricSharpText";
 
-            // 1. Dòng đang sống
+            // 1. Dòng đang sống: quanh dòng hiện tại cả hai phía (dòng bè nằm ngay dưới dòng chính có thể bắt đầu sau
+            //    dòng kế tiếp, và song ca có thể chồng nhiều dòng)
             _liveLineScratch.Clear();
             int cur = currentLyricIndex;
             if (cur >= 0 && cur < currentLyrics.Count)
             {
-                for (int i = Math.Max(0, cur - 2); i <= cur; i++)
+                for (int i = Math.Max(0, cur - 3); i <= Math.Min(currentLyrics.Count - 1, cur + 2); i++)
                 {
                     var l = currentLyrics[i];
                     if (!l.HasWords) continue;
@@ -2162,6 +2207,148 @@ namespace YTMusicWP
                 kv.Key.Opacity = 1.0;
             }
             _retiringLayers.Clear();
+        }
+
+        // ── Several lines sung at once (duets, background vocals under their line) ──
+        // currentLyricIndex is the line the view follows (scroll, mini lyric). Lines that started earlier and are still
+        // being sung stay lit with it: _litLyricLines holds them (never currentLyricIndex itself).
+        private List<int> _litLyricLines = new List<int>(4);
+        private List<int> _litLyricLinesPrev = new List<int>(4);
+        private static readonly TimeSpan LyricLeadTime = TimeSpan.FromSeconds(0.2);
+        // A line ending within this of the next one's start is a hand-over, not a duet: it is not kept lit
+        private static readonly TimeSpan LitOverlapGrace = TimeSpan.FromMilliseconds(250);
+
+        /// <summary>
+        /// The line to follow at <paramref name="pos"/>: the last one that has started (0.2 s early). Lines are not strictly
+        /// ordered by start time any more (a background line sits under its line even when the next line starts first),
+        /// so the whole list is scanned instead of stopping at the first line not started.
+        /// </summary>
+        private int FindLyricIndexAt(TimeSpan pos)
+        {
+            int idx = -1;
+            var early = pos + LyricLeadTime;
+            for (int i = 0; i < currentLyrics.Count; i++)
+            {
+                if (currentLyrics[i].Time <= early) idx = i;
+            }
+            return idx;
+        }
+
+        private bool IsLyricLineLit(int index)
+        {
+            return index >= 0 && (index == currentLyricIndex || _litLyricLines.Contains(index));
+        }
+
+        /// <summary>Recomputes the lines lit besides the current one. True when the set changed (old set kept in _litLyricLinesPrev).</summary>
+        private bool RefreshLitLines(TimeSpan pos)
+        {
+            var next = _litLyricLinesPrev;
+            next.Clear();
+            int cur = currentLyricIndex;
+            if (currentLyrics != null && cur >= 0 && cur < currentLyrics.Count)
+            {
+                var early = pos + LyricLeadTime;
+                for (int i = Math.Max(0, cur - 3); i <= Math.Min(currentLyrics.Count - 1, cur + 3); i++)
+                {
+                    if (i == cur) continue;
+                    var l = currentLyrics[i];
+                    if (l.IsInterlude) continue;
+                    var end = l.SungEnd;
+                    if (end > TimeSpan.Zero && l.Time <= early && pos < end - LitOverlapGrace) next.Add(i);
+                }
+            }
+
+            bool changed = next.Count != _litLyricLines.Count;
+            for (int i = 0; !changed && i < next.Count; i++) changed = next[i] != _litLyricLines[i];
+            // Swap: _litLyricLines = new set, _litLyricLinesPrev = old set (for the callers that animate the difference)
+            _litLyricLinesPrev = _litLyricLines;
+            _litLyricLines = next;
+            return changed;
+        }
+
+        private void ClearLitLines()
+        {
+            _litLyricLines.Clear();
+            _litLyricLinesPrev.Clear();
+        }
+
+        /// <summary>
+        /// The lit set changed while the current line stayed: repaint the lines that joined or left it (bound opacity /
+        /// colour for both views, plus the container scale of the Spotify style and the container fade of fullscreen).
+        /// </summary>
+        private void ApplyLitLinesChange(bool isFullscreen, bool isRegular)
+        {
+            UpdateLyricsVisualState(currentLyricIndex);
+            foreach (var list in new[] { _litLyricLines, _litLyricLinesPrev })
+            {
+                for (int n = 0; n < list.Count; n++)
+                {
+                    int i = list[n];
+                    if (i == currentLyricIndex || i >= currentLyrics.Count) continue;
+                    bool lit = IsLyricLineLit(i);
+                    if (isFullscreen && FullscreenLyricsListView != null)
+                    {
+                        var fc = FullscreenLyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                        if (fc != null) AnimateOpacity(fc, lit ? 1.0 : 0.5);
+                    }
+                    if (isRegular && !_isAppleMusicStyle && LyricsListView != null)
+                    {
+                        var c = LyricsListView.ContainerFromIndex(i) as FrameworkElement;
+                        if (c != null) AnimateLyricContainer(c, i, lit ? 1.0 : 0.85, lit ? 1.0 : 0.5);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Spotify style: eases a line container to a scale / opacity (independent animations, own storyboard).</summary>
+        private void AnimateLyricContainer(FrameworkElement container, int index, double scale, double opacity)
+        {
+            var st = EnsureLyricScale(container, index, container.RenderTransform is ScaleTransform ? ((ScaleTransform)container.RenderTransform).ScaleX : scale);
+            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
+            foreach (var t in new[] { new { Target = (DependencyObject)st, Prop = "ScaleX", To = scale },
+                                      new { Target = (DependencyObject)st, Prop = "ScaleY", To = scale },
+                                      new { Target = (DependencyObject)container, Prop = "Opacity", To = opacity } })
+            {
+                var a = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+                {
+                    To = t.To, Duration = TimeSpan.FromMilliseconds(400), EasingFunction = _wordEaseOut
+                };
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(a, t.Target);
+                Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(a, t.Prop);
+                sb.Children.Add(a);
+            }
+            sb.Begin();
+        }
+
+        /// <summary>
+        /// Spotify style: the container's ScaleTransform (created at <paramref name="initialScale"/> if missing), anchored on
+        /// the side the line is drawn on — a right-aligned duet line scales around its right edge. Recycled containers
+        /// keep their transform, so the origin is set every time.
+        /// </summary>
+        private ScaleTransform EnsureLyricScale(FrameworkElement container, int index, double initialScale)
+        {
+            var st = container.RenderTransform as ScaleTransform;
+            if (st == null)
+            {
+                st = new ScaleTransform { ScaleX = initialScale, ScaleY = initialScale };
+                container.RenderTransform = st;
+            }
+            bool right = currentLyrics != null && index >= 0 && index < currentLyrics.Count && currentLyrics[index].IsOppositeSide;
+            container.RenderTransformOrigin = new Point(right ? 1 : 0, 0.5);
+            return st;
+        }
+
+        /// <summary>The line the mini lyric (player page) shows: a background line never replaces the line it belongs to.</summary>
+        private int MiniLyricIndex()
+        {
+            int cur = currentLyricIndex;
+            if (cur < 0 || cur >= currentLyrics.Count || !currentLyrics[cur].IsBackground) return cur;
+            for (int n = _litLyricLines.Count - 1; n >= 0; n--)
+            {
+                int i = _litLyricLines[n];
+                if (i < currentLyrics.Count && !currentLyrics[i].IsBackground) return i;
+            }
+            return cur;
         }
 
         // ── Background vocals (lời bè) ──

@@ -82,7 +82,10 @@ namespace YTMusicWP.Services
                 doc.LoadXml(ttml);
 
                 var pNodes = doc.GetElementsByTagName("p");
-                var parsedLines = new List<LyricLine>();
+                var agentSides = ReadAgentSides(doc, pNodes);
+
+                // One group per <p>: the sung line, then its background vocals as their own line right below it
+                var groups = new List<List<LyricLine>>();
 
                 foreach (var pNode in pNodes)
                 {
@@ -98,67 +101,63 @@ namespace YTMusicWP.Services
                     string endAttr = el.GetAttribute("end");
                     double endTime = !string.IsNullOrEmpty(endAttr) ? ParseTime(endAttr) : -1;
 
-                    // Extract word-level spans
+                    // Word-level spans; Apple TTML marks background vocals with ttm:role="x-bg" on a <span> wrapping
+                    // them, either around the whole line or around a few words inside it
                     var words = new List<LyricWord>();
-                    CollectSpans(el, words, startTime, endTime);
+                    var bgWords = new List<LyricWord>();
+                    CollectSpans(el, words, bgWords, IsBackgroundRole(GetRoleAttribute(el)));
+                    RefineWordEnds(words, endTime);
+                    RefineWordEnds(bgWords, endTime);
 
-                    // Refine word end boundaries
-                    for (int k = 0; k < words.Count; k++)
+                    string agent = GetAgentAttribute(el);
+                    bool opposite;
+                    if (string.IsNullOrEmpty(agent) || !agentSides.TryGetValue(agent, out opposite)) opposite = false;
+
+                    var group = new List<LyricLine>(2);
+                    if (words.Count > 0 || bgWords.Count == 0)
                     {
-                        var w = words[k];
-                        if (w.EndTime <= w.StartTime)
+                        string lineText = words.Count > 0 ? JoinWords(words) : ExtractAllText(el).Trim();
+                        if (!string.IsNullOrWhiteSpace(lineText))
                         {
-                            if (k < words.Count - 1)
+                            bool isSecondary = lineText.StartsWith("(") && lineText.EndsWith(")");
+                            group.Add(new LyricLine
                             {
-                                w.EndTime = words[k + 1].StartTime;
-                            }
-                            else if (endTime > w.StartTime.TotalSeconds)
-                            {
-                                w.EndTime = TimeSpan.FromSeconds(endTime);
-                            }
-                            else
-                            {
-                                w.EndTime = w.StartTime + TimeSpan.FromMilliseconds(500);
-                            }
+                                Time = TimeSpan.FromSeconds(startTime),
+                                EndTime = endTime > 0 ? TimeSpan.FromSeconds(endTime) : (words.Count > 0 ? words[words.Count - 1].EndTime : TimeSpan.Zero),
+                                Text = lineText,
+                                IsBackground = isSecondary,
+                                IsOppositeSide = opposite,
+                                FontStyle = isSecondary ? Windows.UI.Text.FontStyle.Italic : Windows.UI.Text.FontStyle.Normal,
+                                Words = words.Count > 0 ? words : null
+                            });
                         }
                     }
-
-                    string lineText;
-                    if (words.Count > 0)
+                    if (bgWords.Count > 0)
                     {
-                        var sb = new StringBuilder();
-                        for (int k = 0; k < words.Count; k++) sb.Append(words[k].Text);
-                        lineText = sb.ToString().Trim();
+                        string bgText = JoinWords(bgWords);
+                        if (!string.IsNullOrWhiteSpace(bgText))
+                        {
+                            // A whole-line background part keeps the <p> timing; one inside a line runs on its own words
+                            bool alone = group.Count == 0;
+                            group.Add(new LyricLine
+                            {
+                                Time = alone ? TimeSpan.FromSeconds(startTime) : bgWords[0].StartTime,
+                                EndTime = alone && endTime > 0 ? TimeSpan.FromSeconds(endTime) : bgWords[bgWords.Count - 1].EndTime,
+                                Text = bgText,
+                                IsBackground = true,
+                                IsOppositeSide = opposite,
+                                FontStyle = Windows.UI.Text.FontStyle.Italic,
+                                Words = bgWords
+                            });
+                        }
                     }
-                    else
-                    {
-                        lineText = ExtractAllText(el).Trim();
-                    }
-
-                    if (string.IsNullOrWhiteSpace(lineText)) continue;
-
-                    TimeSpan lineStartTime = TimeSpan.FromSeconds(startTime);
-                    TimeSpan lineEndTimeVal = endTime > 0 ? TimeSpan.FromSeconds(endTime) : (words.Count > 0 ? words[words.Count - 1].EndTime : TimeSpan.Zero);
-
-                    // Apple TTML đánh dấu giọng bè bằng ttm:role="x-bg", thường đặt trên <span> bọc cả dòng chứ không phải trên <p>
-                    bool isSecondary = IsBackgroundRole(GetRoleAttribute(el))
-                                    || IsWholeLineBackgroundSpan(el)
-                                    || (lineText.StartsWith("(") && lineText.EndsWith(")"));
-
-                    parsedLines.Add(new LyricLine
-                    {
-                        Time = lineStartTime,
-                        EndTime = lineEndTimeVal,
-                        Text = lineText,
-                        IsBackground = isSecondary,
-                        FontStyle = isSecondary ? Windows.UI.Text.FontStyle.Italic : Windows.UI.Text.FontStyle.Normal,
-                        Words = (words.Count > 0) ? words : null
-                    });
+                    if (group.Count > 0) groups.Add(group);
                 }
 
-                if (parsedLines.Count == 0) return null;
+                if (groups.Count == 0) return null;
 
-                parsedLines.Sort((a, b) => a.Time.CompareTo(b.Time));
+                // Stable sort by the sung line's start, background line kept right under its line
+                var parsedLines = groups.OrderBy(g => g[0].Time).SelectMany(g => g).ToList();
 
                 // Interlude dots injection (gaps >= 3000ms, matching SimpMusic / Apple Music)
                 var finalLines = new List<LyricLine>(parsedLines.Count + 4);
@@ -184,7 +183,9 @@ namespace YTMusicWP.Services
                     });
                 }
 
-                // 2. Insert lines and detect interlude gaps between consecutive lines
+                // 2. Insert lines and detect interlude gaps between consecutive lines. The gap is measured from the latest
+                // end so far: a background line can end before the line above it (duets can overlap too)
+                double sungUntil = 0;
                 for (int i = 0; i < parsedLines.Count; i++)
                 {
                     var cur = parsedLines[i];
@@ -200,6 +201,8 @@ namespace YTMusicWP.Services
                             curEndSec = cur.Words[cur.Words.Count - 1].EndTime.TotalSeconds;
                         else
                             curEndSec = cur.Time.TotalSeconds + 3.0;
+                        sungUntil = Math.Max(sungUntil, curEndSec);
+                        curEndSec = sungUntil;
 
                         double nextStartSec = next.Time.TotalSeconds;
                         double gap = nextStartSec - curEndSec;
@@ -269,31 +272,74 @@ namespace YTMusicWP.Services
                 || role.IndexOf("secondary", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>True khi mọi phần tử con của &lt;p&gt; đều là span mang vai trò giọng bè.</summary>
-        private static bool IsWholeLineBackgroundSpan(XmlElement p)
+        private static string GetAgentAttribute(XmlElement el)
         {
-            if (p.ChildNodes == null) return false;
-            bool sawElement = false;
-            foreach (var child in p.ChildNodes)
-            {
-                if (child.NodeType == NodeType.ElementNode)
-                {
-                    var el = child as XmlElement;
-                    if (el == null || !IsBackgroundRole(GetRoleAttribute(el))) return false;
-                    sawElement = true;
-                }
-                else if (child.NodeType == NodeType.TextNode)
-                {
-                    var txt = child.NodeValue as string;
-                    if (!string.IsNullOrWhiteSpace(txt)) return false;
-                }
-            }
-            return sawElement;
+            string agent = el.GetAttribute("ttm:agent");
+            if (string.IsNullOrEmpty(agent)) agent = el.GetAttribute("agent");
+            return agent;
         }
 
-        private static void CollectSpans(IXmlNode node, List<LyricWord> words, double lineStart, double lineEnd)
+        /// <summary>
+        /// Which singers (ttm:agent ids) are drawn on the right, like Apple Music duets: in order of first appearance the
+        /// 1st person is on the left, the 2nd on the right, the 3rd on the left... A "group" agent (everyone) stays left.
+        /// </summary>
+        private static Dictionary<string, bool> ReadAgentSides(XmlDocument doc, XmlNodeList pNodes)
+        {
+            var sides = new Dictionary<string, bool>(StringComparer.Ordinal);
+            var groupAgents = new HashSet<string>(StringComparer.Ordinal);
+            try
+            {
+                foreach (var node in doc.GetElementsByTagName("ttm:agent"))
+                {
+                    var a = node as XmlElement;
+                    if (a == null) continue;
+                    string id = a.GetAttribute("xml:id");
+                    if (!string.IsNullOrEmpty(id) && string.Equals(a.GetAttribute("type"), "group", StringComparison.OrdinalIgnoreCase))
+                        groupAgents.Add(id);
+                }
+            }
+            catch { }
+
+            int persons = 0;
+            foreach (var pNode in pNodes)
+            {
+                var el = pNode as XmlElement;
+                if (el == null) continue;
+                string agent = GetAgentAttribute(el);
+                if (string.IsNullOrEmpty(agent) || sides.ContainsKey(agent)) continue;
+                sides[agent] = !groupAgents.Contains(agent) && (persons++ % 2 == 1);
+            }
+            return sides;
+        }
+
+        private static string JoinWords(List<LyricWord> words)
+        {
+            var sb = new StringBuilder();
+            for (int k = 0; k < words.Count; k++) sb.Append(words[k].Text);
+            return sb.ToString().Trim();
+        }
+
+        /// <summary>Words without an end run until the next word, or the line end, or 0.5 s.</summary>
+        private static void RefineWordEnds(List<LyricWord> words, double lineEnd)
+        {
+            for (int k = 0; k < words.Count; k++)
+            {
+                var w = words[k];
+                if (w.EndTime > w.StartTime) continue;
+                if (k < words.Count - 1) w.EndTime = words[k + 1].StartTime;
+                else if (lineEnd > w.StartTime.TotalSeconds) w.EndTime = TimeSpan.FromSeconds(lineEnd);
+                else w.EndTime = w.StartTime + TimeSpan.FromMilliseconds(500);
+            }
+        }
+
+        /// <summary>
+        /// Collects the timed word spans of a line. Spans inside a background-vocal span (ttm:role="x-bg") go to
+        /// <paramref name="bgWords"/>, the rest to <paramref name="words"/>; untimed text (spaces) joins the word before it.
+        /// </summary>
+        private static void CollectSpans(IXmlNode node, List<LyricWord> words, List<LyricWord> bgWords, bool inBackground)
         {
             if (node == null || node.ChildNodes == null) return;
+            var target = inBackground ? bgWords : words;
 
             foreach (var child in node.ChildNodes)
             {
@@ -302,6 +348,7 @@ namespace YTMusicWP.Services
                     var el = child as XmlElement;
                     if (el != null)
                     {
+                        bool isBg = inBackground || IsBackgroundRole(GetRoleAttribute(el));
                         string bAttr = el.GetAttribute("begin");
                         string eAttr = el.GetAttribute("end");
 
@@ -322,7 +369,7 @@ namespace YTMusicWP.Services
 
                         if (hasChildWithBegin || string.IsNullOrEmpty(bAttr))
                         {
-                            CollectSpans(el, words, lineStart, lineEnd);
+                            CollectSpans(el, words, bgWords, isBg);
                         }
                         else
                         {
@@ -333,7 +380,7 @@ namespace YTMusicWP.Services
                                 string text = ExtractAllText(el);
                                 if (!string.IsNullOrEmpty(text))
                                 {
-                                    words.Add(new LyricWord
+                                    (isBg ? bgWords : words).Add(new LyricWord
                                     {
                                         Text = text,
                                         StartTime = TimeSpan.FromSeconds(s),
@@ -347,9 +394,9 @@ namespace YTMusicWP.Services
                 else if (child.NodeType == NodeType.TextNode)
                 {
                     string txt = child.NodeValue?.ToString() ?? "";
-                    if (!string.IsNullOrEmpty(txt) && words.Count > 0)
+                    if (!string.IsNullOrEmpty(txt) && target.Count > 0)
                     {
-                        words[words.Count - 1].Text += txt;
+                        target[target.Count - 1].Text += txt;
                     }
                 }
             }
@@ -402,13 +449,13 @@ namespace YTMusicWP.Services
                         return (h * 3600) + (m * 60) + s;
                     }
                 }
+                else if (timeStr.EndsWith("ms")) // before "s": "500ms" ends with "s" too
+                {
+                    return double.Parse(timeStr.Substring(0, timeStr.Length - 2), inv) / 1000.0;
+                }
                 else if (timeStr.EndsWith("s"))
                 {
                     return double.Parse(timeStr.TrimEnd('s'), inv);
-                }
-                else if (timeStr.EndsWith("ms"))
-                {
-                    return double.Parse(timeStr.Substring(0, timeStr.Length - 2), inv) / 1000.0;
                 }
                 else
                 {

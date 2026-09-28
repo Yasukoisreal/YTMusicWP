@@ -1300,12 +1300,7 @@ namespace YTMusicWP
                             if (currentLyrics != null && currentLyrics.Count > 0)
                             {
                                 var seekTime = TimeSpan.FromSeconds(seekVal);
-                                int newIdx = -1;
-                                for (int i = 0; i < currentLyrics.Count; i++)
-                                {
-                                    if (seekTime >= currentLyrics[i].Time.Subtract(TimeSpan.FromSeconds(0.2))) newIdx = i;
-                                    else break;
-                                }
+                                int newIdx = FindLyricIndexAt(seekTime);
                                 if (newIdx >= 0 && newIdx < currentLyrics.Count)
                                 {
                                     int oldIdx = currentLyricIndex;

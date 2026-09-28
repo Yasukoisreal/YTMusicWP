@@ -10,6 +10,38 @@ namespace YTMusicWP
         public TimeSpan EndTime { get; set; }
         public bool IsInterlude { get; set; }
         public bool IsBackground { get; set; }
+
+        /// <summary>
+        /// Sung by a second singer (Apple Music TTML ttm:agent): drawn right-aligned, like Apple Music duets.
+        /// Background vocals split out of a line keep the side of the line they belong to.
+        /// </summary>
+        public bool IsOppositeSide { get; set; }
+        public Windows.UI.Xaml.TextAlignment TextAlign
+        {
+            get { return IsOppositeSide ? Windows.UI.Xaml.TextAlignment.Right : Windows.UI.Xaml.TextAlignment.Left; }
+        }
+        public Windows.UI.Xaml.HorizontalAlignment HAlign
+        {
+            get { return IsOppositeSide ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left; }
+        }
+
+        /// <summary>When the line stops being sung, when known (TTML end / last word); TimeSpan.Zero for plain LRC lines.</summary>
+        public TimeSpan SungEnd
+        {
+            get
+            {
+                TimeSpan end = EndTime > Time ? EndTime : TimeSpan.Zero;
+                if (Words != null)
+                {
+                    for (int i = 0; i < Words.Count; i++)
+                    {
+                        if (Words[i].EndTime > end) end = Words[i].EndTime;
+                    }
+                }
+                return end > Time ? end : TimeSpan.Zero;
+            }
+        }
+
         public System.Collections.Generic.List<LyricWord> Words { get; set; }
         public bool HasWords { get { return Words != null && Words.Count > 0; } }
 
