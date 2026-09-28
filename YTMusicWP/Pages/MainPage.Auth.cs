@@ -976,7 +976,6 @@ namespace YTMusicWP
             try
             {
                 SettingsPanel.LoginStatusText.Text = "Status: Syncing Liked Songs...";
-                favoriteTracks.Clear();
                 _likedSongsContinuation = null;
 
                 // Browse "VLLM" (Liked Music) if Cookie Auth, otherwise "VLLL" (Liked Videos)
@@ -989,6 +988,10 @@ namespace YTMusicWP
                     SettingsPanel.LoginStatusText.Foreground = _authOrangeBrush;
                     return;
                 }
+
+                // Replace the list only once the new one has arrived: clearing before the request emptied
+                // Liked Songs whenever it failed (offline start, expired session)
+                favoriteTracks.Clear();
 
                 // Save continuation token for lazy loading
                 _likedSongsContinuation = json.SelectToken("$..nextContinuationData.continuation")?.ToString()
@@ -1172,9 +1175,11 @@ namespace YTMusicWP
                     return;
                 }
 
-                bool hasNew = false;
+                // Rebuilt from the server list: renames, new covers, new counts and playlists deleted on YouTube
+                // all show up (only unseen ids used to be appended, so none of those ever changed)
+                var fresh = new List<YouTubePlaylistInfo>();
                 var items = json.SelectTokens("$..musicTwoRowItemRenderer").ToList();
-                
+
                 foreach (var renderer in items)
                 {
                     try
@@ -1185,7 +1190,7 @@ namespace YTMusicWP
                         if (playlistId.StartsWith("VL")) playlistId = playlistId.Substring(2);
                         if (!playlistId.StartsWith("PL") && !playlistId.StartsWith("UC") && !playlistId.StartsWith("RD") && !playlistId.StartsWith("LM")) continue;
 
-                        if (_youtubeUserPlaylists.Any(p => p.PlaylistId == playlistId)) continue;
+                        if (fresh.Any(p => p.PlaylistId == playlistId)) continue;
 
                         string title = renderer.SelectToken("title.runs[0].text")?.ToString() 
                                     ?? renderer.SelectToken("title.simpleText")?.ToString();
@@ -1198,25 +1203,39 @@ namespace YTMusicWP
                             thumbUrl = thumbArr.Last()["url"]?.ToString() ?? "";
                         }
 
+                        // The count is the LAST number of the whole subtitle ("Yasuko • 1,234 songs"): runs[0] alone is
+                        // the author, whose name may itself contain digits
                         int trackCount = 0;
-                        string subtitle = renderer.SelectToken("subtitle.runs[0].text")?.ToString() 
-                                       ?? renderer.SelectToken("subtitle.simpleText")?.ToString() ?? "";
-                        var match = System.Text.RegularExpressions.Regex.Match(subtitle, @"(\d+)");
-                        if (match.Success) trackCount = int.Parse(match.Groups[1].Value);
+                        var subtitleRuns = renderer.SelectToken("subtitle.runs") as JArray;
+                        string subtitle = subtitleRuns != null
+                            ? string.Concat(subtitleRuns.Select(r => r["text"]?.ToString() ?? ""))
+                            : renderer.SelectToken("subtitle.simpleText")?.ToString() ?? "";
+                        var numbers = System.Text.RegularExpressions.Regex.Matches(subtitle, @"\d[\d.,]*");
+                        if (numbers.Count > 0)
+                        {
+                            string digits = new string(numbers[numbers.Count - 1].Value.Where(char.IsDigit).ToArray());
+                            int.TryParse(digits, out trackCount);
+                        }
 
-                        _youtubeUserPlaylists.Add(new YouTubePlaylistInfo
+                        fresh.Add(new YouTubePlaylistInfo
                         {
                             PlaylistId = playlistId,
                             Title = title,
                             TrackCount = trackCount,
                             ThumbnailUrl = GetSquareThumbnail(thumbUrl)
                         });
-                        hasNew = true;
                     }
                     catch { continue; }
                 }
 
-                if (hasNew) SaveYouTubePlaylistsCacheAsync();
+                // An answer with no playlists at all is more likely a changed response format than an empty library:
+                // keep what is there rather than wiping it
+                if (fresh.Count > 0)
+                {
+                    _youtubeUserPlaylists.Clear();
+                    foreach (var pl in fresh) _youtubeUserPlaylists.Add(pl);
+                    SaveYouTubePlaylistsCacheAsync();
+                }
                 System.Diagnostics.Debug.WriteLine("[PlaylistSync] Total playlists: " + _youtubeUserPlaylists.Count);
             }
             catch (Exception ex)
@@ -1406,10 +1425,9 @@ namespace YTMusicWP
         {
             try
             {
-                _youtubeSubscriptions.Clear();
-
-                // Delete old cache to prevent stale unfiltered data
-                try { var f = await ApplicationData.Current.LocalFolder.GetFileAsync("yt_subs_cache.json"); await f.DeleteAsync(); } catch { }
+                // Fetch first and replace the list only on success: clearing up front (and deleting the cache) emptied
+                // the Library's artists whenever the request failed, e.g. when starting offline
+                var fresh = new List<YouTubeSubscription>();
 
                 // Fetch YouTube Music library artists directly
                 var json = await InnerTubeClient.AuthInnerTubePostAsync("browse", new JObject { ["browseId"] = "FEmusic_library_corpus_artists" }, accessToken, "WEB_REMIX", "1.20231214.01.00");
@@ -1448,13 +1466,15 @@ namespace YTMusicWP
                         Title = title,
                         ThumbnailUrl = avatarUrl
                     };
-                    _youtubeSubscriptions.Add(sub);
+                    fresh.Add(sub);
                 }
+
+                _youtubeSubscriptions.Clear();
+                foreach (var sub in fresh) _youtubeSubscriptions.Add(sub);
+                // Cache subscriptions locally
+                SaveYouTubeSubscriptionsCacheAsync();
             }
             catch { }
-
-            // Cache subscriptions locally
-            SaveYouTubeSubscriptionsCacheAsync();
         }
 
         private async void SaveYouTubeSubscriptionsCacheAsync()
