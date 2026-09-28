@@ -666,6 +666,7 @@ namespace YTMusicWP
                         var state = sender.CurrentState;
                         bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
                         SetPlayPauseIcon(isPlaying);
+                        if (state == MediaPlayerState.Playing) PauseSamplesForMainPlayer();
                         InvalidateLyricsClock();
                         UpdateWordTimerState();
                     }

@@ -124,8 +124,11 @@ namespace YTMusicWP
         }
 
         /// <summary>App suspending: drop the video (decoder + network buffers) but keep the tab and feed as they are.</summary>
+        private bool _samplesPausedBeforeSuspend;
+
         private void ReleaseSampleVideoForSuspend()
         {
+            _samplesPausedBeforeSuspend = _samplesUserPaused;
             _samplesGeneration++;
             StopShortsLoop();
             StopSampleVideo();
@@ -134,7 +137,14 @@ namespace YTMusicWP
 
         private void ResumeSampleVideoAfterSuspend()
         {
-            if (_samples.Count > 0 && _currentTab == SamplesTab) ShowSample(Math.Min(_sampleIndex, _samples.Count - 1));
+            if (_samples.Count == 0 || _currentTab != SamplesTab) return;
+            ShowSample(Math.Min(_sampleIndex, _samples.Count - 1));
+            if (_samplesPausedBeforeSuspend)
+            {
+                // ShowSample reset it; BeginSamplePlayback then only seeks and leaves the clip paused
+                _samplesUserPaused = true;
+                ShortsView.SamplePausedIcon.Visibility = Visibility.Visible;
+            }
         }
 
         /// <summary>Called by SwitchTab when leaving the Samples tab (and by the back key).</summary>
@@ -229,9 +239,10 @@ namespace YTMusicWP
         {
             if (_samplesLoadingMore || _samplesMoreSources.Count == 0) return;
             _samplesLoadingMore = true;
+            var source = default(KeyValuePair<string, string>);
             try
             {
-                var source = _samplesMoreSources[0];
+                source = _samplesMoreSources[0];
                 _samplesMoreSources.RemoveAt(0);
                 var page = await InnerTubeClient.BrowsePlaylistAsync(source.Key, source.Value);
                 if (page != null)
@@ -244,7 +255,11 @@ namespace YTMusicWP
                         _samplesMoreSources.Add(new KeyValuePair<string, string>(source.Key, page.ContinuationToken));
                 }
             }
-            catch { }
+            catch
+            {
+                // Network error: keep the page for the next attempt (the next swipe near the end)
+                if (source.Key != null) _samplesMoreSources.Add(source);
+            }
             finally { _samplesLoadingMore = false; }
         }
 
@@ -314,7 +329,14 @@ namespace YTMusicWP
             if (index >= _samples.Count - 3) LoadMoreSamplesAsync();
 
             string url;
-            if (!_sampleUrlCache.TryGetValue(track.VideoId, out url))
+            if (_sampleUrlCache.TryGetValue(track.VideoId, out url) && !IsStreamUrlFresh(url))
+            {
+                // Prefetched long ago (the tab kept in the background): googlevideo refuses it after "expire"
+                _sampleUrlCache.Remove(track.VideoId);
+                _clipStartTasks.Remove(track.VideoId);
+                url = null;
+            }
+            if (url == null)
             {
                 try { url = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId, false, true); }
                 catch { url = null; }
@@ -329,6 +351,12 @@ namespace YTMusicWP
             }
 
             _currentClipStartTask = GetClipStartTask(track.VideoId, url);
+            if (IsUndecodableClip(_currentClipStartTask))
+            {
+                // Already known from the prefetch: do not even open it
+                SkipUndecodableSample(track);
+                return;
+            }
             try
             {
                 ShortsView.SampleVideo.Source = new Uri(url);
@@ -339,6 +367,18 @@ namespace YTMusicWP
                 ShowSampleMessage(SampleUnplayableText);
             }
         }
+
+        /// <summary>googlevideo URLs carry expire=&lt;unix seconds&gt;; past it (minus a margin) MediaElement fails to open them.</summary>
+        private static bool IsStreamUrlFresh(string url)
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(url ?? "", @"[?&]expire=(\d+)");
+            long expire;
+            if (!m.Success || !long.TryParse(m.Groups[1].Value, out expire)) return true;
+            long now = (long)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+            return expire > now + 120;
+        }
+
+        private string _sampleRetriedVideoId; // clip already given its one fresh-URL retry
 
         private static BitmapImage CreateSampleBitmap(string url, int decodeWidth)
         {
@@ -392,10 +432,20 @@ namespace YTMusicWP
             try
             {
                 // A full song started from "Play" may be running in the main player: never play both
+                _sampleRetriedVideoId = null; // opened fine: a later failure may retry again
                 try
                 {
                     if (_appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                    {
+                        // e.g. the song started with "Play" and the user swiped on: pause it, and give it back on exit
+                        if (!_samplesWasMainPlaying)
+                        {
+                            _samplesWasMainPlaying = true;
+                            _samplesSavedTrack = currentTrack;
+                            _samplesSavedPosition = _appMediaPlayer.Position;
+                        }
                         _appMediaPlayer.Pause();
+                    }
                 }
                 catch { }
 
@@ -407,6 +457,11 @@ namespace YTMusicWP
                 {
                     var done = await Task.WhenAny(startTask, Task.Delay(2500));
                     if (gen != _samplesGeneration || !_shortsIsOpen) return;
+                    if (done == startTask && IsUndecodableClip(startTask))
+                    {
+                        SkipUndecodableSample(CurrentSample);
+                        return;
+                    }
                     if (done == startTask && startTask.Result.HasValue) start = startTask.Result.Value;
                 }
                 // Seek slightly BEFORE the keyframe: if the player's timeline differs from the MP4 index by a few
@@ -523,6 +578,10 @@ namespace YTMusicWP
                     if (moov == null || moov.Length < moovSize) return null;
                 }
 
+                // A video track this phone cannot decode plays as sound over a black picture: flag it (NaN)
+                if (Services.Mp4KeyframeParser.ReadAvcLevel(moov) > Services.Mp4KeyframeParser.MaxDecodableAvcLevel)
+                    return double.NaN;
+
                 var info = Services.Mp4KeyframeParser.ParseMoov(moov);
                 if (info == null || info.DurationSeconds <= SampleClipSeconds * 2) return 0;
                 double target = Math.Min(info.DurationSeconds * 0.33, info.DurationSeconds - SampleClipSeconds - 1);
@@ -533,6 +592,32 @@ namespace YTMusicWP
                 System.Diagnostics.Debug.WriteLine("[Samples] keyframe index failed: " + ex.Message);
                 return null;
             }
+        }
+
+        /// <summary>The clip's MP4 index says its video track exceeds what WP8.1 decodes (FindClipStartAsync returned NaN).</summary>
+        private static bool IsUndecodableClip(Task<double?> clipTask)
+        {
+            return clipTask != null && clipTask.Status == TaskStatus.RanToCompletion
+                   && clipTask.Result.HasValue && double.IsNaN(clipTask.Result.Value);
+        }
+
+        /// <summary>
+        /// Drops a clip the phone cannot decode (black picture with sound, see Mp4KeyframeParser.MaxDecodableAvcLevel)
+        /// from the feed and shows the next one in its place.
+        /// </summary>
+        private void SkipUndecodableSample(YouTubeTrack track)
+        {
+            System.Diagnostics.Debug.WriteLine("[Samples] skipping " + (track != null ? track.VideoId : "?") + ": H.264 level above what WP8.1 decodes");
+            StopSampleVideo();
+            int i = track != null ? _samples.IndexOf(track) : -1;
+            if (i >= 0) _samples.RemoveAt(i);
+            if (_samples.Count == 0)
+            {
+                ShortsView.SampleLoading.IsActive = false;
+                ShowSampleMessage(SampleUnplayableText);
+                return;
+            }
+            ShowSample(Math.Min(_sampleIndex, _samples.Count - 1));
         }
 
         private static async Task<byte[]> DownloadRangeAsync(string url, long from, long to)
@@ -577,9 +662,21 @@ namespace YTMusicWP
         private void SampleVideo_MediaFailed(object sender, ExceptionRoutedEventArgs e)
         {
             if (!_shortsIsOpen) return;
+            System.Diagnostics.Debug.WriteLine("[Samples] MediaFailed: " + e.ErrorMessage);
+
+            // Usually a stale or IP-bound stream URL: resolve a fresh one once before giving up on the clip
+            var track = CurrentSample;
+            if (track != null && _sampleRetriedVideoId != track.VideoId)
+            {
+                _sampleRetriedVideoId = track.VideoId;
+                _sampleUrlCache.Remove(track.VideoId);
+                _clipStartTasks.Remove(track.VideoId);
+                ShowSample(_sampleIndex);
+                return;
+            }
+
             ShortsView.SampleLoading.IsActive = false;
             ShortsView.SamplePosterLayer.Opacity = 1;
-            System.Diagnostics.Debug.WriteLine("[Samples] MediaFailed: " + e.ErrorMessage);
             ShowSampleMessage(SampleUnplayableText);
         }
 
@@ -667,6 +764,21 @@ namespace YTMusicWP
         // ==========================================
         // INPUT
         // ==========================================
+        /// <summary>
+        /// The main player started playing while a clip plays (lock screen / headset / Now Playing): the song the user
+        /// asked for wins, the clip pauses, and leaving Samples must not touch the song any more.
+        /// </summary>
+        private void PauseSamplesForMainPlayer()
+        {
+            if (!_shortsIsOpen || ShortsView.SampleVideo.Source == null) return;
+            if (ShortsView.SampleVideo.CurrentState != Windows.UI.Xaml.Media.MediaElementState.Playing && !_sampleWaitingSeek) return;
+            try { ShortsView.SampleVideo.Pause(); } catch { }
+            _samplesUserPaused = true;
+            ShortsView.SamplePausedIcon.Visibility = Visibility.Visible;
+            _samplesWasMainPlaying = false;
+            _samplesSavedTrack = null;
+        }
+
         private void SamplesStage_Tapped(object sender, TappedRoutedEventArgs e)
         {
             if (CurrentSample == null) return;
@@ -699,8 +811,11 @@ namespace YTMusicWP
             ShortsView.SampleStageTransform.Y += e.Delta.Translation.Y;
         }
 
+        private bool _samplesChanging; // a clip change animation is running
+
         private void SamplesSwipe_Completed(object sender, ManipulationCompletedRoutedEventArgs e)
         {
+            if (_samplesChanging) return;
             double dy = e.Cumulative.Translation.Y;
             double vy = e.Velocities.Linear.Y;
             bool next = dy < -90 || vy < -0.8;
@@ -715,11 +830,12 @@ namespace YTMusicWP
         private void AnimateSampleChange(int newIndex, int direction)
         {
             double height = ShortsView.ActualHeight > 0 ? ShortsView.ActualHeight : 800;
+            _samplesChanging = true;
             AnimateStageTo(direction * height, () =>
             {
                 ShortsView.SampleStageTransform.Y = -direction * height * 0.25;
                 ShowSample(newIndex);
-                AnimateStageTo(0, null);
+                AnimateStageTo(0, () => _samplesChanging = false);
             });
         }
 

@@ -20,6 +20,29 @@ namespace YTMusicWP.Services
         }
 
         /// <summary>
+        /// Highest H.264 level (level_idc x10) Windows Phone 8.1 decodes. Above it the decoder refuses the video track:
+        /// MediaElement opens and plays the sound over a black picture. Seen on a YouTube itag 18 file declaring
+        /// Level 6.2 for a 640x360 stream (an encoder mislabel; the chart feed is otherwise 3.0 / 2.1).
+        /// </summary>
+        public const int MaxDecodableAvcLevel = 51;
+
+        /// <summary>
+        /// level_idc of the first 'avcC' (H.264 decoder configuration) in <paramref name="moov"/>, e.g. 30 for Level 3.0;
+        /// -1 when there is none (not H.264, or not within these bytes).
+        /// </summary>
+        public static int ReadAvcLevel(byte[] moov)
+        {
+            if (moov == null) return -1;
+            // avcC body: configurationVersion, AVCProfileIndication, profile_compatibility, AVCLevelIndication
+            for (int i = 4; i + 8 <= moov.Length; i++)
+            {
+                if (moov[i] == (byte)'a' && moov[i + 1] == (byte)'v' && moov[i + 2] == (byte)'c' && moov[i + 3] == (byte)'C')
+                    return moov[i + 7];
+            }
+            return -1;
+        }
+
+        /// <summary>
         /// Locates the top-level 'moov' box in the first bytes of a file.
         /// Returns false if the header bytes end before 'moov' starts (e.g. moov stored at the end of the file).
         /// </summary>

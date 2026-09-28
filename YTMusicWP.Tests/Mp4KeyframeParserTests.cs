@@ -112,5 +112,22 @@ namespace YTMusicWP.Tests
             Assert.AreEqual(0.0, Mp4KeyframeParser.ChooseStart(keys, 0.5), 1e-9);
             Assert.AreEqual(0.0, Mp4KeyframeParser.ChooseStart(new List<double>(), 5), 1e-9);
         }
+
+        [TestMethod]
+        public void ReadAvcLevel_ReturnsLevelIdcOfAvcC()
+        {
+            // avc1 sample entry holding an avcC with Main profile (77), Level 6.2 (62) as in the black-screen itag 18 file
+            var avcC = Box("avcC", new byte[] { 1, 77, 0x40, 62, 0xFF });
+            var moov = Box("moov", Box("trak", Box("mdia", Box("minf", Box("stbl", Box("stsd", new byte[8], Box("avc1", new byte[78], avcC)))))));
+            Assert.AreEqual(62, Mp4KeyframeParser.ReadAvcLevel(moov));
+            Assert.IsTrue(Mp4KeyframeParser.ReadAvcLevel(moov) > Mp4KeyframeParser.MaxDecodableAvcLevel);
+        }
+
+        [TestMethod]
+        public void ReadAvcLevel_NoAvcC_ReturnsMinusOne()
+        {
+            Assert.AreEqual(-1, Mp4KeyframeParser.ReadAvcLevel(BuildMoov()));
+            Assert.AreEqual(-1, Mp4KeyframeParser.ReadAvcLevel(null));
+        }
     }
 }
