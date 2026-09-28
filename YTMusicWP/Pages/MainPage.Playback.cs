@@ -195,6 +195,7 @@ namespace YTMusicWP
             if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast("No Internet connection"); return; }
 
             try { _appMediaPlayer.Pause(); } catch { }
+            SetPositionTimerRunning(true); // in case a state change was missed (audio task reconnect)
 
             currentTrack = track;
             UpdateAnimatedArtwork();
@@ -663,6 +664,23 @@ namespace YTMusicWP
         private bool _isCurrentLiveCached = false;
         private DateTime _lastLiveCheck = DateTime.MinValue;
 
+        private bool _positionTimerRunning = true;
+
+        /// <summary>Starts or stops the 1 s position / lyrics timer (it runs only while a song plays).</summary>
+        private void SetPositionTimerRunning(bool run)
+        {
+            if (_positionTimerRunning == run) return;
+            var timer = _bgTimer;
+            if (timer == null) return;
+            try
+            {
+                if (run) timer.Change(0, 1000);
+                else timer.Change(Timeout.Infinite, Timeout.Infinite);
+                _positionTimerRunning = run;
+            }
+            catch { }
+        }
+
         private void SetupTimer()
         {
             try { _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged; } catch { }
@@ -680,6 +698,7 @@ namespace YTMusicWP
                     {
                         var state = sender.CurrentState;
                         bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
+                        if (isPlaying) SetPositionTimerRunning(true); // the timer stops itself once playback stops
                         SetPlayPauseIcon(isPlaying);
                         if (state == MediaPlayerState.Playing) PauseSamplesForMainPlayer();
                         InvalidateLyricsClock();
@@ -706,7 +725,26 @@ namespace YTMusicWP
 
             MediaPlayerState stateVal;
             try { stateVal = session.CurrentState; } catch { MarkPlayerDisconnected(); return; }
-            if (stateVal != MediaPlayerState.Playing) return;
+            if (stateVal != MediaPlayerState.Playing)
+            {
+                // Nothing to show while paused / stopped: stop waking the CPU (and the audio process) every second.
+                // CurrentStateChanged and PlayTrack start it again.
+                // Stopped on the UI thread after a fresh check, so it cannot race a CurrentStateChanged(Playing) restart.
+                if (stateVal == MediaPlayerState.Paused || stateVal == MediaPlayerState.Stopped || stateVal == MediaPlayerState.Closed)
+                {
+                    var ignoredStop = Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
+                    {
+                        try
+                        {
+                            var now = _appMediaPlayer.CurrentState;
+                            if (now == MediaPlayerState.Paused || now == MediaPlayerState.Stopped || now == MediaPlayerState.Closed)
+                                SetPositionTimerRunning(false);
+                        }
+                        catch { }
+                    });
+                }
+                return;
+            }
 
             TimeSpan pos, dur;
             try { pos = session.Position; dur = session.NaturalDuration; } catch { return; }

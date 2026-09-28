@@ -101,16 +101,31 @@ namespace YTMusicWP.Services
             catch { }
         }
 
+        /// <summary>
+        /// Raised on the UI thread when the OS reports high memory usage, after the caches were trimmed: the page drops
+        /// what it can rebuild later (animated artwork video).
+        /// </summary>
+        public static event EventHandler HighMemoryPressure;
+
         private static void MemoryManager_AppMemoryUsageIncreased(object sender, object e)
         {
             try
             {
                 var level = MemoryManager.AppMemoryUsageLevel;
-                if (level == AppMemoryUsageLevel.High)
+                if (level != AppMemoryUsageLevel.High) return;
+                System.Diagnostics.Debug.WriteLine("[MemoryHelper] High memory pressure detected. Trimming memory caches.");
+
+                // Raised on a thread-pool thread, while the caches (lyrics dictionary, bitmaps) belong to the UI thread
+                var dispatcher = Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher;
+                var ignored = dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () =>
                 {
-                    System.Diagnostics.Debug.WriteLine("[MemoryHelper] High memory pressure detected. Trimming memory caches.");
                     TrimMemory();
-                }
+                    var handler = HighMemoryPressure;
+                    if (handler != null)
+                    {
+                        try { handler(null, EventArgs.Empty); } catch { }
+                    }
+                });
             }
             catch { }
         }

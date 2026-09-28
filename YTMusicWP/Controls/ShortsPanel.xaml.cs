@@ -37,6 +37,38 @@ namespace YTMusicWP.Controls
         private void More_Click(object sender, RoutedEventArgs e) { Raise(MoreClick, sender, e); }
         private void SongBar_Tapped(object sender, TappedRoutedEventArgs e) { if (SongBarTapped != null) SongBarTapped(sender, e); }
         private void SampleStage_Tapped(object sender, TappedRoutedEventArgs e) { if (StageTapped != null) StageTapped(sender, e); }
+
+        // Height / width of the clip: the poster covers exactly the area the letterboxed video will occupy
+        private double _posterAspect = 9.0 / 16.0;
+
+        /// <summary>Aspect (height / width) of the current clip; 16:9 until the clip reports its real size.</summary>
+        internal double PosterAspect
+        {
+            get { return _posterAspect; }
+            set
+            {
+                if (value <= 0 || double.IsNaN(value) || System.Math.Abs(value - _posterAspect) < 0.001) return;
+                _posterAspect = value;
+                SizePoster();
+            }
+        }
+
+        private void SampleStage_SizeChanged(object sender, SizeChangedEventArgs e) { SizePoster(); }
+
+        /// <summary>Fits the poster to the video's letterboxed rectangle (MediaElement Stretch="Uniform").</summary>
+        private void SizePoster()
+        {
+            double w = SampleStage.ActualWidth, h = SampleStage.ActualHeight;
+            if (w <= 0 || h <= 0) return;
+            double pw = w, ph = w * _posterAspect;
+            if (ph > h)
+            {
+                ph = h;
+                pw = h / _posterAspect;
+            }
+            SamplePosterLayer.Width = pw;
+            SamplePosterLayer.Height = ph;
+        }
         private void Shorts_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e) { if (SwipeDelta != null) SwipeDelta(sender, e); }
         private void Shorts_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) { if (SwipeCompleted != null) SwipeCompleted(sender, e); }
     }

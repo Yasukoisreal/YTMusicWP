@@ -27,15 +27,24 @@
     </UserControl.Resources>
 
     <Grid Background="Black" ManipulationMode="TranslateY" ManipulationDelta="Shorts_ManipulationDelta" ManipulationCompleted="Shorts_ManipulationCompleted">
-        <!-- Video stage: video underneath, poster on top (faded out once frames play). The MediaElement's own
-             opacity is never animated so the video keeps the direct (hardware) render path. Moves with the finger while swiping. -->
-        <Grid x:Name="SampleStage" x:FieldModifier="internal" Background="Black" Tapped="SampleStage_Tapped">
+        <!-- Video stage: blurred backdrop, then the video at its own aspect, poster on top (faded out once frames
+             play). The clips are 360p landscape: filling the portrait screen zoomed them ~2.2x (blocky, "scratched")
+             and made every frame a full-screen scale + blend, so they stutter-dropped frames. Letterboxed they are
+             scaled ~1.3x, and the backdrop / dimming sit below the video, never blended over it.
+             The MediaElement's own opacity is never animated so the video keeps the direct (hardware) render path.
+             Moves with the finger while swiping. -->
+        <Grid x:Name="SampleStage" x:FieldModifier="internal" Background="Black" Tapped="SampleStage_Tapped" SizeChanged="SampleStage_SizeChanged">
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="SampleStageTransform" x:FieldModifier="internal" Y="0"/>
             </Grid.RenderTransform>
-            <MediaElement x:Name="SampleVideo" x:FieldModifier="internal" Stretch="UniformToFill" AutoPlay="False"
+            <!-- Thumbnail decoded at ~24 px and stretched: a smooth blur for free -->
+            <Image x:Name="SampleBackdrop" x:FieldModifier="internal" Stretch="UniformToFill" IsHitTestVisible="False"/>
+            <Rectangle Fill="#8C000000" IsHitTestVisible="False"/>
+            <MediaElement x:Name="SampleVideo" x:FieldModifier="internal" Stretch="Uniform" AutoPlay="False"
                           AreTransportControlsEnabled="False" AudioCategory="ForegroundOnlyMedia"/>
-            <Rectangle x:Name="SamplePosterLayer" x:FieldModifier="internal" IsHitTestVisible="False">
+            <!-- Sized to the letterboxed video area by the code-behind (16:9 until the clip reports its size) -->
+            <Rectangle x:Name="SamplePosterLayer" x:FieldModifier="internal" IsHitTestVisible="False"
+                       HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Rectangle.Fill>
                     <ImageBrush x:Name="SamplePoster" x:FieldModifier="internal" Stretch="UniformToFill" AlignmentX="Center" AlignmentY="Center"/>
                 </Rectangle.Fill>

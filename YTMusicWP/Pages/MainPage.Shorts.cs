@@ -158,13 +158,18 @@ namespace YTMusicWP
 
             ShortsView.Visibility = Visibility.Collapsed;
             ShortsView.SamplePoster.ImageSource = null;
+            ShortsView.SampleBackdrop.Source = null;
             ShortsView.SampleCover.ImageSource = null;
 
             if (_samplesWasMainPlaying && !keepMainPaused)
             {
-                if (_playerDisconnected)
+                // Notices an audio task the OS closed while the video played (reconnects to a fresh one)
+                EnsureBackgroundPlayer();
+                MediaPlayerState state = MediaPlayerState.Closed;
+                try { state = _appMediaPlayer.CurrentState; } catch { }
+                if (_playerDisconnected || state == MediaPlayerState.Closed || state == MediaPlayerState.Stopped)
                 {
-                    // The OS closed the paused audio task while the video played: start the song again where it was
+                    // The paused song is gone with the old task: start it again where it was
                     if (_samplesSavedTrack != null) PlayTrack(_samplesSavedTrack, null, _samplesSavedPosition.TotalSeconds);
                 }
                 else
@@ -322,8 +327,12 @@ namespace YTMusicWP
             ShortsView.SampleArtist.Text = track.ChannelName ?? "";
             UpdateSampleLikeState(track);
 
-            // Poster = HQ video frame, cover = small thumbnail; decoded small to keep 512MB devices happy
+            // Poster = HQ video frame (its baked-in letterbox bars are cropped by the 16:9 poster area), cover = small
+            // thumbnail, backdrop = the bar-less 16:9 frame decoded at 24 px and stretched (a blur at no CPU cost);
+            // all decoded small to keep 512MB devices happy
+            ShortsView.PosterAspect = 9.0 / 16.0;
             ShortsView.SamplePoster.ImageSource = CreateSampleBitmap("https://i.ytimg.com/vi/" + track.VideoId + "/hqdefault.jpg", 480);
+            ShortsView.SampleBackdrop.Source = CreateSampleBitmap("https://i.ytimg.com/vi/" + track.VideoId + "/mqdefault.jpg", 24);
             ShortsView.SampleCover.ImageSource = CreateSampleBitmap(track.ThumbnailUrl, 104);
 
             if (index >= _samples.Count - 3) LoadMoreSamplesAsync();
@@ -431,6 +440,11 @@ namespace YTMusicWP
             int gen = _samplesGeneration;
             try
             {
+                // The poster now covers the clip's real letterboxed area (4:3 clips are taller than the 16:9 guess)
+                var opened = ShortsView.SampleVideo;
+                if (opened.NaturalVideoWidth > 0 && opened.NaturalVideoHeight > 0)
+                    ShortsView.PosterAspect = (double)opened.NaturalVideoHeight / opened.NaturalVideoWidth;
+
                 // A full song started from "Play" may be running in the main player: never play both
                 _sampleRetriedVideoId = null; // opened fine: a later failure may retry again
                 try
@@ -724,9 +738,62 @@ namespace YTMusicWP
         // ==========================================
         // CLIP LOOP + PROGRESS
         // ==========================================
+        // ── Stall watchdog ──
+        // A clip whose position stops moving (network or decoder stall) used to just freeze on its frame. After 2 s the
+        // spinner shows; after 8 s the clip reloads once with a fresh URL. The log line tells network from decoder.
+        private TimeSpan _sampleLastPos;
+        private DateTime _sampleLastMoveAt = DateTime.Now;
+        private bool _sampleStallSpinner;
+        private string _sampleStallRetriedId;
+        private const double SampleStallSpinnerSeconds = 2;
+        private const double SampleStallReloadSeconds = 8;
+
+        private void CheckSampleStall()
+        {
+            var video = ShortsView.SampleVideo;
+            var now = DateTime.Now;
+            var pos = video.Position;
+            bool shouldMove = !_samplesUserPaused && !_sampleWaitingSeek && video.Source != null;
+            if (!shouldMove || Math.Abs((pos - _sampleLastPos).TotalMilliseconds) > 50)
+            {
+                _sampleLastPos = pos;
+                _sampleLastMoveAt = now;
+                if (_sampleStallSpinner)
+                {
+                    _sampleStallSpinner = false;
+                    ShortsView.SampleLoading.IsActive = false;
+                }
+                return;
+            }
+
+            double stuck = (now - _sampleLastMoveAt).TotalSeconds;
+            if (stuck >= SampleStallSpinnerSeconds && !_sampleStallSpinner)
+            {
+                _sampleStallSpinner = true;
+                ShortsView.SampleLoading.IsActive = true;
+                System.Diagnostics.Debug.WriteLine(string.Format("[Samples] stalled at {0:0.0}s (state={1}, buffering={2:0%}, downloaded={3:0%})",
+                    pos.TotalSeconds, video.CurrentState, video.BufferingProgress, video.DownloadProgress));
+            }
+            if (stuck >= SampleStallReloadSeconds)
+            {
+                var track = CurrentSample;
+                if (track != null && _sampleStallRetriedId != track.VideoId)
+                {
+                    System.Diagnostics.Debug.WriteLine("[Samples] still stalled after " + SampleStallReloadSeconds + " s: reloading " + track.VideoId);
+                    _sampleStallRetriedId = track.VideoId;
+                    _sampleUrlCache.Remove(track.VideoId);
+                    _sampleLastMoveAt = now;
+                    ShowSample(_sampleIndex);
+                }
+            }
+        }
+
         private void StartShortsLoop()
         {
             StopShortsLoop();
+            _sampleLastPos = TimeSpan.MinValue;
+            _sampleLastMoveAt = DateTime.Now;
+            _sampleStallSpinner = false;
             _shortsLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _shortsLoopTimer.Tick += ShortsLoop_Tick;
             _shortsLoopTimer.Start();
@@ -757,6 +824,7 @@ namespace YTMusicWP
                 double elapsed = (ShortsView.SampleVideo.Position - _sampleClipStart).TotalSeconds;
                 ShortsView.SampleProgress.Value = Math.Max(0, Math.Min(1, elapsed / SampleClipSeconds));
                 if (elapsed >= SampleClipSeconds && !_sampleWaitingSeek) RestartSampleClip();
+                else CheckSampleStall();
             }
             catch { }
         }

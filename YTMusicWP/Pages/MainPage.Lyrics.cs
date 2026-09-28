@@ -292,8 +292,10 @@ namespace YTMusicWP
                 {
                     // The Apple Music lyrics service only answers songs it has cached, and its cache is keyed by duration
                     // (±2 s): without the right duration it returns 401 and the word-by-word lyrics are lost
+                    bool isLiveTrack = currentTrack != null && currentTrack.Title == title && currentTrack.IsLive;
                     if (knownDuration > 10) durSecs = (int)Math.Round(knownDuration);
-                    else durSecs = await WaitForTrackDurationAsync(currentTrack != null && currentTrack.Title == title ? currentTrack.VideoId : null, token);
+                    else if (!isLiveTrack) // a livestream has no duration: waiting would only hold the loading bar for 6 s
+                        durSecs = await WaitForTrackDurationAsync(currentTrack != null && currentTrack.Title == title ? currentTrack.VideoId : null, token);
                     if (token.IsCancellationRequested) return;
 
                     amResult = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsResultAsync(cleanTitle, cleanArtist, durSecs);

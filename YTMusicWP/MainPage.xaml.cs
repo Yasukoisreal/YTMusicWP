@@ -279,6 +279,7 @@ namespace YTMusicWP
             UpdateGreetingText();
 
             BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
+            Services.MemoryHelper.HighMemoryPressure += MemoryHelper_HighMemoryPressure;
             HardwareButtons.BackPressed += HardwareButtons_BackPressed;
             NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
 
@@ -554,7 +555,19 @@ namespace YTMusicWP
         /// <summary>Re-acquires BackgroundMediaPlayer.Current (restarting the audio task) if it was lost. Returns true if usable.</summary>
         private bool EnsureBackgroundPlayer()
         {
-            if (!_playerDisconnected) return true;
+            // A proxy whose audio task the OS closed (e.g. while a Samples video owned the audio) was only noticed when
+            // some call threw, and PlayTrack / leaving Samples call Pause/Play inside empty catches: the dead proxy was
+            // kept while SendMessageToBackground started a new task that played the song. Its state events then went
+            // nowhere (play icon stuck on "play") and the first tap hit the dead proxy. Probe it first.
+            if (!_playerDisconnected)
+            {
+                try
+                {
+                    var alive = _appMediaPlayer.CurrentState;
+                    return true;
+                }
+                catch { MarkPlayerDisconnected(); }
+            }
             try
             {
                 var old = _appMediaPlayer;
@@ -567,6 +580,11 @@ namespace YTMusicWP
                 var probe = _appMediaPlayer.CurrentState; // throws if still unusable
                 _playerDisconnected = false;
                 System.Diagnostics.Debug.WriteLine("[Player] background audio task reconnected");
+
+                // The events of the new task only start now: show what it is really doing
+                bool playing = probe == MediaPlayerState.Playing || probe == MediaPlayerState.Buffering || probe == MediaPlayerState.Opening;
+                SetPlayPauseIcon(playing);
+                if (playing) SetPositionTimerRunning(true);
                 return true;
             }
             catch (Exception ex)
@@ -619,6 +637,7 @@ namespace YTMusicWP
                     if (_bgTimer == null)
                     {
                         _bgTimer = new Timer(TimerCallback, null, 0, 1000);
+                        _positionTimerRunning = true; // a new timer starts running (it stops itself if nothing plays)
                     }
                     // FIX #5: Unsubscribe trước để tránh double subscription khi fast resume
                     BackgroundMediaPlayer.MessageReceivedFromBackground -= BackgroundMediaPlayer_MessageReceivedFromBackground;
@@ -821,23 +840,27 @@ namespace YTMusicWP
             }
             else
             {
-                if (homeTracks.Count == 0) 
+                _startupSettleFrom = DateTime.UtcNow;
+                if (homeTracks.Count == 0)
                 {
                     // Fire-and-forget Home network loading so it runs in parallel with UI/Disk
                     var ignored = LoadHomeRecommendations();
                 }
 
-                // Upgrade old 16:9 thumbnails in favorites to genuine 1:1 YTM square album art
-                var _ = UpgradeCachedThumbnailsAsync();
-
+                // Everything below is invisible on the Home screen, yet it used to start together with the first Home
+                // render: the library sync pushing lists into the UI, thumbnail lookups, smart downloads writing files.
+                // On a dual-core 512 MB phone that made Home freeze / stutter for a while before it could scroll.
                 // Auto-sync YouTube data in background if logged in
-                AutoSyncYouTubeAsync();
+                AfterStartupSettles(5000, AutoSyncYouTubeAsync);
+
+                // Upgrade old 16:9 thumbnails in favorites to genuine 1:1 YTM square album art
+                AfterStartupSettles(10000, () => { var _ = UpgradeCachedThumbnailsAsync(); });
 
                 // Trigger smart downloads on Wi-Fi if enabled
-                if (IsWifiConnected())
+                AfterStartupSettles(25000, () =>
                 {
-                    var ignoredSmart = TriggerSmartDownloadsAsync();
-                }
+                    if (IsWifiConnected()) { var ignoredSmart = TriggerSmartDownloadsAsync(); }
+                });
             }
 
             // Handle Secondary Tile deep link
@@ -882,6 +905,27 @@ namespace YTMusicWP
                     OpenArtistProfile(artist, artist, true);
                 }
             });
+        }
+
+        // When the app became usable (splash gone, Home loading); DateTime.MinValue until then
+        private DateTime _startupSettleFrom = DateTime.MinValue;
+
+        /// <summary>
+        /// Runs work nobody sees on the Home screen once <paramref name="delayMs"/> have passed since the app became
+        /// usable, so it does not compete for the CPU with the first Home render. Runs right away later in the session.
+        /// </summary>
+        private async void AfterStartupSettles(int delayMs, Action work)
+        {
+            try
+            {
+                if (_startupSettleFrom != DateTime.MinValue)
+                {
+                    int wait = delayMs - (int)(DateTime.UtcNow - _startupSettleFrom).TotalMilliseconds;
+                    if (wait > 0) await Task.Delay(wait);
+                }
+                work();
+            }
+            catch { }
         }
 
         private async void AutoSyncYouTubeAsync()

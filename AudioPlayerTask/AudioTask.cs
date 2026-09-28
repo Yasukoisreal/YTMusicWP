@@ -1595,7 +1595,8 @@ namespace AudioPlayerTask
         {
             // [TEMP DISABLED FOR SABR TESTING] LiveMediaStreamSource tạm thời vô hiệu hóa để test SABR
             LogLive("[Live MSS] LiveMediaStreamSource tạm thời vô hiệu hóa để test SABR.");
-            ReportErrorToUI("LiveMediaStreamSource tạm tắt để test SABR.");
+            // Livestreams play through SABR; this fallback is off, so tell the user plainly instead of a debug note
+            ReportErrorToUI("This livestream can't be played right now");
             await Task.Yield();
         }
 

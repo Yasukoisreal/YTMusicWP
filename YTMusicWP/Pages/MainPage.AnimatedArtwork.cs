@@ -79,9 +79,21 @@ namespace YTMusicWP
         private string _artworkPendingId;   // lookup in flight for this song
         private string _artworkLookedUpId;  // last song whose lookup finished (with or without artwork)
 
+        // Song whose animated artwork was dropped because the OS reported high memory use: not restarted for it
+        private string _artworkDroppedForMemoryId;
+
+        /// <summary>The OS reports high memory use: the artwork video (~15-20 MB) is the largest thing the page can drop.</summary>
+        private void MemoryHelper_HighMemoryPressure(object sender, EventArgs e)
+        {
+            if (_artworkVideo == null && _artworkCts == null) return;
+            _artworkDroppedForMemoryId = currentTrack != null ? currentTrack.VideoId : null;
+            StopAnimatedArtwork();
+        }
+
         private bool IsAnimatedArtworkWanted(YouTubeTrack track)
         {
             if (track == null || !AnimatedArtworkService.IsEnabled) return false;
+            if (track.VideoId == _artworkDroppedForMemoryId) return false; // the next song may try again
             if (NowPlayingView == null || NowPlayingView.Visibility != Visibility.Visible || _isClosingNowPlaying) return false;
             // Default style: only over a square cover (a music video's 16:9 thumbnail is not an album cover)
             if (!_isAppleMusicStyle && BigCoverRectangle != null && Math.Abs(BigCoverRectangle.Width - BigCoverRectangle.Height) > 4) return false;

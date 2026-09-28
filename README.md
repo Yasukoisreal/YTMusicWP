@@ -114,7 +114,15 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 
 ## Changelog
 
-### v2.3.0 (Latest)
+### v2.4.0 (Latest)
+- 🎬 **Samples Tab:** YouTube Music-style vertical feed of music video clips, letterboxed over a blurred backdrop, with a stall watchdog and automatic URL refresh.
+- 👥 **Multiple Accounts:** Account switcher for several YouTube accounts and brand channels.
+- 🖼️ **Animated Album Artwork:** Apple Music motion artwork on Now Playing, fading smoothly into the blurred backdrop.
+- 🎤 **Word-by-Word & Duet Lyrics:** Per-word karaoke animation, duet singers aligned left/right, background vocals on their own line, and every line being sung stays lit.
+- 🔴 **Live Stream Stability:** Fixed the crash and the stop after ~40 minutes on long livestreams (lower memory use in the background audio task).
+- ⚡ **Performance & Fixes:** Smoother Home at startup, lighter position timer, memory-pressure handling, correct queue after taps, and playlist sync fixes.
+
+### v2.3.0
 - 🔴 **Continuous YouTube Live Streaming:** Zero-gap continuous live audio streaming engine with low-latency rolling buffer and live telemetry.
 - 📻 **Listen Together:** Real-time synchronized listening rooms compatible with Metrolist & SimpMusic (synced queue, playback, and tap-to-seek).
 - 🔄 **Home & Pull-to-Refresh:** Smooth native pull-to-refresh on Home feed with floating capsule pill and 60fps spinner.

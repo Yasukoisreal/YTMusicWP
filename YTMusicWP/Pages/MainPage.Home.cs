@@ -356,6 +356,13 @@ namespace YTMusicWP
                     }
                     HomeDynamicSections.ItemsSource = _homeDynamicSections;
                     Services.MemoryHelper.Mark("Home (" + _homeDynamicSections.Count + " sections)");
+                    // The rest offset (pull-to-refresh area hidden) is first set when the list loads, while it is still too
+                    // short to scroll there: set it again once the sections are laid out, instead of on the first scroll
+                    var ignoredRest = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
+                    {
+                        if (!_isRefreshingHome && !_isPullReady && HomeScroll != null && HomeScroll.VerticalOffset < PULL_RESTING_OFFSET - 1)
+                            ResetHomeScrollToRest(immediate: true);
+                    });
 
                     _homeContinuationToken = homeResult.ContinuationToken;
                     _hasMoreHomeSections = !string.IsNullOrEmpty(_homeContinuationToken);
@@ -363,7 +370,8 @@ namespace YTMusicWP
 
                     _currentHomeQuery = homeResult.Sections[0].Title;
                     var topTracks = secList.SelectMany(s => s.Tracks).Where(t => IsMusicTrack(t)).Take(5).ToList();
-                    YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks);
+                    // Tile mosaics decode ~13 JPEGs: not while the first Home page is being drawn
+                    AfterStartupSettles(12000, () => YTMusicWP.Services.TileService.UpdateRecommendations(topTracks, favoriteTracks, historyTracks));
 
                     if (!_hasMoreHomeSections)
                     {
