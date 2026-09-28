@@ -627,6 +627,7 @@ namespace YTMusicWP
                     _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged;
                     NetworkInformation.NetworkStatusChanged -= NetworkInformation_NetworkStatusChanged;
                     NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
+                    _lastLiveCheck = DateTime.MinValue; // re-read the live flag: its messages were missed while suspended
                     SyncBackgroundPlayer();
 
                     bool npVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)

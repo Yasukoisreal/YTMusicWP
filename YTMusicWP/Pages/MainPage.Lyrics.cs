@@ -1211,6 +1211,7 @@ namespace YTMusicWP
                 }
                 if (!_lyricsWordTimer.IsEnabled)
                 {
+                    InvalidateLyricsClock();
                     _lyricsWordTimer.Start();
                 }
             }
@@ -1221,6 +1222,56 @@ namespace YTMusicWP
                     _lyricsWordTimer.Stop();
                 }
             }
+        }
+
+        // The word timer ticks ~16x/s. Asking the background audio process for its state and position on every tick
+        // cost two cross-process calls per tick (~33/s). The position is now read for real every 500 ms (and on every
+        // tick while a seek settles) and advanced with a Stopwatch at the playback rate in between; pause/resume
+        // arrive through CurrentStateChanged, which resets this clock and stops the timer.
+        private readonly System.Diagnostics.Stopwatch _lyricsClock = new System.Diagnostics.Stopwatch();
+        private TimeSpan _lyricsClockBase;
+        private const int LyricsClockResyncMs = 500;
+
+        private void InvalidateLyricsClock()
+        {
+            _lyricsClock.Reset();
+        }
+
+        private bool TryGetLyricsPosition(out TimeSpan pos)
+        {
+            pos = TimeSpan.Zero;
+            bool resync = !_lyricsClock.IsRunning
+                          || _lyricsClock.ElapsedMilliseconds >= LyricsClockResyncMs
+                          || _lastSeekTimestamp != DateTime.MinValue;
+            if (!resync)
+            {
+                double rate = _playbackSpeeds[_playbackSpeedIndex];
+                pos = _lyricsClockBase + TimeSpan.FromTicks((long)(_lyricsClock.Elapsed.Ticks * rate));
+                return true;
+            }
+
+            MediaPlayerState state;
+            try
+            {
+                state = _appMediaPlayer.CurrentState;
+                pos = _appMediaPlayer.Position;
+            }
+            catch
+            {
+                MarkPlayerDisconnected();
+                _lyricsWordTimer.Stop();
+                return false;
+            }
+            if (state != MediaPlayerState.Playing)
+            {
+                InvalidateLyricsClock();
+                UpdateWordTimerState();
+                return false;
+            }
+            _lyricsClockBase = pos;
+            _lyricsClock.Reset();
+            _lyricsClock.Start();
+            return true;
         }
 
         private void LyricsWordTimer_Tick(object sender, object e)
@@ -1234,21 +1285,8 @@ namespace YTMusicWP
                     _lyricsWordTimer.Stop();
                     return;
                 }
-                MediaPlayerState playerState;
-                try { playerState = _appMediaPlayer.CurrentState; }
-                catch
-                {
-                    MarkPlayerDisconnected();
-                    _lyricsWordTimer.Stop();
-                    return;
-                }
-                if (playerState != MediaPlayerState.Playing)
-                {
-                    UpdateWordTimerState();
-                    return;
-                }
-
-                TimeSpan pos = _appMediaPlayer.Position;
+                TimeSpan pos;
+                if (!TryGetLyricsPosition(out pos)) return;
 
                 // Guard against stale position reads right after a seek
                 if (_lastSeekTimestamp != DateTime.MinValue)

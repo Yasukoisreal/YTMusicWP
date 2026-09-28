@@ -137,9 +137,9 @@ namespace YTMusicWP
                     request.Headers.TryAddWithoutValidation("Cookie", cookieString);
                     request.Headers.TryAddWithoutValidation("Authorization", GenerateSAPISIDHash(sapisid));
 
-                    using (var response = await _authClient.SendAsync(request))
+                    using (var response = await _authClient.SendAsync(request).ConfigureAwait(false))
                     {
-                        string text = await response.Content.ReadAsStringAsync();
+                        string text = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                         if (!response.IsSuccessStatusCode)
                         {
                             Debug.WriteLine("[Accounts] switcher HTTP " + (int)response.StatusCode);

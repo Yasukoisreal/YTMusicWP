@@ -25,7 +25,7 @@ namespace YTMusicWP
                 }
                 try
                 {
-                    var cookieData = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
+                    var cookieData = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00").ConfigureAwait(false);
                     if (cookieData != null && cookieData["error"] == null && cookieData["_error"] == null) return cookieData;
                 }
                 catch { }
@@ -41,7 +41,7 @@ namespace YTMusicWP
                 }
                 try
                 {
-                    var authData = await AuthInnerTubePostAsync("browse", extraBody, accessToken, "WEB_REMIX", "1.20260304.03.00");
+                    var authData = await AuthInnerTubePostAsync("browse", extraBody, accessToken, "WEB_REMIX", "1.20260304.03.00").ConfigureAwait(false);
                     if (authData != null && authData["error"] == null && authData["_error"] == null) return authData;
                 }
                 catch { }
@@ -49,7 +49,7 @@ namespace YTMusicWP
 
             try
             {
-                return await PostInnerTubeAsync(apiUrl, body, true);
+                return await PostInnerTubeAsync(apiUrl, body, true).ConfigureAwait(false);
             }
             catch
             {
@@ -79,7 +79,7 @@ namespace YTMusicWP
                         else if (radioVideoId.StartsWith("RDAMPL")) radioVideoId = radioVideoId.Substring(6);
                         else if (radioVideoId.StartsWith("VLRD")) radioVideoId = radioVideoId.Substring(4);
                         else if (radioVideoId.StartsWith("RD")) radioVideoId = radioVideoId.Substring(2);
-                        var radioTracks = await GetRadioTracksAsync(radioVideoId);
+                        var radioTracks = await GetRadioTracksAsync(radioVideoId).ConfigureAwait(false);
                         if (radioTracks != null && radioTracks.Count > 0)
                         {
                             result.Title = "Radio";
@@ -91,7 +91,7 @@ namespace YTMusicWP
                     }
                 }
 
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd)
@@ -124,7 +124,7 @@ namespace YTMusicWP
                     }
                 }
 
-                JObject data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken);
+                JObject data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken).ConfigureAwait(false);
                 ExtractPlaylistTracksAndMetadata(data, result, isContinuation);
 
                 // Fallback strategies if 0 tracks were returned on initial browse:
@@ -134,13 +134,13 @@ namespace YTMusicWP
                     if (body["params"] != null)
                     {
                         body.Remove("params");
-                        data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken);
+                        data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken).ConfigureAwait(false);
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
                     else if (!isSystemPlaylist && !isRawBrowseId)
                     {
                         body["params"] = "wAEB";
-                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        data = await FetchBrowseJsonAsync(body, accessToken).ConfigureAwait(false);
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
 
@@ -149,14 +149,14 @@ namespace YTMusicWP
                     {
                         body["browseId"] = browseId.Substring(2);
                         body.Remove("params");
-                        data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken);
+                        data = await FetchBrowseJsonAsync(body, isRawBrowseId ? null : accessToken).ConfigureAwait(false);
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
                     else if (result.Tracks.Count == 0 && !browseId.StartsWith("VL") && !isRawBrowseId)
                     {
                         body["browseId"] = "VL" + browseId;
                         body.Remove("params");
-                        data = await FetchBrowseJsonAsync(body, accessToken);
+                        data = await FetchBrowseJsonAsync(body, accessToken).ConfigureAwait(false);
                         ExtractPlaylistTracksAndMetadata(data, result, false);
                     }
 
@@ -171,7 +171,7 @@ namespace YTMusicWP
                                 ["context"] = BuildMusicContext(vd),
                                 ["browseId"] = isRawBrowseId ? playlistId : (playlistId.StartsWith("VL") ? playlistId : "VL" + playlistId)
                             };
-                            var publicData = await PostInnerTubeAsync(apiUrl, publicBody, true);
+                            var publicData = await PostInnerTubeAsync(apiUrl, publicBody, true).ConfigureAwait(false);
                             ExtractPlaylistTracksAndMetadata(publicData, result, false);
                         }
                         catch { }
@@ -190,7 +190,7 @@ namespace YTMusicWP
                         }
                         if (!string.IsNullOrEmpty(plId))
                         {
-                            var altResult = await BrowsePlaylistAsync(plId, null, null);
+                            var altResult = await BrowsePlaylistAsync(plId, null, null).ConfigureAwait(false);
                             if (altResult != null && altResult.Tracks.Count > 0)
                             {
                                 if (string.IsNullOrEmpty(result.Title)) result.Title = altResult.Title;
@@ -592,7 +592,7 @@ namespace YTMusicWP
             var result = new ArtistResult();
             try
             {
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd),
@@ -600,7 +600,7 @@ namespace YTMusicWP
                 };
 
                 var data = await PostInnerTubeAsync(
-                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true).ConfigureAwait(false);
 
                 // Header — artist name + avatar
                 var header = data?["header"];
@@ -778,7 +778,7 @@ namespace YTMusicWP
                 && (DateTime.Now - _discoverCacheTime).TotalHours < 24)
                 return _cachedDiscover;
 
-            var items = await FetchCarouselItemsAsync("FEmusic_explore");
+            var items = await FetchCarouselItemsAsync("FEmusic_explore").ConfigureAwait(false);
             if (items != null && items.Count > 0)
             {
                 _cachedDiscover = items;
@@ -796,7 +796,7 @@ namespace YTMusicWP
                 && (DateTime.Now - _chartsCacheTime).TotalHours < 24)
                 return _cachedCharts;
 
-            var items = await FetchCarouselItemsAsync("FEmusic_charts");
+            var items = await FetchCarouselItemsAsync("FEmusic_charts").ConfigureAwait(false);
             if (items != null && items.Count > 0)
             {
                 _cachedCharts = items;
@@ -810,7 +810,7 @@ namespace YTMusicWP
             var sectionsList = new List<HomeSection>();
             try
             {
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd),
@@ -827,12 +827,12 @@ namespace YTMusicWP
                     var extraBody = new JObject();
                     extraBody["browseId"] = browseId;
                     if (!string.IsNullOrEmpty(paramsStr)) extraBody["params"] = paramsStr;
-                    data = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00");
+                    data = await CookieInnerTubePostAsync("browse", extraBody, "WEB_REMIX", "1.20260304.03.00").ConfigureAwait(false);
                 }
                 else
                 {
                     var dataStr = await PostInnerTubeAsync(
-                        "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                        "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true).ConfigureAwait(false);
                     data = dataStr;
                 }
 
@@ -935,14 +935,14 @@ namespace YTMusicWP
             var ids = new List<string>();
             try
             {
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd),
                     ["browseId"] = "FEmusic_charts",
                     ["formData"] = new JObject { ["selectedValues"] = new JArray(CurrentRegion) }
                 };
-                var data = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                var data = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true).ConfigureAwait(false);
                 var sections = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"]?[0]
                     ?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
                 if (sections == null) return ids;
@@ -972,7 +972,7 @@ namespace YTMusicWP
             var items = new List<DiscoverItem>();
             try
             {
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd),
@@ -989,7 +989,7 @@ namespace YTMusicWP
                 }
 
                 var data = await PostInnerTubeAsync(
-                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                    "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true).ConfigureAwait(false);
 
                 // Parse sections from singleColumnBrowseResultsRenderer
                 var tabs = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"];
@@ -1163,17 +1163,26 @@ namespace YTMusicWP
                 }
             }
 
-            private static readonly Windows.UI.Xaml.Media.SolidColorBrush _activeDotBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White);
-            private static readonly Windows.UI.Xaml.Media.SolidColorBrush _inactiveDotBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 85, 85, 85));
+            // Brushes are UI objects: created on first read (by a binding, on the UI thread), never while
+            // HomeSection objects are being parsed on the thread pool
+            private static Windows.UI.Xaml.Media.SolidColorBrush _activeDotBrush;
+            private static Windows.UI.Xaml.Media.SolidColorBrush _inactiveDotBrush;
+
+            private static Windows.UI.Xaml.Media.Brush DotBrush(bool active)
+            {
+                if (active)
+                    return _activeDotBrush ?? (_activeDotBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.White));
+                return _inactiveDotBrush ?? (_inactiveDotBrush = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 85, 85, 85)));
+            }
 
             public Windows.UI.Xaml.Media.Brush Page1DotBrush
             {
-                get { return _activePageIndex == 0 ? _activeDotBrush : _inactiveDotBrush; }
+                get { return DotBrush(_activePageIndex == 0); }
             }
 
             public Windows.UI.Xaml.Media.Brush Page2DotBrush
             {
-                get { return _activePageIndex == 1 ? _activeDotBrush : _inactiveDotBrush; }
+                get { return DotBrush(_activePageIndex == 1); }
             }
 
             public Windows.UI.Xaml.Visibility PaginationVisibility
@@ -1581,7 +1590,7 @@ namespace YTMusicWP
             var result = new HomeBrowseResult();
             try
             {
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 JObject data = null;
 
                 if (HasCookieAuth || !string.IsNullOrEmpty(accessToken))
@@ -1596,11 +1605,11 @@ namespace YTMusicWP
                     }
                     if (HasCookieAuth)
                     {
-                        data = await CookieInnerTubePostAsync("browse", extraParams);
+                        data = await CookieInnerTubePostAsync("browse", extraParams).ConfigureAwait(false);
                     }
                     else
                     {
-                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20231214.00.00");
+                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20231214.00.00").ConfigureAwait(false);
                     }
                 }
                 else
@@ -1615,7 +1624,7 @@ namespace YTMusicWP
                         body["params"] = filterParams;
                     }
                     string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
-                    data = await PostInnerTubeAsync(url, body, true);
+                    data = await PostInnerTubeAsync(url, body, true).ConfigureAwait(false);
                 }
 
                 if (data != null)
@@ -1681,7 +1690,7 @@ namespace YTMusicWP
 
             try
             {
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 JObject data = null;
 
                 if (HasCookieAuth || !string.IsNullOrEmpty(accessToken))
@@ -1692,11 +1701,11 @@ namespace YTMusicWP
                     };
                     if (HasCookieAuth)
                     {
-                        data = await CookieInnerTubePostAsync("browse", extraParams);
+                        data = await CookieInnerTubePostAsync("browse", extraParams).ConfigureAwait(false);
                     }
                     else
                     {
-                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20231214.00.00");
+                        data = await AuthInnerTubePostAsync("browse", extraParams, accessToken, "WEB_REMIX", "1.20231214.00.00").ConfigureAwait(false);
                     }
                 }
                 else
@@ -1707,7 +1716,7 @@ namespace YTMusicWP
                         ["continuation"] = continuationToken
                     };
                     string url = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
-                    data = await PostInnerTubeAsync(url, body, true);
+                    data = await PostInnerTubeAsync(url, body, true).ConfigureAwait(false);
                 }
 
                 if (data != null)
@@ -1730,7 +1739,7 @@ namespace YTMusicWP
 
         public static async Task<List<HomeSection>> BrowseHomeAsync(string accessToken = null, Action<List<HomeSection>> onPageLoaded = null)
         {
-            var firstPage = await BrowseHomeFirstPageAsync(filterParams: null, accessToken: accessToken);
+            var firstPage = await BrowseHomeFirstPageAsync(filterParams: null, accessToken: accessToken).ConfigureAwait(false);
             onPageLoaded?.Invoke(new List<HomeSection>(firstPage.Sections));
             return firstPage.Sections;
         }

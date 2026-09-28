@@ -22,7 +22,7 @@ namespace YTMusicWP
                         ["title"] = title,
                         ["privacyStatus"] = "PRIVATE"
                     };
-                    var json = await AuthInnerTubePostAsync("playlist/create", extra, accessToken, "WEB_REMIX", "1.20231214.00.00");
+                    var json = await AuthInnerTubePostAsync("playlist/create", extra, accessToken, "WEB_REMIX", "1.20231214.00.00").ConfigureAwait(false);
                     if (json != null && json["_error"] == null)
                     {
                         string newId = json["playlistId"]?.ToString();
@@ -35,7 +35,7 @@ namespace YTMusicWP
                 // Data API v3 is disabled for the TVHTML5 OAuth project.
                 // Therefore, creating a YouTube playlist is physically impossible with Device Code flow.
                 // We must fallback to local playlists if using OAuth.
-                await Task.Delay(100);
+                await Task.Delay(100).ConfigureAwait(false);
                 return "LOCAL_" + System.Guid.NewGuid().ToString("N");
             }
             catch (Exception ex)
@@ -52,7 +52,7 @@ namespace YTMusicWP
             try
             {
                 var extra = new JObject { ["playlistId"] = playlistId };
-                var json = await AuthInnerTubePostAsync("playlist/delete", extra, accessToken, "TVHTML5", "7.20241016.00.00");
+                var json = await AuthInnerTubePostAsync("playlist/delete", extra, accessToken, "TVHTML5", "7.20241016.00.00").ConfigureAwait(false);
                 return json != null && json["_error"] == null;
             }
             catch (Exception ex)
@@ -81,7 +81,7 @@ namespace YTMusicWP
                         }
                     }
                 };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00");
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00").ConfigureAwait(false);
                 return json != null && json["_error"] == null;
             }
             catch (Exception ex)
@@ -110,7 +110,7 @@ namespace YTMusicWP
                         }
                     }
                 };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00");
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00").ConfigureAwait(false);
                 
                 // Extract the setVideoId returned by YouTube
                 if (json != null && json["_error"] == null)
@@ -152,7 +152,7 @@ namespace YTMusicWP
                         }
                     }
                 };
-                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00");
+                var json = await AuthInnerTubePostAsync("browse/edit_playlist", extra, accessToken, "TVHTML5", "7.20241016.00.00").ConfigureAwait(false);
                 return json != null && json["_error"] == null;
             }
             catch (Exception ex)
@@ -170,7 +170,7 @@ namespace YTMusicWP
                 {
                     ["target"] = new JObject { ["videoId"] = videoId }
                 };
-                var json = await AuthInnerTubePostAsync("like/like", extra, accessToken, "TVHTML5", "7.20241016.00.00");
+                var json = await AuthInnerTubePostAsync("like/like", extra, accessToken, "TVHTML5", "7.20241016.00.00").ConfigureAwait(false);
                 return json != null && json["_error"] == null;
             }
             catch (Exception ex)
@@ -188,7 +188,7 @@ namespace YTMusicWP
                 {
                     ["target"] = new JObject { ["videoId"] = videoId }
                 };
-                var json = await AuthInnerTubePostAsync("like/removelike", extra, accessToken, "TVHTML5", "7.20241016.00.00");
+                var json = await AuthInnerTubePostAsync("like/removelike", extra, accessToken, "TVHTML5", "7.20241016.00.00").ConfigureAwait(false);
                 return json != null && json["_error"] == null;
             }
             catch (Exception ex)

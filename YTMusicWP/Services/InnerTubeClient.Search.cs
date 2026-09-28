@@ -21,7 +21,7 @@ namespace YTMusicWP
 
         public static async Task<List<YouTubeTrack>> SearchAsync(string query, int maxResults = 20, string searchParams = null)
         {
-            var result = await SearchWithContinuationAsync(query, maxResults, searchParams);
+            var result = await SearchWithContinuationAsync(query, maxResults, searchParams).ConfigureAwait(false);
             if (result == null) return new List<YouTubeTrack>();
             var tracks = result.Tracks ?? new List<YouTubeTrack>();
 
@@ -65,7 +65,7 @@ namespace YTMusicWP
 
             try
             {
-                string vd = await GetVisitorDataAsync();
+                string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                 var body = new JObject
                 {
                     ["context"] = BuildMusicContext(vd),
@@ -82,11 +82,11 @@ namespace YTMusicWP
                     var searchExtra = new JObject { ["query"] = query };
                     if (!string.IsNullOrEmpty(searchParams))
                         searchExtra["params"] = searchParams;
-                    data = await CookieInnerTubePostAsync("search", searchExtra);
+                    data = await CookieInnerTubePostAsync("search", searchExtra).ConfigureAwait(false);
                 }
                 else
                 {
-                    data = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/search?prettyPrint=false", body, true);
+                    data = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/search?prettyPrint=false", body, true).ConfigureAwait(false);
                 }
 
                 var tabs = data?["contents"]?["tabbedSearchResultsRenderer"]?["tabs"];
@@ -294,18 +294,18 @@ namespace YTMusicWP
                         ["continuation"] = continuationToken,
                         ["ctoken"] = continuationToken
                     };
-                    data = await CookieInnerTubePostAsync("search", extraParams);
+                    data = await CookieInnerTubePostAsync("search", extraParams).ConfigureAwait(false);
                 }
                 else
                 {
-                    string vd = await GetVisitorDataAsync();
+                    string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                     var body = new JObject
                     {
                         ["context"] = BuildMusicContext(vd)
                     };
 
                     data = await PostInnerTubeAsync(
-                        "https://music.youtube.com/youtubei/v1/search?ctoken=" + Uri.EscapeDataString(continuationToken) + "&continuation=" + Uri.EscapeDataString(continuationToken) + "&prettyPrint=false", body, true);
+                        "https://music.youtube.com/youtubei/v1/search?ctoken=" + Uri.EscapeDataString(continuationToken) + "&continuation=" + Uri.EscapeDataString(continuationToken) + "&prettyPrint=false", body, true).ConfigureAwait(false);
                 }
 
                 System.Diagnostics.Debug.WriteLine("[InnerTube Continue] Response keys: " + (data != null ? string.Join(",", ((JObject)data).Properties().Select(p => p.Name)) : "null"));
@@ -421,7 +421,7 @@ namespace YTMusicWP
             try
             {
                 // 1. Primary: Search YouTube Music with the "Artists" filter
-                var artistFilterResult = await SearchWithContinuationAsync(artistName, 5, "EgWKAQIgAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D");
+                var artistFilterResult = await SearchWithContinuationAsync(artistName, 5, "EgWKAQIgAWoQEAUQAxAEEAkQChAQEBUQEQ%3D%3D").ConfigureAwait(false);
                 if (artistFilterResult != null)
                 {
                     // Check Top Card first
@@ -465,7 +465,7 @@ namespace YTMusicWP
                 }
 
                 // 2. Secondary: Normal search with Top Card inspection
-                var normalResult = await SearchWithContinuationAsync(artistName, 5, null);
+                var normalResult = await SearchWithContinuationAsync(artistName, 5, null).ConfigureAwait(false);
                 if (normalResult != null)
                 {
                     if (normalResult.Card != null && !string.IsNullOrEmpty(normalResult.Card.BrowseId))
@@ -865,18 +865,18 @@ namespace YTMusicWP
                 if (HasCookieAuth)
                 {
                     var extra = new JObject { ["input"] = query };
-                    data = await CookieInnerTubePostAsync("music/get_search_suggestions", extra, "WEB_REMIX", "1.20260304.03.00");
+                    data = await CookieInnerTubePostAsync("music/get_search_suggestions", extra, "WEB_REMIX", "1.20260304.03.00").ConfigureAwait(false);
                 }
                 else
                 {
-                    string vd = await GetVisitorDataAsync();
+                    string vd = await GetVisitorDataAsync().ConfigureAwait(false);
                     var body = new JObject
                     {
                         ["context"] = BuildMusicContext(vd),
                         ["input"] = query
                     };
                     data = await PostInnerTubeAsync(
-                        "https://music.youtube.com/youtubei/v1/music/get_search_suggestions?prettyPrint=false", body, true);
+                        "https://music.youtube.com/youtubei/v1/music/get_search_suggestions?prettyPrint=false", body, true).ConfigureAwait(false);
                 }
 
                 if (data == null) return list;

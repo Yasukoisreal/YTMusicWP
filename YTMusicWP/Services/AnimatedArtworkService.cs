@@ -25,7 +25,8 @@ namespace YTMusicWP.Services
     {
         private const string TokenKey = "AmWebToken";
         private const string TokenExpiryKey = "AmWebTokenExpiry";
-        private const string CacheFile = "animated_artwork_cache.json";
+        // v2: renditions are sized to the screen; v1 entries all point at the 486 px one
+        private const string CacheFile = "animated_artwork_cache_v2.json";
         private const int MaxCacheEntries = 400;
 
         private static readonly HttpClient _http = CreateClient();
@@ -53,7 +54,10 @@ namespace YTMusicWP.Services
             return client;
         }
 
-        /// <summary>User setting; defaults to off on 512 MB devices (the video costs ~15-20 MB while it plays).</summary>
+        /// <summary>
+        /// User setting, off unless the user turns it on: the looping video costs CPU (and ~15-20 MB) on every device,
+        /// and is decoded in software on some.
+        /// </summary>
         public static bool IsEnabled
         {
             get
@@ -61,7 +65,7 @@ namespace YTMusicWP.Services
                 try
                 {
                     var s = ApplicationData.Current.LocalSettings.Values;
-                    return s.ContainsKey("AnimatedArtwork") ? (bool)s["AnimatedArtwork"] : !MemoryHelper.IsLowMemoryDevice;
+                    return s.ContainsKey("AnimatedArtwork") && (bool)s["AnimatedArtwork"];
                 }
                 catch { return false; }
             }
@@ -74,7 +78,8 @@ namespace YTMusicWP.Services
         /// <summary>
         /// URL of a square, looping MP4 for the track's album, or null when there is none (or no confident match).
         /// </summary>
-        public static async Task<string> GetVideoUrlAsync(YouTubeTrack track, CancellationToken ct)
+        /// <param name="targetWidth">Pixel width of the cover on screen; the narrowest H.264 rendition at least this wide is used.</param>
+        public static async Task<string> GetVideoUrlAsync(YouTubeTrack track, int targetWidth, CancellationToken ct)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return null;
             await LoadCacheAsync();
@@ -84,7 +89,7 @@ namespace YTMusicWP.Services
             string url = null;
             try
             {
-                url = await LookUpAsync(track, ct);
+                url = await LookUpAsync(track, targetWidth, ct);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -108,7 +113,7 @@ namespace YTMusicWP.Services
 
         // ── Lookup ───────────────────────────────────────────────────────────────────────────────────────────
 
-        private static async Task<string> LookUpAsync(YouTubeTrack track, CancellationToken ct)
+        private static async Task<string> LookUpAsync(YouTubeTrack track, int targetWidth, CancellationToken ct)
         {
             string artist = PrimaryArtist(track.ChannelName);
             string title = CleanTitle(track.Title);
@@ -149,7 +154,7 @@ namespace YTMusicWP.Services
             }
             if (master == null) return null;
             Debug.WriteLine("[AnimatedArtwork] '" + track.Title + "' -> album '" + matchedAlbum + "'");
-            return await ResolveMp4Async(master, ct);
+            return await ResolveMp4Async(master, targetWidth, ct);
         }
 
         private static async Task<JObject> SearchAsync(string term, CancellationToken ct)
@@ -182,7 +187,7 @@ namespace YTMusicWP.Services
         }
 
         /// <summary>Master playlist -> narrowest H.264 rendition that fills the cover -> the fMP4 its byte ranges point into.</summary>
-        private static async Task<string> ResolveMp4Async(string masterUrl, CancellationToken ct)
+        private static async Task<string> ResolveMp4Async(string masterUrl, int minWidth, CancellationToken ct)
         {
             string master = await GetStringAsync(masterUrl, ct);
             var variants = new List<Tuple<string, int, int>>(); // uri, width, bandwidth
@@ -199,7 +204,6 @@ namespace YTMusicWP.Services
             }
             if (variants.Count == 0) return null;
 
-            int minWidth = MemoryHelper.IsLowMemoryDevice ? 360 : 480;
             var wide = variants.Where(v => v.Item2 >= minWidth).ToList();
             int width = wide.Count > 0 ? wide.Min(v => v.Item2) : variants.Max(v => v.Item2);
             var pick = variants.Where(v => v.Item2 == width).OrderBy(v => v.Item3).First();

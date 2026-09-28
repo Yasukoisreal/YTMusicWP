@@ -666,6 +666,7 @@ namespace YTMusicWP
                         var state = sender.CurrentState;
                         bool isPlaying = (state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening);
                         SetPlayPauseIcon(isPlaying);
+                        InvalidateLyricsClock();
                         UpdateWordTimerState();
                     }
                     catch { }
@@ -723,7 +724,9 @@ namespace YTMusicWP
                 }
             }
             bool isCurrentLive = _isCurrentLiveCached;
-            if ((DateTime.UtcNow - _lastLiveCheck).TotalSeconds > 2)
+            // The background task pushes "LiveState" when it changes; this read is only the fallback for messages missed
+            // while the app was suspended (PlayTrack and resume reset _lastLiveCheck to force it)
+            if ((DateTime.UtcNow - _lastLiveCheck).TotalSeconds > 30)
             {
                 _lastLiveCheck = DateTime.UtcNow;
                 try
@@ -1252,6 +1255,14 @@ namespace YTMusicWP
 
         private async void BackgroundMediaPlayer_MessageReceivedFromBackground(object sender, MediaPlayerDataReceivedEventArgs e)
         {
+            object liveState;
+            if (e.Data.TryGetValue("LiveState", out liveState))
+            {
+                _isCurrentLiveCached = liveState is bool && (bool)liveState;
+                _lastLiveCheck = DateTime.UtcNow;
+                return;
+            }
+
             if (e.Data.ContainsKey("ToastMessage"))
             {
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -1994,6 +2005,7 @@ namespace YTMusicWP
 
             if (NowPlayingGradientTop != null) NowPlayingGradientTop.Color = targetColor;
             if (NowPlayingGradientMid != null) NowPlayingGradientMid.Color = midColor;
+            UpdateArtworkCornerColors();
             UpdateLyricsFadeColors(targetColor);
             if (FullscreenLyricsGradientTop != null) FullscreenLyricsGradientTop.Color = targetColor;
             if (FullscreenLyricsGradientMid != null) FullscreenLyricsGradientMid.Color = midColor;

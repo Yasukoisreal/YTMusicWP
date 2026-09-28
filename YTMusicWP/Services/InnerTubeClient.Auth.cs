@@ -76,7 +76,7 @@ namespace YTMusicWP
         /// </summary>
         public static async Task<JObject> CookieInnerTubePostAsync(string endpoint, JObject extraParams, string clientName = "WEB_REMIX", string clientVersion = "1.20260304.03.00")
         {
-            string visitorData = await GetVisitorDataAsync();
+            string visitorData = await GetVisitorDataAsync().ConfigureAwait(false);
             var clientObj = new JObject
             {
                 ["clientName"] = clientName,
@@ -116,15 +116,15 @@ namespace YTMusicWP
 
             try
             {
-                using (var response = await _authClient.SendAsync(request))
+                using (var response = await _authClient.SendAsync(request).ConfigureAwait(false))
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        string resultJson = await response.Content.ReadAsStringAsync();
+                        string resultJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                         return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
                     }
 
-                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                     using (var reader = new StreamReader(stream))
                     using (var jsonReader = new JsonTextReader(reader))
                     {
@@ -147,7 +147,7 @@ namespace YTMusicWP
         /// </summary>
         public static async Task<JObject> AuthInnerTubePostAsync(string endpoint, JObject extraParams, string accessToken, string clientName = "TVHTML5", string clientVersion = "7.20241016.00.00")
         {
-            string visitorData = await GetVisitorDataAsync();
+            string visitorData = await GetVisitorDataAsync().ConfigureAwait(false);
             var clientObj = new JObject
             {
                 ["clientName"] = clientName,
@@ -221,15 +221,15 @@ namespace YTMusicWP
 
             try
             {
-                using (var response = await _authClient.SendAsync(request))
+                using (var response = await _authClient.SendAsync(request).ConfigureAwait(false))
                 {
                     if (!response.IsSuccessStatusCode)
                     {
-                        string resultJson = await response.Content.ReadAsStringAsync();
+                        string resultJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                         return new JObject { ["_error"] = (int)response.StatusCode, ["_body"] = resultJson.Length > 100 ? resultJson.Substring(0, 100) : resultJson };
                     }
 
-                    using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                     using (var reader = new StreamReader(stream))
                     using (var jsonReader = new JsonTextReader(reader))
                     {

@@ -142,6 +142,7 @@ namespace YTMusicWP
         {
             Services.MemoryHelper.Mark("NowPlaying");
             _isClosingNowPlaying = false;
+            _nowPlayingShownAt = DateTime.UtcNow;
             // Also covers the view having been collapsed directly (Go to artist): the slide-up then starts off-screen again
             Services.MotionHelper.PrepareSlideIn(NowPlayingView, NowPlayingTransform, SlideUpStoryboard, SlideDownStoryboard);
             ApplyNowPlayingStyle();

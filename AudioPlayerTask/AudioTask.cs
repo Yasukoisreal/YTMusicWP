@@ -394,11 +394,7 @@ namespace AudioPlayerTask
             _isLiveSwapping = false;
             try { _liveBufferStopwatch.Reset(); } catch { }
             try { _liveBaseUrlStopwatch.Reset(); } catch { }
-            try
-            {
-                Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = false;
-            }
-            catch { }
+            NotifyLiveState(false);
             ClearPreResolvedState();
         }
 
@@ -1661,7 +1657,7 @@ namespace AudioPlayerTask
                 _currentLiveBaseUrl = _isCurrentTrackLive ? trackUrl : null;
                 if (_isCurrentTrackLive) try { _liveBaseUrlStopwatch.Restart(); } catch { }
                 // Ghi cờ live cho foreground đọc (trước đây chỉ từng được ghi = false nên UI không bao giờ biết là live)
-                try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = _isCurrentTrackLive; } catch { }
+                NotifyLiveState(_isCurrentTrackLive);
                 if (!_isCurrentTrackLive)
                 {
                     if (_liveMss != null)
@@ -2598,6 +2594,16 @@ namespace AudioPlayerTask
             MoveNext();
         }
 
+        /// <summary>
+        /// Records whether the current track is a livestream (LocalSettings, read by the foreground at startup / resume)
+        /// and pushes it to a running foreground, which used to poll the setting every 2 s instead.
+        /// </summary>
+        private void NotifyLiveState(bool isLive)
+        {
+            try { Windows.Storage.ApplicationData.Current.LocalSettings.Values["IsCurrentLive"] = isLive; } catch { }
+            try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "LiveState", isLive } }); } catch { }
+        }
+
         private void MediaPlayer_CurrentStateChanged(MediaPlayer sender, object args)
         {
             try
@@ -2621,6 +2627,9 @@ namespace AudioPlayerTask
                     if (!_isRetrying) _retryCount = 0;
                     _isRetrying = false;
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Playing;
+
+                    // Resumed after a pause that stopped the monitor
+                    if (_playbackMonitorTimer == null && _trackList.Count > 0) StartPlaybackMonitor();
                 }
                 else if (sender.CurrentState == MediaPlayerState.Paused)
                 {
@@ -2657,6 +2666,11 @@ namespace AudioPlayerTask
                     }
 
                     _systemControls.PlaybackStatus = MediaPlaybackStatus.Paused;
+
+                    // Nothing to watch while a regular track is paused: stop waking up every 500 ms. Kept for livestreams
+                    // (it restarts a player stuck in Paused after a buffer swap) and while a sleep timer is armed (it must
+                    // expire during the pause, not fire the moment playback resumes).
+                    if (!_isCurrentTrackLive && _sleepTimerExpiry == DateTime.MaxValue) StopPlaybackMonitor();
                 }
                 else if (sender.CurrentState == MediaPlayerState.Closed || sender.CurrentState == MediaPlayerState.Stopped)
                 {
