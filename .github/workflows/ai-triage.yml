@@ -1,15 +1,16 @@
 name: AI Policy Triage
 
-# Enforces the "AI Policy" section of CONTRIBUTING.md: pull requests opened by coding agents,
-# or carrying AI co-author trailers / "Generated with ..." markers, are closed on sight.
+# Enforces the "AI Policy" section of CONTRIBUTING.md. AI-driven work (including AI co-author trailers and
+# "Generated with ..." markers) is allowed as long as a human reviewed every line and opened the PR, so the only
+# thing closed automatically is a pull request opened directly by a coding-agent or bot account.
 #
 # pull_request_target runs in the context of the base repository so it can comment on and close
 # PRs from forks. SECURITY: this workflow must NEVER check out or execute code from the PR —
-# it only reads PR metadata (author, body, commit messages) through the GitHub API.
+# it only reads PR metadata (author) through the GitHub API.
 
 on:
   pull_request_target:
-    types: [ opened, reopened, synchronize, edited ]
+    types: [ opened, reopened ]
     branches: [ main ]
 
 permissions:
@@ -26,7 +27,7 @@ jobs:
     name: AI Policy Check
     runs-on: ubuntu-latest
     steps:
-      - name: Scan PR author, description and commits
+      - name: Check who opened the PR
         uses: actions/github-script@v7
         with:
           script: |
@@ -39,12 +40,6 @@ jobs:
             // Known coding-agent accounts
             const agentAccounts = /^(devin-ai-integration|google-labs-jules|jules|openhands(-agent)?|copilot|copilot-swe-agent|claude|sweep-ai|codegen-sh|cursor|coderabbitai|aider|codex|chatgpt-codex-connector)(\[bot\])?$/i;
 
-            // AI tool names that show up in co-author trailers and generated-by footers
-            const aiTools = 'claude|anthropic|copilot|cursor|devin|jules|openhands|codex|openai|chatgpt|gemini|aider|sweep|codegen|windsurf|cline|tabnine|amazon q|junie';
-            const coAuthorTrailer = new RegExp(`^\\s*co-authored-by:.*(${aiTools})`, 'im');
-            const generatedMarker = new RegExp(`(generated|created|written) (with|by) \\[?(${aiTools})`, 'i');
-            const aiEmail = /@(anthropic\.com|openai\.com)|copilot@github\.com|devin-ai-integration|google-labs-jules|openhands/i;
-
             const reasons = [];
             const login = pr.user.login;
 
@@ -53,30 +48,6 @@ jobs:
                 reasons.push(`PR was opened by the coding-agent account \`${login}\`.`);
               } else if (pr.user.type === 'Bot') {
                 reasons.push(`PR was opened by the bot account \`${login}\`.`);
-              }
-            }
-
-            const body = pr.body || '';
-            if (generatedMarker.test(body) || coAuthorTrailer.test(body)) {
-              reasons.push('PR description contains a "Generated with ..." marker or an AI co-author trailer.');
-            }
-
-            const commits = await github.paginate(github.rest.pulls.listCommits, {
-              owner, repo, pull_number: pr.number, per_page: 100
-            });
-
-            for (const c of commits) {
-              const sha = c.sha.substring(0, 7);
-              const msg = c.commit.message || '';
-              const emails = [c.commit.author && c.commit.author.email, c.commit.committer && c.commit.committer.email].join(' ');
-              const authorLogin = c.author ? c.author.login : '';
-
-              if (coAuthorTrailer.test(msg)) {
-                reasons.push(`Commit ${sha} carries an AI co-author trailer.`);
-              } else if (generatedMarker.test(msg)) {
-                reasons.push(`Commit ${sha} contains a "Generated with ..." marker.`);
-              } else if (aiEmail.test(emails) || (authorLogin && agentAccounts.test(authorLogin))) {
-                reasons.push(`Commit ${sha} was authored by an AI agent identity.`);
               }
             }
 
@@ -91,8 +62,8 @@ jobs:
               '',
               ...reasons.map(r => `- ${r}`),
               '',
-              'AI-*assisted* work is welcome, but a human must have written or personally reviewed every line.',
-              'If that is the case, squash out the AI trailers / markers and open a new pull request.'
+              'AI-driven work is welcome, but a human must review every line before it is committed and open the pull request themselves.',
+              'If you have done that review, open a new pull request from your own account.'
             ].join('\n');
 
             await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body: comment });

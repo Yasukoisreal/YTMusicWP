@@ -20,13 +20,14 @@ If you want to contribute code:
 
 ## AI Policy
 
-AI-*assisted* work is welcome; AI-*driven* work is not:
-- A human must have written or personally reviewed **every line** and be able to answer review comments about it.
-- **Unattended agent submissions** (PRs fired at this repository by coding agents like Jules, Devin, OpenHands, and friends) without a human shaping and checking the result are **closed automatically** by the triage workflow, on sight, without individual discussion.
-- Commits carrying AI co-author trailers (`Co-Authored-By: Claude/Copilot/...`) or "Generated with ..." markers are rejected the same way — squash them out before opening the PR.
-- Repeat offenders get blocked from the repository.
+AI tools are welcome, including AI-*driven* work where a coding agent writes the code and makes the commits for you. What matters is that a human stands behind every change:
 
-This is not hostility toward AI tooling. It is the difference between a contribution someone stands behind and unreviewed output pointed at volunteer maintainers. Review time is the scarcest resource this project has; spending it on machine-generated PRs nobody proofread takes it away from contributors who did the work.
+- **Review every line before you tell the AI to commit.** Read what it wrote, understand it, build it and test it on a device or emulator. You are the author of record and must be able to answer review comments about any line in the PR.
+- **Be open about it.** Say in the PR which parts were AI-generated and how you tested them. AI co-author trailers (`Co-Authored-By: ...`) and "Generated with ..." markers are fine; keep them honest rather than scrubbing them.
+- **A human opens the PR.** Pull requests opened directly by coding-agent or bot accounts (Jules, Devin, OpenHands, Copilot agent, and friends) are **closed automatically** by the triage workflow, because nobody has checked the result.
+- **Unreviewed output gets closed.** Code that does not build, invented APIs, changes unrelated to the issue, or review replies that are pasted AI output show the review step was skipped; such PRs are closed, and repeat offenders get blocked from the repository.
+
+This is not hostility toward AI tooling. It is the difference between a contribution someone stands behind and unreviewed output pointed at volunteer maintainers. Review time is the scarcest resource this project has; the line-by-line check has to happen on your side before the commit, not on ours after the PR.
 
 ## Setting up the development environment
 
