@@ -227,9 +227,13 @@ namespace AudioPlayerTask
                 }
                 var request = args.Request;
 
+                // Raised from inside our own Deferral.Complete(): answering here would nest the next request on the same
+                // stack, and the pipeline keeps asking while samples are queued (stack overflow after minutes of live
+                // playback). Defer it and answer from a fresh thread-pool stack instead.
+                bool nested = _completingDeferral;
                 lock (_queueLock)
                 {
-                    if (_sampleQueue.Count > 0)
+                    if (_sampleQueue.Count > 0 && !nested)
                     {
                         var sample = _sampleQueue.Dequeue();
                         request.Sample = sample;
@@ -237,7 +241,8 @@ namespace AudioPlayerTask
                         return;
                     }
 
-                    if ((_cts != null && _cts.IsCancellationRequested) || _isDisposed || (_streamingTask != null && _streamingTask.IsCompleted))
+                    if (_sampleQueue.Count == 0 &&
+                        ((_cts != null && _cts.IsCancellationRequested) || _isDisposed || (_streamingTask != null && _streamingTask.IsCompleted)))
                     {
                         // No more samples and streaming loop ended -> EOS
                         request.Sample = null;
@@ -247,10 +252,46 @@ namespace AudioPlayerTask
                     // Buffer is draining, hold deferral until next UMP MEDIA part is parsed
                     _pendingRequests.Add(new PendingRequest { Request = request, Deferral = request.GetDeferral() });
                 }
+                if (nested) ScheduleDrain();
             }
             catch (Exception ex)
             {
                 Log("SampleRequested error: " + ex.Message);
+            }
+        }
+
+        [ThreadStatic] private static bool _completingDeferral;
+        private int _drainScheduled;
+
+        /// <summary>Answers the waiting sample requests on a thread-pool thread (never on the network thread or under a lock).</summary>
+        private void ScheduleDrain()
+        {
+            if (Interlocked.Exchange(ref _drainScheduled, 1) == 1) return;
+            var ignored = Task.Run(() =>
+            {
+                Interlocked.Exchange(ref _drainScheduled, 0);
+                DrainPendingRequests();
+            });
+        }
+
+        private void DrainPendingRequests()
+        {
+            while (!_isDisposed)
+            {
+                PendingRequest p;
+                lock (_queueLock)
+                {
+                    if (_pendingRequests.Count == 0 || _sampleQueue.Count == 0) return;
+                    p = _pendingRequests[0];
+                    _pendingRequests.RemoveAt(0);
+                    var s = _sampleQueue.Dequeue();
+                    p.Request.Sample = s;
+                    _currentPositionMs = (long)s.Timestamp.TotalMilliseconds;
+                }
+                _completingDeferral = true;
+                try { p.Deferral.Complete(); }
+                catch { }
+                finally { _completingDeferral = false; }
             }
         }
 
@@ -512,7 +553,7 @@ namespace AudioPlayerTask
 
         private async Task StreamingLoopAsync(CancellationToken ct)
         {
-            Log("Starting Sabr streaming loop at rn=" + _requestNumber + ", pos=" + _currentPositionMs + "ms");
+            Log("Starting Sabr streaming loop at rn=" + _requestNumber + ", pos=" + _currentPositionMs + "ms, memory " + MemoryReport());
 
             while (!ct.IsCancellationRequested && !_isDisposed)
             {
@@ -600,10 +641,24 @@ namespace AudioPlayerTask
                     _formatsInitialized = true;
                     _lastSuccessfulChunkTime = DateTime.UtcNow;
 
-                    // Periodically trigger GC every 8 chunks (~40s) to reclaim native COM wrappers and prevent OOM on 512MB WP8.1
-                    if (_requestNumber % 8 == 0)
+                    // Full GC every 4 chunks (~20 s): each sample's buffer and COM wrapper is only released by a finalizer,
+                    // and the audio task runs under a hard memory cap (killed with exit code 14 when it hits it)
+                    if (_requestNumber % 4 == 0)
                     {
-                        try { GC.Collect(); } catch { }
+                        try
+                        {
+                            GC.Collect();
+                            GC.WaitForPendingFinalizers();
+                            GC.Collect();
+                        }
+                        catch { }
+                    }
+                    // Once a minute: how close the task is to its cap (tracks down slow leaks in long livestreams)
+                    if (_requestNumber % 12 == 0)
+                    {
+                        int queued;
+                        lock (_queueLock) { queued = _sampleQueue.Count; }
+                        Log("Memory: " + MemoryReport() + ", queued samples " + queued + ", rn=" + _requestNumber);
                     }
                 }
                 catch (OperationCanceledException)
@@ -647,7 +702,7 @@ namespace AudioPlayerTask
                             MemoryStream ms;
                             if (!_pendingSegments.TryGetValue(headerId, out ms))
                             {
-                                ms = new MemoryStream();
+                                ms = TakeSegmentStream();
                                 _pendingSegments[headerId] = ms;
                             }
                             ms.Write(part.Data, 1, part.Data.Length - 1);
@@ -670,7 +725,7 @@ namespace AudioPlayerTask
                                 _pendingSegments.Remove(headerId);
                                 segBytes = ms.ToArray();
                                 segLen = segBytes.Length;
-                                ms.Dispose();
+                                ReturnSegmentStream(ms);
                             }
                             _pendingMediaHeaders.TryGetValue(headerId, out segHeader);
                             _pendingMediaHeaders.Remove(headerId);
@@ -892,6 +947,37 @@ namespace AudioPlayerTask
             }
         }
 
+        // A live segment is ~82 KB, so its MemoryStream grows to 128 KB: a large-object-heap allocation every 5 s that the
+        // GC never compacts. One stream is reused instead (callers hold _queueLock).
+        private MemoryStream _spareSegmentStream;
+
+        private MemoryStream TakeSegmentStream()
+        {
+            var ms = _spareSegmentStream ?? new MemoryStream(128 * 1024);
+            _spareSegmentStream = null;
+            ms.SetLength(0);
+            return ms;
+        }
+
+        private void ReturnSegmentStream(MemoryStream ms)
+        {
+            if (_spareSegmentStream == null && ms.Capacity <= 512 * 1024) _spareSegmentStream = ms;
+            else ms.Dispose();
+        }
+
+        /// <summary>The audio task's memory use against its cap (the task is killed with code 14 when it reaches it).</summary>
+        private static string MemoryReport()
+        {
+            try
+            {
+                ulong used = Windows.System.MemoryManager.AppMemoryUsage;
+                ulong limit = Windows.System.MemoryManager.AppMemoryUsageLimit;
+                return (used / 1048576.0).ToString("F1") + " MB / " + (limit / 1048576.0).ToString("F0") + " MB, managed " +
+                       (GC.GetTotalMemory(false) / 1048576.0).ToString("F1") + " MB";
+            }
+            catch { return "n/a"; }
+        }
+
         private void FlushPendingSegments()
         {
             lock (_queueLock)
@@ -903,7 +989,7 @@ namespace AudioPlayerTask
                     MemoryStream ms = _pendingSegments[hid];
                     _pendingSegments.Remove(hid);
                     byte[] segBytes = ms.ToArray();
-                    ms.Dispose();
+                    ReturnSegmentStream(ms);
 
                     ParsedMediaHeader segHeader = null;
                     _pendingMediaHeaders.TryGetValue(hid, out segHeader);
@@ -1026,18 +1112,11 @@ namespace AudioPlayerTask
                     parsedCount++;
                     _chunkParsedSamples++;
                 }
-
-                // Fulfill waiting deferrals immediately
-                while (_pendingRequests.Count > 0 && _sampleQueue.Count > 0)
-                {
-                    var p = _pendingRequests[0];
-                    _pendingRequests.RemoveAt(0);
-                    var s = _sampleQueue.Dequeue();
-                    p.Request.Sample = s;
-                    _currentPositionMs = (long)s.Timestamp.TotalMilliseconds;
-                    try { p.Deferral.Complete(); } catch { }
-                }
             }
+
+            // Answer a starved player. Completing its deferral right here ran on the network thread under _queueLock
+            // (FlushPendingSegments holds it too) and let the player re-enter SampleRequested on this stack.
+            if (parsedCount > 0) ScheduleDrain();
 
             return parsedCount;
         }
@@ -1107,6 +1186,11 @@ namespace AudioPlayerTask
                 }
                 _pendingSegments.Clear();
                 _pendingMediaHeaders.Clear();
+                if (_spareSegmentStream != null)
+                {
+                    _spareSegmentStream.Dispose();
+                    _spareSegmentStream = null;
+                }
             }
 
             if (_httpClient != null)

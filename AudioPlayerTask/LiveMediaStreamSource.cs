@@ -152,15 +152,18 @@ namespace AudioPlayerTask
             {
                 var request = args.Request;
 
+                // Raised from inside our own Deferral.Complete(): answering here would nest the next request on the
+                // same stack (stack overflow after minutes of live playback). Defer it to a fresh thread-pool stack.
+                bool nested = _completingDeferral;
                 lock (_queueLock)
                 {
-                    if (_sampleQueue.Count > 0)
+                    if (_sampleQueue.Count > 0 && !nested)
                     {
                         request.Sample = _sampleQueue.Dequeue();
                         return;
                     }
 
-                    if (_isDisposed || (_cts != null && _cts.IsCancellationRequested))
+                    if (_sampleQueue.Count == 0 && (_isDisposed || (_cts != null && _cts.IsCancellationRequested)))
                     {
                         request.Sample = null;
                         return;
@@ -169,8 +172,9 @@ namespace AudioPlayerTask
                     // Buffer is temporarily empty: hold deferral until next chunk is parsed.
                     // Do NOT complete with null, as that signals EOS (End-Of-Stream) to WinRT!
                     _pendingRequests.Add(new PendingRequest { Request = request, Deferral = request.GetDeferral() });
-                    Log("SampleRequested deferral held (queue empty, pending=" + _pendingRequests.Count + ")");
+                    if (!nested) Log("SampleRequested deferral held (queue empty, pending=" + _pendingRequests.Count + ")");
                 }
+                if (nested) ScheduleDrain();
             }
             catch (Exception ex)
             {
@@ -522,18 +526,45 @@ namespace AudioPlayerTask
                     _sampleQueue.Enqueue(sample);
                     parsedCount++;
                 }
-
-                // Fulfill waiting requests immediately if deferrals were captured
-                while (_pendingRequests.Count > 0 && _sampleQueue.Count > 0)
-                {
-                    var p = _pendingRequests[0];
-                    _pendingRequests.RemoveAt(0);
-                    p.Request.Sample = _sampleQueue.Dequeue();
-                    try { p.Deferral.Complete(); } catch { }
-                }
             }
 
+            // Answer a starved player from a thread-pool stack (completing its deferral here, under _queueLock on the
+            // download thread, let the player re-enter SampleRequested on this stack)
+            if (parsedCount > 0) ScheduleDrain();
+
             return parsedCount;
+        }
+
+        [ThreadStatic] private static bool _completingDeferral;
+        private int _drainScheduled;
+
+        private void ScheduleDrain()
+        {
+            if (Interlocked.Exchange(ref _drainScheduled, 1) == 1) return;
+            var ignored = Task.Run(() =>
+            {
+                Interlocked.Exchange(ref _drainScheduled, 0);
+                DrainPendingRequests();
+            });
+        }
+
+        private void DrainPendingRequests()
+        {
+            while (!_isDisposed)
+            {
+                PendingRequest p;
+                lock (_queueLock)
+                {
+                    if (_pendingRequests.Count == 0 || _sampleQueue.Count == 0) return;
+                    p = _pendingRequests[0];
+                    _pendingRequests.RemoveAt(0);
+                    p.Request.Sample = _sampleQueue.Dequeue();
+                }
+                _completingDeferral = true;
+                try { p.Deferral.Complete(); }
+                catch { }
+                finally { _completingDeferral = false; }
+            }
         }
 
         private static int FindBox(byte[] data, byte[] boxType, int start, int end)
