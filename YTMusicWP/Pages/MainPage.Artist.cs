@@ -18,6 +18,28 @@ namespace YTMusicWP
         private bool _isFollowingArtist;
         private bool _isClosingArtistProfile;
 
+        /// <summary>
+        /// An album's tracks share one main artist; a chart or mix is spread across many. True when at least 60% of the
+        /// tracks have the same first-listed artist.
+        /// </summary>
+        private static bool LooksLikeAlbum(System.Collections.Generic.IList<YouTubeTrack> tracks)
+        {
+            if (tracks == null || tracks.Count == 0) return false;
+            var counts = new System.Collections.Generic.Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            int best = 0;
+            foreach (var t in tracks)
+            {
+                var names = SplitArtistNames(t.ChannelName ?? "");
+                string main = names.Count > 0 ? names[0].Trim() : "";
+                if (main.Length == 0) continue;
+                int n;
+                counts.TryGetValue(main, out n);
+                counts[main] = ++n;
+                if (n > best) best = n;
+            }
+            return best >= tracks.Count * 0.6;
+        }
+
         public async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
         {
             Services.MemoryHelper.Mark("Playlist");
@@ -68,7 +90,9 @@ namespace YTMusicWP
                         PlaylistDetailsSubtitle.Text = plResult.Tracks.Count + " tracks";
 
                     string effectiveCover = !string.IsNullOrEmpty(plResult.ThumbnailUrl) ? plResult.ThumbnailUrl : coverUrl;
-                    if (playlistId.StartsWith("MPREb_") || playlistId.StartsWith("OLAK5uy_"))
+                    // Album tracks all show the album cover. OLAK5uy_ ids are not only albums though: YouTube's
+                    // auto-generated charts ("Trending 20 ...") use them too, and there every track has its own cover
+                    if (playlistId.StartsWith("MPREb_") || (playlistId.StartsWith("OLAK5uy_") && LooksLikeAlbum(plResult.Tracks)))
                     {
                         if (!string.IsNullOrEmpty(effectiveCover))
                         {
