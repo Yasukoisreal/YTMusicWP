@@ -115,12 +115,30 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 ## Changelog
 
 ### v2.4.0 (Latest)
-- 🎬 **Samples Tab:** YouTube Music-style vertical feed of music video clips, letterboxed over a blurred backdrop, with a stall watchdog and automatic URL refresh.
-- 👥 **Multiple Accounts:** Account switcher for several YouTube accounts and brand channels.
-- 🖼️ **Animated Album Artwork:** Apple Music motion artwork on Now Playing, fading smoothly into the blurred backdrop.
-- 🎤 **Word-by-Word & Duet Lyrics:** Per-word karaoke animation, duet singers aligned left/right, background vocals on their own line, and every line being sung stays lit.
-- 🔴 **Live Stream Stability:** Fixed the crash and the stop after ~40 minutes on long livestreams (lower memory use in the background audio task).
-- ⚡ **Performance & Fixes:** Smoother Home at startup, lighter position timer, memory-pressure handling, correct queue after taps, and playlist sync fixes.
+- 📡 **Live Streams on SABR:** Livestreams moved from DASH to YouTube's native SABR/UMP protocol (pure C#). Playback starts in ~2 s instead of ~12 s, with no time jump or fast-forward at the start, a ~13 s buffer, and a smooth switch back to normal songs. Long livestreams no longer crash or stop after ~40 minutes.
+- 🎬 **Samples Tab:** YouTube Music-style vertical feed of music video clips from your Home and the region's video charts. Clips start on a keyframe and are letterboxed over a blurred backdrop, with a stall watchdog and automatic URL refresh.
+- 👥 **Multiple Accounts:** Account switcher for several YouTube accounts and brand channels, remembered at startup.
+- 🎤 **Word-by-Word Lyrics:**
+  - Per-word karaoke animation with a travelling light flare and animated interlude dots.
+  - New KuGou KRC word-by-word source.
+  - Duet singers aligned left/right, background vocals on their own line, and every line being sung stays lit.
+  - More accurate Apple Music matching.
+- 🖼️ **Animated & HD Artwork:** Apple Music motion artwork on Now Playing, fading into the blurred backdrop. HD cover art, and 16:9 thumbnails fill the screen full-bleed.
+- ✨ **Unified Motion:** Sheets, dialogs and pages now animate in and out consistently, with press feedback, play/like pop and fixed layer order (Playlist/Artist never open behind Samples or Now Playing).
+- 🌐 **DNS over HTTPS:** Cloudflare 1.1.1.1 with Google Public DNS fallback to get around ISP throttling.
+- ⚡ **512MB RAM & Performance:**
+  - Fits the Lumia 520/530: the 512MB emulator went from an OutOfMemory crash to a peak of about 116 MB.
+  - Smoother Home at startup and a lighter UI thread.
+  - Artwork released under memory pressure.
+- 🛠️ **Fixes:**
+  - Playback when signed in with cookie auth.
+  - Playlist queue truncation and restoring the queue after a long pause.
+  - The queue kept on queue taps.
+  - Playlist sync counts and per-track covers in chart playlists.
+  - Database repair.
+  - Live Tile templates.
+  - Rounded search category cards.
+- 🧪 **Project:** 75 unit tests with GitHub Actions CI, a new showcase website, and the project is now licensed under GPLv3.
 
 ### v2.3.0
 - 🔴 **Continuous YouTube Live Streaming:** Zero-gap continuous live audio streaming engine with low-latency rolling buffer and live telemetry.
