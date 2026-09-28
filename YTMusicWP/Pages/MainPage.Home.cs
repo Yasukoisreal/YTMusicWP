@@ -355,6 +355,7 @@ namespace YTMusicWP
                         _homeDynamicSections.Add(sec);
                     }
                     HomeDynamicSections.ItemsSource = _homeDynamicSections;
+                    Services.MemoryHelper.Mark("Home (" + _homeDynamicSections.Count + " sections)");
 
                     _homeContinuationToken = homeResult.ContinuationToken;
                     _hasMoreHomeSections = !string.IsNullOrEmpty(_homeContinuationToken);
@@ -517,6 +518,7 @@ namespace YTMusicWP
                     _homeContinuationToken = nextResult.ContinuationToken;
                     _hasMoreHomeSections = !string.IsNullOrEmpty(_homeContinuationToken);
                     _homeLoadedPagesCount++;
+                    Services.MemoryHelper.Mark("Home page " + _homeLoadedPagesCount + " (" + _homeDynamicSections.Count + " sections)");
 
                     if (YTMusicWP.Services.MemoryHelper.IsLowMemoryDevice && _homeLoadedPagesCount >= 4)
                     {
@@ -630,8 +632,8 @@ namespace YTMusicWP
                 _activeHomeChipBorder = null;
                 _currentHomeFilterParams = null;
                 _currentFilterChipTitle = null;
-                if (HomeMusicPanel != null)
-                    HomeMusicPanel.ChangeView(0, 0, 1.0f, true);
+                if (HomeScroll != null)
+                    HomeScroll.ChangeView(0, 0, 1.0f, true);
                 var ignored = LoadHomeRecommendations(null);
             }
             else
@@ -645,8 +647,8 @@ namespace YTMusicWP
                 _currentHomeFilterParams = chipParams;
                 _currentFilterChipTitle = chipTitle;
                 SetChipVisualState(border, true);
-                if (HomeMusicPanel != null)
-                    HomeMusicPanel.ChangeView(0, 0, 1.0f, true);
+                if (HomeScroll != null)
+                    HomeScroll.ChangeView(0, 0, 1.0f, true);
                 var ignored = LoadHomeRecommendations(_currentHomeFilterParams);
             }
         }
@@ -796,18 +798,35 @@ namespace YTMusicWP
         private static readonly Windows.UI.Xaml.Media.SolidColorBrush _pullMutedBrush =
             new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
 
+        // The home feed scrolls inside HomeDynamicSections (so its sections virtualize); this is that ListView's
+        // own ScrollViewer, found once its template is applied.
+        private ScrollViewer _homeScroll;
+        private ScrollViewer HomeScroll
+        {
+            get
+            {
+                if (_homeScroll == null && HomeDynamicSections != null)
+                    _homeScroll = FindChildOfType<ScrollViewer>(HomeDynamicSections);
+                return _homeScroll;
+            }
+        }
+
         private void InitializeHomePullToRefresh()
         {
-            if (HomeMusicPanel == null) return;
-
-            HomeMusicPanel.ViewChanging += HomeMusicPanel_ViewChanging;
-            HomeMusicPanel.ViewChanged += HomeMusicPanel_ViewChanged;
-            HomeMusicPanel.Loaded += HomeMusicPanel_Loaded;
+            if (HomeDynamicSections == null) return;
+            HomeDynamicSections.Loaded += HomeMusicPanel_Loaded;
             _pullEligible = true;
         }
 
         private async void HomeMusicPanel_Loaded(object sender, RoutedEventArgs e)
         {
+            var scroll = HomeScroll;
+            if (scroll == null) return;
+            scroll.ViewChanging -= HomeMusicPanel_ViewChanging;
+            scroll.ViewChanging += HomeMusicPanel_ViewChanging;
+            scroll.ViewChanged -= HomeMusicPanel_ViewChanged;
+            scroll.ViewChanged += HomeMusicPanel_ViewChanged;
+
             _pullEligible = true;
             ResetHomeScrollToRest(immediate: true);
             await Task.Delay(50);
@@ -817,10 +836,10 @@ namespace YTMusicWP
 
         internal void ResetHomeScrollToRest(bool immediate = false)
         {
-            if (HomeMusicPanel == null) return;
+            if (HomeScroll == null) return;
             try
             {
-                HomeMusicPanel.ChangeView(null, PULL_RESTING_OFFSET, null, disableAnimation: immediate);
+                HomeScroll.ChangeView(null, PULL_RESTING_OFFSET, null, disableAnimation: immediate);
             }
             catch { }
             _pullEligible = true;
@@ -828,7 +847,7 @@ namespace YTMusicWP
 
         internal void EnsureHomePullTimer()
         {
-            if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET && HomeMusicPanel.Visibility == Visibility.Visible)
+            if (HomeScroll != null && HomeScroll.VerticalOffset < PULL_RESTING_OFFSET && HomeMusicPanel.Visibility == Visibility.Visible)
             {
                 ResetHomeScrollToRest(immediate: true);
             }
@@ -837,7 +856,7 @@ namespace YTMusicWP
 
         private void HomeMusicPanel_ViewChanging(object sender, ScrollViewerViewChangingEventArgs e)
         {
-            if (HomeMusicPanel == null || HomePullIndicator == null) return;
+            if (HomeScroll == null || HomePullIndicator == null) return;
 
             double offset = e.NextView.VerticalOffset;
 
@@ -856,7 +875,7 @@ namespace YTMusicWP
                 }
 
                 // Check for lazy loading near bottom (SimpMusic style)
-                if (HomeMusicPanel.ScrollableHeight > 0 && offset >= HomeMusicPanel.ScrollableHeight - 600)
+                if (HomeScroll.ScrollableHeight > 0 && offset >= HomeScroll.ScrollableHeight - 600)
                 {
                     if (!_isLoadingMoreHomeSections && _hasMoreHomeSections && !string.IsNullOrEmpty(_homeContinuationToken))
                     {
@@ -922,7 +941,7 @@ namespace YTMusicWP
             if (!e.IsIntermediate && !_isRefreshingHome)
             {
                 // Check lazy loading on inertia stop
-                if (HomeMusicPanel != null && HomeMusicPanel.ScrollableHeight > 0 && HomeMusicPanel.VerticalOffset >= HomeMusicPanel.ScrollableHeight - 600)
+                if (HomeScroll != null && HomeScroll.ScrollableHeight > 0 && HomeScroll.VerticalOffset >= HomeScroll.ScrollableHeight - 600)
                 {
                     if (!_isLoadingMoreHomeSections && _hasMoreHomeSections && !string.IsNullOrEmpty(_homeContinuationToken))
                     {
@@ -936,11 +955,11 @@ namespace YTMusicWP
                     _pullEligible = false;
                     var ignored = RefreshHomeFeedAsync();
                 }
-                else if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET)
+                else if (HomeScroll != null && HomeScroll.VerticalOffset < PULL_RESTING_OFFSET)
                 {
                     ResetHomeScrollToRest(immediate: false);
                 }
-                else if (HomeMusicPanel != null && Math.Abs(HomeMusicPanel.VerticalOffset - PULL_RESTING_OFFSET) <= 5.0)
+                else if (HomeScroll != null && Math.Abs(HomeScroll.VerticalOffset - PULL_RESTING_OFFSET) <= 5.0)
                 {
                     _pullEligible = true;
                 }
@@ -1045,7 +1064,7 @@ namespace YTMusicWP
                 _pullEligible = true;
 
                 // 6. Smoothly snap back to resting position if still at top
-                if (HomeMusicPanel != null && HomeMusicPanel.VerticalOffset < PULL_RESTING_OFFSET)
+                if (HomeScroll != null && HomeScroll.VerticalOffset < PULL_RESTING_OFFSET)
                 {
                     ResetHomeScrollToRest(immediate: false);
                 }

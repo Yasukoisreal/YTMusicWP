@@ -1232,7 +1232,20 @@ namespace YTMusicWP
             {
                 if (_isSliderManipulating) return;
                 if (_appMediaPlayer == null) return;
-                if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing)
+                if (_playerDisconnected)
+                {
+                    _lyricsWordTimer.Stop();
+                    return;
+                }
+                MediaPlayerState playerState;
+                try { playerState = _appMediaPlayer.CurrentState; }
+                catch
+                {
+                    MarkPlayerDisconnected();
+                    _lyricsWordTimer.Stop();
+                    return;
+                }
+                if (playerState != MediaPlayerState.Playing)
                 {
                     UpdateWordTimerState();
                     return;

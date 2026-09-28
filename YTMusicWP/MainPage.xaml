@@ -921,177 +921,187 @@
             <Grid Grid.Row="0" Grid.RowSpan="3" Canvas.ZIndex="0">
                 <ProgressBar x:Name="HomeLoading" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="#1DB954" Canvas.ZIndex="10" Margin="0,115,0,0"/>
                 <!-- Music content -->
-                <ScrollViewer x:Name="HomeMusicPanel" VerticalScrollBarVisibility="Auto" Margin="0,0,0,0">
-                    <Grid x:Name="HomeMusicContentGrid" MinHeight="2000">
-                        <!-- Pull To Refresh Visual Indicator (Floating Capsule Pill) -->
-                        <Border x:Name="HomePullIndicator" Height="60" VerticalAlignment="Top" Margin="0,115,0,0" Opacity="0" IsHitTestVisible="False" Canvas.ZIndex="10">
-                            <Border Background="#252525" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="17" Padding="14,6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <!-- Icon Container -->
-                                    <Grid Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center">
-                                        <!-- Arrow Box (shown when pulling / ready) -->
-                                        <Viewbox x:Name="HomePullArrowBox" Width="16" Height="16" RenderTransformOrigin="0.5,0.5">
-                                            <Viewbox.RenderTransform>
-                                                <RotateTransform x:Name="HomePullArrowRotate" Angle="0"/>
-                                            </Viewbox.RenderTransform>
-                                            <Path x:Name="HomePullArrowPath" Data="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" Fill="#A0A0A0"/>
-                                        </Viewbox>
+                <!-- The sections list is the scroll host so it virtualizes vertically (only on-screen sections are
+                     realized); the rest of the feed lives in its Header/Footer. Pull-to-refresh and "load more" use
+                     the ListView's internal ScrollViewer (HomeScroll in MainPage.Home.cs). -->
+                <Grid x:Name="HomeMusicPanel">
+                    <ListView x:Name="HomeDynamicSections" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" ItemTemplateSelector="{StaticResource HomeSectionSelector}" VirtualizingStackPanel.VirtualizationMode="Recycling">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.Header>
+                            <Grid x:Name="HomeMusicContentGrid">
+                                <!-- Pull To Refresh Visual Indicator (Floating Capsule Pill) -->
+                                <Border x:Name="HomePullIndicator" Height="60" VerticalAlignment="Top" Margin="0,115,0,0" Opacity="0" IsHitTestVisible="False" Canvas.ZIndex="10">
+                                    <Border Background="#252525" BorderBrush="#3A3A3A" BorderThickness="1" CornerRadius="17" Padding="14,6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <!-- Icon Container -->
+                                            <Grid Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <!-- Arrow Box (shown when pulling / ready) -->
+                                                <Viewbox x:Name="HomePullArrowBox" Width="16" Height="16" RenderTransformOrigin="0.5,0.5">
+                                                    <Viewbox.RenderTransform>
+                                                        <RotateTransform x:Name="HomePullArrowRotate" Angle="0"/>
+                                                    </Viewbox.RenderTransform>
+                                                    <Path x:Name="HomePullArrowPath" Data="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" Fill="#A0A0A0"/>
+                                                </Viewbox>
 
-                                        <!-- Modern Vector Spinner (Concentric 60fps GPU Arc, Zero Clipping) -->
-                                        <Grid x:Name="HomePullSpinnerGrid" Width="18" Height="18" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
-                                            <Grid.RenderTransform>
-                                                <RotateTransform x:Name="HomePullSpinnerRotate" Angle="0"/>
-                                            </Grid.RenderTransform>
-                                            <!-- Track -->
-                                            <Ellipse Width="16" Height="16" Stroke="#33FFFFFF" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <!-- 270-degree accent arc -->
-                                            <Path Stroke="#1DB954" StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
-                                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                  Data="M 9,1 A 8,8 0 1,1 1,9"/>
-                                        </Grid>
-                                    </Grid>
-
-                                    <TextBlock x:Name="HomePullText" Text="Pull to refresh" FontSize="12" 
-                                               FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" 
-                                               Foreground="#B3B3B3" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Border>
-                        </Border>
-
-                        <StackPanel Margin="0,175,0,30">
-                        <!-- Quick shortcuts grid -->
-                        <GridView x:Name="HomeQuickGrid" Visibility="Collapsed" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
-                            <GridView.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemHeight="66"/>
-                                </ItemsPanelTemplate>
-                            </GridView.ItemsPanel>
-                        </GridView>
-
-                        <StackPanel x:Name="HomeHistorySection" Visibility="Collapsed">
-                            <TextBlock x:Name="HomeHistoryTitleText" Text="Jump back in" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                            <ListView x:Name="HomeHistoryCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                                <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                            </ListView>
-                        </StackPanel>
-
-                        <!-- Recently Played Artists -->
-                        <StackPanel x:Name="HomeArtistsSection" Visibility="Collapsed">
-                            <TextBlock x:Name="HomeArtistsTitleText" Text="Recently played artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
-                            <ListView x:Name="HomeArtistsCarousel" IsItemClickEnabled="True" ItemClick="RecentArtist_ItemClick" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
-                                <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="Margin" Value="0"/>
-                                        <Setter Property="Padding" Value="0"/>
-                                    </Style>
-                                </ListView.ItemContainerStyle>
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Width="90" Margin="0,0,12,0">
-                                            <Grid Width="72" Height="72" Margin="0,0,0,6">
-                                                <Ellipse Width="72" Height="72" Fill="#282828"/>
-                                                <TextBlock Text="♪" FontSize="24" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <Ellipse Width="72" Height="72">
-                                                    <Ellipse.Fill>
-                                                        <ImageBrush Stretch="UniformToFill">
-                                                            <ImageBrush.ImageSource>
-                                                                <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="96"/>
-                                                            </ImageBrush.ImageSource>
-                                                        </ImageBrush>
-                                                    </Ellipse.Fill>
-                                                </Ellipse>
+                                                <!-- Modern Vector Spinner (Concentric 60fps GPU Arc, Zero Clipping) -->
+                                                <Grid x:Name="HomePullSpinnerGrid" Width="18" Height="18" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                                                    <Grid.RenderTransform>
+                                                        <RotateTransform x:Name="HomePullSpinnerRotate" Angle="0"/>
+                                                    </Grid.RenderTransform>
+                                                    <!-- Track -->
+                                                    <Ellipse Width="16" Height="16" Stroke="#33FFFFFF" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <!-- 270-degree accent arc -->
+                                                    <Path Stroke="#1DB954" StrokeThickness="2" StrokeEndLineCap="Round" StrokeStartLineCap="Round"
+                                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                          Data="M 9,1 A 8,8 0 1,1 1,9"/>
+                                                </Grid>
                                             </Grid>
-                                            <TextBlock Text="{Binding Title}" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
+
+                                            <TextBlock x:Name="HomePullText" Text="Pull to refresh" FontSize="12" 
+                                                       FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" 
+                                                       Foreground="#B3B3B3" VerticalAlignment="Center"/>
                                         </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                        </StackPanel>
-
-                        <!-- ═══════ DYNAMIC HOME SECTIONS ═══════ -->
-                        <ListView x:Name="HomeDynamicSections" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" ItemTemplateSelector="{StaticResource HomeSectionSelector}" VirtualizingStackPanel.VirtualizationMode="Recycling">
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                        </ListView>
-
-                        <!-- ═══════ MOODS & GENRES ═══════ -->
-                        <ListView x:Name="MoodsGenresListView" Visibility="Collapsed" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="10,20,0,30" VirtualizingStackPanel.VirtualizationMode="Recycling">
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0,0,0,10"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="0,0,0,10"/>
-                                        <GridView ItemsSource="{Binding Items}" IsItemClickEnabled="True" ItemClick="MoodItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
-                                            <GridView.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid Orientation="Horizontal"/></ItemsPanelTemplate></GridView.ItemsPanel>
-                                            <GridView.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Border Width="150" Height="48" Margin="0,0,10,10" Background="#1E1E1E" CornerRadius="4" BorderThickness="4,0,0,0" BorderBrush="{Binding Color}">
-                                                        <TextBlock Text="{Binding Title}" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,10,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </GridView.ItemTemplate>
-                                        </GridView>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-
-                        <!-- ═══════ CHARTS SECTION ═══════ -->
-                        <Grid Margin="0,10,0,12" x:Name="HomeChartsTitle" Visibility="Collapsed">
-                            <TextBlock x:Name="HomeChartsTitleText" Text="Top Charts" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,0"/>
-                        </Grid>
-                        <ListView x:Name="HomeChartsCarousel" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" Visibility="Collapsed">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="10,0,0,0"/>
-                                    <Setter Property="MinWidth" Value="0"/>
-                                    <Setter Property="MinHeight" Value="0"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Width="115" Height="195" CornerRadius="8">
-                                        <Border.Background>
-                                            <ImageBrush Stretch="UniformToFill">
-                                                <ImageBrush.ImageSource>
-                                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="140"/>
-                                                </ImageBrush.ImageSource>
-                                            </ImageBrush>
-                                        </Border.Background>
-                                        <!-- Title overlay at bottom -->
-                                        <Border CornerRadius="0,0,8,8" VerticalAlignment="Bottom" Padding="8,15,8,8">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                    <GradientStop Color="Transparent" Offset="0"/>
-                                                    <GradientStop Color="#CC000000" Offset="1"/>
-                                                </LinearGradientBrush>
-                                            </Border.Background>
-                                            <TextBlock Text="{Binding Title}" Foreground="White" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
-                                        </Border>
                                     </Border>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
+                                </Border>
 
-                        <!-- ═══════ FOOTER CREDIT ═══════ -->
-                        <TextBlock Text="@2026 YTMusicWP v2.3.0 Yasukoisreal" FontSize="11" Foreground="#555555" HorizontalAlignment="Center" Margin="0,30,0,10"/>
-                    </StackPanel>
+                                <StackPanel Margin="0,175,0,0">
+                                    <!-- Quick shortcuts grid -->
+                                    <GridView x:Name="HomeQuickGrid" Visibility="Collapsed" SizeChanged="HomeQuickGrid_SizeChanged" HorizontalAlignment="Stretch" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" Margin="10,0,0,20" ItemTemplate="{StaticResource GridSongItemTemplate}" ItemContainerStyle="{StaticResource GridItemStyle}" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
+                                        <GridView.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="2" ItemHeight="66"/>
+                                            </ItemsPanelTemplate>
+                                        </GridView.ItemsPanel>
+                                    </GridView>
+
+                                    <StackPanel x:Name="HomeHistorySection" Visibility="Collapsed">
+                                        <TextBlock x:Name="HomeHistoryTitleText" Text="Jump back in" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                                        <ListView x:Name="HomeHistoryCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
+                                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                                        </ListView>
+                                    </StackPanel>
+
+                                    <!-- Recently Played Artists -->
+                                    <StackPanel x:Name="HomeArtistsSection" Visibility="Collapsed">
+                                        <TextBlock x:Name="HomeArtistsTitleText" Text="Recently played artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                                        <ListView x:Name="HomeArtistsCarousel" IsItemClickEnabled="True" ItemClick="RecentArtist_ItemClick" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
+                                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                                            <ListView.ItemContainerStyle>
+                                                <Style TargetType="ListViewItem">
+                                                    <Setter Property="Margin" Value="0"/>
+                                                    <Setter Property="Padding" Value="0"/>
+                                                </Style>
+                                            </ListView.ItemContainerStyle>
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Width="90" Margin="0,0,12,0">
+                                                        <Grid Width="72" Height="72" Margin="0,0,0,6">
+                                                            <Ellipse Width="72" Height="72" Fill="#282828"/>
+                                                            <TextBlock Text="♪" FontSize="24" Foreground="#666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                            <Ellipse Width="72" Height="72">
+                                                                <Ellipse.Fill>
+                                                                    <ImageBrush Stretch="UniformToFill">
+                                                                        <ImageBrush.ImageSource>
+                                                                            <BitmapImage UriSource="{Binding ThumbnailUrl, Mode=OneWay}" DecodePixelWidth="96"/>
+                                                                        </ImageBrush.ImageSource>
+                                                                    </ImageBrush>
+                                                                </Ellipse.Fill>
+                                                            </Ellipse>
+                                                        </Grid>
+                                                        <TextBlock Text="{Binding Title}" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+                                    </StackPanel>
+
+                                </StackPanel>
+                            </Grid>
+                        </ListView.Header>
+                        <ListView.Footer>
+                            <!-- MinHeight keeps the feed scrollable past the pull-to-refresh rest offset while it is still
+                                 empty (the old ScrollViewer content had MinHeight 2000); the blank space stays at the end. -->
+                            <StackPanel MinHeight="900" Margin="0,0,0,30">
+
+                                <!-- ═══════ MOODS & GENRES ═══════ -->
+                                <ListView x:Name="MoodsGenresListView" Visibility="Collapsed" SelectionMode="None" IsItemClickEnabled="False" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled" Margin="10,20,0,30" VirtualizingStackPanel.VirtualizationMode="Recycling">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Margin" Value="0,0,0,10"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="0,0,0,10"/>
+                                                <GridView ItemsSource="{Binding Items}" IsItemClickEnabled="True" ItemClick="MoodItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.VerticalScrollMode="Disabled">
+                                                    <GridView.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid Orientation="Horizontal"/></ItemsPanelTemplate></GridView.ItemsPanel>
+                                                    <GridView.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Width="150" Height="48" Margin="0,0,10,10" Background="#1E1E1E" CornerRadius="4" BorderThickness="4,0,0,0" BorderBrush="{Binding Color}">
+                                                                <TextBlock Text="{Binding Title}" Foreground="White" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" VerticalAlignment="Center" Margin="10,0,10,0" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </GridView.ItemTemplate>
+                                                </GridView>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+
+                                <!-- ═══════ CHARTS SECTION ═══════ -->
+                                <Grid Margin="0,10,0,12" x:Name="HomeChartsTitle" Visibility="Collapsed">
+                                    <TextBlock x:Name="HomeChartsTitleText" Text="Top Charts" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,0"/>
+                                </Grid>
+                                <ListView x:Name="HomeChartsCarousel" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" Visibility="Collapsed">
+                                    <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="Padding" Value="0"/>
+                                            <Setter Property="Margin" Value="10,0,0,0"/>
+                                            <Setter Property="MinWidth" Value="0"/>
+                                            <Setter Property="MinHeight" Value="0"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Width="115" Height="195" CornerRadius="8">
+                                                <Border.Background>
+                                                    <ImageBrush Stretch="UniformToFill">
+                                                        <ImageBrush.ImageSource>
+                                                            <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="140"/>
+                                                        </ImageBrush.ImageSource>
+                                                    </ImageBrush>
+                                                </Border.Background>
+                                                <!-- Title overlay at bottom -->
+                                                <Border CornerRadius="0,0,8,8" VerticalAlignment="Bottom" Padding="8,15,8,8">
+                                                    <Border.Background>
+                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                                            <GradientStop Color="Transparent" Offset="0"/>
+                                                            <GradientStop Color="#CC000000" Offset="1"/>
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
+                                                    <TextBlock Text="{Binding Title}" Foreground="White" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
+                                                </Border>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+
+                                <!-- ═══════ FOOTER CREDIT ═══════ -->
+                                <TextBlock Text="@2026 YTMusicWP v2.3.0 Yasukoisreal" FontSize="11" Foreground="#555555" HorizontalAlignment="Center" Margin="0,30,0,10"/>
+                            </StackPanel>
+                        </ListView.Footer>
+                    </ListView>
                 </Grid>
-            </ScrollViewer>
 
                 <!-- Podcasts content -->
                 <Grid x:Name="HomePodcastPanel" Visibility="Collapsed">
@@ -1174,48 +1184,6 @@
 
                 <ScrollViewer x:Name="DefaultSearchUI" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="10,15,10,0">
-                        <!-- ═══════ DISCOVER SECTION ═══════ -->
-                        <Grid Margin="0,0,0,12">
-                            <TextBlock Text="Discover" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                        </Grid>
-                        <ListView x:Name="DiscoverListView" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled">
-                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0,0,10,0"/>
-                                    <Setter Property="MinWidth" Value="0"/>
-                                    <Setter Property="MinHeight" Value="0"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Width="115" Height="195" CornerRadius="8">
-                                        <Border.Background>
-                                            <ImageBrush Stretch="UniformToFill">
-                                                <ImageBrush.ImageSource>
-                                                    <BitmapImage UriSource="{Binding ThumbnailUrl}" DecodePixelWidth="140"/>
-                                                </ImageBrush.ImageSource>
-                                            </ImageBrush>
-                                        </Border.Background>
-                                        <!-- Title overlay at bottom -->
-                                        <Border CornerRadius="0,0,8,8" VerticalAlignment="Bottom" Padding="8,15,8,8">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                    <GradientStop Color="Transparent" Offset="0"/>
-                                                    <GradientStop Color="#CC000000" Offset="1"/>
-                                                </LinearGradientBrush>
-                                            </Border.Background>
-                                            <TextBlock Text="{Binding Title}" Foreground="White" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap"/>
-                                        </Border>
-                                    </Border>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-
-
-
-
                         <!-- ═══════ DYNAMIC MOODS & GENRES (SimpMusic / YouTube Music Standard) ═══════ -->
                         <ItemsControl x:Name="SearchMoodSectionsControl">
                             <ItemsControl.ItemTemplate>
@@ -1611,9 +1579,10 @@
             </ListView>
         </Grid>
 
-        <!-- ═══════════════════════════════════ MUSIC SHORTS VIEW ═══════════════════════════════════ -->
-        <controls:ShortsPanel x:Name="ShortsView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="55"
-            ShortsBackClick="ShortsBack_Click" ShortsHeartClick="ShortsHeart_Click" ShortsPlayCurrentClick="ShortsPlayCurrent_Click" ShortsSongBarTapped="ShortsSongBar_Tapped" ShortsManipulationCompleted="Shorts_ManipulationCompleted" ShortsManipulationDelta="Shorts_ManipulationDelta"/>
+        <!-- ═══════════════════════════════════ SAMPLES TAB (music video clips) ═══════════════════════════════════ -->
+        <controls:ShortsPanel x:Name="ShortsView" Grid.Row="0" Grid.RowSpan="2" Visibility="Collapsed" Canvas.ZIndex="55"
+            LikeClick="SamplesLike_Click" SaveClick="SamplesSave_Click" ShareClick="SamplesShare_Click" PlayClick="SamplesPlay_Click" MoreClick="SamplesMore_Click"
+            SongBarTapped="SamplesSongBar_Tapped" StageTapped="SamplesStage_Tapped" SwipeDelta="SamplesSwipe_Delta" SwipeCompleted="SamplesSwipe_Completed"/>
 
         <!-- ═══════════════════════════════════ ARTIST PROFILE VIEW ═══════════════════════════════════ -->
         <Grid x:Name="ArtistProfileView" Grid.Row="0" Visibility="Collapsed" Canvas.ZIndex="45" Background="#121212">
@@ -1792,6 +1761,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <!-- Home -->
                 <Button Grid.Column="0" Click="NavHome_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
@@ -1802,8 +1772,17 @@
                         <TextBlock x:Name="NavHomeText" Text="Home" FontSize="10" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
+                <!-- Samples -->
+                <Button Grid.Column="1" Click="NavSamples_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
+                            <Path x:Name="NavSamplesIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M13,6V18L21.5,12M4,18L12.5,12L4,6V18Z"/>
+                        </Viewbox>
+                        <TextBlock x:Name="NavSamplesText" Text="Samples" FontSize="10" Foreground="#B3B3B3" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </Button>
                 <!-- Search -->
-                <Button Grid.Column="1" Click="NavSearch_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
+                <Button Grid.Column="2" Click="NavSearch_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavSearchIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M9.5,2 C5.36,2 2,5.36 2,9.5 C2,13.64 5.36,17 9.5,17 C11.24,17 12.84,16.41 14.12,15.42 L19.35,20.65 L20.65,19.35 L15.42,14.12 C16.41,12.84 17,11.24 17,9.5 C17,5.36 13.64,2 9.5,2 Z M9.5,4.5 C12.26,4.5 14.5,6.74 14.5,9.5 C14.5,12.26 12.26,14.5 9.5,14.5 C6.74,14.5 4.5,12.26 4.5,9.5 C4.5,6.74 6.74,4.5 9.5,4.5 Z"/>
@@ -1812,7 +1791,7 @@
                     </StackPanel>
                 </Button>
                 <!-- Library -->
-                <Button Grid.Column="2" Click="NavLibrary_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
+                <Button Grid.Column="3" Click="NavLibrary_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavLibraryIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M3,21 L3,3 L6,3 L6,21 Z M10,21 L10,3 L13,3 L13,21 Z M17,21 L17,7 L20,7 L20,21 Z"/>
@@ -1821,7 +1800,7 @@
                     </StackPanel>
                 </Button>
                 <!-- Create -->
-                <Button Grid.Column="3" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
+                <Button Grid.Column="4" Click="NavCreate_Click" Style="{StaticResource IconButtonStyle}" MinHeight="0">
                     <StackPanel HorizontalAlignment="Center">
                         <Grid HorizontalAlignment="Center" Width="22" Height="22">
                             <Ellipse x:Name="NavCreateCircle" Width="28" Height="28" Margin="-3" Fill="White" Visibility="Collapsed"/>

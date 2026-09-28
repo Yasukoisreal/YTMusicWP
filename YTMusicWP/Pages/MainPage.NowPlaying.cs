@@ -140,6 +140,7 @@ namespace YTMusicWP
 
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
         {
+            Services.MemoryHelper.Mark("NowPlaying");
             _isClosingNowPlaying = false;
             if (this.Resources.ContainsKey("SlideDownStoryboard"))
             {

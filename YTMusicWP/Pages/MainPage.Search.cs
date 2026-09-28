@@ -694,32 +694,6 @@ namespace YTMusicWP
         }
 
         // ==========================================
-        // DISCOVER SECTION — Trending music from YouTube Music Explore
-        // ==========================================
-        private bool _discoverLoaded = false;
-
-        private async void LoadDiscoverSection()
-        {
-            EnsureMoodsAndGenresLoaded();
-
-            if (_discoverLoaded && DiscoverListView.Items != null && DiscoverListView.Items.Count > 0) return;
-            
-            try
-            {
-                var items = await InnerTubeClient.BrowseExploreAsync();
-
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    if (items != null && items.Count > 0)
-                        DiscoverListView.ItemsSource = items;
-
-                    _discoverLoaded = true;
-                });
-            }
-            catch { }
-        }
-
-        // ==========================================
         // DYNAMIC MOODS & GENRES (YouTube Music / SimpMusic standard)
         // ==========================================
         private bool _moodsLoaded = false;

@@ -57,6 +57,7 @@
     <Compile Include="SponsorBlockFilterTests.cs" />
     <Compile Include="TrackDurationParserTests.cs" />
     <Compile Include="KuGouLyricsParserTests.cs" />
+    <Compile Include="Mp4KeyframeParserTests.cs" />
     <Compile Include="..\AudioPlayerTask\MiniProtoWriter.cs">
       <Link>Sources\MiniProtoWriter.cs</Link>
     </Compile>
@@ -65,6 +66,9 @@
     </Compile>
     <Compile Include="..\YTMusicWP\Services\LrcParser.cs">
       <Link>Sources\LrcParser.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\Mp4KeyframeParser.cs">
+      <Link>Sources\Mp4KeyframeParser.cs</Link>
     </Compile>
     <Compile Include="..\YTMusicWP\Services\KuGouLyricsParser.cs">
       <Link>Sources\KuGouLyricsParser.cs</Link>

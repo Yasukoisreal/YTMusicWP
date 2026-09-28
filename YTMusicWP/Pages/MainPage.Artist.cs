@@ -20,6 +20,7 @@ namespace YTMusicWP
 
         public async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
         {
+            Services.MemoryHelper.Mark("Playlist");
             try
             {
                 Canvas.SetZIndex(PlaylistDetailsView, Math.Max(Canvas.GetZIndex(PlaylistDetailsView), Canvas.GetZIndex(ArtistProfileView) + 1));
@@ -159,6 +160,7 @@ namespace YTMusicWP
 
         private async void OpenArtistProfile(string channelId, string channelName, bool trustChannelId = false)
         {
+            Services.MemoryHelper.Mark("Artist");
             _isClosingArtistProfile = false;
             try { ArtistSlideOutStoryboard.Stop(); } catch { }
             Canvas.SetZIndex(ArtistProfileView, Math.Max(Canvas.GetZIndex(ArtistProfileView), Canvas.GetZIndex(PlaylistDetailsView) + 1));

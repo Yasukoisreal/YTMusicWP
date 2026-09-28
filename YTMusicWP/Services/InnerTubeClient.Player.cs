@@ -212,7 +212,12 @@ namespace YTMusicWP
             }
         };
 
-        public static async Task<string> ResolveStreamUrlAsync(string videoId, bool isLive = false)
+        /// <summary>
+        /// Resolves a playable stream URL. With <paramref name="muxedVideo"/> it returns the progressive
+        /// 360p MP4 (itag 18, video + AAC audio) for MediaElement playback instead of an audio stream,
+        /// and skips SABR/DASH fallbacks since those are audio-only here.
+        /// </summary>
+        public static async Task<string> ResolveStreamUrlAsync(string videoId, bool isLive = false, bool muxedVideo = false)
         {
             LastResolveDebug = "";
             if (string.IsNullOrEmpty(videoId) || videoId.StartsWith("LOCAL:") || videoId.StartsWith("CHANNEL:") || videoId.StartsWith("PLAYLIST:"))
@@ -392,6 +397,17 @@ namespace YTMusicWP
                                 candidateFormats.Add(new Services.StreamFormatInfo(itag, url, mime, bitrate));
                             }
                         }
+                    }
+
+                    if (muxedVideo)
+                    {
+                        var muxed = candidateFormats.FirstOrDefault(f => f.Itag == 18);
+                        if (muxed != null)
+                        {
+                            LastResolveDebug += " i18:OK";
+                            return PrepareStreamUrl(muxed.Url);
+                        }
+                        continue; // no progressive video from this client, try the next one
                     }
 
                     var qualityPref = Services.AudioQualityPreference.Auto;

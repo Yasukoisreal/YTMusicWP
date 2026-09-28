@@ -343,7 +343,9 @@ namespace YTMusicWP
                     }
 
                     var client = GetWinrtClient();
-                    using (var resp = await client.SendRequestAsync(request).AsTask().ConfigureAwait(false))
+                    // ResponseHeadersRead: parse straight from the network instead of first buffering the whole
+                    // (often 0.5-2 MB) body, so a big response is not held twice (raw + JObject) on 512MB phones.
+                    using (var resp = await client.SendRequestAsync(request, Windows.Web.Http.HttpCompletionOption.ResponseHeadersRead).AsTask().ConfigureAwait(false))
                     {
                         if (!resp.IsSuccessStatusCode)
                             return null;

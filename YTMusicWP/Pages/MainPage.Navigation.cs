@@ -78,10 +78,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseCreateSheet();
             }
-            else if (ShortsView.Visibility == Visibility.Visible)
+            else if (_currentTab == SamplesTab)
             {
+                // Samples is a tab: back goes Home (SwitchTab closes the Samples view)
                 e.Handled = true;
-                CloseShortsView();
+                SwitchTab(0);
             }
             else if (ListenTogetherView != null && ListenTogetherView.Visibility == Visibility.Visible)
             {
@@ -133,7 +134,7 @@ namespace YTMusicWP
 
         private void NavHome_Click(object sender, RoutedEventArgs e) { SwitchTab(0); }
 
-        private void NavSearch_Click(object sender, RoutedEventArgs e) { SwitchTab(1); LoadDiscoverSection(); }
+        private void NavSearch_Click(object sender, RoutedEventArgs e) { SwitchTab(1); EnsureMoodsAndGenresLoaded(); }
 
         private void NavLibrary_Click(object sender, RoutedEventArgs e)
         {
@@ -176,7 +177,7 @@ namespace YTMusicWP
                 MoodCategoryView.Visibility = Visibility.Collapsed;
                 MoodCategorySectionList.ItemsSource = null;
             }
-            // Close Shorts if open
+            // Leaving the Samples tab stops its video (and resumes the main player if Samples paused it)
             if (_shortsIsOpen) CloseShortsView();
             // Also close Settings if open
             SettingsPanel.Visibility = Visibility.Collapsed;
@@ -219,6 +220,12 @@ namespace YTMusicWP
 
             NavLibraryIcon.Fill = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
             NavLibraryText.Foreground = (tab == 2) ? _navActiveBrush : _navInactiveBrush;
+
+            NavSamplesIcon.Fill = (tab == SamplesTab) ? _navActiveBrush : _navInactiveBrush;
+            NavSamplesText.Foreground = (tab == SamplesTab) ? _navActiveBrush : _navInactiveBrush;
+
+            if (tab == SamplesTab) OpenSamplesTab();
+            Services.MemoryHelper.Mark(tab == 0 ? "Home" : tab == 1 ? "Search" : tab == 2 ? "Library" : "Samples");
 
             if (Services.MemoryHelper.IsLowMemoryDevice)
             {

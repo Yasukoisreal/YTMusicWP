@@ -154,6 +154,7 @@ namespace YTMusicWP
         private async void PlayTrack(YouTubeTrack track, IEnumerable<YouTubeTrack> customQueue = null, double startPosition = 0)
         {
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
+            EnsureBackgroundPlayer();
             int mySeq = ++_playTrackSequence;
             if (track.VideoId.StartsWith("CHANNEL:"))
             {
@@ -678,13 +679,13 @@ namespace YTMusicWP
             try
             {
             // [OPT-P1] Bail-out sớm TRƯỚC khi gọi Dispatcher — tiết kiệm thread switch trên WP8.1
-            if (_isSliderManipulating) return;
+            if (_isSliderManipulating || _playerDisconnected) return;
             MediaPlayer session;
             try { session = _appMediaPlayer; } catch { return; }
             if (session == null) return;
 
             MediaPlayerState stateVal;
-            try { stateVal = session.CurrentState; } catch { return; }
+            try { stateVal = session.CurrentState; } catch { MarkPlayerDisconnected(); return; }
             if (stateVal != MediaPlayerState.Playing) return;
 
             TimeSpan pos, dur;
@@ -1008,6 +1009,12 @@ namespace YTMusicWP
 
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
         {
+            TogglePlayPause(true);
+        }
+
+        private void TogglePlayPause(bool retryOnDeadPlayer)
+        {
+            EnsureBackgroundPlayer();
             try
             {
                 // FIX: Nhận diện OS đã tự đóng Background Task (State = Closed/Stopped) để ra lệnh phát tiếp tục từ vị trí đã lưu
@@ -1042,7 +1049,13 @@ namespace YTMusicWP
                 }
                 UpdateWordTimerState();
             }
-            catch { }
+            catch
+            {
+                // The audio task was closed by the OS and the cached proxy is dead: reconnect once and retry
+                // (the fresh task reports Closed, so the branch above resumes the song from its saved position)
+                MarkPlayerDisconnected();
+                if (retryOnDeadPlayer) TogglePlayPause(false);
+            }
         }
 
         private void PrevButton_Click(object sender, RoutedEventArgs e)

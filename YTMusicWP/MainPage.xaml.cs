@@ -497,6 +497,8 @@ namespace YTMusicWP
                 if (NavHomeText != null) NavHomeText.Text = isVi ? "Trang chủ" : "Home";
                 if (NavSearchText != null) NavSearchText.Text = isVi ? "Tìm kiếm" : "Search";
                 if (NavLibraryText != null) NavLibraryText.Text = isVi ? "Thư viện" : "Library";
+                if (NavSamplesText != null) NavSamplesText.Text = isVi ? "Đoạn nhạc" : "Samples";
+                if (ShortsView != null) UpdateSamplesLocalizedText();
 
                 // Home Headers
                 if (HomePullText != null) HomePullText.Text = isVi ? "Kéo để làm mới" : "Pull to refresh";
@@ -509,6 +511,47 @@ namespace YTMusicWP
                 UpdateDefaultSearchChips();
             }
             catch { }
+        }
+
+        // ==========================================
+        // BACKGROUND AUDIO TASK RECOVERY
+        // The OS can cancel the background audio task (e.g. reason=SystemPolicy while it sits paused and the
+        // Samples MediaElement owns the audio). The cached MediaPlayer proxy is then dead and every call throws,
+        // so the polling timers stop at the first failure (_playerDisconnected) and the proxy is re-acquired
+        // when playback is needed again (PlayTrack, leaving Samples, resume).
+        // ==========================================
+        private volatile bool _playerDisconnected = false;
+
+        private void MarkPlayerDisconnected()
+        {
+            if (_playerDisconnected) return;
+            _playerDisconnected = true;
+            System.Diagnostics.Debug.WriteLine("[Player] background audio task gone; polling paused until reconnect");
+        }
+
+        /// <summary>Re-acquires BackgroundMediaPlayer.Current (restarting the audio task) if it was lost. Returns true if usable.</summary>
+        private bool EnsureBackgroundPlayer()
+        {
+            if (!_playerDisconnected) return true;
+            try
+            {
+                var old = _appMediaPlayer;
+                try { if (old != null) old.CurrentStateChanged -= BackgroundMediaPlayer_CurrentStateChanged; } catch { }
+                _appMediaPlayer = BackgroundMediaPlayer.Current;
+                _appMediaPlayer.CurrentStateChanged -= BackgroundMediaPlayer_CurrentStateChanged;
+                _appMediaPlayer.CurrentStateChanged += BackgroundMediaPlayer_CurrentStateChanged;
+                BackgroundMediaPlayer.MessageReceivedFromBackground -= BackgroundMediaPlayer_MessageReceivedFromBackground;
+                BackgroundMediaPlayer.MessageReceivedFromBackground += BackgroundMediaPlayer_MessageReceivedFromBackground;
+                var probe = _appMediaPlayer.CurrentState; // throws if still unusable
+                _playerDisconnected = false;
+                System.Diagnostics.Debug.WriteLine("[Player] background audio task reconnected");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[Player] reconnect failed: " + ex.Message);
+                return false;
+            }
         }
 
         private void Current_Suspending(object sender, Windows.ApplicationModel.SuspendingEventArgs e)
@@ -525,6 +568,15 @@ namespace YTMusicWP
                 NetworkInformation.NetworkStatusChanged -= NetworkInformation_NetworkStatusChanged;
             }
             catch { }
+
+            // 512MB phones reclaim memory by terminating suspended apps, largest first: shrink before going to sleep
+            try
+            {
+                if (_shortsIsOpen) ReleaseSampleVideoForSuspend();
+                Services.MemoryHelper.TrimMemory();
+                Services.MemoryHelper.Mark("Suspended");
+            }
+            catch { }
         }
 
         private async void Current_Resuming(object sender, object e)
@@ -537,6 +589,8 @@ namespace YTMusicWP
 
                     // FIX: Làm mới lại liên kết với OS Player khi bị ngắt kết nối do ngủ đông
                     _appMediaPlayer = BackgroundMediaPlayer.Current;
+                    _playerDisconnected = false;
+                    Services.MemoryHelper.Mark("Resumed");
                     _isSliderManipulating = false; // Mở khóa thanh tua nhạc nếu bị kẹt
 
                     if (_bgTimer == null)
@@ -562,6 +616,9 @@ namespace YTMusicWP
                     }
                 }
                 catch { }
+
+                // The Samples video was released on suspend: reload the clip that was on screen
+                if (_shortsIsOpen) ResumeSampleVideoAfterSuspend();
 
                 await FlushPendingHistoryAsync();
             });

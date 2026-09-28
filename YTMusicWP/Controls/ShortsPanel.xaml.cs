@@ -5,27 +5,39 @@ using Windows.UI.Xaml.Input;
 namespace YTMusicWP.Controls
 {
     /// <summary>
-    /// Music Shorts screen. Swipe handling and playback stay in MainPage.Shorts.cs; this control forwards its events (original sender kept).
+    /// Samples tab UI. Feed loading, video playback and swiping live in MainPage.Shorts.cs;
+    /// this control only forwards its input events (original sender kept).
     /// </summary>
     public sealed partial class ShortsPanel : UserControl
     {
-        public event RoutedEventHandler ShortsBackClick;
-        public event RoutedEventHandler ShortsHeartClick;
-        public event RoutedEventHandler ShortsPlayCurrentClick;
-        public event TappedEventHandler ShortsSongBarTapped;
-        public event ManipulationCompletedEventHandler ShortsManipulationCompleted;
-        public event ManipulationDeltaEventHandler ShortsManipulationDelta;
+        public event RoutedEventHandler LikeClick;
+        public event RoutedEventHandler SaveClick;
+        public event RoutedEventHandler ShareClick;
+        public event RoutedEventHandler PlayClick;
+        public event RoutedEventHandler MoreClick;
+        public event TappedEventHandler SongBarTapped;
+        public event TappedEventHandler StageTapped;
+        public event ManipulationDeltaEventHandler SwipeDelta;
+        public event ManipulationCompletedEventHandler SwipeCompleted;
 
         public ShortsPanel()
         {
             this.InitializeComponent();
         }
 
-        private void ShortsBack_Click(object sender, RoutedEventArgs e) { if (ShortsBackClick != null) ShortsBackClick(sender, e); }
-        private void ShortsHeart_Click(object sender, RoutedEventArgs e) { if (ShortsHeartClick != null) ShortsHeartClick(sender, e); }
-        private void ShortsPlayCurrent_Click(object sender, RoutedEventArgs e) { if (ShortsPlayCurrentClick != null) ShortsPlayCurrentClick(sender, e); }
-        private void ShortsSongBar_Tapped(object sender, TappedRoutedEventArgs e) { if (ShortsSongBarTapped != null) ShortsSongBarTapped(sender, e); }
-        private void Shorts_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) { if (ShortsManipulationCompleted != null) ShortsManipulationCompleted(sender, e); }
-        private void Shorts_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e) { if (ShortsManipulationDelta != null) ShortsManipulationDelta(sender, e); }
+        private static void Raise(RoutedEventHandler handler, object sender, RoutedEventArgs e)
+        {
+            if (handler != null) handler(sender, e);
+        }
+
+        private void Like_Click(object sender, RoutedEventArgs e) { Raise(LikeClick, sender, e); }
+        private void Save_Click(object sender, RoutedEventArgs e) { Raise(SaveClick, sender, e); }
+        private void Share_Click(object sender, RoutedEventArgs e) { Raise(ShareClick, sender, e); }
+        private void Play_Click(object sender, RoutedEventArgs e) { Raise(PlayClick, sender, e); }
+        private void More_Click(object sender, RoutedEventArgs e) { Raise(MoreClick, sender, e); }
+        private void SongBar_Tapped(object sender, TappedRoutedEventArgs e) { if (SongBarTapped != null) SongBarTapped(sender, e); }
+        private void SampleStage_Tapped(object sender, TappedRoutedEventArgs e) { if (StageTapped != null) StageTapped(sender, e); }
+        private void Shorts_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e) { if (SwipeDelta != null) SwipeDelta(sender, e); }
+        private void Shorts_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) { if (SwipeCompleted != null) SwipeCompleted(sender, e); }
     }
 }

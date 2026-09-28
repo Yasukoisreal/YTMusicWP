@@ -925,6 +925,48 @@ namespace YTMusicWP
             return sectionsList;
         }
 
+        /// <summary>
+        /// Playlist ids (without "VL") of the "Video charts" shelf of FEmusic_charts for <see cref="CurrentRegion"/>,
+        /// e.g. the country's top music videos. The shelf is the first carousel of playlists on the charts page.
+        /// Region-specific and available without signing in.
+        /// </summary>
+        public static async Task<List<string>> GetVideoChartPlaylistIdsAsync(int max = 2)
+        {
+            var ids = new List<string>();
+            try
+            {
+                string vd = await GetVisitorDataAsync();
+                var body = new JObject
+                {
+                    ["context"] = BuildMusicContext(vd),
+                    ["browseId"] = "FEmusic_charts",
+                    ["formData"] = new JObject { ["selectedValues"] = new JArray(CurrentRegion) }
+                };
+                var data = await PostInnerTubeAsync("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", body, true);
+                var sections = data?["contents"]?["singleColumnBrowseResultsRenderer"]?["tabs"]?[0]
+                    ?["tabRenderer"]?["content"]?["sectionListRenderer"]?["contents"];
+                if (sections == null) return ids;
+
+                foreach (var sec in sections)
+                {
+                    var items = sec["musicCarouselShelfRenderer"]?["contents"];
+                    if (items == null) continue;
+                    foreach (var item in items)
+                    {
+                        string browseId = item["musicTwoRowItemRenderer"]?["navigationEndpoint"]?["browseEndpoint"]?["browseId"]?.ToString();
+                        if (!string.IsNullOrEmpty(browseId) && browseId.StartsWith("VL"))
+                        {
+                            ids.Add(browseId.Substring(2));
+                            if (ids.Count >= max) return ids;
+                        }
+                    }
+                    if (ids.Count > 0) return ids; // only the first playlist shelf (video charts)
+                }
+            }
+            catch { }
+            return ids;
+        }
+
         private static async Task<List<DiscoverItem>> FetchCarouselItemsAsync(string browseId)
         {
             var items = new List<DiscoverItem>();

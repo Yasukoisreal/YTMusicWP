@@ -49,6 +49,56 @@ namespace YTMusicWP.Services
                 MemoryManager.AppMemoryUsageIncreased += MemoryManager_AppMemoryUsageIncreased;
             }
             catch { }
+            StartUsageSampler();
+        }
+
+        // ==========================================
+        // DEBUG MEMORY PROFILING ("[Memory]" lines in the Output window)
+        // Samples AppMemoryUsage every 2s, tracks the peak and logs whenever usage moves by >= 3 MB, tagged with
+        // the last screen passed to Mark(). Compiled out of Release builds.
+        // ==========================================
+        private const ulong SampleLogStepBytes = 3UL * 1024 * 1024;
+        private static System.Threading.Timer _sampler;
+        private static ulong _peakUsage;
+        private static ulong _lastLoggedUsage;
+        private static string _currentScreen = "Startup";
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        private static void StartUsageSampler()
+        {
+            _sampler = new System.Threading.Timer(_ =>
+            {
+                try
+                {
+                    ulong usage = MemoryManager.AppMemoryUsage;
+                    if (usage > _peakUsage) _peakUsage = usage;
+                    ulong diff = usage > _lastLoggedUsage ? usage - _lastLoggedUsage : _lastLoggedUsage - usage;
+                    if (diff >= SampleLogStepBytes) LogUsage(_currentScreen);
+                }
+                catch { }
+            }, null, 2000, 2000);
+        }
+
+        /// <summary>Tags the following memory samples with <paramref name="screen"/> and logs the current usage.</summary>
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void Mark(string screen)
+        {
+            _currentScreen = screen;
+            LogUsage(screen);
+        }
+
+        private static void LogUsage(string screen)
+        {
+            try
+            {
+                ulong usage = MemoryManager.AppMemoryUsage;
+                ulong limit = MemoryManager.AppMemoryUsageLimit;
+                if (usage > _peakUsage) _peakUsage = usage;
+                _lastLoggedUsage = usage;
+                System.Diagnostics.Debug.WriteLine(string.Format("[Memory] {0}: {1:0.0} MB / {2:0} MB ({3:0}%), peak {4:0.0} MB, level {5}",
+                    screen, usage / 1048576.0, limit / 1048576.0, limit > 0 ? usage * 100.0 / limit : 0, _peakUsage / 1048576.0, MemoryManager.AppMemoryUsageLevel));
+            }
+            catch { }
         }
 
         private static void MemoryManager_AppMemoryUsageIncreased(object sender, object e)

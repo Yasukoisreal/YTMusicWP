@@ -16,727 +16,615 @@ namespace YTMusicWP
     public sealed partial class MainPage
     {
         // ==========================================
-        // MUSIC SHORTS — Spotify Clips-style Discovery
+        // SAMPLES TAB (YouTube Music "Samples" / Shorts)
+        // Full-screen music video clips played with a foreground MediaElement (itag 18 360p MP4).
+        // Feed, all dynamic and localized through the InnerTube context (hl/gl) like the Home tab:
+        //   1. music videos on the user's Home (FEmusic_home; only signed-in homes contain videos),
+        //   2. the region's "Video charts" playlists (FEmusic_charts + formData gl), paged on demand.
+        // FEmusic_immersive, the real Samples browse, only answers signed-in Android clients, so it is not used.
         // ==========================================
 
-        private static readonly string[] _shortsCategories = {
-            "EDM", "K-Pop", "Pop", "Lofi", "Hip-Hop", "Rock", "Anime", "V-Pop"
-        };
+        private const int SamplesTab = 3;
+        private const double SampleClipSeconds = 30.0;   // length of the looping clip
 
-        private static readonly string[] _shortsCategoryQueries = {
-            "EDM Dance House Hits",
-            "K-Pop Trending Hits",
-            "Pop Music Hits",
-            "Lofi Chill Beats",
-            "Hip-Hop Rap Hits",
-            "Rock Music Hits",
-            "Anime OST Hits",
-            "V-Pop Vietnamese Hits"
-        };
+        private List<YouTubeTrack> _samples = new List<YouTubeTrack>();
+        private int _sampleIndex = 0;
+        // Chart playlists that still have more pages: playlist id -> continuation token
+        private readonly List<KeyValuePair<string, string>> _samplesMoreSources = new List<KeyValuePair<string, string>>();
+        private string _samplesLocale;                   // hl/gl the feed was built for
+        private DateTime _samplesLoadedAt = DateTime.MinValue;
+        private readonly HashSet<string> _samplesSeen = new HashSet<string>();
+        private readonly Random _samplesRandom = new Random();
+        private YouTubeTrack _pendingSampleTrack;        // opened from elsewhere (e.g. Home charts)
 
-        private static readonly string[] _shortsCategoryHashtags = {
-            "#edm|#dance|#house",
-            "#kpop|#korean|#idol",
-            "#pop|#hits|#trending",
-            "#lofi|#chill|#relax",
-            "#hiphop|#rap|#trap",
-            "#rock|#alternative|#indie",
-            "#anime|#ost|#japan",
-            "#vpop|#vietnam|#nhạc việt"
-        };
-
-        // Genre keywords for matching history tracks
-        private static readonly string[][] _shortsCategoryKeywords = {
-            new[] { "edm", "dance", "house", "electronic", "dj", "remix", "trance", "dubstep" },
-            new[] { "kpop", "k-pop", "korean", "bts", "blackpink", "twice", "stray kids", "aespa", "ive", "newjeans" },
-            new[] { "pop", "hit", "billboard", "top 40", "chart", "taylor swift", "ed sheeran", "ariana", "bruno mars" },
-            new[] { "lofi", "lo-fi", "chill", "relax", "study", "beats", "ambient" },
-            new[] { "hip hop", "hip-hop", "rap", "trap", "drake", "kendrick", "eminem", "kanye", "21 savage" },
-            new[] { "rock", "metal", "punk", "alternative", "indie rock", "guitar", "linkin park" },
-            new[] { "anime", "ost", "opening", "ending", "japanese", "naruto", "one piece", "jujutsu" },
-            new[] { "vpop", "v-pop", "vietnam", "nhạc", "sơn tùng", "jack", "bích phương", "đen vâu", "hoàng thùy linh" }
-        };
-
-        // Category display order (reordered by history analysis)
-        private int[] _shortsCategoryOrder;
-
-        private int _shortsCategoryIndex = 0;
-        private int _shortsSongIndex = 0;
-        private List<YouTubeTrack> _shortsSongs = new List<YouTubeTrack>();
-        private Dictionary<int, List<YouTubeTrack>> _shortsCategoryCache = new Dictionary<int, List<YouTubeTrack>>();
-        private DateTime _shortsCacheTime = DateTime.MinValue;
         private bool _shortsIsOpen = false;
-        private int _shortsLoadGeneration = 0; // Cancel stale loads
+        private int _samplesGeneration = 0;              // cancels stale resolves when swiping fast
+        private bool _samplesLoadingMore = false;
+        private bool _samplesWasMainPlaying = false;
+        private YouTubeTrack _samplesSavedTrack;
+        private TimeSpan _samplesSavedPosition;
+        private bool _samplesUserPaused = false;
+        private TimeSpan _sampleClipStart = TimeSpan.Zero;
+        private DispatcherTimer _shortsLoopTimer;
+        private bool _samplesEventsHooked = false;
 
-        // [OPT] Cached brushes for dot indicators — avoid allocation on every swipe
-        private static readonly SolidColorBrush _dotActiveBrush = new SolidColorBrush(Colors.White);
-        private static readonly SolidColorBrush _dotInactiveBrush = new SolidColorBrush(Color.FromArgb(120, 255, 255, 255));
-
-        // [OPT] Cached FontFamily — avoid allocation on every swipe/hashtag update
-        private static readonly FontFamily _shortsSemiBoldFont = new FontFamily("/Assets/Fonts/Montserrat-SemiBold.ttf#Montserrat");
-
-        /// <summary>
-        /// Analyze historyTracks to score each category and reorder
-        /// </summary>
-        private void BuildSmartCategoryOrder()
+        // ==========================================
+        // OPEN / CLOSE (driven by SwitchTab)
+        // ==========================================
+        private void NavSamples_Click(object sender, RoutedEventArgs e)
         {
-            var scores = new int[_shortsCategories.Length];
+            SwitchTab(SamplesTab);
+        }
 
-            if (historyTracks != null && historyTracks.Count > 0)
+        /// <summary>Opens the Samples tab starting with a specific track (e.g. a video from the Home charts).</summary>
+        private void OpenShortsWithTrack(YouTubeTrack track)
+        {
+            _pendingSampleTrack = track;
+            if (_currentTab == SamplesTab && _shortsIsOpen)
             {
-                foreach (var track in historyTracks)
-                {
-                    string title = (track.Title ?? "").ToLowerInvariant();
-                    string channel = (track.ChannelName ?? "").ToLowerInvariant();
-                    string combined = title + " " + channel;
-
-                    for (int i = 0; i < _shortsCategoryKeywords.Length; i++)
-                    {
-                        foreach (var keyword in _shortsCategoryKeywords[i])
-                        {
-                            if (combined.Contains(keyword))
-                            {
-                                scores[i]++;
-                                break; // One match per track per category
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Build ordered index array
-            _shortsCategoryOrder = new int[_shortsCategories.Length];
-            for (int i = 0; i < _shortsCategories.Length; i++) _shortsCategoryOrder[i] = i;
-
-            // Sort by score descending (categories with most matches first)
-            // If no history (all scores 0), use default trending order: Pop, K-Pop, EDM, Lofi, Hip-Hop, V-Pop, Rock, Anime
-            bool hasHistory = scores.Any(s => s > 0);
-            if (hasHistory)
-            {
-                Array.Sort(_shortsCategoryOrder, (a, b) => scores[b].CompareTo(scores[a]));
+                InsertPendingSample();
+                ShowSample(_sampleIndex);
             }
             else
             {
-                // Default trending order
-                _shortsCategoryOrder = new[] { 2, 1, 0, 3, 4, 7, 5, 6 }; // Pop, K-Pop, EDM, Lofi, Hip-Hop, V-Pop, Rock, Anime
+                SwitchTab(SamplesTab);
             }
         }
 
-        // ==========================================
-        // OPEN / CLOSE
-        // ==========================================
-        private bool _shortsWasMainPlaying = false;
-
-        private async void OpenShortsView(int categoryIndex = 0)
+        private void OpenShortsView(int unused = 0)
         {
-            _shortsCategoryIndex = categoryIndex;
-            _shortsIsOpen = true;
+            SwitchTab(SamplesTab);
+        }
 
-            // Save current main player state to restore on exit
+        /// <summary>Called by SwitchTab when the Samples tab becomes active.</summary>
+        private async void OpenSamplesTab()
+        {
+            HookSampleVideoEvents();
+            _shortsIsOpen = true;
+            _samplesUserPaused = false;
+
+            // The main (background) player and the foreground MediaElement must not play at the same time
             try
             {
-                _shortsSavedTrack = currentTrack;
-                _shortsSavedPosition = _appMediaPlayer != null ? _appMediaPlayer.Position : TimeSpan.Zero;
-                _shortsWasMainPlaying = _appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing;
+                _samplesWasMainPlaying = !_playerDisconnected && _appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing;
+                if (_samplesWasMainPlaying)
+                {
+                    _samplesSavedTrack = currentTrack;
+                    _samplesSavedPosition = _appMediaPlayer.Position;
+                    _appMediaPlayer.Pause();
+                }
             }
-            catch
-            {
-                _shortsSavedTrack = null;
-                _shortsWasMainPlaying = false;
-            }
-
-            // Smart category ordering based on listening history
-            BuildSmartCategoryOrder();
-
-            // Build category dots
-            BuildCategoryDots();
+            catch { _samplesWasMainPlaying = false; }
 
             ShortsView.Visibility = Visibility.Visible;
+            ShortsView.Opacity = 1;
+            ShortsView.SampleStageTransform.Y = 0;
 
-            // Slide-in animation
-            var sb = new Storyboard();
-            var anim = new DoubleAnimation
+            string locale = InnerTubeClient.CurrentLanguage + "-" + InnerTubeClient.CurrentRegion;
+            bool stale = _samples.Count == 0 || _samplesLocale != locale || (DateTime.Now - _samplesLoadedAt).TotalMinutes > 30;
+            if (stale)
             {
-                From = 1000,
-                To = 0,
-                Duration = new Duration(TimeSpan.FromMilliseconds(250)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            Storyboard.SetTarget(anim, ShortsView.ShortsTransform);
-            Storyboard.SetTargetProperty(anim, "Y");
-            sb.Children.Add(anim);
-            sb.Begin();
-
-            // Check cache validity (24h)
-            if ((DateTime.Now - _shortsCacheTime).TotalHours >= 24)
-            {
-                _shortsCategoryCache.Clear();
-                _shortsCacheTime = DateTime.Now;
+                ShowSampleMessage(null);
+                ShortsView.SampleLoading.IsActive = true;
+                ShortsView.SampleTitle.Text = "";
+                ShortsView.SampleArtist.Text = "";
+                await LoadSamplesFeedAsync(locale);
+                if (!_shortsIsOpen) return;
             }
 
-            await LoadShortsCategoryAsync(GetRealCategoryIndex(_shortsCategoryIndex));
+            InsertPendingSample();
+
+            if (_samples.Count == 0)
+            {
+                ShortsView.SampleLoading.IsActive = false;
+                ShowSampleMessage(SamplesVi ? "Chưa có đoạn nhạc nào.\nHãy kiểm tra kết nối rồi thử lại." : "No samples available right now.\nCheck your connection and try again.");
+                return;
+            }
+            ShowSample(Math.Min(_sampleIndex, _samples.Count - 1));
+        }
+
+        /// <summary>App suspending: drop the video (decoder + network buffers) but keep the tab and feed as they are.</summary>
+        private void ReleaseSampleVideoForSuspend()
+        {
+            _samplesGeneration++;
+            StopShortsLoop();
+            StopSampleVideo();
+            ShortsView.SampleLoading.IsActive = false;
+        }
+
+        private void ResumeSampleVideoAfterSuspend()
+        {
+            if (_samples.Count > 0 && _currentTab == SamplesTab) ShowSample(Math.Min(_sampleIndex, _samples.Count - 1));
+        }
+
+        /// <summary>Called by SwitchTab when leaving the Samples tab (and by the back key).</summary>
+        private void CloseShortsView(bool keepMainPaused = false)
+        {
+            if (!_shortsIsOpen) return;
+            _shortsIsOpen = false;
+            _samplesGeneration++;
+            StopShortsLoop();
+            StopSampleVideo();
+
+            ShortsView.Visibility = Visibility.Collapsed;
+            ShortsView.SamplePoster.ImageSource = null;
+            ShortsView.SampleCover.ImageSource = null;
+
+            if (_samplesWasMainPlaying && !keepMainPaused)
+            {
+                if (_playerDisconnected)
+                {
+                    // The OS closed the paused audio task while the video played: start the song again where it was
+                    if (_samplesSavedTrack != null) PlayTrack(_samplesSavedTrack, null, _samplesSavedPosition.TotalSeconds);
+                }
+                else
+                {
+                    try { _appMediaPlayer.Play(); } catch { MarkPlayerDisconnected(); }
+                }
+            }
+            _samplesWasMainPlaying = false;
+            _samplesSavedTrack = null;
+        }
+
+        private void InsertPendingSample()
+        {
+            var track = _pendingSampleTrack;
+            _pendingSampleTrack = null;
+            if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
+
+            int existing = _samples.FindIndex(t => t.VideoId == track.VideoId);
+            if (existing >= 0) _samples.RemoveAt(existing);
+            int at = Math.Min(_sampleIndex, _samples.Count);
+            _samples.Insert(at, track);
+            _sampleIndex = at;
+        }
+
+        // ==========================================
+        // FEED (Home videos + region video charts, localized by hl/gl)
+        // ==========================================
+        private async Task LoadSamplesFeedAsync(string locale)
+        {
+            var ids = new HashSet<string>();
+            var fromHome = new List<YouTubeTrack>();
+            var fromCharts = new List<YouTubeTrack>();
+            _samplesMoreSources.Clear();
+
+            // 1. Music videos on the user's Home (already loaded for the same language/region/account)
+            if (_homeDynamicSections != null)
+                AddSampleVideos(_homeDynamicSections.SelectMany(s => s.Tracks ?? Enumerable.Empty<YouTubeTrack>()), fromHome, ids, true);
+
+            // 2. The region's video chart playlists
+            try
+            {
+                var playlistIds = await InnerTubeClient.GetVideoChartPlaylistIdsAsync(2);
+                foreach (var playlistId in playlistIds)
+                {
+                    var page = await InnerTubeClient.BrowsePlaylistAsync(playlistId);
+                    if (page == null) continue;
+                    AddSampleVideos(page.Tracks, fromCharts, ids, false);
+                    if (!string.IsNullOrEmpty(page.ContinuationToken))
+                        _samplesMoreSources.Add(new KeyValuePair<string, string>(playlistId, page.ContinuationToken));
+                }
+            }
+            catch { }
+
+            // Personal videos first, then charts; unseen before already-seen, each group shuffled
+            _samples = OrderForSamples(fromHome).Concat(OrderForSamples(fromCharts)).ToList();
+            _sampleIndex = 0;
+            _samplesLocale = locale;
+            _samplesLoadedAt = DateTime.Now;
+        }
+
+        private List<YouTubeTrack> OrderForSamples(List<YouTubeTrack> tracks)
+        {
+            var unseen = tracks.Where(t => !_samplesSeen.Contains(t.VideoId)).ToList();
+            var seen = tracks.Where(t => _samplesSeen.Contains(t.VideoId)).ToList();
+            Shuffle(unseen);
+            Shuffle(seen);
+            return unseen.Concat(seen).ToList();
+        }
+
+        /// <summary>Appends the next page of a chart playlist when the user nears the end of the feed.</summary>
+        private async void LoadMoreSamplesAsync()
+        {
+            if (_samplesLoadingMore || _samplesMoreSources.Count == 0) return;
+            _samplesLoadingMore = true;
+            try
+            {
+                var source = _samplesMoreSources[0];
+                _samplesMoreSources.RemoveAt(0);
+                var page = await InnerTubeClient.BrowsePlaylistAsync(source.Key, source.Value);
+                if (page != null)
+                {
+                    var more = new List<YouTubeTrack>();
+                    AddSampleVideos(page.Tracks, more, new HashSet<string>(_samples.Select(t => t.VideoId)), false);
+                    Shuffle(more);
+                    _samples.AddRange(more);
+                    if (!string.IsNullOrEmpty(page.ContinuationToken))
+                        _samplesMoreSources.Add(new KeyValuePair<string, string>(source.Key, page.ContinuationToken));
+                }
+            }
+            catch { }
+            finally { _samplesLoadingMore = false; }
+        }
+
+        private static void AddSampleVideos(IEnumerable<YouTubeTrack> tracks, List<YouTubeTrack> feed, HashSet<string> ids, bool requireVideoThumbnail)
+        {
+            if (tracks == null) return;
+            foreach (var t in tracks)
+            {
+                if (IsSampleCandidate(t, requireVideoThumbnail) && ids.Add(t.VideoId)) feed.Add(t);
+            }
         }
 
         /// <summary>
-        /// Open Shorts with a specific track (from Discover click).
-        /// Injects the track at position 0, then loads the rest from the category.
+        /// A playable video id (not a playlist/channel/offline file). Home mixes audio-only "songs" (square
+        /// googleusercontent artwork) with music videos, so for Home a YouTube video thumbnail (i.ytimg.com)
+        /// is required; chart playlists contain only videos.
         /// </summary>
-        private async void OpenShortsWithTrack(YouTubeTrack track)
+        private static bool IsSampleCandidate(YouTubeTrack t, bool requireVideoThumbnail)
         {
-            _shortsCategoryIndex = 0;
-            _shortsIsOpen = true;
-
-            // Save current main player state to restore on exit
-            try
-            {
-                _shortsSavedTrack = currentTrack;
-                _shortsSavedPosition = _appMediaPlayer != null ? _appMediaPlayer.Position : TimeSpan.Zero;
-                _shortsWasMainPlaying = _appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing;
-            }
-            catch
-            {
-                _shortsSavedTrack = null;
-                _shortsWasMainPlaying = false;
-            }
-
-            BuildSmartCategoryOrder();
-            BuildCategoryDots();
-
-            ShortsView.Visibility = Visibility.Visible;
-
-            // Slide-in animation
-            var sb = new Storyboard();
-            var anim = new DoubleAnimation
-            {
-                From = 1000,
-                To = 0,
-                Duration = new Duration(TimeSpan.FromMilliseconds(250)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            };
-            Storyboard.SetTarget(anim, ShortsView.ShortsTransform);
-            Storyboard.SetTargetProperty(anim, "Y");
-            sb.Children.Add(anim);
-            sb.Begin();
-
-            // Pre-load this specific track as the first item
-            _shortsSongs = new List<YouTubeTrack> { track };
-            _shortsSongIndex = 0;
-            _shortsLoadGeneration++;
-            DisplayCurrentShort();
-
-            // Then load more tracks from category in background
-            try
-            {
-                int realCat = GetRealCategoryIndex(0);
-                var result = await InnerTubeClient.SearchWithContinuationAsync(
-                    _shortsCategoryQueries[realCat], 10);
-                if (result != null && result.Tracks != null)
-                {
-                    var moreTracks = result.Tracks
-                        .Where(t => !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:")
-                                    && t.VideoId != track.VideoId)
-                        .Take(9)
-                        .ToList();
-                    _shortsSongs.AddRange(moreTracks);
-                }
-            }
-            catch { }
+            if (t == null || string.IsNullOrEmpty(t.VideoId) || t.VideoId.Contains(":")) return false;
+            if (!requireVideoThumbnail) return true;
+            string thumb = t.ThumbnailUrl ?? "";
+            return thumb.IndexOf("ytimg.com", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        private void CloseShortsView(bool keepPlaying = false)
+        private void Shuffle<T>(IList<T> list)
         {
-            _shortsIsOpen = false;
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = _samplesRandom.Next(i + 1);
+                T tmp = list[i]; list[i] = list[j]; list[j] = tmp;
+            }
+        }
 
-            // Stop waveform + loop timer
-            if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
+        // ==========================================
+        // SHOW / PLAY ONE SAMPLE
+        // ==========================================
+        private YouTubeTrack CurrentSample
+        {
+            get { return (_sampleIndex >= 0 && _sampleIndex < _samples.Count) ? _samples[_sampleIndex] : null; }
+        }
+
+        private async void ShowSample(int index)
+        {
+            if (index < 0 || index >= _samples.Count) return;
+            _sampleIndex = index;
+            int gen = ++_samplesGeneration;
+            var track = _samples[index];
+            _samplesSeen.Add(track.VideoId);
+            _samplesUserPaused = false;
+
             StopShortsLoop();
+            StopSampleVideo();
+            ShowSampleMessage(null);
+            ShortsView.SamplePausedIcon.Visibility = Visibility.Collapsed;
+            ShortsView.SampleProgress.Value = 0;
+            ShortsView.SampleLoading.IsActive = true;
 
-            // Stop shorts audio (unless keeping current track playing)
-            if (!keepPlaying)
+            ShortsView.SampleTitle.Text = track.Title ?? "";
+            ShortsView.SampleArtist.Text = track.ChannelName ?? "";
+            UpdateSampleLikeState(track);
+
+            // Poster = HQ video frame, cover = small thumbnail; decoded small to keep 512MB devices happy
+            ShortsView.SamplePoster.ImageSource = CreateSampleBitmap("https://i.ytimg.com/vi/" + track.VideoId + "/hqdefault.jpg", 480);
+            ShortsView.SampleCover.ImageSource = CreateSampleBitmap(track.ThumbnailUrl, 104);
+
+            if (index >= _samples.Count - 3) LoadMoreSamplesAsync();
+
+            string url;
+            if (!_sampleUrlCache.TryGetValue(track.VideoId, out url))
             {
-                try { if (_appMediaPlayer != null) _appMediaPlayer.Pause(); } catch { }
+                try { url = await InnerTubeClient.ResolveStreamUrlAsync(track.VideoId, false, true); }
+                catch { url = null; }
             }
+            if (gen != _samplesGeneration || !_shortsIsOpen) return;
 
-            // Restore previous track if it was playing
-            if (_shortsWasMainPlaying && _shortsSavedTrack != null)
+            if (string.IsNullOrEmpty(url))
             {
-                try
-                {
-                    PlayTrack(_shortsSavedTrack);
-                    // Restore position after a brief delay
-                    var restoreTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
-                    var savedPos = _shortsSavedPosition;
-                    restoreTimer.Tick += (ts, te) =>
-                    {
-                        restoreTimer.Stop();
-                        try { if (_appMediaPlayer != null) _appMediaPlayer.Position = savedPos; } catch { }
-                    };
-                    restoreTimer.Start();
-                }
-                catch { }
-            }
-
-            var sb = new Storyboard();
-            var anim = new DoubleAnimation
-            {
-                From = 0,
-                To = 1000,
-                Duration = new Duration(TimeSpan.FromMilliseconds(200)),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-            };
-            Storyboard.SetTarget(anim, ShortsView.ShortsTransform);
-            Storyboard.SetTargetProperty(anim, "Y");
-            sb.Children.Add(anim);
-            sb.Completed += (s, e) =>
-            {
-                ShortsView.Visibility = Visibility.Collapsed;
-                try
-                {
-                    ShortsView.ShortsBlurBg.ImageSource = null;
-                    ShortsView.ShortsCoverArt.ImageSource = null;
-                    ShortsView.ShortsMiniCover.ImageSource = null;
-                    ShortsView.ShortsArtistAvatarBrush.ImageSource = null;
-                }
-                catch { }
-            };
-            sb.Begin();
-        }
-
-        // ==========================================
-        // CATEGORY DOTS
-        // ==========================================
-        private int GetRealCategoryIndex(int displayIndex)
-        {
-            if (_shortsCategoryOrder != null && displayIndex < _shortsCategoryOrder.Length)
-                return _shortsCategoryOrder[displayIndex];
-            return displayIndex;
-        }
-
-        private void BuildCategoryDots()
-        {
-            ShortsView.ShortsCategoryDots.Children.Clear();
-            for (int i = 0; i < _shortsCategories.Length; i++)
-            {
-                int idx = i;
-                var dot = new Border
-                {
-                    Width = i == _shortsCategoryIndex ? 20 : 8,
-                    Height = 8,
-                    CornerRadius = new CornerRadius(4),
-                    Background = i == _shortsCategoryIndex ? _dotActiveBrush : _dotInactiveBrush,
-                    Margin = new Thickness(3, 0, 3, 0)
-                };
-                dot.Tapped += (s, e) => SwitchShortsCategory(idx);
-                ShortsView.ShortsCategoryDots.Children.Add(dot);
-            }
-
-            ShortsView.ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
-        }
-
-        private void UpdateCategoryDots()
-        {
-            for (int i = 0; i < ShortsView.ShortsCategoryDots.Children.Count; i++)
-            {
-                var dot = ShortsView.ShortsCategoryDots.Children[i] as Border;
-                if (dot == null) continue;
-                dot.Width = i == _shortsCategoryIndex ? 20 : 8;
-                dot.Background = i == _shortsCategoryIndex ? _dotActiveBrush : _dotInactiveBrush;
-            }
-            ShortsView.ShortsCategoryTitle.Text = "#" + _shortsCategories[GetRealCategoryIndex(_shortsCategoryIndex)].ToLower();
-        }
-
-        private async void SwitchShortsCategory(int index)
-        {
-            if (index < 0 || index >= _shortsCategories.Length) return;
-            _shortsCategoryIndex = index;
-            _shortsSongIndex = 0;
-            UpdateCategoryDots();
-
-            // Stop current audio immediately so old category song doesn't keep playing
-            StopShortsLoop();
-            if (_waveformStoryboard != null) { _waveformStoryboard.Stop(); _waveformStoryboard = null; }
-            try { if (_appMediaPlayer != null) _appMediaPlayer.Pause(); } catch { }
-
-            // Increment generation to cancel any in-flight PlayTrack from old category
-            _shortsLoadGeneration++;
-
-            await LoadShortsCategoryAsync(GetRealCategoryIndex(index));
-        }
-
-        // ==========================================
-        // LOAD SONGS FOR CATEGORY
-        // ==========================================
-        private async Task LoadShortsCategoryAsync(int categoryIndex)
-        {
-            int myGeneration = _shortsLoadGeneration;
-
-            // Check cache
-            if (_shortsCategoryCache.ContainsKey(categoryIndex) && _shortsCategoryCache[categoryIndex].Count > 0)
-            {
-                _shortsSongs = _shortsCategoryCache[categoryIndex];
-                _shortsSongIndex = 0;
-                if (myGeneration == _shortsLoadGeneration) DisplayCurrentShort();
+                ShortsView.SampleLoading.IsActive = false;
+                ShowSampleMessage(SampleUnplayableText);
                 return;
             }
 
-            // Show loading
-            ShortsView.ShortsSongTitle.Text = "Loading...";
-            ShortsView.ShortsSongArtist.Text = "";
-
+            _currentClipStartTask = GetClipStartTask(track.VideoId, url);
             try
             {
-                var result = await InnerTubeClient.SearchWithContinuationAsync(
-                    _shortsCategoryQueries[categoryIndex], 10);
-
-                // Check if user already switched to another category
-                if (myGeneration != _shortsLoadGeneration) return;
-
-                if (result != null && result.Tracks != null && result.Tracks.Count > 0)
-                {
-                    // Filter out playlists/channels — only songs/videos
-                    _shortsSongs = result.Tracks
-                        .Where(t => !t.VideoId.StartsWith("PLAYLIST:") && !t.VideoId.StartsWith("CHANNEL:"))
-                        .Take(10)
-                        .ToList();
-
-                    if (_shortsSongs.Count > 0)
-                    {
-                        _shortsCategoryCache[categoryIndex] = _shortsSongs;
-                        _shortsSongIndex = 0;
-                        if (myGeneration == _shortsLoadGeneration) DisplayCurrentShort();
-                        return;
-                    }
-                }
+                ShortsView.SampleVideo.Source = new Uri(url);
             }
-            catch { }
-
-            if (myGeneration == _shortsLoadGeneration)
+            catch
             {
-                ShortsView.ShortsSongTitle.Text = "No results";
-                ShortsView.ShortsSongArtist.Text = "Try another category";
+                ShortsView.SampleLoading.IsActive = false;
+                ShowSampleMessage(SampleUnplayableText);
             }
         }
 
-        // ==========================================
-        // DISPLAY CURRENT SHORT
-        // ==========================================
-        private Storyboard _waveformStoryboard;
-
-        private void DisplayCurrentShort()
+        private static BitmapImage CreateSampleBitmap(string url, int decodeWidth)
         {
-            if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
-
-            int myGen = _shortsLoadGeneration;
-            var track = _shortsSongs[_shortsSongIndex];
-
-            // Song info
-            ShortsView.ShortsSongTitle.Text = track.Title;
-            ShortsView.ShortsSongArtist.Text = track.ChannelName;
-            ShortsView.ShortsArtistName.Text = track.ChannelName;
-            ShortsView.ShortsArtistSub.Text = "";
-
-            // Thumbnail — release previous image surfaces first to avoid RAM inflation during swipes
+            if (string.IsNullOrEmpty(url)) return null;
             try
             {
-                ShortsView.ShortsBlurBg.ImageSource = null;
-                ShortsView.ShortsCoverArt.ImageSource = null;
-                ShortsView.ShortsMiniCover.ImageSource = null;
-                ShortsView.ShortsArtistAvatarBrush.ImageSource = null;
+                var bmp = new BitmapImage { DecodePixelWidth = decodeWidth };
+                bmp.UriSource = new Uri(url, UriKind.Absolute);
+                return bmp;
+            }
+            catch { return null; }
+        }
+
+        private void StopSampleVideo()
+        {
+            _sampleWaitingSeek = false;
+            _sampleRevealPending = false;
+            if (_sampleSeekFallback != null) _sampleSeekFallback.Stop();
+            try
+            {
+                ShortsView.SampleVideo.Stop();
+                ShortsView.SampleVideo.Source = null;
+                ShowSamplePoster();
             }
             catch { }
+        }
 
-            string thumbUrl = GetHighResThumbnail(track.ThumbnailUrl);
-            if (!string.IsNullOrEmpty(thumbUrl))
+        private void ShowSampleMessage(string message)
+        {
+            ShortsView.SampleMessage.Text = message ?? "";
+            ShortsView.SampleMessage.Visibility = string.IsNullOrEmpty(message) ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        // ==========================================
+        // MEDIAELEMENT EVENTS
+        // ==========================================
+        private void HookSampleVideoEvents()
+        {
+            if (_samplesEventsHooked) return;
+            _samplesEventsHooked = true;
+            ShortsView.SampleVideo.MediaOpened += SampleVideo_MediaOpened;
+            ShortsView.SampleVideo.MediaFailed += SampleVideo_MediaFailed;
+            ShortsView.SampleVideo.MediaEnded += SampleVideo_MediaEnded;
+            ShortsView.SampleVideo.SeekCompleted += SampleVideo_SeekCompleted;
+        }
+
+        private async void SampleVideo_MediaOpened(object sender, RoutedEventArgs e)
+        {
+            if (!_shortsIsOpen) { StopSampleVideo(); return; }
+            int gen = _samplesGeneration;
+            try
             {
+                // A full song started from "Play" may be running in the main player: never play both
                 try
                 {
-                    // Blurred background: 30px decode → pixelated/blurred when stretched
-                    var blurBmp = new BitmapImage();
-                    blurBmp.DecodePixelWidth = 30;
-                    blurBmp.UriSource = new Uri(thumbUrl, UriKind.Absolute);
-                    ShortsView.ShortsBlurBg.ImageSource = blurBmp;
-
-                    // Cover art in center (crisp)
-                    var coverBmp = new BitmapImage();
-                    coverBmp.DecodePixelWidth = 240;
-                    coverBmp.UriSource = new Uri(thumbUrl, UriKind.Absolute);
-                    ShortsView.ShortsCoverArt.ImageSource = coverBmp;
-                    ShortsView.ShortsCoverArtPanel.Visibility = Visibility.Visible;
-
-                    // Mini cover
-                    var miniCoverBmp = new BitmapImage();
-                    miniCoverBmp.DecodePixelWidth = 50;
-                    miniCoverBmp.UriSource = new Uri(track.ThumbnailUrl, UriKind.Absolute);
-                    ShortsView.ShortsMiniCover.ImageSource = miniCoverBmp;
-
-                    // Artist avatar
-                    var avatarBmp = new BitmapImage();
-                    avatarBmp.DecodePixelWidth = 40;
-                    avatarBmp.UriSource = new Uri(track.ThumbnailUrl, UriKind.Absolute);
-                    ShortsView.ShortsArtistAvatarBrush.ImageSource = avatarBmp;
+                    if (_appMediaPlayer != null && _appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                        _appMediaPlayer.Pause();
                 }
                 catch { }
-            }
 
-            // Start waveform animation
-            StartWaveformAnimation();
-
-            // Update hashtags
-            UpdateShortsHashtags();
-
-            // Only play if this is still the active generation (not overridden by a newer category switch)
-            if (myGen == _shortsLoadGeneration)
-            {
-                PlayShortsAudio(track.VideoId, myGen);
-            }
-
-            // Update heart state
-            bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
-            ShortsView.ShortsHeartBtn.Text = isFav ? "♥" : "♡";
-            ShortsView.ShortsHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
-            UpdateShortsPauseIcon(true);
-        }
-
-        private void StartWaveformAnimation()
-        {
-            // Stop previous
-            if (_waveformStoryboard != null)
-            {
-                _waveformStoryboard.Stop();
-                _waveformStoryboard = null;
-            }
-
-            _waveformStoryboard = new Storyboard();
-
-            var rand = new Random();
-
-            // Animate all waveform bars (children of the two StackPanels in ShortsView.ShortsCoverArtPanel)
-            foreach (var child in ShortsView.ShortsCoverArtPanel.Children)
-            {
-                var panel = child as StackPanel;
-                if (panel == null) continue;
-
-                foreach (var bar in panel.Children)
+                // Start about a third into the video (past the intro) like YouTube Music Samples, but exactly on a
+                // keyframe read from the MP4 index; without one (moov at the end, network error) start at 0.
+                double start = 0;
+                var startTask = _currentClipStartTask;
+                if (startTask != null)
                 {
-                    var border = bar as Border;
-                    if (border == null) continue;
-
-                    // Ensure each bar has a ScaleTransform
-                    if (border.RenderTransform == null || !(border.RenderTransform is ScaleTransform))
-                    {
-                        border.RenderTransform = new ScaleTransform { ScaleY = 1, CenterY = 0.5 };
-                        border.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
-                    }
-
-                    var scaleTransform = border.RenderTransform as ScaleTransform;
-
-                    // Smooth animation: longer duration + easing
-                    double minScale = 0.2 + rand.NextDouble() * 0.3;
-                    double maxScale = 0.9 + rand.NextDouble() * 0.6;
-                    double durationMs = 600 + rand.Next(600); // 600-1200ms (slower = smoother)
-                    double beginMs = rand.Next(500); // More staggered
-
-                    var anim = new DoubleAnimation
-                    {
-                        From = minScale,
-                        To = maxScale,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(durationMs)),
-                        AutoReverse = true,
-                        RepeatBehavior = RepeatBehavior.Forever,
-                        BeginTime = TimeSpan.FromMilliseconds(beginMs),
-                        EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
-                    };
-                    Storyboard.SetTarget(anim, scaleTransform);
-                    Storyboard.SetTargetProperty(anim, "ScaleY");
-                    _waveformStoryboard.Children.Add(anim);
+                    var done = await Task.WhenAny(startTask, Task.Delay(2500));
+                    if (gen != _samplesGeneration || !_shortsIsOpen) return;
+                    if (done == startTask && startTask.Result.HasValue) start = startTask.Result.Value;
                 }
-            }
+                // Seek slightly BEFORE the keyframe: if the player's timeline differs from the MP4 index by a few
+                // frames we then land in the previous GOP's tail (hidden by the poster) instead of just past the
+                // keyframe (broken until the next one). The poster is removed once playback is past the keyframe.
+                _sampleClipStart = TimeSpan.FromSeconds(Math.Max(0, start - SampleSeekLeadSeconds));
+                _sampleRevealAtSeconds = start + SampleRevealLagSeconds;
 
-            if (_waveformStoryboard.Children.Count > 0)
-                _waveformStoryboard.Begin();
+                _sampleRevealPending = true;
+                SeekSampleThenPlay(_sampleClipStart);
+                StartShortsLoop();
+                PrefetchSampleUrl(_sampleIndex + 1);
+            }
+            catch { }
         }
 
-        private void UpdateShortsHashtags()
+        // ==========================================
+        // SEEK THEN PLAY
+        // Playing right after setting Position makes the decoder start mid-GOP (grey macroblocks until the next
+        // keyframe). So: pause, seek, wait for SeekCompleted (1.5s fallback), then play; on first play the video
+        // is revealed a little later so the poster covers the first frames.
+        // ==========================================
+        private const double SampleSeekLeadSeconds = 0.3;  // seek this much before the keyframe
+        private const double SampleRevealLagSeconds = 0.2;  // remove the poster this much after it
+        private bool _sampleWaitingSeek = false;
+        private bool _sampleRevealPending = false;
+        private double _sampleRevealAtSeconds = 0;
+        private DateTime _sampleRevealDeadline = DateTime.MaxValue;
+        private DispatcherTimer _sampleSeekFallback;
+
+        private void SeekSampleThenPlay(TimeSpan position)
         {
-            ShortsView.ShortsHashtags.Children.Clear();
-            string[] tags = _shortsCategoryHashtags[GetRealCategoryIndex(_shortsCategoryIndex)].Split('|');
-            var semiBoldFont = _shortsSemiBoldFont;
-            foreach (var tag in tags)
+            var video = ShortsView.SampleVideo;
+            try
             {
-                var tb = new TextBlock
+                if (position <= TimeSpan.FromMilliseconds(200) && video.Position <= TimeSpan.FromMilliseconds(200))
                 {
-                    Text = tag,
-                    FontSize = 12,
-                    Foreground = _dotInactiveBrush, // reuse cached semi-transparent white
-                    Margin = new Thickness(0, 0, 15, 0),
-                    FontFamily = semiBoldFont
-                };
-                ShortsView.ShortsHashtags.Children.Add(tb);
+                    BeginSamplePlayback();
+                    return;
+                }
+                video.Pause();
+                _sampleWaitingSeek = true;
+                video.Position = position;
+
+                if (_sampleSeekFallback == null)
+                {
+                    _sampleSeekFallback = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1500) };
+                    _sampleSeekFallback.Tick += (s, e) => { _sampleSeekFallback.Stop(); if (_sampleWaitingSeek) BeginSamplePlayback(); };
+                }
+                _sampleSeekFallback.Stop();
+                _sampleSeekFallback.Start();
+            }
+            catch { BeginSamplePlayback(); }
+        }
+
+        private void SampleVideo_SeekCompleted(object sender, RoutedEventArgs e)
+        {
+            if (_sampleWaitingSeek) BeginSamplePlayback();
+        }
+
+        private void BeginSamplePlayback()
+        {
+            _sampleWaitingSeek = false;
+            if (_sampleSeekFallback != null) _sampleSeekFallback.Stop();
+            if (!_shortsIsOpen || ShortsView.SampleVideo.Source == null) return;
+            try
+            {
+                if (!_samplesUserPaused) ShortsView.SampleVideo.Play();
+                ShortsView.SampleLoading.IsActive = false;
+                if (_sampleRevealPending) _sampleRevealDeadline = DateTime.Now.AddSeconds(3); // reveal even if position stalls
+            }
+            catch { }
+        }
+
+        // ==========================================
+        // KEYFRAME-ALIGNED CLIP START
+        // Reads the MP4 'moov' index with HTTP range requests (itag 18 files keep it at the front) and picks the
+        // keyframe nearest before 1/3 of the video. Cached per video id; null = unknown, start at 0.
+        // ==========================================
+        private const int SampleMp4HeadBytes = 256 * 1024;
+        private const int SampleMaxMoovBytes = 4 * 1024 * 1024;
+        private readonly Dictionary<string, Task<double?>> _clipStartTasks = new Dictionary<string, Task<double?>>();
+        private Task<double?> _currentClipStartTask;
+
+        private Task<double?> GetClipStartTask(string videoId, string url)
+        {
+            Task<double?> task;
+            if (_clipStartTasks.TryGetValue(videoId, out task)) return task;
+            if (_clipStartTasks.Count >= 12) _clipStartTasks.Clear();
+            task = FindClipStartAsync(url);
+            _clipStartTasks[videoId] = task;
+            return task;
+        }
+
+        private static async Task<double?> FindClipStartAsync(string url)
+        {
+            try
+            {
+                byte[] head = await DownloadRangeAsync(url, 0, SampleMp4HeadBytes - 1).ConfigureAwait(false);
+                long moovOffset, moovSize;
+                if (head == null || !Services.Mp4KeyframeParser.TryFindMoov(head, head.Length, out moovOffset, out moovSize))
+                    return null;
+
+                byte[] moov;
+                if (moovOffset + moovSize <= head.Length)
+                {
+                    moov = new byte[moovSize];
+                    Array.Copy(head, (int)moovOffset, moov, 0, (int)moovSize);
+                }
+                else
+                {
+                    if (moovSize > SampleMaxMoovBytes) return null;
+                    moov = await DownloadRangeAsync(url, moovOffset, moovOffset + moovSize - 1).ConfigureAwait(false);
+                    if (moov == null || moov.Length < moovSize) return null;
+                }
+
+                var info = Services.Mp4KeyframeParser.ParseMoov(moov);
+                if (info == null || info.DurationSeconds <= SampleClipSeconds * 2) return 0;
+                double target = Math.Min(info.DurationSeconds * 0.33, info.DurationSeconds - SampleClipSeconds - 1);
+                return Services.Mp4KeyframeParser.ChooseStart(info.KeyframeSeconds, target);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[Samples] keyframe index failed: " + ex.Message);
+                return null;
+            }
+        }
+
+        private static async Task<byte[]> DownloadRangeAsync(string url, long from, long to)
+        {
+            using (var req = new Windows.Web.Http.HttpRequestMessage(Windows.Web.Http.HttpMethod.Get, new Uri(url)))
+            {
+                req.Headers.TryAppendWithoutValidation("Range", "bytes=" + from + "-" + to);
+                using (var resp = await InnerTubeClient.GetWinrtClient().SendRequestAsync(req).AsTask().ConfigureAwait(false))
+                {
+                    if (!resp.IsSuccessStatusCode) return null;
+                    var buffer = await resp.Content.ReadAsBufferAsync().AsTask().ConfigureAwait(false);
+                    return System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBufferExtensions.ToArray(buffer);
+                }
             }
         }
 
         // ==========================================
-        // SWIPE NAVIGATION (Vertical = next/prev song, Horizontal = next/prev category)
+        // URL PREFETCH (resolving a stream takes 1-2s; do it for the next clip while this one plays)
         // ==========================================
-        private double _shortsSwipeDeltaY = 0;
-        private double _shortsSwipeDeltaX = 0;
+        private readonly Dictionary<string, string> _sampleUrlCache = new Dictionary<string, string>();
+        private readonly HashSet<string> _sampleUrlPending = new HashSet<string>();
 
-        private void Shorts_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+        private async void PrefetchSampleUrl(int index)
         {
-            _shortsSwipeDeltaY += e.Delta.Translation.Y;
-            _shortsSwipeDeltaX += e.Delta.Translation.X;
-        }
-
-        private void Shorts_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-        {
-            double totalY = _shortsSwipeDeltaY;
-            double totalX = _shortsSwipeDeltaX;
-            _shortsSwipeDeltaY = 0;
-            _shortsSwipeDeltaX = 0;
-
-            // Determine dominant axis
-            bool isHorizontal = Math.Abs(totalX) > Math.Abs(totalY);
-
-            if (isHorizontal && Math.Abs(totalX) >= 50)
+            if (index < 0 || index >= _samples.Count) return;
+            string videoId = _samples[index].VideoId;
+            if (_sampleUrlCache.ContainsKey(videoId) || !_sampleUrlPending.Add(videoId)) return;
+            try
             {
-                // Horizontal swipe → switch category
-                if (totalX < -50)
+                string url = await InnerTubeClient.ResolveStreamUrlAsync(videoId, false, true);
+                if (!string.IsNullOrEmpty(url))
                 {
-                    // Swipe left → next category
-                    int nextCat = (_shortsCategoryIndex + 1) % _shortsCategories.Length;
-                    SwitchShortsCategory(nextCat);
-                }
-                else if (totalX > 50)
-                {
-                    // Swipe right → prev category
-                    int prevCat = (_shortsCategoryIndex - 1 + _shortsCategories.Length) % _shortsCategories.Length;
-                    SwitchShortsCategory(prevCat);
+                    if (_sampleUrlCache.Count >= 8) _sampleUrlCache.Clear();
+                    _sampleUrlCache[videoId] = url;
+                    var ignored = GetClipStartTask(videoId, url); // warm the keyframe index too
                 }
             }
-            else if (!isHorizontal && Math.Abs(totalY) >= 50)
-            {
-                // Vertical swipe → switch song
-                if (totalY < -50)
-                {
-                    // Swipe up → next song
-                    if (_shortsSongIndex < _shortsSongs.Count - 1)
-                    {
-                        _shortsSongIndex++;
-                        AnimateShortTransition(true);
-                    }
-                }
-                else if (totalY > 50)
-                {
-                    // Swipe down → prev song
-                    if (_shortsSongIndex > 0)
-                    {
-                        _shortsSongIndex--;
-                        AnimateShortTransition(false);
-                    }
-                }
-            }
+            catch { }
+            finally { _sampleUrlPending.Remove(videoId); }
         }
 
-        private void AnimateShortTransition(bool slideUp)
+        private void SampleVideo_MediaFailed(object sender, ExceptionRoutedEventArgs e)
         {
-            // Quick fade transition
+            if (!_shortsIsOpen) return;
+            ShortsView.SampleLoading.IsActive = false;
+            ShortsView.SamplePosterLayer.Opacity = 1;
+            System.Diagnostics.Debug.WriteLine("[Samples] MediaFailed: " + e.ErrorMessage);
+            ShowSampleMessage(SampleUnplayableText);
+        }
+
+        private void SampleVideo_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            RestartSampleClip();
+        }
+
+        private Storyboard _samplePosterFade;
+
+        private void ShowSamplePoster()
+        {
+            if (_samplePosterFade != null) { _samplePosterFade.Stop(); _samplePosterFade = null; }
+            ShortsView.SamplePosterLayer.Opacity = 1;
+        }
+
+        private void FadeInSampleVideo()
+        {
+            var anim = new DoubleAnimation { From = 1, To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(250)) };
+            Storyboard.SetTarget(anim, ShortsView.SamplePosterLayer);
+            Storyboard.SetTargetProperty(anim, "Opacity");
             var sb = new Storyboard();
-            var fadeOut = new DoubleAnimation
-            {
-                From = 1, To = 0,
-                Duration = new Duration(TimeSpan.FromMilliseconds(100))
-            };
-            Storyboard.SetTarget(fadeOut, ShortsView);
-            Storyboard.SetTargetProperty(fadeOut, "Opacity");
-            sb.Children.Add(fadeOut);
-            sb.Completed += (s, e) =>
-            {
-                DisplayCurrentShort();
-                var sb2 = new Storyboard();
-                var fadeIn = new DoubleAnimation
-                {
-                    From = 0, To = 1,
-                    Duration = new Duration(TimeSpan.FromMilliseconds(150))
-                };
-                Storyboard.SetTarget(fadeIn, ShortsView);
-                Storyboard.SetTargetProperty(fadeIn, "Opacity");
-                sb2.Children.Add(fadeIn);
-                sb2.Begin();
-            };
+            sb.Children.Add(anim);
+            // Keep the final value as a local value (not held by the storyboard) so ShowSamplePoster can set it again
+            sb.Completed += (s, e) => { sb.Stop(); ShortsView.SamplePosterLayer.Opacity = 0; if (_samplePosterFade == sb) _samplePosterFade = null; };
+            _samplePosterFade = sb;
             sb.Begin();
         }
 
-        // ==========================================
-        // SHORTS AUDIO — uses BackgroundMediaPlayer via PlayTrack
-        // (WP8.1 does NOT support MediaElement + BackgroundMediaPlayer simultaneously)
-        // ==========================================
-        private DispatcherTimer _shortsLoopTimer;
-        private static readonly double ShortsClipSeconds = 15.0;
-        private YouTubeTrack _shortsSavedTrack;
-        private TimeSpan _shortsSavedPosition;
-
-        private async void PlayShortsAudio(string videoId, int generation)
+        private void RestartSampleClip()
         {
-            try
-            {
-                StopShortsLoop();
-
-                if (_shortsSongs == null || _shortsSongIndex >= _shortsSongs.Count) return;
-                var track = _shortsSongs[_shortsSongIndex];
-
-                // Resolve stream URL first (this is the slow async part)
-                string streamUrl = "";
-                try
-                {
-                    streamUrl = await InnerTubeClient.ResolveStreamUrlAsync(videoId, track.IsLive) ?? "";
-                }
-                catch { }
-
-                // CHECK: Has user already switched to another category while we were resolving?
-                if (generation != _shortsLoadGeneration) return;
-
-                if (string.IsNullOrEmpty(streamUrl)) return;
-
-                // Now it's safe to play - send directly to BackgroundMediaPlayer
-                var message = new Windows.Foundation.Collections.ValueSet {
-                    { "UpdatePlaylist", "" },
-                    { "Urls", new string[] { streamUrl } },
-                    { "Titles", new string[] { track.Title } },
-                    { "Artists", new string[] { track.ChannelName } },
-                    { "VideoIds", new string[] { track.VideoId } },
-                    { "Thumbnails", new string[] { track.ThumbnailUrl ?? "" } },
-                    { "StartIndex", 0 },
-                    { "FastUrl", streamUrl }
-                };
-                try { BackgroundMediaPlayer.SendMessageToBackground(message); } catch { }
-
-                // Update UI
-                currentTrack = track;
-                MiniTitle.Text = track.Title;
-                MiniArtist.Text = track.ChannelName;
-
-                if (!string.IsNullOrEmpty(track.ThumbnailUrl))
-                {
-                    try
-                    {
-                        var miniBmp = new Windows.UI.Xaml.Media.Imaging.BitmapImage(new Uri(track.ThumbnailUrl, UriKind.Absolute));
-                        miniBmp.DecodePixelWidth = 100;
-                        MiniCoverImage.ImageSource = miniBmp;
-                    }
-                    catch { }
-                }
-
-                // Start 15s loop timer
-                if (generation == _shortsLoadGeneration)
-                    StartShortsLoop();
-            }
-            catch { }
+            if (!_shortsIsOpen || _sampleWaitingSeek) return;
+            // Looping jumps back before the keyframe too: cover it again until playback is past it
+            ShowSamplePoster();
+            _sampleRevealPending = true;
+            SeekSampleThenPlay(_sampleClipStart);
         }
 
+        // ==========================================
+        // CLIP LOOP + PROGRESS
+        // ==========================================
         private void StartShortsLoop()
         {
             StopShortsLoop();
-            _shortsLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _shortsLoopTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _shortsLoopTimer.Tick += ShortsLoop_Tick;
             _shortsLoopTimer.Start();
         }
@@ -755,57 +643,137 @@ namespace YTMusicWP
         {
             try
             {
-                if (_appMediaPlayer == null) return;
-                if (_appMediaPlayer.CurrentState != MediaPlayerState.Playing) return;
-
-                // Loop back to start after 15 seconds
-                if (_appMediaPlayer.Position.TotalSeconds >= ShortsClipSeconds)
+                if (_sampleRevealPending && !_sampleWaitingSeek &&
+                    (ShortsView.SampleVideo.Position.TotalSeconds >= _sampleRevealAtSeconds || DateTime.Now >= _sampleRevealDeadline))
                 {
-                    _appMediaPlayer.Position = TimeSpan.Zero;
+                    _sampleRevealPending = false;
+                    _sampleRevealDeadline = DateTime.MaxValue;
+                    FadeInSampleVideo();
                 }
+
+                double elapsed = (ShortsView.SampleVideo.Position - _sampleClipStart).TotalSeconds;
+                ShortsView.SampleProgress.Value = Math.Max(0, Math.Min(1, elapsed / SampleClipSeconds));
+                if (elapsed >= SampleClipSeconds && !_sampleWaitingSeek) RestartSampleClip();
             }
             catch { }
         }
 
         // ==========================================
-        // EVENT HANDLERS
+        // INPUT
         // ==========================================
-        private void ShortsBack_Click(object sender, RoutedEventArgs e)
+        private void SamplesStage_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            if (!_shortsIsOpen) return;
-            CloseShortsView();
-        }
-
-        private void ShortsPlayCurrent_Click(object sender, RoutedEventArgs e)
-        {
+            if (CurrentSample == null) return;
+            if (ShortsView.SampleVideo.Source == null)
+            {
+                // Stopped by "Play" (or failed): tap reloads the clip
+                ShowSample(_sampleIndex);
+                return;
+            }
             try
             {
-                if (_appMediaPlayer == null) return;
-                if (_appMediaPlayer.CurrentState == MediaPlayerState.Playing)
+                if (ShortsView.SampleVideo.CurrentState == Windows.UI.Xaml.Media.MediaElementState.Playing)
                 {
-                    _appMediaPlayer.Pause();
-                    UpdateShortsPauseIcon(false);
+                    ShortsView.SampleVideo.Pause();
+                    _samplesUserPaused = true;
+                    ShortsView.SamplePausedIcon.Visibility = Visibility.Visible;
                 }
                 else
                 {
-                    _appMediaPlayer.Play();
-                    UpdateShortsPauseIcon(true);
+                    ShortsView.SampleVideo.Play();
+                    _samplesUserPaused = false;
+                    ShortsView.SamplePausedIcon.Visibility = Visibility.Collapsed;
                 }
             }
             catch { }
         }
 
-        private void UpdateShortsPauseIcon(bool isPlaying)
+        private void SamplesSwipe_Delta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            ShortsView.ShortsPauseBtn.Text = isPlaying ? "❚❚" : "▶";
+            ShortsView.SampleStageTransform.Y += e.Delta.Translation.Y;
         }
 
-        private async void ShortsHeart_Click(object sender, RoutedEventArgs e)
+        private void SamplesSwipe_Completed(object sender, ManipulationCompletedRoutedEventArgs e)
         {
-            if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
-            var track = _shortsSongs[_shortsSongIndex];
+            double dy = e.Cumulative.Translation.Y;
+            double vy = e.Velocities.Linear.Y;
+            bool next = dy < -90 || vy < -0.8;
+            bool prev = dy > 90 || vy > 0.8;
 
-            // Require login for YouTube tracks
+            if (next && _sampleIndex < _samples.Count - 1) AnimateSampleChange(_sampleIndex + 1, -1);
+            else if (prev && _sampleIndex > 0) AnimateSampleChange(_sampleIndex - 1, 1);
+            else AnimateStageTo(0, null);
+        }
+
+        /// <summary>Slides the current clip off screen in <paramref name="direction"/> (-1 up, 1 down), then shows the new one.</summary>
+        private void AnimateSampleChange(int newIndex, int direction)
+        {
+            double height = ShortsView.ActualHeight > 0 ? ShortsView.ActualHeight : 800;
+            AnimateStageTo(direction * height, () =>
+            {
+                ShortsView.SampleStageTransform.Y = -direction * height * 0.25;
+                ShowSample(newIndex);
+                AnimateStageTo(0, null);
+            });
+        }
+
+        private void AnimateStageTo(double y, Action completed)
+        {
+            var anim = new DoubleAnimation
+            {
+                To = y,
+                Duration = new Duration(TimeSpan.FromMilliseconds(180)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            };
+            Storyboard.SetTarget(anim, ShortsView.SampleStageTransform);
+            Storyboard.SetTargetProperty(anim, "Y");
+            var sb = new Storyboard();
+            sb.Children.Add(anim);
+            sb.Completed += (s, a) =>
+            {
+                sb.Stop();
+                ShortsView.SampleStageTransform.Y = y;
+                if (completed != null) completed();
+            };
+            sb.Begin();
+        }
+
+        // ==========================================
+        // ACTIONS
+        // ==========================================
+        private static bool SamplesVi
+        {
+            get { return InnerTubeClient.CurrentLanguage == "vi"; }
+        }
+
+        private static string SampleUnplayableText
+        {
+            get { return SamplesVi ? "Không phát được video này.\nVuốt lên để xem đoạn tiếp theo." : "This video can't be played.\nSwipe up for the next one."; }
+        }
+
+        /// <summary>Action labels follow the app language (called from UpdateLocalizedUI).</summary>
+        private void UpdateSamplesLocalizedText()
+        {
+            ShortsView.SampleSaveText.Text = SamplesVi ? "Lưu" : "Save";
+            ShortsView.SampleShareText.Text = SamplesVi ? "Chia sẻ" : "Share";
+            ShortsView.SamplePlayText.Text = SamplesVi ? "Phát" : "Play";
+            UpdateSampleLikeState(CurrentSample);
+        }
+
+        private static readonly SolidColorBrush _samplesLikedBrush = new SolidColorBrush(Color.FromArgb(255, 29, 185, 84));
+
+        private void UpdateSampleLikeState(YouTubeTrack track)
+        {
+            bool liked = track != null && favoriteTracks.Any(t => t.VideoId == track.VideoId);
+            ShortsView.SampleLikeIcon.Fill = liked ? _samplesLikedBrush : _whiteBrush;
+            ShortsView.SampleLikeText.Text = liked ? (SamplesVi ? "Đã thích" : "Liked") : (SamplesVi ? "Thích" : "Like");
+        }
+
+        private async void SamplesLike_Click(object sender, RoutedEventArgs e)
+        {
+            var track = CurrentSample;
+            if (track == null) return;
+
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
@@ -814,38 +782,61 @@ namespace YTMusicWP
             }
 
             var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
-            bool isAdding = (existing == null);
+            bool isAdding = existing == null;
             if (existing != null)
             {
                 favoriteTracks.Remove(existing);
-                ShortsView.ShortsHeartBtn.Text = "♡";
-                ShortsView.ShortsHeartBtn.Foreground = _whiteBrush;
                 ShowToast("Removed from Favorites");
                 var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
             }
             else
             {
                 favoriteTracks.Insert(0, track);
-                ShortsView.ShortsHeartBtn.Text = "♥";
-                ShortsView.ShortsHeartBtn.Foreground = _greenBrush;
                 ShowToast("Added to Favorites");
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }
+            UpdateSampleLikeState(track);
 
-            // Sync to YouTube
-            string rating = isAdding ? "like" : "none";
-            await RateVideoAsync(track.VideoId, rating);
+            await RateVideoAsync(track.VideoId, isAdding ? "like" : "none");
         }
 
-        private void ShortsSongBar_Tapped(object sender, TappedRoutedEventArgs e)
+        private void SamplesSave_Click(object sender, RoutedEventArgs e)
         {
-            if (_shortsSongs == null || _shortsSongs.Count == 0 || _shortsSongIndex >= _shortsSongs.Count) return;
+            if (CurrentSample == null) return;
+            _bottomSheetTrack = CurrentSample;
+            BottomSheetAddToPlaylist_Click(null, null);
+        }
 
-            // Track is already playing via BackgroundMediaPlayer
-            // Just close Shorts without restoring the previous track
-            _shortsWasMainPlaying = false;
-            _shortsSavedTrack = null;
-            CloseShortsView(true); // keepPlaying = true, music continues
+        private void SamplesShare_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurrentSample == null) return;
+            _bottomSheetTrack = CurrentSample;
+            BottomSheetShare_Click(null, null);
+        }
+
+        private void SamplesMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurrentSample == null) return;
+            _bottomSheetTrack = CurrentSample;
+            CustomBottomSheet.Show(CurrentSample);
+        }
+
+        /// <summary>Plays the full song in the main player (the previous main track is not resumed).</summary>
+        private void SamplesPlay_Click(object sender, RoutedEventArgs e)
+        {
+            var track = CurrentSample;
+            if (track == null) return;
+            StopShortsLoop();
+            StopSampleVideo();
+            _samplesUserPaused = true;
+            ShortsView.SamplePausedIcon.Visibility = Visibility.Visible;
+            _samplesWasMainPlaying = false;
+            PlayTrack(track);
+        }
+
+        private void SamplesSongBar_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            SamplesPlay_Click(sender, null);
         }
     }
 }

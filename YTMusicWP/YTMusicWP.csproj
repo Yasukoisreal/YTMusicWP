@@ -179,6 +179,7 @@
     <Compile Include="Services\AppleMusicLyricsApi.cs" />
     <Compile Include="Services\KuGouLyricsApi.cs" />
     <Compile Include="Services\KuGouLyricsParser.cs" />
+    <Compile Include="Services\Mp4KeyframeParser.cs" />
     <Compile Include="Services\InnerTubeClient.Moods.cs" />
     <Compile Include="Services\SecureDnsResolver.cs" />
     <Compile Include="Models\MoodCategoryItem.cs" />
