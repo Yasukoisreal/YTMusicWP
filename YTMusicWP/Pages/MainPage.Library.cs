@@ -405,8 +405,7 @@ namespace YTMusicWP
                             PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                         }
                         SetPlaylistViewTracks(pl.Tracks, (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks");
-                        PlaylistDetailsView.Visibility = Visibility.Visible;
-                        PlaylistSlideInStoryboard.Begin();
+                        Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
                     }
                     break;
 
@@ -416,8 +415,7 @@ namespace YTMusicWP
                     PlaylistDetailsTitle.Text = "Downloaded Songs";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     SetPlaylistViewTracks(downloadedTracks, downloadedTracks.Count + " tracks");
-                    PlaylistDetailsView.Visibility = Visibility.Visible;
-                    PlaylistSlideInStoryboard.Begin();
+                    Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
                     break;
 
                 case "recent":
@@ -426,8 +424,7 @@ namespace YTMusicWP
                     PlaylistDetailsTitle.Text = "Recently Played";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     SetPlaylistViewTracks(historyTracks, historyTracks.Count + " tracks");
-                    PlaylistDetailsView.Visibility = Visibility.Visible;
-                    PlaylistSlideInStoryboard.Begin();
+                    Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
                     break;
 
                 case "ytplaylist":
@@ -504,8 +501,7 @@ namespace YTMusicWP
                     PlaylistDetailsTitle.Text = "Most Played";
                     PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                     SetPlaylistViewTracks(mostPlayed, mostPlayed.Count + " tracks");
-                    PlaylistDetailsView.Visibility = Visibility.Visible;
-                    PlaylistSlideInStoryboard.Begin();
+                    Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
                 }
             }
             catch (Exception ex)
@@ -523,8 +519,7 @@ namespace YTMusicWP
             PlaylistDetailsTitle.Text = "Downloaded Songs";
             PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             SetPlaylistViewTracks(downloadedTracks, downloadedTracks.Count + " tracks");
-            PlaylistDetailsView.Visibility = Visibility.Visible;
-            PlaylistSlideInStoryboard.Begin();
+            Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
         }
 
         private async Task LoadMostPlayedShelfAsync()
@@ -572,8 +567,7 @@ namespace YTMusicWP
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             }
             SetPlaylistViewTracks(favoriteTracks, favoriteTracks.Count + (HasMoreLikedSongs ? "+" : "") + " songs");
-            PlaylistDetailsView.Visibility = Visibility.Visible;
-            PlaylistSlideInStoryboard.Begin();
+            Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
             HookPlaylistSongsScroll();
         }
 
@@ -598,8 +592,7 @@ namespace YTMusicWP
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
             }
             SetPlaylistViewTracks(pl.Tracks, (pl.Tracks != null ? pl.Tracks.Count : 0) + " tracks");
-            PlaylistDetailsView.Visibility = Visibility.Visible;
-            PlaylistSlideInStoryboard.Begin();
+            Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
         }
 
         private async void PlaylistPinToStart_Click(object sender, RoutedEventArgs e)
@@ -654,7 +647,7 @@ namespace YTMusicWP
 
         private void CancelCreatePlaylist_Click(object sender, RoutedEventArgs e)
         {
-            CreatePlaylistDialog.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideDialog(CreatePlaylistDialog, CreatePlaylistCard);
         }
 
         private async void ConfirmCreatePlaylist_Click(object sender, RoutedEventArgs e)
@@ -662,7 +655,7 @@ namespace YTMusicWP
             string name = NewPlaylistNameTextBox.Text.Trim();
             if (string.IsNullOrEmpty(name)) return;
 
-            CreatePlaylistDialog.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideDialog(CreatePlaylistDialog, CreatePlaylistCard);
 
             try
             {
@@ -786,8 +779,7 @@ namespace YTMusicWP
                 }
                 PlaylistSongsList.ItemsSource = _currentViewingPlaylist.Tracks;
                 PlaylistDetailsTrackCount.Text = (_currentViewingPlaylist.Tracks != null ? _currentViewingPlaylist.Tracks.Count : 0) + " tracks";
-                PlaylistDetailsView.Visibility = Visibility.Visible;
-                PlaylistSlideInStoryboard.Begin();
+                Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
             }
         }
 
@@ -836,13 +828,18 @@ namespace YTMusicWP
             if (_trackPendingForPlaylist == null) return;
 
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
-            AddToPlaylistDialog.Visibility = Visibility.Visible;
+            ShowAddToPlaylistDialog();
+        }
+
+        private void ShowAddToPlaylistDialog()
+        {
+            Services.MotionHelper.ShowDialog(AddToPlaylistDialog, AddToPlaylistCard);
         }
 
         private void CancelAddToPlaylist_Click(object sender, RoutedEventArgs e)
         {
             _trackPendingForPlaylist = null;
-            AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideDialog(AddToPlaylistDialog, AddToPlaylistCard);
         }
 
         private async void DialogPlaylistList_ItemClick(object sender, ItemClickEventArgs e)
@@ -850,7 +847,7 @@ namespace YTMusicWP
             var ytPlaylist = e.ClickedItem as YouTubePlaylistInfo;
             var track = _trackPendingForPlaylist;
             _trackPendingForPlaylist = null;
-            AddToPlaylistDialog.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideDialog(AddToPlaylistDialog, AddToPlaylistCard);
 
             if (ytPlaylist != null && track != null)
             {

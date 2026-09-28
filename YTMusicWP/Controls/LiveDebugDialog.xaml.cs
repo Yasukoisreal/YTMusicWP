@@ -33,13 +33,13 @@ namespace YTMusicWP.Controls
         public void Open()
         {
             RefreshLogs();
-            Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowSheet(this, Sheet);
         }
 
         public void Close()
         {
             LiveDebugTextBox.IsReadOnly = true;
-            Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideSheet(this, Sheet);
         }
 
         private void RefreshLogs()

@@ -22,7 +22,7 @@ namespace YTMusicWP
             if (currentTrack != null)
             {
                 _trackToShare = currentTrack;
-                NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+                NowPlayingMenuDialog.Hide();
                 DataTransferManager.ShowShareUI();
             }
         }
@@ -35,7 +35,7 @@ namespace YTMusicWP
         private async void MenuLikeNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
-            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            NowPlayingMenuDialog.Hide();
 
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
@@ -51,17 +51,17 @@ namespace YTMusicWP
         private void MenuAddToPlaylistNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             if (currentTrack == null) return;
-            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            NowPlayingMenuDialog.Hide();
 
             _trackPendingForPlaylist = currentTrack;
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
-            AddToPlaylistDialog.Visibility = Visibility.Visible;
+            ShowAddToPlaylistDialog();
         }
 
         private async void MenuWatchLaterNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
-            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            NowPlayingMenuDialog.Hide();
 
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
@@ -142,12 +142,8 @@ namespace YTMusicWP
         {
             Services.MemoryHelper.Mark("NowPlaying");
             _isClosingNowPlaying = false;
-            if (this.Resources.ContainsKey("SlideDownStoryboard"))
-            {
-                try { ((Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideDownStoryboard"]).Stop(); } catch { }
-            }
-
-            NowPlayingView.Visibility = Visibility.Visible;
+            // Also covers the view having been collapsed directly (Go to artist): the slide-up then starts off-screen again
+            Services.MotionHelper.PrepareSlideIn(NowPlayingView, NowPlayingTransform, SlideUpStoryboard, SlideDownStoryboard);
             ApplyNowPlayingStyle();
             if (_isAppleMusicStyle)
             {
@@ -167,11 +163,7 @@ namespace YTMusicWP
                 }
             }
             UpdateLyricsFadeColors(_currentGradientColor);
-            if (this.Resources.ContainsKey("SlideUpStoryboard"))
-            {
-                var storyboard = (Windows.UI.Xaml.Media.Animation.Storyboard)this.Resources["SlideUpStoryboard"];
-                storyboard.Begin();
-            }
+            SlideUpStoryboard.Begin();
             // Start marquee after panel is visible and laid out
             var ignored3 = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
             UpdateWordTimerState();
@@ -410,7 +402,7 @@ namespace YTMusicWP
             {
                 _trackPendingForPlaylist = _bottomSheetTrack;
                 DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
-                AddToPlaylistDialog.Visibility = Visibility.Visible;
+                ShowAddToPlaylistDialog();
             }
         }
 
@@ -558,7 +550,7 @@ namespace YTMusicWP
 
         private void MenuGoToArtistNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            NowPlayingMenuDialog.Hide();
 
             if (currentTrack != null)
             {
@@ -581,12 +573,12 @@ namespace YTMusicWP
         private void ShowArtistPicker(System.Collections.Generic.List<string> artists)
         {
             ArtistPickerList.ItemsSource = artists;
-            ArtistPickerBottomSheet.Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowSheet(ArtistPickerBottomSheet, ArtistPickerPanel);
         }
 
         private void CloseArtistPicker_Click(object sender, RoutedEventArgs e)
         {
-            ArtistPickerBottomSheet.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideSheet(ArtistPickerBottomSheet, ArtistPickerPanel);
         }
 
         private void ArtistPickerList_ItemClick(object sender, ItemClickEventArgs e)
@@ -749,7 +741,7 @@ namespace YTMusicWP
         // ══════════════════════════════════════════
         private void MenuGoToRadioNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            NowPlayingMenuDialog.Hide();
             if (currentTrack != null)
             {
                 _bottomSheetTrack = currentTrack;
@@ -817,7 +809,7 @@ namespace YTMusicWP
         // ══════════════════════════════════════════
         private async void MenuSongCreditsNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            NowPlayingMenuDialog.Visibility = Visibility.Collapsed;
+            NowPlayingMenuDialog.Hide();
             if (currentTrack == null) return;
 
             SongCreditsDialog.ShowLoading(currentTrack.Title, currentTrack.AlbumName);
@@ -1165,7 +1157,7 @@ namespace YTMusicWP
             if (currentTrack == null) return;
             _trackPendingForPlaylist = currentTrack;
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
-            AddToPlaylistDialog.Visibility = Visibility.Visible;
+            ShowAddToPlaylistDialog();
         }
 
         private double _amSwipeStartX;

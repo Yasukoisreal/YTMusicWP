@@ -112,7 +112,12 @@ namespace YTMusicWP
             anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = 0, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2)) });
             anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = -overflow, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(2 + scrollDuration)) });
             anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = -overflow, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration)) });
-            anim.KeyFrames.Add(new Anim.LinearDoubleKeyFrame { Value = 0, KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration * 2)) });
+            anim.KeyFrames.Add(new Anim.EasingDoubleKeyFrame
+            {
+                Value = 0,
+                KeyTime = Anim.KeyTime.FromTimeSpan(TimeSpan.FromSeconds(4 + scrollDuration + 0.8)),
+                EasingFunction = new Anim.CubicEase { EasingMode = Anim.EasingMode.EaseInOut }
+            });
             anim.RepeatBehavior = new Anim.RepeatBehavior(1000); // repeat many times
             Anim.Storyboard.SetTarget(anim, targetTranslate);
             Anim.Storyboard.SetTargetProperty(anim, "X");
@@ -147,8 +152,14 @@ namespace YTMusicWP
         {
             MiniLyricCanvas.Clip = new RectangleGeometry { Rect = new Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
         }
+        private bool? _playIconIsPlaying;
+
         private void SetPlayPauseIcon(bool isPlaying)
         {
+            // Pop only on a real change (this is also called to re-assert the same state)
+            bool changed = _playIconIsPlaying.HasValue && _playIconIsPlaying.Value != isPlaying;
+            _playIconIsPlaying = isPlaying;
+
             Symbol sym = isPlaying ? Symbol.Pause : Symbol.Play;
             MiniPlayIcon.Symbol = sym;
             BigPlayIcon.Symbol = sym;
@@ -156,6 +167,16 @@ namespace YTMusicWP
                 AppleMusicPlayBox.Visibility = isPlaying ? Visibility.Collapsed : Visibility.Visible;
             if (AppleMusicPauseBox != null)
                 AppleMusicPauseBox.Visibility = isPlaying ? Visibility.Visible : Visibility.Collapsed;
+
+            if (changed)
+            {
+                Services.MotionHelper.Pop(MiniPlayIcon);
+                if (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
+                {
+                    Services.MotionHelper.Pop(BigPlayIcon);
+                    Services.MotionHelper.Pop(isPlaying ? AppleMusicPauseBox : AppleMusicPlayBox);
+                }
+            }
         }
 
         private static readonly HttpClient _apiClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(15) };
@@ -673,6 +694,8 @@ namespace YTMusicWP
         }
 
 
+        private readonly Services.MotionGroup _toastMotion = new Services.MotionGroup();
+
         private async void ShowToast(string message, int durationMs = 2500)
         {
             // Cancel CTS cũ an toàn (không gọi Dispose() ngay để tránh race condition với Task.Delay)
@@ -684,13 +707,25 @@ namespace YTMusicWP
             }
             var token = _toastCts.Token;
 
+            // Rises into place while fading in; a new message while one is showing just continues from where it is
             ToastText.Text = message;
-            ToastNotification.Visibility = Visibility.Visible;
-            ToastFadeInStoryboard.Begin();
+            var toastT = Services.MotionHelper.EnsureTransform(ToastNotification);
+            if (ToastNotification.Visibility != Visibility.Visible)
+            {
+                ToastNotification.Opacity = 0;
+                toastT.TranslateY = 24;
+                ToastNotification.Visibility = Visibility.Visible;
+            }
+            _toastMotion.Animate(Services.MotionHelper.EnterMs, Anim.EasingMode.EaseOut, null,
+                Services.MotionHelper.To(ToastNotification, "Opacity", 1),
+                Services.MotionHelper.To(toastT, "TranslateY", 0));
             try
             {
                 await Task.Delay(durationMs, token);
-                ToastFadeOutStoryboard.Begin();
+                _toastMotion.Animate(Services.MotionHelper.ExitMs, Anim.EasingMode.EaseIn,
+                    () => ToastNotification.Visibility = Visibility.Collapsed,
+                    Services.MotionHelper.To(ToastNotification, "Opacity", 0),
+                    Services.MotionHelper.To(toastT, "TranslateY", 12));
             }
             catch (OperationCanceledException) { /* Toast mới đã thay thế */ }
         }
@@ -894,10 +929,6 @@ namespace YTMusicWP
 
         private YouTubeTrack _bottomSheetTrack;
 
-        private void ToastFadeOutStoryboard_Completed(object sender, object e)
-        {
-            ToastNotification.Visibility = Visibility.Collapsed;
-        }
 
     }
 }

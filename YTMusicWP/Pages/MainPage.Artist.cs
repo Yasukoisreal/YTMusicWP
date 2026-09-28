@@ -21,9 +21,10 @@ namespace YTMusicWP
         public async void OpenYouTubePlaylist(string playlistId, string playlistName, string coverUrl = null)
         {
             Services.MemoryHelper.Mark("Playlist");
+            LeaveImmersiveViewsForPage();
             try
             {
-                Canvas.SetZIndex(PlaylistDetailsView, Math.Max(Canvas.GetZIndex(PlaylistDetailsView), Canvas.GetZIndex(ArtistProfileView) + 1));
+                BringPageToFront(PlaylistDetailsView);
                 PlaylistDetailsTitle.Text = playlistName;
                 PlaylistDetailsCoverRect.Visibility = Visibility.Collapsed;
                 if (!string.IsNullOrEmpty(coverUrl))
@@ -37,8 +38,7 @@ namespace YTMusicWP
                 PlaylistSongsList.ItemsSource = null;
                 ResetPlaylistFilter();
                 _currentPlaylistFullTracks = null;
-                PlaylistDetailsView.Visibility = Visibility.Visible;
-                PlaylistSlideInStoryboard.Begin();
+                Services.MotionHelper.BeginSlideIn(PlaylistDetailsView, PlaylistTransform, PlaylistSlideInStoryboard, PlaylistSlideOutStoryboard);
                 
                 var tracks = new System.Collections.ObjectModel.ObservableCollection<YouTubeTrack>();
                 _playlistContinuationToken = null;
@@ -161,14 +161,13 @@ namespace YTMusicWP
         private async void OpenArtistProfile(string channelId, string channelName, bool trustChannelId = false)
         {
             Services.MemoryHelper.Mark("Artist");
+            LeaveImmersiveViewsForPage();
             _isClosingArtistProfile = false;
-            try { ArtistSlideOutStoryboard.Stop(); } catch { }
-            Canvas.SetZIndex(ArtistProfileView, Math.Max(Canvas.GetZIndex(ArtistProfileView), Canvas.GetZIndex(PlaylistDetailsView) + 1));
+            BringPageToFront(ArtistProfileView);
             _currentArtistChannelId = channelId;
             _currentArtistAvatarUrl = "";
             _isFollowingArtist = _youtubeSubscriptions.Any(s => s.ChannelId == channelId);
-            ArtistProfileView.Visibility = Visibility.Visible;
-            ArtistSlideInStoryboard.Begin();
+            Services.MotionHelper.BeginSlideIn(ArtistProfileView, ArtistTransform, ArtistSlideInStoryboard, ArtistSlideOutStoryboard);
             ArtistLoadingBar.Visibility = Visibility.Visible;
             ArtistSongsList.Visibility = Visibility.Collapsed;
             ArtistProfileTitle.Text = channelName ?? "Unknown Artist";

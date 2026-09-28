@@ -14,6 +14,15 @@ namespace YTMusicWP
         private static readonly SolidColorBrush _navActiveBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
         private static readonly SolidColorBrush _navInactiveBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 179, 179, 179));
 
+        // ── Display layers (Canvas.ZIndex in MainPage.xaml) ──
+        // Back closes whatever is on top, so the checks below follow this order, top first:
+        //   300 Login  ·  280 Create playlist / Add to playlist  ·  270 Live debug  ·  260 Song credits
+        //   250 Artist picker / Now Playing menu  ·  200 Track actions sheet
+        //   120 Fullscreen lyrics  ·  100 Now Playing  ·  96 nav bar  ·  90 Create sheet
+        //    75 Listen Together  ·  55 Samples  ·  50/51 Playlist + Artist (last opened on top)  ·  50 Mood, Settings
+        //     0 tab content
+        // Same ZIndex: the element later in MainPage.xaml is on top (Create playlist over Add to playlist,
+        // Artist picker over the menu, Playlist/Artist over Mood over Settings).
         private void HardwareButtons_BackPressed(object sender, BackPressedEventArgs e)
         {
             if (LoginWebContainer.Visibility == Visibility.Visible)
@@ -21,40 +30,40 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseLoginWeb_Click(null, null);
             }
-            else if (SongCreditsDialog.IsOpen)
+            else if (CreatePlaylistDialog.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
-                SongCreditsDialog.Close();
+                CancelCreatePlaylist_Click(null, null);
+            }
+            else if (AddToPlaylistDialog.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CancelAddToPlaylist_Click(null, null);
             }
             else if (LiveDebugDialog.IsOpen)
             {
                 e.Handled = true;
                 LiveDebugDialog.Close();
             }
-            else if (NowPlayingMenuDialog.Visibility == Visibility.Visible)
+            else if (SongCreditsDialog.IsOpen)
             {
                 e.Handled = true;
-                CloseNowPlayingMenu_Click(null, null);
+                SongCreditsDialog.Close();
             }
             else if (ArtistPickerBottomSheet.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 CloseArtistPicker_Click(null, null);
             }
+            else if (NowPlayingMenuDialog.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseNowPlayingMenu_Click(null, null);
+            }
             else if (CustomBottomSheet.IsOpen)
             {
                 e.Handled = true;
                 CloseBottomSheet_Click(null, null);
-            }
-            else if (CreatePlaylistDialog.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                CreatePlaylistDialog.Visibility = Visibility.Collapsed;
-            }
-            else if (AddToPlaylistDialog.Visibility == Visibility.Visible)
-            {
-                e.Handled = true;
-                AddToPlaylistDialog.Visibility = Visibility.Collapsed;
             }
             else if (FullscreenLyricsView.Visibility == Visibility.Visible)
             {
@@ -78,28 +87,23 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseCreateSheet();
             }
-            else if (_currentTab == SamplesTab)
-            {
-                // Samples is a tab: back goes Home (SwitchTab closes the Samples view)
-                e.Handled = true;
-                SwitchTab(0);
-            }
             else if (ListenTogetherView != null && ListenTogetherView.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
                 if (ListenTogetherView.LtSettingsPanel != null && ListenTogetherView.LtSettingsPanel.Visibility == Visibility.Visible)
                 {
-                    ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Collapsed;
+                    LtCloseSettings_Click(null, null);
                 }
                 else
                 {
                     CloseListenTogetherView_Click(null, null);
                 }
             }
-            else if (SettingsPanel.Visibility == Visibility.Visible)
+            else if (_currentTab == SamplesTab)
             {
+                // Samples is a tab: back goes Home (SwitchTab closes the Samples view)
                 e.Handled = true;
-                CloseSettings_Click(null, null);
+                SwitchTab(0);
             }
             else if (PlaylistDetailsView.Visibility == Visibility.Visible || ArtistProfileView.Visibility == Visibility.Visible)
             {
@@ -120,6 +124,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseMoodCategory_Click(null, null);
             }
+            else if (SettingsPanel.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseSettings_Click(null, null);
+            }
             else if (SuggestionPopup.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
@@ -129,6 +138,36 @@ namespace YTMusicWP
             {
                 e.Handled = true;
                 SwitchTab(0);
+            }
+        }
+
+        // Playlist and Artist are single reusable pages that can open each other; the one opened last is on top.
+        // Fixed values: the old "other + 1" rule climbed by one on every Playlist <-> Artist hop and, after enough
+        // hops, lifted the pages above Now Playing, the Create sheet and the dialogs.
+        private const int PageZIndex = 50;
+
+        private void BringPageToFront(FrameworkElement page)
+        {
+            var other = page == PlaylistDetailsView ? (FrameworkElement)ArtistProfileView : PlaylistDetailsView;
+            Canvas.SetZIndex(other, PageZIndex);
+            Canvas.SetZIndex(page, PageZIndex + 1);
+        }
+
+        /// <summary>
+        /// Playlist and Artist pages sit in the content layer (row 0, below Samples and Now Playing). Opening one
+        /// from those surfaces (the Samples "more" sheet, the Now Playing menu) first leaves them, as YT Music does,
+        /// so the page never opens hidden behind them.
+        /// </summary>
+        private void LeaveImmersiveViewsForPage()
+        {
+            if (_currentTab == SamplesTab) SwitchTab(0);
+            if (NowPlayingView.Visibility == Visibility.Visible)
+            {
+                _isClosingNowPlaying = false;
+                NowPlayingView.Visibility = Visibility.Collapsed;
+                StopTitleMarquee();
+                UpdateStatusBarColor(false, animate: false);
+                UpdateWordTimerState();
             }
         }
 
@@ -174,13 +213,13 @@ namespace YTMusicWP
             }
             if (MoodCategoryView.Visibility == Visibility.Visible)
             {
-                MoodCategoryView.Visibility = Visibility.Collapsed;
+                Services.MotionHelper.HideNow(MoodCategoryView);
                 MoodCategorySectionList.ItemsSource = null;
             }
             // Leaving the Samples tab stops its video (and resumes the main player if Samples paused it)
             if (_shortsIsOpen) CloseShortsView();
             // Also close Settings if open
-            SettingsPanel.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideNow(SettingsPanel);
             SuggestionPopup.Visibility = Visibility.Collapsed;
             // Fade-in animation for active panel
             var panels = new FrameworkElement[] { HomePanel, SearchPanel, LibraryPanel };
@@ -188,19 +227,7 @@ namespace YTMusicWP
             {
                 if (i == tab)
                 {
-                    panels[i].Opacity = 0;
-                    panels[i].Visibility = Visibility.Visible;
-                    var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
-                    var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-                    {
-                        From = 0,
-                        To = 1,
-                        Duration = new Duration(TimeSpan.FromMilliseconds(150))
-                    };
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, panels[i]);
-                    Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
-                    fadeIn.Children.Add(anim);
-                    fadeIn.Begin();
+                    Services.MotionHelper.FadeIn(panels[i], Services.MotionHelper.ShortMs, Services.MotionHelper.TabRise);
                     if (tab == 0)
                     {
                         EnsureHomePullTimer();
@@ -238,13 +265,13 @@ namespace YTMusicWP
 
         private async void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
-            SettingsPanel.Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowPage(SettingsPanel);
             await UpdateStorageDisplayAsync();
         }
 
         private void CloseSettings_Click(object sender, RoutedEventArgs e)
         {
-            SettingsPanel.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HidePage(SettingsPanel);
         }
 
 
@@ -263,146 +290,65 @@ namespace YTMusicWP
             }
         }
 
+        private readonly Services.MotionGroup _createMotion = new Services.MotionGroup();
+        private const double CreateIconOpenScale = 18.0 / 14.0;
+
         private void OpenCreateSheet()
         {
             _createSheetOpen = true;
+            var circleT = Services.MotionHelper.EnsureTransform(NavCreateCircle);
+            if (CreateBottomSheet.Visibility != Visibility.Visible)
+            {
+                CreateBottomSheet.Opacity = 0;
+                CreateBottomSheet.SheetTransform.Y = 200;
+            }
+            if (NavCreateCircle.Visibility != Visibility.Visible)
+            {
+                NavCreateCircle.Opacity = 0;
+                circleT.ScaleX = 0.4;
+                circleT.ScaleY = 0.4;
+            }
             CreateBottomSheet.Visibility = Visibility.Visible;
-            CreateBottomSheet.Opacity = 0;
-
-            // Rotate + → × (45°)
-            var rotateAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 45,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(rotateAnim, NavCreateRotate);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(rotateAnim, "Angle");
-
-            // Scale icon up
-            var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 18,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleWAnim, NavCreateViewbox);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleWAnim, "Width");
-
-            var scaleHAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 18,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleHAnim, NavCreateViewbox);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleHAnim, "Height");
-
-            // Slide sheet up
-            var slideAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(250),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateBottomSheet.SheetTransform);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
-
-            // Fade in menu
-            var fadeInAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                From = 0,
-                To = 1,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeInAnim, CreateBottomSheet);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeInAnim, "Opacity");
-
-            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            sb.Children.Add(rotateAnim);
-            sb.Children.Add(scaleWAnim);
-            sb.Children.Add(scaleHAnim);
-            sb.Children.Add(slideAnim);
-            sb.Children.Add(fadeInAnim);
-            sb.Begin();
-
-            // Hide text, show circle, icon → black
-            NavCreateText.Visibility = Visibility.Collapsed;
             NavCreateCircle.Visibility = Visibility.Visible;
+
+            // Hide text, icon -> black on the white disc
+            NavCreateText.Visibility = Visibility.Collapsed;
             NavCreateIcon.Fill = _libChipActiveTextBrush; // cached Black brush
+
+            // + turns into x and grows while the disc blooms behind it and the menu card rises
+            _createMotion.Animate(Services.MotionHelper.EnterMs, Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut, null,
+                Services.MotionHelper.To(NavCreateTransform, "Rotation", 45),
+                Services.MotionHelper.To(NavCreateTransform, "ScaleX", CreateIconOpenScale),
+                Services.MotionHelper.To(NavCreateTransform, "ScaleY", CreateIconOpenScale),
+                Services.MotionHelper.To(NavCreateCircle, "Opacity", 1),
+                Services.MotionHelper.To(circleT, "ScaleX", 1),
+                Services.MotionHelper.To(circleT, "ScaleY", 1),
+                Services.MotionHelper.To(CreateBottomSheet.SheetTransform, "Y", 0),
+                Services.MotionHelper.To(CreateBottomSheet, "Opacity", 1));
         }
 
         private void CloseCreateSheet()
         {
             _createSheetOpen = false;
+            var circleT = Services.MotionHelper.EnsureTransform(NavCreateCircle);
 
-            // Rotate × → + (0°)
-            var rotateAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(rotateAnim, NavCreateRotate);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(rotateAnim, "Angle");
-
-            // Scale icon back
-            var scaleWAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 14,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleWAnim, NavCreateViewbox);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleWAnim, "Width");
-
-            var scaleHAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 14,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(scaleHAnim, NavCreateViewbox);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(scaleHAnim, "Height");
-
-            // Slide sheet down
-            var slideAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 200,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(slideAnim, CreateBottomSheet.SheetTransform);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(slideAnim, "Y");
-
-            // Fade out menu
-            var fadeOutAnim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(180),
-                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn }
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOutAnim, CreateBottomSheet);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeOutAnim, "Opacity");
-
-            var sb = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            sb.Children.Add(rotateAnim);
-            sb.Children.Add(scaleWAnim);
-            sb.Children.Add(scaleHAnim);
-            sb.Children.Add(slideAnim);
-            sb.Children.Add(fadeOutAnim);
-            sb.Completed += (s, a) =>
-            {
-                CreateBottomSheet.Visibility = Visibility.Collapsed;
-                CreateBottomSheet.Opacity = 1;
-            };
-            sb.Begin();
-
-            // Show text, hide circle, icon → gray
+            // Show text, icon -> gray
             NavCreateText.Visibility = Visibility.Visible;
-            NavCreateCircle.Visibility = Visibility.Collapsed;
             NavCreateIcon.Fill = _navInactiveBrush;
+
+            _createMotion.Animate(Services.MotionHelper.ExitMs, Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn, () =>
+                {
+                    CreateBottomSheet.Visibility = Visibility.Collapsed;
+                    NavCreateCircle.Visibility = Visibility.Collapsed;
+                },
+                Services.MotionHelper.To(NavCreateTransform, "Rotation", 0),
+                Services.MotionHelper.To(NavCreateTransform, "ScaleX", 1),
+                Services.MotionHelper.To(NavCreateTransform, "ScaleY", 1),
+                Services.MotionHelper.To(NavCreateCircle, "Opacity", 0),
+                Services.MotionHelper.To(circleT, "ScaleX", 0.4),
+                Services.MotionHelper.To(circleT, "ScaleY", 0.4),
+                Services.MotionHelper.To(CreateBottomSheet.SheetTransform, "Y", 200),
+                Services.MotionHelper.To(CreateBottomSheet, "Opacity", 0));
         }
 
         private void CloseCreateSheet_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)

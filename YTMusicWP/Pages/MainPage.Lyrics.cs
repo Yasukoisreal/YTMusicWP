@@ -816,19 +816,17 @@ namespace YTMusicWP
             // Bind same lyrics data
             FullscreenLyricsListView.ItemsSource = currentLyrics;
 
-            // Show with fade-in
+            // Show: fade in while settling from a slight zoom
+            var lyricsT = Services.MotionHelper.EnsureTransform(FullscreenLyricsView);
+            if (FullscreenLyricsView.Visibility != Visibility.Visible)
+            {
+                FullscreenLyricsView.Opacity = 0;
+                lyricsT.ScaleX = 0.96;
+                lyricsT.ScaleY = 0.96;
+            }
             FullscreenLyricsView.Visibility = Visibility.Visible;
             UpdateStatusBarColor(true, animate: true, durationMs: 300);
-            FullscreenLyricsView.Opacity = 0;
-            var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                From = 0, To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(300))
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, FullscreenLyricsView);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
-            fadeIn.Children.Add(anim);
-            fadeIn.Completed += (s, a) =>
+            _fullscreenLyricsMotion.Animate(Services.MotionHelper.EnterMs + 50, Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut, () =>
             {
                 // Set correct opacity on all containers after layout is ready
                 _cachedFullscreenLyricsScrollViewer = null;
@@ -860,8 +858,10 @@ namespace YTMusicWP
                     UpdateActiveLineWordProgress(_appMediaPlayer != null ? _appMediaPlayer.Position : TimeSpan.Zero, true);
                 }
                 UpdateWordTimerState();
-            };
-            fadeIn.Begin();
+            },
+            Services.MotionHelper.To(FullscreenLyricsView, "Opacity", 1),
+            Services.MotionHelper.To(lyricsT, "ScaleX", 1),
+            Services.MotionHelper.To(lyricsT, "ScaleY", 1));
         }
 
         private void CloseFullscreenLyrics_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
@@ -872,25 +872,22 @@ namespace YTMusicWP
                 UpdateStatusBarColor(false, animate: true, durationMs: 200);
             }
 
-            // Fade out
-            var fadeOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                From = 1, To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(200))
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, FullscreenLyricsView);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
-            fadeOut.Children.Add(anim);
-            fadeOut.Completed += (s, a) =>
+            // Fade out while easing back a touch; reopening mid-way reverses instead of hiding the new view
+            var lyricsT = Services.MotionHelper.EnsureTransform(FullscreenLyricsView);
+            _fullscreenLyricsMotion.Animate(Services.MotionHelper.ExitMs, Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn, () =>
             {
                 FullscreenLyricsView.Visibility = Visibility.Collapsed;
                 UpdateStatusBarColor(npOpen, animate: false);
                 // Refresh regular lyrics containers to match current sync state
                 RefreshRegularLyricsContainers();
                 UpdateWordTimerState();
-            };
-            fadeOut.Begin();
+            },
+            Services.MotionHelper.To(FullscreenLyricsView, "Opacity", 0),
+            Services.MotionHelper.To(lyricsT, "ScaleX", 0.98),
+            Services.MotionHelper.To(lyricsT, "ScaleY", 0.98));
         }
+
+        private readonly Services.MotionGroup _fullscreenLyricsMotion = new Services.MotionGroup();
 
         private static async Task<string> SafeGetStringWithTokenAsync(System.Net.Http.HttpClient client, string url, CancellationToken token)
         {

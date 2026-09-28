@@ -24,7 +24,7 @@ namespace YTMusicWP.Controls
         public event RoutedEventHandler WatchLaterClick;
         public event RoutedEventHandler LiveDebugClick;
 
-        /// <summary>Raised when the slide-down animation of <see cref="Hide"/> has finished.</summary>
+        /// <summary>Raised when the closing animation of <see cref="Hide"/> has finished.</summary>
         public event EventHandler Closed;
 
         public NowPlayingMenu()
@@ -48,20 +48,17 @@ namespace YTMusicWP.Controls
 
         public void Open()
         {
-            Visibility = Visibility.Visible;
-            SlideUpStoryboard.Begin();
+            Services.MotionHelper.ShowSheet(this, Sheet);
         }
 
         /// <summary>Slides the menu down, then collapses it and raises <see cref="Closed"/>.</summary>
         public void Hide()
         {
-            SlideDownStoryboard.Begin();
-        }
-
-        private void SlideDownStoryboard_Completed(object sender, object e)
-        {
-            Visibility = Visibility.Collapsed;
-            if (Closed != null) Closed(this, EventArgs.Empty);
+            if (!IsOpen) return;
+            Services.MotionHelper.HideSheet(this, Sheet, () =>
+            {
+                if (Closed != null) Closed(this, EventArgs.Empty);
+            });
         }
 
         private static void Raise(RoutedEventHandler handler, object sender, RoutedEventArgs e)

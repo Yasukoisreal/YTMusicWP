@@ -96,7 +96,7 @@ namespace YTMusicWP
             }
             catch { _samplesWasMainPlaying = false; }
 
-            ShortsView.Visibility = Visibility.Visible;
+            Services.MotionHelper.FadeIn(ShortsView);
             ShortsView.Opacity = 1;
             ShortsView.SampleStageTransform.Y = 0;
 
@@ -598,7 +598,13 @@ namespace YTMusicWP
 
         private void FadeInSampleVideo()
         {
-            var anim = new DoubleAnimation { From = 1, To = 0, Duration = new Duration(TimeSpan.FromMilliseconds(250)) };
+            var anim = new DoubleAnimation
+            {
+                From = 1,
+                To = 0,
+                Duration = new Duration(TimeSpan.FromMilliseconds(300)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
             Storyboard.SetTarget(anim, ShortsView.SamplePosterLayer);
             Storyboard.SetTargetProperty(anim, "Opacity");
             var sb = new Storyboard();
@@ -796,6 +802,7 @@ namespace YTMusicWP
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }
             UpdateSampleLikeState(track);
+            if (isAdding) Services.MotionHelper.Pop(ShortsView.SampleLikeIcon);
 
             await RateVideoAsync(track.VideoId, isAdding ? "like" : "none");
         }

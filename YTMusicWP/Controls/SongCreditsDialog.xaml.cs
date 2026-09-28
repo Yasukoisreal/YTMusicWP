@@ -21,7 +21,7 @@ namespace YTMusicWP.Controls
         /// <summary>Opens the sheet in the loading state with placeholder values.</summary>
         public void ShowLoading(string trackTitle, string albumName)
         {
-            Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowSheet(this, Sheet);
             SongCreditsLoading.Visibility = Visibility.Visible;
             SongCreditsContent.Visibility = Visibility.Collapsed;
 
@@ -100,7 +100,7 @@ namespace YTMusicWP.Controls
 
         public void Close()
         {
-            Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideSheet(this, Sheet);
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)

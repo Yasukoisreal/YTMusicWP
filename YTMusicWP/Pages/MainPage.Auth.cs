@@ -535,7 +535,7 @@ namespace YTMusicWP
 
         private async void LoginGoogle_Click(object sender, RoutedEventArgs e)
         {
-            LoginWebContainer.Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowPage(LoginWebContainer);
             LoginWebContainer.DeviceCodeText.Text = "----";
             LoginWebContainer.DeviceCodeQrImage.Source = null;
             LoginWebContainer.DeviceCodeQrLoading.Visibility = Visibility.Visible;
@@ -565,7 +565,7 @@ namespace YTMusicWP
                 await ExtractAndSaveCookiesAsync("");
             }
             
-            LoginWebContainer.Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HidePage(LoginWebContainer);
             _deviceCodePolling = false;
             LoginWebContainer.DeviceCodeQrImage.Source = null;
         }
@@ -683,7 +683,7 @@ namespace YTMusicWP
 
                             await SyncAllAsync(accessToken);
 
-                            LoginWebContainer.Visibility = Visibility.Collapsed;
+                            Services.MotionHelper.HidePage(LoginWebContainer);
                             return;
                         }
                         else
@@ -734,7 +734,7 @@ namespace YTMusicWP
         private void LoginCookie_Click(object sender, RoutedEventArgs e)
         {
             _cookieLoginActive = true;
-            LoginWebContainer.Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowPage(LoginWebContainer);
 
             // Hide the Device Code UI, show WebView instead
             LoginWebContainer.LoginWebView.Visibility = Visibility.Visible;
@@ -824,7 +824,7 @@ namespace YTMusicWP
                 _cookieLoginActive = false;
                 LoginWebContainer.LoginWebView.Visibility = Visibility.Collapsed;
                 LoginWebContainer.LoginWebLoading.Visibility = Visibility.Collapsed;
-                LoginWebContainer.Visibility = Visibility.Collapsed;
+                Services.MotionHelper.HidePage(LoginWebContainer);
 
                 UpdateAccountPanel(true, "Logged in (Cookie)");
                 SettingsPanel.LoginStatusText.Foreground = _greenBrush;

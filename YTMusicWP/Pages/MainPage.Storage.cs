@@ -508,7 +508,7 @@ namespace YTMusicWP
         private void OpenCreatePlaylistDialog_Click(object sender, RoutedEventArgs e)
         {
             NewPlaylistNameTextBox.Text = "";
-            CreatePlaylistDialog.Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowDialog(CreatePlaylistDialog, CreatePlaylistCard);
         }
 
     }

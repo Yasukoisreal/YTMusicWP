@@ -160,6 +160,7 @@
     <Compile Include="Services\TileService.cs" />
     <Compile Include="Services\LumiaBlurHelper.cs" />
     <Compile Include="Services\MemoryHelper.cs" />
+    <Compile Include="Services\MotionHelper.cs" />
     <Compile Include="Services\M4aMetadataWriter.cs" />
     <Compile Include="Services\LrcParser.cs" />
     <Compile Include="Services\FormatSelector.cs" />

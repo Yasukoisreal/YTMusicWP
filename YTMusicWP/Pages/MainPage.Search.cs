@@ -79,17 +79,9 @@ namespace YTMusicWP
             SearchSongList.UpdateLayout();
             AttachSearchScrollViewer();
 
-            // Fade-in search results
-            SearchSongList.Opacity = 0;
-            var fadeIn = new Windows.UI.Xaml.Media.Animation.Storyboard();
-            var anim = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
-            {
-                From = 0, To = 1, Duration = new Duration(TimeSpan.FromMilliseconds(200))
-            };
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(anim, SearchSongList);
-            Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(anim, "Opacity");
-            fadeIn.Children.Add(anim);
-            fadeIn.Begin();
+            // Fresh results fade in while rising into place
+            if (SearchSongList.Visibility == Visibility.Visible)
+                Services.MotionHelper.FadeIn(SearchSongList, Services.MotionHelper.EnterMs, 24);
         }
 
         private void AttachSearchScrollViewer()
@@ -826,7 +818,7 @@ namespace YTMusicWP
                 }
             }
 
-            MoodCategoryView.Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowPage(MoodCategoryView);
             MoodCategoryTitle.Text = title;
             MoodCategoryLoading.Visibility = Visibility.Visible;
             MoodCategorySectionList.ItemsSource = null;
@@ -846,8 +838,8 @@ namespace YTMusicWP
 
         private void CloseMoodCategory_Click(object sender, RoutedEventArgs e)
         {
-            MoodCategoryView.Visibility = Visibility.Collapsed;
-            MoodCategorySectionList.ItemsSource = null;
+            // Keep the list while it slides away; release it once hidden
+            Services.MotionHelper.HidePage(MoodCategoryView, () => MoodCategorySectionList.ItemsSource = null);
         }
 
         private void DiscoverItem_Click(object sender, ItemClickEventArgs e)

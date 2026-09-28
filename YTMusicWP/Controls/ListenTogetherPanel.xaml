@@ -18,17 +18,9 @@
             <Setter Property="FontFamily" Value="{StaticResource MontserratMedium}"/>
         </Style>
 
-        <Storyboard x:Name="ListenTogetherSlideInStoryboard" x:FieldModifier="internal">
-            <DoubleAnimation Storyboard.TargetName="ListenTogetherTransform" Storyboard.TargetProperty="Y" To="0" Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
     </UserControl.Resources>
 
     <Grid Background="#0C0F14">
-        <Grid.RenderTransform>
-            <TranslateTransform x:Name="ListenTogetherTransform" Y="1000"/>
-        </Grid.RenderTransform>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>

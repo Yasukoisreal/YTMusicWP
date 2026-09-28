@@ -50,22 +50,19 @@ namespace YTMusicWP
                 ListenTogetherView.LtDisplayNameBox.Text = string.IsNullOrWhiteSpace(HomeAvatarLetter?.Text) ? "Lumia User" : ("Lumia " + HomeAvatarLetter.Text);
             }
 
-            ListenTogetherView.Visibility = Visibility.Visible;
-            if (ListenTogetherView.ListenTogetherSlideInStoryboard != null)
-            {
-                ListenTogetherView.ListenTogetherSlideInStoryboard.Begin();
-            }
+            Services.MotionHelper.ShowPage(ListenTogetherView);
 
             UpdateListenTogetherUI();
         }
 
         private void CloseListenTogetherView_Click(object sender, RoutedEventArgs e)
         {
-            if (ListenTogetherView.LtSettingsPanel != null) ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Collapsed;
-            if (ListenTogetherView != null)
+            if (ListenTogetherView == null) return;
+            // The whole view slides away; its settings sub-page goes with it and is reset once hidden
+            Services.MotionHelper.HidePage(ListenTogetherView, () =>
             {
-                ListenTogetherView.Visibility = Visibility.Collapsed;
-            }
+                if (ListenTogetherView.LtSettingsPanel != null) Services.MotionHelper.HideNow(ListenTogetherView.LtSettingsPanel);
+            });
         }
 
         private void OpenListenTogether_Click(object sender, RoutedEventArgs e)
@@ -1061,14 +1058,14 @@ namespace YTMusicWP
                 }
             }
 
-            ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Visible;
+            Services.MotionHelper.ShowPage(ListenTogetherView.LtSettingsPanel);
         }
 
         private void LtCloseSettings_Click(object sender, RoutedEventArgs e)
         {
             if (ListenTogetherView.LtSettingsPanel != null)
             {
-                ListenTogetherView.LtSettingsPanel.Visibility = Visibility.Collapsed;
+                Services.MotionHelper.HidePage(ListenTogetherView.LtSettingsPanel);
             }
         }
 

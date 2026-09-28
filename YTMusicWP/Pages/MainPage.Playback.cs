@@ -2445,7 +2445,12 @@ namespace YTMusicWP
 
             int curSeq = ++_miniLyricSeq;
 
-            var fadeOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 0, Duration = TimeSpan.FromMilliseconds(200) };
+            var fadeOut = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(180),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn }
+            };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeOut, MiniLyricStack);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeOut, "Opacity");
             var sbOut = new Windows.UI.Xaml.Media.Animation.Storyboard();
@@ -2478,7 +2483,12 @@ namespace YTMusicWP
             }
             MiniLyricTranslate.X = 0;
 
-            var fadeIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation { To = 1, Duration = TimeSpan.FromMilliseconds(200) };
+            var fadeIn = new Windows.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(250),
+                EasingFunction = new Windows.UI.Xaml.Media.Animation.CubicEase { EasingMode = Windows.UI.Xaml.Media.Animation.EasingMode.EaseOut }
+            };
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTarget(fadeIn, MiniLyricStack);
             Windows.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(fadeIn, "Opacity");
             var sbIn = new Windows.UI.Xaml.Media.Animation.Storyboard();

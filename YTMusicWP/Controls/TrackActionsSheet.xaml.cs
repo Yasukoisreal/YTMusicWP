@@ -48,18 +48,12 @@ namespace YTMusicWP.Controls
             BottomSheetDeleteBtn.Visibility = (track.VideoId != null && track.VideoId.StartsWith("LOCAL:"))
                 ? Visibility.Visible : Visibility.Collapsed;
 
-            Visibility = Visibility.Visible;
-            SlideUpStoryboard.Begin();
+            Services.MotionHelper.ShowSheet(this, Sheet);
         }
 
         public void Hide()
         {
-            SlideDownStoryboard.Begin();
-        }
-
-        private void SlideDownStoryboard_Completed(object sender, object e)
-        {
-            Visibility = Visibility.Collapsed;
+            Services.MotionHelper.HideSheet(this, Sheet);
         }
 
         private void Content_Tapped(object sender, TappedRoutedEventArgs e)
