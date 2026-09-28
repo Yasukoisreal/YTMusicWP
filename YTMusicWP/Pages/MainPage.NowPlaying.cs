@@ -172,6 +172,7 @@ namespace YTMusicWP
             {
                 UpdateNowPlayingGradient(currentTrack.Title, currentTrack.ChannelName, currentTrack.ThumbnailUrl);
             }
+            UpdateAnimatedArtwork();
         }
         private async void RestoreSearchBoxFocus()
         {
@@ -181,6 +182,7 @@ namespace YTMusicWP
 
         private void CloseNowPlaying_Click(object sender, RoutedEventArgs e)
         {
+            StopAnimatedArtwork();
             // Block SearchBox focus BEFORE any panel changes
             if (SearchBox != null) SearchBox.IsTabStop = false;
             
@@ -306,6 +308,7 @@ namespace YTMusicWP
         private void NowPlayingPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             int idx = NowPlayingPivot.SelectedIndex;
+            UpdateAnimatedArtwork(); // the artwork only plays on the player page
             DotPlayer.Opacity = idx == 0 ? 1.0 : 0.3;
             DotLyrics.Opacity = idx == 1 ? 1.0 : 0.3;
             DotQueue.Opacity  = idx == 2 ? 1.0 : 0.3;

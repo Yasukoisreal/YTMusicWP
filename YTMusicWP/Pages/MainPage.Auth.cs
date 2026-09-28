@@ -165,6 +165,7 @@ namespace YTMusicWP
 
                 SettingsPanel.AutoplayToggle.IsOn = SafeGetBool(settings, "Autoplay", true);
                 SettingsPanel.GaplessToggle.IsOn = SafeGetBool(settings, "GaplessPlayback", true);
+                SettingsPanel.AnimatedArtworkToggle.IsOn = Services.AnimatedArtworkService.IsEnabled;
                 SettingsPanel.NormalizeVolumeToggle.IsOn = SafeGetBool(settings, "NormalizeVolume", false);
                 try { if (settings.ContainsKey("ForceSabr")) settings.Remove("ForceSabr"); } catch { }
 
@@ -219,6 +220,7 @@ namespace YTMusicWP
                 SettingsPanel.AutoplayToggle.Toggled += AutoplayToggle_Toggled;
                 SettingsPanel.GaplessToggle.Toggled += GaplessToggle_Toggled;
                 SettingsPanel.NormalizeVolumeToggle.Toggled += NormalizeVolumeToggle_Toggled;
+                SettingsPanel.AnimatedArtworkToggle.Toggled += AnimatedArtworkToggle_Toggled;
                 SettingsPanel.RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
                 if (SettingsPanel.LanguageComboBox != null)
                     SettingsPanel.LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
@@ -314,6 +316,12 @@ namespace YTMusicWP
         private void GaplessToggle_Toggled(object sender, RoutedEventArgs e)
         {
             ApplicationData.Current.LocalSettings.Values["GaplessPlayback"] = SettingsPanel.GaplessToggle.IsOn;
+        }
+
+        private void AnimatedArtworkToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            Services.AnimatedArtworkService.IsEnabled = SettingsPanel.AnimatedArtworkToggle.IsOn;
+            UpdateAnimatedArtwork();
         }
 
         private void NormalizeVolumeToggle_Toggled(object sender, RoutedEventArgs e)

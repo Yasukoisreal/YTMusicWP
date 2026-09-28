@@ -767,6 +767,7 @@ namespace YTMusicWP
             {
                 var ytTrack = TrackInfoToYouTubeTrack(remoteTrack);
                 currentTrack = ytTrack;
+                UpdateAnimatedArtwork();
 
                 // 1. Canonical queue: current track is ALWAYS index 0, followed by upcoming tracks from host
                 QueueListView.ItemsSource = null;

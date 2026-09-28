@@ -71,6 +71,7 @@ namespace YTMusicWP
                 if (BigCoverRectangle != null) { BigCoverRectangle.Width = boxW; BigCoverRectangle.Height = boxH; }
                 if (BigCoverShadow != null) { BigCoverShadow.Width = Math.Max(0, boxW - 10); BigCoverShadow.Height = Math.Max(0, boxH - 10); }
                 if (MiniCoverRectangle != null) MiniCoverRectangle.Width = (aspect > 1.3) ? 82 : 46;
+                SyncArtworkVideoToCover();
             }
             catch { }
         }
@@ -98,6 +99,7 @@ namespace YTMusicWP
                 {
                     AppleMusicArtworkGrid.Height = h;
                     AppleMusicArtwork.Height = h;
+                    SyncArtworkVideoToCover();
                 }
                 if (double.IsNaN(AppleMusicArtwork.Width) || Math.Abs(AppleMusicArtwork.Width - w) > 1) AppleMusicArtwork.Width = w;
                 AppleMusicArtworkGrid.Clip = new Windows.UI.Xaml.Media.RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, w, h) };
@@ -187,6 +189,7 @@ namespace YTMusicWP
             if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast("No Internet connection"); return; }
 
             currentTrack = track;
+            UpdateAnimatedArtwork();
             _lastLiveCheck = DateTime.MinValue;
             _isCurrentLiveCached = false;
             OnTrackStartedAsHost(track);
@@ -1213,6 +1216,7 @@ namespace YTMusicWP
                 if (!string.IsNullOrEmpty(vid))
                 {
                     currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
+                    UpdateAnimatedArtwork();
                     bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
                     BigHeartBtn.Content = isFav ? "♥" : "♡";
                     BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
@@ -1357,6 +1361,7 @@ namespace YTMusicWP
                     {
                         currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
                         OnTrackStartedAsHost(currentTrack);
+                        UpdateAnimatedArtwork();
 
                         bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
                         BigHeartBtn.Content = isFav ? "♥" : "♡";

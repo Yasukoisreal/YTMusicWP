@@ -167,6 +167,7 @@ namespace YTMusicWP
                 AppleMusicPlayBox.Visibility = isPlaying ? Visibility.Collapsed : Visibility.Visible;
             if (AppleMusicPauseBox != null)
                 AppleMusicPauseBox.Visibility = isPlaying ? Visibility.Visible : Visibility.Collapsed;
+            SyncAnimatedArtworkPlayback(isPlaying);
 
             if (changed)
             {
@@ -594,6 +595,7 @@ namespace YTMusicWP
             try
             {
                 if (_shortsIsOpen) ReleaseSampleVideoForSuspend();
+                StopAnimatedArtwork();
                 Services.MemoryHelper.TrimMemory();
                 Services.MemoryHelper.Mark("Suspended");
             }
@@ -640,6 +642,7 @@ namespace YTMusicWP
 
                 // The Samples video was released on suspend: reload the clip that was on screen
                 if (_shortsIsOpen) ResumeSampleVideoAfterSuspend();
+                UpdateAnimatedArtwork();
 
                 await FlushPendingHistoryAsync();
             });

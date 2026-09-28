@@ -160,6 +160,7 @@ namespace YTMusicWP
         /// </summary>
         private void LeaveImmersiveViewsForPage()
         {
+            StopAnimatedArtwork();
             if (_currentTab == SamplesTab) SwitchTab(0);
             if (NowPlayingView.Visibility == Visibility.Visible)
             {

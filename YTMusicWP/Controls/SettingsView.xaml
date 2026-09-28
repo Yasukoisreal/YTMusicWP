@@ -382,6 +382,20 @@
                         </Grid>
                         <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
 
+                        <!-- Animated Artwork -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Animated Artwork" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock Text="Moving album covers in Now Playing (~2 MB per album)" Foreground="#555" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="AnimatedArtworkToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
                         <!-- Normalize Volume -->
                         <Grid Margin="0,0,0,0">
                             <Grid.ColumnDefinitions>

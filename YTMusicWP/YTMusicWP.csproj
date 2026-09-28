@@ -134,6 +134,7 @@
     <Compile Include="Pages\MainPage.Search.cs" />
     <Compile Include="Pages\MainPage.Auth.cs" />
     <Compile Include="Pages\MainPage.Accounts.cs" />
+    <Compile Include="Pages\MainPage.AnimatedArtwork.cs" />
     <Compile Include="Pages\MainPage.NowPlaying.cs" />
     <Compile Include="Pages\MainPage.Library.cs" />
     <Compile Include="Pages\MainPage.Artist.cs" />
@@ -163,6 +164,7 @@
     <Compile Include="Services\MemoryHelper.cs" />
     <Compile Include="Services\MotionHelper.cs" />
     <Compile Include="Services\AccountStore.cs" />
+    <Compile Include="Services\AnimatedArtworkService.cs" />
     <Compile Include="Services\InnerTubeClient.Accounts.cs" />
     <Compile Include="Services\M4aMetadataWriter.cs" />
     <Compile Include="Services\LrcParser.cs" />
