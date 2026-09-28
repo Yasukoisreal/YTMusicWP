@@ -286,16 +286,23 @@ namespace YTMusicWP
                 AppleMusicLyricsResult amResult = null;
                 List<LyricLine> amLineSyncedLines = null; // Apple Music chỉ có đồng bộ theo dòng → để dành, ưu tiên thử KuGou word-by-word trước
                 int durSecs = 0;
+                double knownDuration = KnownDurationSeconds(title);
                 try
                 {
-                    for (int attempt = 0; attempt < 5; attempt++)
+                    if (knownDuration > 10) durSecs = (int)Math.Round(knownDuration);
+                    else
                     {
-                        try { durSecs = (int)Math.Round(_appMediaPlayer.NaturalDuration.TotalSeconds); } catch { }
-                        if (durSecs > 10) break;
-                        await Task.Delay(100);
+                        for (int attempt = 0; attempt < 5; attempt++)
+                        {
+                            try { durSecs = (int)Math.Round(_appMediaPlayer.NaturalDuration.TotalSeconds); } catch { }
+                            if (durSecs > 10) break;
+                            await Task.Delay(100);
+                        }
                     }
 
                     amResult = await YTMusicWP.Services.AppleMusicLyricsApi.GetLyricsResultAsync(cleanTitle, cleanArtist, durSecs);
+                    // The song changed while this request ran: its lyrics must not land on the new song
+                    if (token.IsCancellationRequested) return;
                     if (amResult != null && (amResult.Lines != null || !string.IsNullOrWhiteSpace(amResult.SyncedLrc) || !string.IsNullOrWhiteSpace(amResult.PlainLyrics)))
                     {
                         syncedLyrics = amResult.SyncedLrc;
@@ -365,7 +372,8 @@ namespace YTMusicWP
                 var searchTask2 = SafeGetStringWithTokenAsync(_apiClient, url2, token);
 
                 // Quick duration poll (max 500ms) — in parallel with searches
-                for (int attempt = 0; attempt < 5; attempt++)
+                if (knownDuration > 10) trackDurationSec = knownDuration;
+                for (int attempt = 0; attempt < 5 && trackDurationSec <= 10; attempt++)
                 {
                     try { trackDurationSec = _appMediaPlayer.NaturalDuration.TotalSeconds; } catch { }
                     if (trackDurationSec > 10) break;
@@ -415,8 +423,9 @@ namespace YTMusicWP
                             if (arr1.Count > 0)
                             {
                                 var match1 = pickBestMatch(arr1, trackDurationSec);
-                                syncedLyrics = match1[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
-                                plainLyrics = match1[1] + "\n\nLyrics provided by LRCLIB";
+                                // Plain-only matches used to become a "synced" text holding just the credit line
+                                if (!string.IsNullOrWhiteSpace(match1[0])) syncedLyrics = match1[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
+                                if (!string.IsNullOrWhiteSpace(match1[1])) plainLyrics = match1[1] + "\n\nLyrics provided by LRCLIB";
                             }
                         }
                     }
@@ -435,7 +444,7 @@ namespace YTMusicWP
                                 {
                                     var match2 = pickBestMatch(arr2, trackDurationSec);
                                     if (!string.IsNullOrWhiteSpace(match2[0])) syncedLyrics = match2[0] + "\n[99:99.99] Lyrics provided by LRCLIB";
-                                    if (string.IsNullOrWhiteSpace(plainLyrics)) plainLyrics = match2[1] + "\n\nLyrics provided by LRCLIB";
+                                    if (string.IsNullOrWhiteSpace(plainLyrics) && !string.IsNullOrWhiteSpace(match2[1])) plainLyrics = match2[1] + "\n\nLyrics provided by LRCLIB";
                                 }
                             }
                         }
@@ -499,6 +508,7 @@ namespace YTMusicWP
 
                                 token.ThrowIfCancellationRequested();
                                 var captionLines = await InnerTubeClient.FetchCaptionTextAsync(preferred.BaseUrl);
+                                token.ThrowIfCancellationRequested();
                                 if (captionLines.Count > 0)
                                 {
                                     foreach (var cl in captionLines) currentLyrics.Add(cl);
@@ -530,8 +540,27 @@ namespace YTMusicWP
             }
             finally
             {
-                LyricsLoadingBar.Visibility = Visibility.Collapsed;
+                // A cancelled load leaves the bar to the load that replaced it (it would hide it mid-load)
+                if (!token.IsCancellationRequested) LyricsLoadingBar.Visibility = Visibility.Collapsed;
             }
+        }
+
+        /// <summary>
+        /// The song's length from its list metadata ("3:45", "1:02:10"), 0 when unknown. Right after a song change the
+        /// player still reports the previous song's duration, which made the lyrics lookups match the wrong version.
+        /// </summary>
+        private double KnownDurationSeconds(string title)
+        {
+            var track = currentTrack;
+            if (track == null || track.Title != title || string.IsNullOrEmpty(track.Duration)) return 0;
+            double total = 0;
+            foreach (var part in track.Duration.Split(':'))
+            {
+                int n;
+                if (!int.TryParse(part.Trim(), out n) || n < 0) return 0;
+                total = total * 60 + n;
+            }
+            return total;
         }
 
         private void ParseAndDisplaySyncedLyrics(string syncedLyrics)

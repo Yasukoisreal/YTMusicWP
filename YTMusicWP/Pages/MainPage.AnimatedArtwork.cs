@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
@@ -8,6 +9,7 @@ using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Shapes;
 using YTMusicWP.Services;
 
@@ -174,6 +176,20 @@ namespace YTMusicWP
                 host.Children.Insert(index >= 0 ? index + 1 : host.Children.Count, video);
             }
 
+            // Bottom fade into the backdrop (Apple Music style only), directly above the video
+            var fade = EnsureArtworkFade();
+            var fadeParent = fade.Parent as Panel;
+            if (!_isAppleMusicStyle)
+            {
+                if (fadeParent != null) fadeParent.Children.Remove(fade);
+            }
+            else if (fadeParent != host)
+            {
+                if (fadeParent != null) fadeParent.Children.Remove(fade);
+                host.Children.Insert(host.Children.IndexOf(video) + 1, fade);
+            }
+            fade.Opacity = video.Opacity;
+
             // Rounded corners (default style only; the Apple Music artwork is full-bleed)
             var corners = EnsureArtworkCorners();
             var cornersParent = corners.Parent as Panel;
@@ -195,10 +211,16 @@ namespace YTMusicWP
             if (video == null) return;
             if (_isAppleMusicStyle)
             {
+                // Square and top-aligned like the still artwork (a slot shorter than the width crops its bottom, which is
+                // what the fade rows assume); the grid's clip cuts the overflow
+                double width = AppleMusicArtwork.Width;
+                if (double.IsNaN(width) || width <= 0) width = AppleMusicArtworkGrid.ActualWidth;
                 video.Width = double.NaN;
-                video.Height = AppleMusicArtwork.Height;
+                video.Height = width > 0 ? width : AppleMusicArtwork.Height;
                 video.HorizontalAlignment = HorizontalAlignment.Stretch;
                 video.VerticalAlignment = VerticalAlignment.Top;
+                // Fade rows depend on the grid's final size: paint after this layout pass
+                var ignored = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, UpdateArtworkFade);
             }
             else
             {
@@ -313,6 +335,144 @@ namespace YTMusicWP
             return stops[stops.Count - 1].Color;
         }
 
+        // ── Apple Music style bottom fade ──
+        // The still artwork dissolves into the backdrop through its own alpha (LumiaBlurHelper.RenderFadedArtworkAsync).
+        // A video has no alpha and WP8.1 has no OpacityMask, so the fade is painted over the video instead: a small bitmap
+        // of what lies behind the artwork (blurred backdrop under the tinted wash) whose opacity rises along the same
+        // cosine curve over the same rows, and is solid below them. Video under it composes exactly like the still image.
+        private Image _artworkFade;
+        private const int ArtworkFadeColumns = 48; // the backdrop is a ~32 px wide blur, stretched back smoothly
+
+        private Image EnsureArtworkFade()
+        {
+            if (_artworkFade == null)
+            {
+                _artworkFade = new Image
+                {
+                    Stretch = Stretch.Fill,
+                    IsHitTestVisible = false,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Opacity = 0
+                };
+            }
+            return _artworkFade;
+        }
+
+        private void UpdateArtworkFade()
+        {
+            var fade = _artworkFade;
+            var grid = AppleMusicArtworkGrid;
+            if (fade == null || fade.Parent != grid || grid == null || !_isAppleMusicStyle) return;
+            double w = grid.ActualWidth;
+            double h = !double.IsNaN(grid.Height) ? grid.Height : grid.ActualHeight;
+            if (w <= 0 || h <= 0) return;
+            try
+            {
+                // Rows of the still artwork's fade, in grid coordinates (square bitmap scaled to the width, top-aligned)
+                int size = AppleMusicFadeSize;
+                double scale = w / size;
+                int fadeEndY = GetArtworkFadeEndY(size);
+                double top = Math.Max(0, fadeEndY - AppleMusicFadeHeight) * scale;
+                double end = fadeEndY * scale;
+                if (top >= h - 1) { fade.Source = null; return; }
+                int rows = (int)Math.Ceiling(h - top);
+                int cols = ArtworkFadeColumns;
+
+                // Blurred backdrop: UniformToFill, centered, in its own box
+                var backdrop = AppleMusicBackdrop;
+                var blur = backdrop != null && backdrop.Visibility == Visibility.Visible ? backdrop.Source as WriteableBitmap : null;
+                byte[] px = null;
+                int pw = 0, ph = 0;
+                double bScale = 1, bx0 = 0, by0 = 0;
+                Point origin = new Point(), unit = new Point(1, 1);
+                if (blur != null && blur.PixelWidth > 0 && blur.PixelHeight > 0 && backdrop.ActualWidth > 0 && backdrop.ActualHeight > 0)
+                {
+                    px = blur.PixelBuffer.ToArray();
+                    pw = blur.PixelWidth;
+                    ph = blur.PixelHeight;
+                    bScale = Math.Max(backdrop.ActualWidth / pw, backdrop.ActualHeight / ph);
+                    bx0 = (backdrop.ActualWidth - pw * bScale) / 2;
+                    by0 = (backdrop.ActualHeight - ph * bScale) / 2;
+                    var toBackdrop = grid.TransformToVisual(backdrop);
+                    origin = toBackdrop.TransformPoint(new Point(0, 0));
+                    var one = toBackdrop.TransformPoint(new Point(1, 1));
+                    unit = new Point(one.X - origin.X, one.Y - origin.Y);
+                }
+
+                // Tinted wash over it
+                var wash = AppleMusicWash;
+                bool hasWash = wash != null && wash.Visibility == Visibility.Visible && wash.ActualHeight > 0;
+                double washTop = 0;
+                if (hasWash) washTop = grid.TransformToVisual(wash).TransformPoint(new Point(0, 0)).Y;
+
+                var pixels = new byte[cols * rows * 4];
+                double rowHeight = (h - top) / rows;
+                double colWidth = w / cols;
+                double span = Math.Max(1, end - top);
+                for (int j = 0; j < rows; j++)
+                {
+                    double y = top + (j + 0.5) * rowHeight;
+                    // 1 - the still artwork's alpha 0.5 * (1 + cos(pi * progress))
+                    double alpha = y >= end ? 1 : 0.5 * (1 - Math.Cos(Math.PI * (y - top) / span));
+                    Color washColor = Colors.Black;
+                    double washAmount = 0;
+                    if (hasWash)
+                    {
+                        washColor = GradientColorAt(AppleMusicWashGradient, (washTop + y) / wash.ActualHeight);
+                        washAmount = wash.Opacity * washColor.A / 255.0;
+                    }
+                    for (int i = 0; i < cols; i++)
+                    {
+                        double r = 0, g = 0, b = 0;
+                        if (px != null)
+                        {
+                            double bx = origin.X + unit.X * (i + 0.5) * colWidth;
+                            double by = origin.Y + unit.Y * y;
+                            SampleBilinear(px, pw, ph, (bx - bx0) / bScale - 0.5, (by - by0) / bScale - 0.5, out r, out g, out b);
+                        }
+                        r = r * (1 - washAmount) + washColor.R * washAmount;
+                        g = g * (1 - washAmount) + washColor.G * washAmount;
+                        b = b * (1 - washAmount) + washColor.B * washAmount;
+                        int k = (j * cols + i) * 4; // BGRA, premultiplied
+                        pixels[k] = (byte)Math.Round(b * alpha);
+                        pixels[k + 1] = (byte)Math.Round(g * alpha);
+                        pixels[k + 2] = (byte)Math.Round(r * alpha);
+                        pixels[k + 3] = (byte)Math.Round(255 * alpha);
+                    }
+                }
+
+                var bitmap = new WriteableBitmap(cols, rows);
+                using (var stream = bitmap.PixelBuffer.AsStream())
+                {
+                    stream.Write(pixels, 0, pixels.Length);
+                }
+                bitmap.Invalidate();
+                fade.Source = bitmap;
+                fade.Margin = new Thickness(0, top, 0, 0);
+                fade.Height = h - top;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[AnimatedArtwork] fade: " + ex.Message);
+            }
+        }
+
+        /// <summary>Bilinear sample of an opaque BGRA pixel buffer at (x, y) in pixel-center coordinates, edges clamped.</summary>
+        private static void SampleBilinear(byte[] px, int width, int height, double x, double y, out double r, out double g, out double b)
+        {
+            x = Math.Max(0, Math.Min(width - 1, x));
+            y = Math.Max(0, Math.Min(height - 1, y));
+            int x0 = (int)x, y0 = (int)y;
+            int x1 = Math.Min(width - 1, x0 + 1), y1 = Math.Min(height - 1, y0 + 1);
+            double fx = x - x0, fy = y - y0;
+            int a = (y0 * width + x0) * 4, bb = (y0 * width + x1) * 4, c = (y1 * width + x0) * 4, d = (y1 * width + x1) * 4;
+            double w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+            b = px[a] * w00 + px[bb] * w10 + px[c] * w01 + px[d] * w11;
+            g = px[a + 1] * w00 + px[bb + 1] * w10 + px[c + 1] * w01 + px[d + 1] * w11;
+            r = px[a + 2] * w00 + px[bb + 2] * w10 + px[c + 2] * w01 + px[d + 2] * w11;
+        }
+
         /// <summary>The cover was resized (new artwork loaded, layout pass): keep the video on it, or drop it if the cover is no longer square.</summary>
         private void SyncArtworkVideoToCover()
         {
@@ -350,6 +510,13 @@ namespace YTMusicWP
             if (parent != null) parent.Children.Remove(video);
             var cornersParent = _artworkCorners != null ? _artworkCorners.Parent as Panel : null;
             if (cornersParent != null) cornersParent.Children.Remove(_artworkCorners);
+            if (_artworkFade != null)
+            {
+                var fadeParent = _artworkFade.Parent as Panel;
+                if (fadeParent != null) fadeParent.Children.Remove(_artworkFade);
+                _artworkFade.Opacity = 0;
+                _artworkFade.Source = null;
+            }
         }
 
         /// <summary>The song was paused or resumed: the artwork follows it.</summary>
@@ -378,6 +545,11 @@ namespace YTMusicWP
             if (video.Position.TotalSeconds >= 0.3)
             {
                 UpdateArtworkCornerColors();
+                if (_artworkFade != null && _artworkFade.Parent != null)
+                {
+                    UpdateArtworkFade();
+                    _artworkFade.Opacity = 1;
+                }
                 video.Opacity = 1;
                 _artworkRevealTimer.Stop();
             }

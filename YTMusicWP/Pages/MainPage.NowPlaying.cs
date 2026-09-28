@@ -34,7 +34,9 @@ namespace YTMusicWP
 
         private async void MenuLikeNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
+            // Captured: the song can change (or currentTrack become null) while the token loads
+            var track = currentTrack;
+            if (track == null || track.VideoId.StartsWith("LOCAL:")) return;
             NowPlayingMenuDialog.Hide();
 
             string token = await GetAccessTokenAsync();
@@ -44,7 +46,7 @@ namespace YTMusicWP
                 return;
             }
 
-            bool success = await InnerTubeClient.LikeVideoAsync(currentTrack.VideoId, token);
+            bool success = await InnerTubeClient.LikeVideoAsync(track.VideoId, token);
             ShowToast(success ? "Added to Liked Songs!" : "Failed to Like song");
         }
 
@@ -60,7 +62,8 @@ namespace YTMusicWP
 
         private async void MenuWatchLaterNowPlaying_Click(object sender, RoutedEventArgs e)
         {
-            if (currentTrack == null || currentTrack.VideoId.StartsWith("LOCAL:")) return;
+            var track = currentTrack;
+            if (track == null || track.VideoId.StartsWith("LOCAL:")) return;
             NowPlayingMenuDialog.Hide();
 
             string token = await GetAccessTokenAsync();
@@ -70,7 +73,7 @@ namespace YTMusicWP
                 return;
             }
 
-            bool success = await AddToWatchLaterAsync(currentTrack.VideoId);
+            bool success = await AddToWatchLaterAsync(track.VideoId);
             ShowToast(success ? "Added to Watch Later!" : "Failed to add to Watch Later");
         }
 
@@ -107,7 +110,8 @@ namespace YTMusicWP
             var track = e.ClickedItem as YouTubeTrack;
             if (track != null)
             {
-                PlayTrack(track);
+                // Play within the queue as it is (with its reordering and autoplay additions), not the list it came from
+                PlayTrack(track, currentQueueTracks);
             }
         }
 
@@ -677,19 +681,19 @@ namespace YTMusicWP
 
             try
             {
+                // The radio becomes the queue on its own (it used to overwrite the Search tab's results to get there)
+                var radio = new System.Collections.ObjectModel.ObservableCollection<YouTubeTrack> { track };
                 var radioResults = await InnerTubeClient.GetRadioTracksAsync(track.VideoId);
                 if (radioResults != null && radioResults.Count > 0)
                 {
-                    searchResults.Clear();
-                    searchResults.Add(track);
                     foreach (var t in radioResults)
                     {
                         if (t.VideoId != track.VideoId)
-                            searchResults.Add(t);
+                            radio.Add(t);
                     }
 
-                    PlayTrack(track);
-                    ShowToast("Radio: " + searchResults.Count + " songs");
+                    PlayTrack(track, radio);
+                    ShowToast("Radio: " + radio.Count + " songs");
                     return;
                 }
 
@@ -712,17 +716,15 @@ namespace YTMusicWP
                     if (musicResults.Count > 0)
                     {
                         // Put the original track first, then radio results (excluding duplicates)
-                        searchResults.Clear();
-                        searchResults.Add(track);
                         foreach (var t in musicResults)
                         {
                             if (t.VideoId != track.VideoId)
-                                searchResults.Add(t);
+                                radio.Add(t);
                         }
 
                         // Auto-play from the original track
-                        PlayTrack(track);
-                        ShowToast("Radio: " + searchResults.Count + " songs");
+                        PlayTrack(track, radio);
+                        ShowToast("Radio: " + radio.Count + " songs");
                     }
                     else
                     {
@@ -814,20 +816,21 @@ namespace YTMusicWP
         private async void MenuSongCreditsNowPlaying_Click(object sender, RoutedEventArgs e)
         {
             NowPlayingMenuDialog.Hide();
-            if (currentTrack == null) return;
+            var track = currentTrack;
+            if (track == null) return;
 
-            SongCreditsDialog.ShowLoading(currentTrack.Title, currentTrack.AlbumName);
+            SongCreditsDialog.ShowLoading(track.Title, track.AlbumName);
 
             try
             {
                 var credits = await InnerTubeClient.GetSongCreditsAsync(
-                    currentTrack.VideoId,
-                    currentTrack.Title,
-                    currentTrack.ChannelName,
-                    currentTrack.CreditsBrowseId,
-                    currentTrack.AlbumName);
+                    track.VideoId,
+                    track.Title,
+                    track.ChannelName,
+                    track.CreditsBrowseId,
+                    track.AlbumName);
 
-                SongCreditsDialog.ShowCredits(credits, currentTrack.ChannelName);
+                SongCreditsDialog.ShowCredits(credits, track.ChannelName);
             }
             catch { }
             finally

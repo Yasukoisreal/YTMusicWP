@@ -102,10 +102,17 @@ namespace YTMusicWP
                     SyncArtworkVideoToCover();
                 }
                 if (double.IsNaN(AppleMusicArtwork.Width) || Math.Abs(AppleMusicArtwork.Width - w) > 1) AppleMusicArtwork.Width = w;
-                AppleMusicArtworkGrid.Clip = new Windows.UI.Xaml.Media.RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, w, h) };
+                // Runs every second from the position timer: only replace the clip when the size really changed
+                var clip = AppleMusicArtworkGrid.Clip;
+                if (clip == null || Math.Abs(clip.Rect.Width - w) > 0.5 || Math.Abs(clip.Rect.Height - h) > 0.5)
+                    AppleMusicArtworkGrid.Clip = new Windows.UI.Xaml.Media.RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, w, h) };
             }
             catch { }
         }
+
+        // Pixel size and fade height of the faded still artwork (Apple Music style); the animated artwork's fade follows them
+        private static int AppleMusicFadeSize { get { return Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480; } }
+        private static int AppleMusicFadeHeight { get { return Services.MemoryHelper.IsLowMemoryDevice ? 135 : 180; } }
 
         private int GetArtworkFadeEndY(int targetFadeSize)
         {
@@ -184,9 +191,10 @@ namespace YTMusicWP
                 return;
             }
 
-            try { _appMediaPlayer.Pause(); } catch { }
-
+            // Offline: keep the current song playing instead of pausing it for a song that cannot load
             if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast("No Internet connection"); return; }
+
+            try { _appMediaPlayer.Pause(); } catch { }
 
             currentTrack = track;
             UpdateAnimatedArtwork();
@@ -238,6 +246,7 @@ namespace YTMusicWP
             // Ưu tiên customQueue và các view người dùng đang trực tiếp xem (Playlist, Artist),
             // dời các danh sách thu gọn (homeHistoryCarousel, quickGrid) xuống cuối cùng để tránh lỗi lặp 3-4 bài.
             ObservableCollection<YouTubeTrack> activeList = null;
+            ObservableCollection<YouTubeTrack> homeSectionList;
 
             if (customQueue != null && customQueue.Any())
             {
@@ -277,15 +286,11 @@ namespace YTMusicWP
             {
                 activeList = audiobookTracks;
             }
-            else if (HomeDynamicSections != null && HomeDynamicSections.ItemsSource != null)
+            // Only claims the song when a Home section holds it: once Home had loaded, this branch used to be taken for
+            // every song, so the queue / history lists below were never reached and the queue collapsed to one song
+            else if ((homeSectionList = FindHomeSectionQueue(track)) != null)
             {
-                var sections = HomeDynamicSections.ItemsSource as System.Collections.Generic.IEnumerable<YTMusicWP.InnerTubeClient.HomeSection>;
-                if (sections != null)
-                {
-                    var foundSection = System.Linq.Enumerable.FirstOrDefault(sections, s => ContainsTrack(s.Tracks, track));
-                    if (foundSection != null)
-                        activeList = new ObservableCollection<YouTubeTrack>(foundSection.Tracks);
-                }
+                activeList = homeSectionList;
             }
             else if (ContainsTrack(currentQueueTracks, track))
             {
@@ -404,6 +409,16 @@ namespace YTMusicWP
 
             UpdateQueueActiveState();
             TriggerAutoplayIfNearingEndAsync(track);
+        }
+
+        /// <summary>A copy of the tracks of the first Home section holding <paramref name="track"/>, or null.</summary>
+        private ObservableCollection<YouTubeTrack> FindHomeSectionQueue(YouTubeTrack track)
+        {
+            if (HomeDynamicSections == null) return null;
+            var sections = HomeDynamicSections.ItemsSource as IEnumerable<InnerTubeClient.HomeSection>;
+            if (sections == null) return null;
+            var found = sections.FirstOrDefault(s => s != null && ContainsTrack(s.Tracks, track));
+            return found != null ? new ObservableCollection<YouTubeTrack>(found.Tracks) : null;
         }
 
         private void SyncQueueToBackground(bool playImmediate = false)
@@ -1281,6 +1296,14 @@ namespace YTMusicWP
                     string vid = e.Data.ContainsKey("NewVideoId") ? e.Data["NewVideoId"].ToString() : "";
                     string thumb = e.Data.ContainsKey("NewThumbnail") ? e.Data["NewThumbnail"].ToString() : "";
 
+                    // PlayTrack already showed this song; the audio task reports it again once it starts. Reloading here
+                    // replayed the cover entrance, reset the cover size and fetched the lyrics a second time.
+                    if (!string.IsNullOrEmpty(vid) && currentTrack != null && currentTrack.VideoId == vid)
+                    {
+                        UpdateQueueActiveState();
+                        return;
+                    }
+
                     MiniTitle.Text = title; BigTitle.Text = title;
                     MiniArtist.Text = artist; BigArtist.Text = artist;
 
@@ -1371,7 +1394,9 @@ namespace YTMusicWP
 
                     if (!string.IsNullOrEmpty(vid))
                     {
-                        currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
+                        // The queue's own item keeps ChannelId, album, credits and live flag (Go to artist, Song credits need them)
+                        currentTrack = currentQueueTracks.FirstOrDefault(t => t.VideoId == vid)
+                            ?? new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
                         OnTrackStartedAsHost(currentTrack);
                         UpdateAnimatedArtwork();
 
@@ -1801,8 +1826,8 @@ namespace YTMusicWP
                     WriteableBitmap faded = cachedFaded;
                     if (faded == null)
                     {
-                        int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
-                        int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 135 : 180;
+                        int targetFadeSize = AppleMusicFadeSize;
+                        int fadeHeight = AppleMusicFadeHeight;
                         int fadeEndY = GetArtworkFadeEndY(targetFadeSize);
                         using (var fadeStream = new System.IO.MemoryStream(bytes))
                         {
@@ -1879,8 +1904,8 @@ namespace YTMusicWP
                                 Services.LumiaBlurHelper.PutCache(thumbUrl, blurred);
                             }
 
-                            int targetFadeSize = Services.MemoryHelper.IsLowMemoryDevice ? 360 : 480;
-                            int fadeHeight = Services.MemoryHelper.IsLowMemoryDevice ? 135 : 180;
+                            int targetFadeSize = AppleMusicFadeSize;
+                            int fadeHeight = AppleMusicFadeHeight;
                             int fadeEndY = GetArtworkFadeEndY(targetFadeSize);
                             using (var fadeStream = new System.IO.MemoryStream(bytes))
                             {
@@ -1987,6 +2012,8 @@ namespace YTMusicWP
                 }
 
                 UpdateLyricsFadeColors(targetColor);
+                // The backdrop / wash behind the animated artwork changed: repaint its fade to match
+                if (_artworkFade != null && _artworkFade.Opacity > 0) UpdateArtworkFade();
 
                 UpdateDockActiveState(NowPlayingPivot != null && NowPlayingPivot.SelectedIndex > 0 ? NowPlayingPivot.SelectedIndex : -1);
 
