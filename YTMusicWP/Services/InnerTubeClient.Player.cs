@@ -328,6 +328,7 @@ namespace YTMusicWP
                             req.Headers.TryAppendWithoutValidation("Cookie", _cookieString);
                             string origin = client.ClientName == "WEB_REMIX" ? "https://music.youtube.com" : "https://www.youtube.com";
                             req.Headers.TryAppendWithoutValidation("Authorization", GenerateSAPISIDHash(_sapisid, origin));
+                            AddIdentityHeaders(req);
                             req.Headers.TryAppendWithoutValidation("Origin", origin);
                             req.Headers.TryAppendWithoutValidation("Referer", origin + "/");
                         }

@@ -13,6 +13,7 @@ namespace YTMusicWP.Controls
         public event RoutedEventHandler LoginGoogleClick;
         public event RoutedEventHandler LoginCookieClick;
         public event RoutedEventHandler LogoutGoogleClick;
+        public event RoutedEventHandler AddAccountClick;
         public event RoutedEventHandler SyncNowClick;
         public event RoutedEventHandler ClearCacheClick;
         public event RoutedEventHandler CleanAllCacheClick;
@@ -36,6 +37,7 @@ namespace YTMusicWP.Controls
         private void LoginGoogle_Click(object sender, RoutedEventArgs e) { Raise(LoginGoogleClick, sender, e); }
         private void LoginCookie_Click(object sender, RoutedEventArgs e) { Raise(LoginCookieClick, sender, e); }
         private void LogoutGoogle_Click(object sender, RoutedEventArgs e) { Raise(LogoutGoogleClick, sender, e); }
+        private void AddAccount_Click(object sender, RoutedEventArgs e) { Raise(AddAccountClick, sender, e); }
         private void SyncNow_Click(object sender, RoutedEventArgs e) { Raise(SyncNowClick, sender, e); }
         private void ClearCache_Click(object sender, RoutedEventArgs e) { Raise(ClearCacheClick, sender, e); }
         private void CleanAllCache_Click(object sender, RoutedEventArgs e) { Raise(CleanAllCacheClick, sender, e); }

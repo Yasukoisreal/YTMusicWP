@@ -195,12 +195,12 @@ namespace YTMusicWP
                 if (!string.IsNullOrEmpty(CurrentLanguage)) request.Headers.Add("Accept-Language", CurrentLanguage);
                 request.Headers.Add("Origin", "https://music.youtube.com");
                 request.Headers.Add("Referer", "https://music.youtube.com/");
-                request.Headers.Add("X-Goog-Authuser", "0");
+                AddIdentityHeaders(request);
                 request.Headers.Add("Cookie", _cookieString);
                 request.Headers.Add("Authorization", GenerateSAPISIDHash(_sapisid));
 
                 using (request)
-                using (var response = await _client.SendAsync(request, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
+                using (var response = await _authClient.SendAsync(request, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
                 {
                     if (!response.IsSuccessStatusCode) return null;
                     using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))

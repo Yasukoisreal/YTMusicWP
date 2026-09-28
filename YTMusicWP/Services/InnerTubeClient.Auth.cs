@@ -28,6 +28,7 @@ namespace YTMusicWP
         {
             _cookieString = null;
             _sapisid = null;
+            SetCookieIdentity(0, null);
         }
 
         public static void LoadCookieAuthFromSettings()
@@ -39,6 +40,15 @@ namespace YTMusicWP
                 {
                     _cookieString = settings["GoogleCookieString"]?.ToString();
                     _sapisid = settings["GoogleSAPISID"]?.ToString();
+
+                    // Which account / brand channel of that session is active (multi-account)
+                    int authUser = 0;
+                    if (settings.ContainsKey("GoogleAuthUser"))
+                    {
+                        object v = settings["GoogleAuthUser"];
+                        if (v is int) authUser = (int)v; else int.TryParse(v?.ToString(), out authUser);
+                    }
+                    SetCookieIdentity(authUser, settings.ContainsKey("GooglePageId") ? settings["GooglePageId"]?.ToString() : null);
                 }
             }
             catch { }
@@ -98,7 +108,7 @@ namespace YTMusicWP
             }
             request.Headers.Add("Origin", "https://music.youtube.com");
             request.Headers.Add("Referer", "https://music.youtube.com/");
-            request.Headers.Add("X-Goog-Authuser", "0");
+            AddIdentityHeaders(request);
 
             // Cookie + SAPISIDHASH auth
             request.Headers.Add("Cookie", _cookieString);
@@ -106,7 +116,7 @@ namespace YTMusicWP
 
             try
             {
-                using (var response = await _client.SendAsync(request))
+                using (var response = await _authClient.SendAsync(request))
                 {
                     if (!response.IsSuccessStatusCode)
                     {
@@ -118,7 +128,9 @@ namespace YTMusicWP
                     using (var reader = new StreamReader(stream))
                     using (var jsonReader = new JsonTextReader(reader))
                     {
-                        return JObject.Load(jsonReader);
+                        var parsed = JObject.Load(jsonReader);
+                        LogSignedInState(endpoint, parsed);
+                        return parsed;
                     }
                 }
             }
@@ -204,12 +216,12 @@ namespace YTMusicWP
 
                 request.Headers.Add("Cookie", _cookieString);
                 request.Headers.Add("Authorization", GenerateSAPISIDHash(_sapisid, "https://music.youtube.com"));
-                request.Headers.Add("X-Goog-Authuser", "0");
+                AddIdentityHeaders(request);
             }
 
             try
             {
-                using (var response = await _client.SendAsync(request))
+                using (var response = await _authClient.SendAsync(request))
                 {
                     if (!response.IsSuccessStatusCode)
                     {
@@ -221,7 +233,9 @@ namespace YTMusicWP
                     using (var reader = new StreamReader(stream))
                     using (var jsonReader = new JsonTextReader(reader))
                     {
-                        return JObject.Load(jsonReader);
+                        var parsed = JObject.Load(jsonReader);
+                        LogSignedInState(endpoint, parsed);
+                        return parsed;
                     }
                 }
             }

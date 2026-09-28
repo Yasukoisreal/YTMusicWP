@@ -266,6 +266,7 @@ namespace YTMusicWP
         private async void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
             Services.MotionHelper.ShowPage(SettingsPanel);
+            var ignoredAccounts = RefreshAccountListAsync();
             await UpdateStorageDisplayAsync();
         }
 

@@ -451,7 +451,11 @@ namespace YTMusicWP
             // Clear Cookie Auth
             settings.Remove("GoogleCookieString");
             settings.Remove("GoogleSAPISID");
+            settings.Remove("GoogleAuthUser");
+            settings.Remove("GooglePageId");
             InnerTubeClient.ClearCookieAuth();
+            await Services.AccountStore.ClearAsync();
+            RenderAccountList();
 
             // Clear WebView cookies physically
             try
@@ -812,16 +816,16 @@ namespace YTMusicWP
 
                 string cookieString = string.Join("; ", cookieParts);
 
-                // Save to settings
-                var settings = ApplicationData.Current.LocalSettings.Values;
-                settings["GoogleCookieString"] = cookieString;
-                settings["GoogleSAPISID"] = sapisid;
+                // Stop watching navigations first: the account lookup below awaits, and another NavigationCompleted
+                // would otherwise register the same session twice
+                _cookieLoginActive = false;
 
-                // Activate cookie auth in InnerTubeClient
-                InnerTubeClient.SetCookieAuth(cookieString, sapisid);
+                // Every identity of this session (its Google accounts and brand channels) joins the account list;
+                // the one the browser had selected becomes active (saved to settings, used by InnerTubeClient)
+                var signedIn = await RegisterSessionAccountsAsync(cookieString, sapisid);
+                ApplyActiveAccount(signedIn);
 
                 // Hide WebView
-                _cookieLoginActive = false;
                 LoginWebContainer.LoginWebView.Visibility = Visibility.Collapsed;
                 LoginWebContainer.LoginWebLoading.Visibility = Visibility.Collapsed;
                 Services.MotionHelper.HidePage(LoginWebContainer);
@@ -833,9 +837,12 @@ namespace YTMusicWP
 
                 // Fetch user info from cookie session
                 await FetchCookieUserInfoAsync();
+                await UpdateActiveAccountProfileAsync();
                 LoadHomeAvatar();
+                RenderAccountList();
 
-                // Run full sync (Library, Liked Songs, etc.)
+                // Run full sync (Library, Liked Songs, etc.); the previously active account's library goes first
+                await ResetAccountDataAsync();
                 await SyncAllAsync();
 
                 // Reload home with personalized content

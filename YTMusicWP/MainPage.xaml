@@ -1455,7 +1455,7 @@
 
         <!-- ═══════════════════════════════════ SETTINGS PANEL (overlay) ═══════════════════════════════════ -->
         <controls:SettingsView x:Name="SettingsPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50"
-            CloseClick="CloseSettings_Click" LoginGoogleClick="LoginGoogle_Click" LoginCookieClick="LoginCookie_Click" LogoutGoogleClick="LogoutGoogle_Click"
+            CloseClick="CloseSettings_Click" LoginGoogleClick="LoginGoogle_Click" LoginCookieClick="LoginCookie_Click" LogoutGoogleClick="LogoutGoogle_Click" AddAccountClick="AddAccount_Click"
             SyncNowClick="SyncNow_Click" ClearCacheClick="ClearCache_Click" CleanAllCacheClick="CleanAllCache_Click" ClearRecentHistoryClick="ClearRecentHistory_Click"
             ClearTempStreamsClick="ClearTempStreams_Click" ExportAllToMusicFolderClick="ExportAllToMusicFolder_Click" RefreshStorageStatsClick="RefreshStorageStats_Click" ListenTogetherClick="OpenListenTogether_Click"/>
 
