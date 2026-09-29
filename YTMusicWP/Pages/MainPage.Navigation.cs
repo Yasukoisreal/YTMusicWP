@@ -124,6 +124,11 @@ namespace YTMusicWP
                 e.Handled = true;
                 CloseMoodCategory_Click(null, null);
             }
+            else if (StatsPanel.Visibility == Visibility.Visible)
+            {
+                e.Handled = true;
+                CloseStats_Click(null, null);
+            }
             else if (SettingsPanel.Visibility == Visibility.Visible)
             {
                 e.Handled = true;
@@ -267,6 +272,7 @@ namespace YTMusicWP
         private async void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
             Services.MotionHelper.ShowPage(SettingsPanel);
+            RefreshLastFmSettings();
             var ignoredAccounts = RefreshAccountListAsync();
             await UpdateStorageDisplayAsync();
         }
@@ -274,6 +280,21 @@ namespace YTMusicWP
         private void CloseSettings_Click(object sender, RoutedEventArgs e)
         {
             Services.MotionHelper.HidePage(SettingsPanel);
+        }
+
+        private void LibTileStats_Click(object sender, RoutedEventArgs e)
+        {
+            StatsPanel.Open();
+        }
+
+        private void CloseStats_Click(object sender, RoutedEventArgs e)
+        {
+            StatsPanel.Close();
+        }
+
+        private void StatsPanel_PlayRequested(object sender, YouTubeTrack track)
+        {
+            PlayTrack(track);
         }
 
 

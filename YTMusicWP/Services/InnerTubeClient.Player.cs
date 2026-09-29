@@ -37,6 +37,13 @@ namespace YTMusicWP
         private static RemotePoTokenResult _cachedPoTokenResult = null;
         private static DateTime _poTokenExpiry = DateTime.MinValue;
 
+        /// <summary>YouTube refused the cached poToken (the audio task saw SPS code 3): the next resolve fetches a new one.</summary>
+        public static void InvalidatePoToken()
+        {
+            _cachedPoTokenResult = null;
+            _poTokenExpiry = DateTime.MinValue;
+        }
+
         private static async Task<RemotePoTokenResult> FetchRemotePoTokenAsync(string videoId, string clientName)
         {
             if (_cachedPoTokenResult != null && DateTime.UtcNow < _poTokenExpiry)

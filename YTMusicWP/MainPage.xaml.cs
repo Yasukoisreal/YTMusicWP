@@ -246,6 +246,7 @@ namespace YTMusicWP
         {
             this.InitializeComponent();
             LiveDebugDialog.ToastRequested += LiveDebugDialog_ToastRequested;
+            StatsPanel.PlayRequested += StatsPanel_PlayRequested;
             LoginWebContainer.LoginWebView.NavigationStarting += LoginWebView_NavigationStarting;
             LoginWebContainer.LoginWebView.NavigationCompleted += LoginWebView_NavigationCompleted;
             LoginWebContainer.LoginWebView.NavigationFailed += LoginWebView_NavigationFailed;
@@ -665,6 +666,7 @@ namespace YTMusicWP
                 UpdateAnimatedArtwork();
 
                 await FlushPendingHistoryAsync();
+                ScrobblePendingLastFm();
             });
         }
 
@@ -861,6 +863,10 @@ namespace YTMusicWP
                 {
                     if (IsWifiConnected()) { var ignoredSmart = TriggerSmartDownloadsAsync(); }
                 });
+
+                // Plays logged while the app was closed go to Last.fm; new releases of followed artists show on Home
+                AfterStartupSettles(15000, ScrobblePendingLastFm);
+                AfterStartupSettles(20000, CheckNewReleasesAsync);
             }
 
             // Handle Secondary Tile deep link

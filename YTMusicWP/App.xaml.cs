@@ -137,6 +137,15 @@ namespace YTMusicWP
                     page.HandleFileOpenContinuation(openArgs.Files[0]);
                 }
             }
+            // Web sign-in (Last.fm) continuation
+            else if (args.Kind == ActivationKind.WebAuthenticationBrokerContinuation)
+            {
+                var webArgs = args as Windows.ApplicationModel.Activation.WebAuthenticationBrokerContinuationEventArgs;
+                if (webArgs != null)
+                {
+                    page.HandleLastFmSignInContinuation(webArgs.WebAuthenticationResult);
+                }
+            }
 
             Window.Current.Activate();
         }

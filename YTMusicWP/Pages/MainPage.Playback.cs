@@ -1305,6 +1305,11 @@ namespace YTMusicWP
                 });
             }
 
+            if (e.Data.ContainsKey("PoTokenInvalid"))
+            {
+                InnerTubeClient.InvalidatePoToken();
+            }
+
             if (e.Data.ContainsKey("TrackChanged"))
             {
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -1313,6 +1318,9 @@ namespace YTMusicWP
                     string artist = e.Data["NewArtist"]?.ToString() ?? "";
                     string vid = e.Data.ContainsKey("NewVideoId") ? e.Data["NewVideoId"].ToString() : "";
                     string thumb = e.Data.ContainsKey("NewThumbnail") ? e.Data["NewThumbnail"].ToString() : "";
+
+                    // The audio task reports every song once it starts, whoever started it
+                    OnLastFmTrackStarted(title, artist);
 
                     // PlayTrack already showed this song; the audio task reports it again once it starts. Reloading here
                     // replayed the cover entrance, reset the cover size and fetched the lyrics a second time.

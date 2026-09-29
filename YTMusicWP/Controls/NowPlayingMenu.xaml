@@ -33,6 +33,7 @@
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
                         <TextBlock x:Name="MenuTitle" x:FieldModifier="internal" Text="Title" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
                         <TextBlock x:Name="MenuArtist" x:FieldModifier="internal" Text="Artist" FontSize="14" Foreground="#B3B3B3" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="MenuVotes" x:FieldModifier="internal" FontSize="12" Foreground="#808080" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="Collapsed"/>
                     </StackPanel>
                 </Grid>
                 <Rectangle Height="1" Fill="#333333" Margin="0,0,0,5"/>

@@ -1,0 +1,124 @@
+<UserControl
+    x:Class="YTMusicWP.Controls.StatsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <!-- Same implicit fonts as MainPage (page-level implicit styles are not guaranteed to reach inside a UserControl) -->
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource MontserratRegular}"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="{StaticResource MontserratMedium}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#0F2A1C" Offset="0"/>
+                <GradientStop Color="#0D0D0D" Offset="0.4"/>
+                <GradientStop Color="#121212" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="20,15,15,0">
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Listening stats" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="Recorded on this phone, plays over 30 seconds" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
+            </StackPanel>
+            <Button Click="Close_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Width="40" Height="40" VerticalAlignment="Top">
+                <Border Background="#1A1A1A" CornerRadius="20" Width="36" Height="36">
+                    <Viewbox Width="14" Height="14"><Path Data="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12Z" Fill="#999"/></Viewbox>
+                </Border>
+            </Button>
+        </Grid>
+
+        <!-- Period chips -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="0,14,0,0">
+            <StackPanel x:Name="PeriodChips" Orientation="Horizontal" Margin="16,0">
+                <Button Content="This week" Tag="week" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button Content="This month" Tag="month" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button Content="This year" Tag="year" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button Content="All time" Tag="all" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,14,0,0">
+            <StackPanel Margin="16,0,16,50">
+                <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Foreground="#1DB954" Visibility="Collapsed" Margin="0,0,0,10"/>
+
+                <!-- Empty state -->
+                <Border x:Name="EmptyCard" Background="#1A1A1A" CornerRadius="16" Padding="18,20" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="Nothing yet" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                        <TextBlock x:Name="EmptyText" Foreground="#777" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Text="No listening recorded in this period. Every song you play for more than 30 seconds counts from now on."/>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel x:Name="StatsContent">
+                    <!-- Minutes and counts -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock x:Name="MinutesText" FontSize="40" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954"/>
+                            <TextBlock Text="minutes listened" FontSize="13" Foreground="#B3B3B3" Margin="0,0,0,14"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock x:Name="PlaysText" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                                    <TextBlock Text="plays" FontSize="12" Foreground="#777"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock x:Name="SongsText" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                                    <TextBlock Text="songs" FontSize="12" Foreground="#777"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock x:Name="ArtistsText" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                                    <TextBlock Text="artists" FontSize="12" Foreground="#777"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock x:Name="BiggestDayText" FontSize="12" Foreground="#B3B3B3" Margin="0,14,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Listening clock -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="When you listen" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                            <TextBlock x:Name="PeakHourText" FontSize="12" Foreground="#777" Margin="0,2,0,12"/>
+                            <Grid x:Name="ClockBars" Height="90"/>
+                            <Grid x:Name="ClockLabels" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Top songs -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Top songs" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
+                            <StackPanel x:Name="TopSongsPanel"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Top artists -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16">
+                        <StackPanel>
+                            <TextBlock Text="Top artists" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
+                            <StackPanel x:Name="TopArtistsPanel"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

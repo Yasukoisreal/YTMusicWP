@@ -38,3 +38,6 @@ website/node_modules/
 website/dist/
 __pycache__/
 *.pyc
+
+# Last.fm API key and secret (see YTMusicWP/Services/LastFmCredentials.cs)
+YTMusicWP/Services/LastFmCredentials.Local.cs

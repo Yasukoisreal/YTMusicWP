@@ -85,6 +85,7 @@ namespace AudioPlayerTask
         private const int LIVE_DEEP_SEGMENTS = 8;     // 40s rolling buffer (~600KB, downloads in ~2s, 14s safe runway)
         private readonly object _logLock = new object();
         private readonly List<string> _pendingLiveLogs = new List<string>();
+        private readonly ListeningLog _listeningLog = new ListeningLog();
         private DateTime _lastLogFlushTime = DateTime.MinValue;
 
         // Tối đa 4 lần retry: Stream URL (2 lần) → Render /api/play (2 lần)
@@ -142,6 +143,7 @@ namespace AudioPlayerTask
 
                 LogLive("[Live TaskInstance_Canceled] reason=" + reason);
                 FlushLiveLogs();
+                try { await _listeningLog.FlushAsync(); } catch { }
                 _systemControls.ButtonPressed -= SystemControls_ButtonPressed;
                 _systemControls.IsEnabled = false;
                 _mediaPlayer.MediaEnded -= MediaPlayer_MediaEnded;
@@ -1770,7 +1772,7 @@ namespace AudioPlayerTask
             }
         }
 
-        private async void PlaySabrTrack(string sabrDescriptor, string vidId)
+        private async void PlaySabrTrack(string sabrDescriptor, string vidId, bool isAttestationRetry = false)
         {
             int seq = _playbackSequence;
             try
@@ -1801,26 +1803,7 @@ namespace AudioPlayerTask
                 _sabrCts = new CancellationTokenSource();
                 var ct = _sabrCts.Token;
 
-                string payload = sabrDescriptor.Substring(5);
-                string[] tokens = payload.Split('|');
-                string serverAbrUrl = tokens.Length > 0 ? tokens[0] : null;
-                string ustreamerConfigStr = tokens.Length > 1 ? tokens[1] : null;
-                string userAgent = tokens.Length > 2 ? tokens[2] : null;
-                string clientName = tokens.Length > 3 ? tokens[3] : null;
-                string clientVersion = tokens.Length > 4 ? tokens[4] : null;
-                string poToken = tokens.Length > 5 ? tokens[5] : null;
-
-                byte[] ustreamerBytes = MiniProtoWriter.Base64UrlDecode(ustreamerConfigStr);
-
-                var localSabrMss = new SabrMediaStreamSource(
-                    serverAbrUrl,
-                    ustreamerBytes,
-                    userAgent,
-                    clientName,
-                    clientVersion,
-                    poToken,
-                    LogLive,
-                    _isCurrentTrackLive);
+                var localSabrMss = CreateSabrSource(sabrDescriptor, vidId);
 
                 // Preload initial chunk before setting media source to ensure fast start & error detection
                 bool preloaded = await localSabrMss.PreloadInitialChunkAsync(ct);
@@ -1828,6 +1811,20 @@ namespace AudioPlayerTask
                 {
                     try { localSabrMss.Dispose(); } catch { }
                     return;
+                }
+
+                if (!preloaded && localSabrMss.AttestationRequired && !isAttestationRetry)
+                {
+                    // YouTube refused the cached poToken: one more try with a fresh one before reporting an error
+                    LogLive("[SABR] Attestation required at start, retrying with a fresh poToken");
+                    try { localSabrMss.Dispose(); } catch { }
+                    string freshDescriptor = await ResolveWithFreshPoTokenAsync(vidId);
+                    if (seq != _playbackSequence) return;
+                    if (freshDescriptor != null)
+                    {
+                        PlaySabrTrack(freshDescriptor, vidId, true);
+                        return;
+                    }
                 }
 
                 if (!preloaded)
@@ -1889,6 +1886,139 @@ namespace AudioPlayerTask
                 LogLive("[SABR Error] " + ex.Message);
                 ReportErrorToUI("SABR playback failed: " + ex.Message);
             }
+        }
+
+        private SabrMediaStreamSource CreateSabrSource(string sabrDescriptor, string vidId)
+        {
+            string payload = sabrDescriptor.Substring(5);
+            string[] tokens = payload.Split('|');
+            string serverAbrUrl = tokens.Length > 0 ? tokens[0] : null;
+            string ustreamerConfigStr = tokens.Length > 1 ? tokens[1] : null;
+            string userAgent = tokens.Length > 2 ? tokens[2] : null;
+            string clientName = tokens.Length > 3 ? tokens[3] : null;
+            string clientVersion = tokens.Length > 4 ? tokens[4] : null;
+            string poToken = tokens.Length > 5 ? tokens[5] : null;
+
+            byte[] ustreamerBytes = MiniProtoWriter.Base64UrlDecode(ustreamerConfigStr);
+
+            var source = new SabrMediaStreamSource(
+                serverAbrUrl,
+                ustreamerBytes,
+                userAgent,
+                clientName,
+                clientVersion,
+                poToken,
+                LogLive,
+                _isCurrentTrackLive);
+            // Raised on the streaming thread with the end of the stream already held: recover off that thread
+            source.AttestationFailed += () =>
+            {
+                var ignored = Task.Run(() => RecoverFromAttestationAsync(source, vidId));
+            };
+            return source;
+        }
+
+        // One fresh-token retry per song every 10 minutes: YouTube asking again right away means the new token is refused too
+        private static readonly TimeSpan AttestationRetryWindow = TimeSpan.FromMinutes(10);
+        private string _attestationRetryVid;
+        private DateTime _attestationRetryAt = DateTime.MinValue;
+
+        /// <summary>
+        /// YouTube stopped a playing stream because it refused the poToken (SPS code 3). The queued audio keeps playing
+        /// while a stream with a fresh token is resolved and preloaded; the player then switches to it. Without this the
+        /// stream ended and the player skipped to the next song.
+        /// </summary>
+        private async Task RecoverFromAttestationAsync(SabrMediaStreamSource old, string vidId)
+        {
+            int seq = _playbackSequence;
+            SabrMediaStreamSource fresh = null;
+            try
+            {
+                if (old != _sabrMss || _currentLoadedVidId != vidId) return;
+
+                bool retriedRecently = _attestationRetryVid == vidId && DateTime.UtcNow - _attestationRetryAt < AttestationRetryWindow;
+                if (retriedRecently)
+                {
+                    LogLive("[SABR] Attestation required again, giving up on this stream");
+                    SendToast("YouTube is asking to verify this stream. Try again later.");
+                    return;
+                }
+                _attestationRetryVid = vidId;
+                _attestationRetryAt = DateTime.UtcNow;
+
+                LogLive("[SABR] Attestation required mid-stream, switching to a fresh poToken");
+                string descriptor = await ResolveWithFreshPoTokenAsync(vidId);
+                if (descriptor == null || seq != _playbackSequence || old != _sabrMss || _sabrCts == null) return;
+
+                fresh = CreateSabrSource(descriptor, vidId);
+                bool preloaded = await fresh.PreloadInitialChunkAsync(_sabrCts.Token);
+                if (!preloaded || seq != _playbackSequence || old != _sabrMss)
+                {
+                    if (!preloaded)
+                    {
+                        LogLive("[SABR] Fresh stream failed too: " + (fresh.LastError ?? "unknown"));
+                        if (fresh.AttestationRequired) SendToast("YouTube is asking to verify this stream. Try again later.");
+                    }
+                    return;
+                }
+
+                // The queued audio may have run out while the new stream loaded (the player is then buffering, not
+                // playing): only a pause by the user keeps it paused
+                var state = _mediaPlayer.CurrentState;
+                bool wasPlaying = state == MediaPlayerState.Playing || state == MediaPlayerState.Buffering || state == MediaPlayerState.Opening;
+                // A song (not a livestream) continues where it was instead of starting over
+                if (!_isCurrentTrackLive) _pendingStartPosition = _mediaPlayer.Position.TotalSeconds;
+                _sabrMss = fresh;
+                _mediaPlayer.AutoPlay = wasPlaying;
+                _mediaPlayer.SetMediaSource(fresh.StreamSource);
+                try { _mediaPlayer.PlaybackRate = _playbackRate; } catch { }
+                fresh.StartStreaming((float)_playbackRate);
+                fresh = null; // now playing: not to be disposed below
+                if (wasPlaying) _mediaPlayer.Play();
+                try { old.Dispose(); } catch { }
+                LogLive("[SABR] Switched to the stream with the fresh poToken");
+            }
+            catch (Exception ex)
+            {
+                LogLive("[SABR] Attestation recovery error: " + ex.Message);
+            }
+            finally
+            {
+                if (fresh != null) { try { fresh.Dispose(); } catch { } }
+                // Not replaced: let the old stream end once its queued audio has played (the player then moves on)
+                if (old == _sabrMss) old.HoldEndOfStream(false);
+            }
+        }
+
+        /// <summary>Drops the refused poToken (here and in the app) and resolves the song again; null unless SABR comes back.</summary>
+        private async Task<string> ResolveWithFreshPoTokenAsync(string vidId)
+        {
+            InvalidatePoToken();
+            try
+            {
+                string url = await ResolveViaInnerTubeDirectAsync(vidId);
+                return url != null && url.StartsWith("SABR:", StringComparison.OrdinalIgnoreCase) ? url : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void InvalidatePoToken()
+        {
+            _cachedPoTokenResult = null;
+            _poTokenExpiry = DateTime.MinValue;
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                ls.Remove("CachedPoToken");
+                ls.Remove("CachedPoTokenExpiry");
+                ls.Remove("CachedPoTokenVd");
+            }
+            catch { }
+            // The app keeps its own copy in memory for 50 minutes
+            try { BackgroundMediaPlayer.SendMessageToForeground(new ValueSet { { "PoTokenInvalid", "" } }); } catch { }
         }
 
         // ==========================================
@@ -2090,6 +2220,15 @@ namespace AudioPlayerTask
             }
 
             try { _systemControls.DisplayUpdater.Type = MediaPlaybackType.Music; _systemControls.DisplayUpdater.MusicProperties.Title = title; _systemControls.DisplayUpdater.MusicProperties.Artist = artist; _systemControls.DisplayUpdater.Update(); } catch { }
+            bool playingNow = false;
+            double durationNow = 0;
+            try
+            {
+                playingNow = _mediaPlayer != null && _mediaPlayer.CurrentState == MediaPlayerState.Playing;
+                if (playingNow && !_isCurrentTrackLive) durationNow = _mediaPlayer.NaturalDuration.TotalSeconds;
+            }
+            catch { }
+            _listeningLog.TrackStarted(vidId, title, artist, playingNow, durationNow);
             try
             {
                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
@@ -2561,6 +2700,9 @@ namespace AudioPlayerTask
 
         private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
         {
+            // A legacy livestream ends one file buffer after another: only the other cases finish the play
+            if (!_isCurrentTrackLive || _liveMss != null || _sabrMss != null) _listeningLog.TrackEnded();
+
             if (_isCurrentTrackLive && _liveMss != null)
             {
                 LogLive("[Live MSS MediaEnded] Livestream completed");
@@ -2609,6 +2751,10 @@ namespace AudioPlayerTask
         {
             try
             {
+                bool playing = sender.CurrentState == MediaPlayerState.Playing;
+                double duration = 0;
+                try { if (playing && !_isCurrentTrackLive) duration = sender.NaturalDuration.TotalSeconds; } catch { }
+                _listeningLog.PlaybackChanged(playing, duration);
                 if (_isCurrentTrackLive)
                 {
                     LogLive("[Live State] " + sender.CurrentState + " (elapsed=" + _liveBufferStopwatch.Elapsed.TotalSeconds.ToString("F1") + "s/" + _liveBufferDurationSec.ToString("F0") + "s)");

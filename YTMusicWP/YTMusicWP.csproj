@@ -106,6 +106,9 @@
     <Compile Include="Controls\LiveDebugDialog.xaml.cs">
       <DependentUpon>LiveDebugDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Controls\StatsView.xaml.cs">
+      <DependentUpon>StatsView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\TrackActionsSheet.xaml.cs">
       <DependentUpon>TrackActionsSheet.xaml</DependentUpon>
     </Compile>
@@ -146,6 +149,8 @@
     <Compile Include="Pages\MainPage.Storage.cs" />
     <Compile Include="Pages\MainPage.Navigation.cs" />
     <Compile Include="Pages\MainPage.Shorts.cs" />
+    <Compile Include="Pages\MainPage.LastFm.cs" />
+    <Compile Include="Pages\MainPage.NewReleases.cs" />
     <Compile Include="Pages\MainPage.ListenTogether.cs" />
     <Compile Include="Services\ListenTogether\ProtobufCodec.cs" />
     <Compile Include="Services\ListenTogether\ServerClock.cs" />
@@ -184,6 +189,15 @@
     <Compile Include="Services\SponsorBlockApi.cs" />
     <Compile Include="Services\AppleMusicLyricsApi.cs" />
     <Compile Include="Services\KuGouLyricsApi.cs" />
+    <Compile Include="Services\ReturnYouTubeDislikeApi.cs" />
+    <Compile Include="Services\ListeningStatsCalculator.cs" />
+    <Compile Include="Services\LastFmRules.cs" />
+    <Compile Include="Services\LastFmCredentials.cs" />
+    <!-- API key and secret, kept out of git: see LastFmCredentials.cs -->
+    <Compile Include="Services\LastFmCredentials.Local.cs" Condition="Exists('$(MSBuildProjectDirectory)\Services\LastFmCredentials.Local.cs')" />
+    <Compile Include="Services\LastFmClient.cs" />
+    <Compile Include="Services\NewReleaseRules.cs" />
+    <Compile Include="Services\NewReleasesTracker.cs" />
     <Compile Include="Services\KuGouLyricsParser.cs" />
     <Compile Include="Services\Mp4KeyframeParser.cs" />
     <Compile Include="Services\InnerTubeClient.Moods.cs" />
@@ -245,6 +259,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Controls\CreateSheet.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Controls\StatsView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

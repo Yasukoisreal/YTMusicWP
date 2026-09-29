@@ -22,6 +22,7 @@ namespace YTMusicWP.Controls
         public event RoutedEventHandler ExportAllToMusicFolderClick;
         public event RoutedEventHandler RefreshStorageStatsClick;
         public event RoutedEventHandler ListenTogetherClick;
+        public event RoutedEventHandler LastFmClick;
 
         public SettingsView()
         {
@@ -39,6 +40,7 @@ namespace YTMusicWP.Controls
         private void LogoutGoogle_Click(object sender, RoutedEventArgs e) { Raise(LogoutGoogleClick, sender, e); }
         private void AddAccount_Click(object sender, RoutedEventArgs e) { Raise(AddAccountClick, sender, e); }
         private void SyncNow_Click(object sender, RoutedEventArgs e) { Raise(SyncNowClick, sender, e); }
+        private void LastFm_Click(object sender, RoutedEventArgs e) { Raise(LastFmClick, sender, e); }
         private void ClearCache_Click(object sender, RoutedEventArgs e) { Raise(ClearCacheClick, sender, e); }
         private void CleanAllCache_Click(object sender, RoutedEventArgs e) { Raise(CleanAllCacheClick, sender, e); }
         private void ClearRecentHistory_Click(object sender, RoutedEventArgs e) { Raise(ClearRecentHistoryClick, sender, e); }

@@ -978,6 +978,14 @@
                                         </GridView.ItemsPanel>
                                     </GridView>
 
+                                    <!-- New albums and singles of followed artists (NewReleasesTracker) -->
+                                    <StackPanel x:Name="HomeNewReleasesSection" Visibility="Collapsed">
+                                        <TextBlock x:Name="HomeNewReleasesTitleText" Text="New from your artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                                        <ListView x:Name="HomeNewReleasesCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
+                                            <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
+                                        </ListView>
+                                    </StackPanel>
+
                                     <StackPanel x:Name="HomeHistorySection" Visibility="Collapsed">
                                         <TextBlock x:Name="HomeHistoryTitleText" Text="Jump back in" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
                                         <ListView x:Name="HomeHistoryCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
@@ -1448,16 +1456,19 @@
             ExportAllPlaylistsM3uClick="ExportAllPlaylistsM3u_Click" ExportPlaylistsClick="ExportPlaylists_Click" ImportM3uPlaylistClick="ImportM3uPlaylist_Click"
             ImportPlaylistsClick="ImportPlaylists_Click" LibChipClick="LibChip_Click" LibSortOptionClick="LibSortOption_Click"
             LibTileDownloadedClick="LibTileDownloaded_Click" LibTileFavoriteClick="LibTileFavorite_Click" LibTileFollowedClick="LibTileFollowed_Click"
-            LibTileMostPlayedClick="LibTileMostPlayed_Click" LibrarySyncClick="LibrarySync_Click" MenuAddToPlaylistClick="MenuAddToPlaylist_Click"
+            LibTileMostPlayedClick="LibTileMostPlayed_Click" LibTileStatsClick="LibTileStats_Click" LibrarySyncClick="LibrarySync_Click" MenuAddToPlaylistClick="MenuAddToPlaylist_Click"
             MenuDownloadClick="MenuDownload_Click" MenuFavoriteClick="MenuFavorite_Click" MenuPlayClick="MenuPlay_Click"
             NavCreateClick="NavCreate_Click" NavSearchClick="NavSearch_Click" SongItemHolding="SongItem_Holding"
             LibraryUnifiedItemClick="LibraryUnified_ItemClick" SongListItemClick="SongList_ItemClick"/>
+
+        <!-- ═══════════════════════════════════ LISTENING STATS (overlay) ═══════════════════════════════════ -->
+        <controls:StatsView x:Name="StatsPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50" CloseClick="CloseStats_Click"/>
 
         <!-- ═══════════════════════════════════ SETTINGS PANEL (overlay) ═══════════════════════════════════ -->
         <controls:SettingsView x:Name="SettingsPanel" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="50"
             CloseClick="CloseSettings_Click" LoginGoogleClick="LoginGoogle_Click" LoginCookieClick="LoginCookie_Click" LogoutGoogleClick="LogoutGoogle_Click" AddAccountClick="AddAccount_Click"
             SyncNowClick="SyncNow_Click" ClearCacheClick="ClearCache_Click" CleanAllCacheClick="CleanAllCache_Click" ClearRecentHistoryClick="ClearRecentHistory_Click"
-            ClearTempStreamsClick="ClearTempStreams_Click" ExportAllToMusicFolderClick="ExportAllToMusicFolder_Click" RefreshStorageStatsClick="RefreshStorageStats_Click" ListenTogetherClick="OpenListenTogether_Click"/>
+            ClearTempStreamsClick="ClearTempStreams_Click" ExportAllToMusicFolderClick="ExportAllToMusicFolder_Click" RefreshStorageStatsClick="RefreshStorageStats_Click" ListenTogetherClick="OpenListenTogether_Click" LastFmClick="LastFm_Click"/>
 
         <!-- ═══════════════════════════════════ LISTEN TOGETHER VIEW ═══════════════════════════════════ -->
         <controls:ListenTogetherPanel x:Name="ListenTogetherView" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed" Canvas.ZIndex="75"

@@ -229,6 +229,24 @@ namespace YTMusicWP
             }
 
             NowPlayingMenuDialog.Open();
+            ShowTrackVotesAsync(currentTrack);
+        }
+
+        /// <summary>Like, dislike and view counts (Return YouTube Dislike) under the artist in the Now Playing menu.</summary>
+        private async void ShowTrackVotesAsync(YouTubeTrack track)
+        {
+            var label = NowPlayingMenuDialog.MenuVotes;
+            label.Visibility = Visibility.Collapsed;
+            if (track == null || track.IsLive) return;
+
+            var votes = await Services.ReturnYouTubeDislikeApi.GetVotesAsync(track.VideoId, System.Threading.CancellationToken.None);
+            // The song changed while the counts loaded: they belong to the old one
+            if (votes == null || currentTrack != track) return;
+
+            label.Text = Services.ReturnYouTubeDislikeApi.Compact(votes.Likes) + " likes · "
+                + Services.ReturnYouTubeDislikeApi.Compact(votes.Dislikes) + " dislikes · "
+                + Services.ReturnYouTubeDislikeApi.Compact(votes.Views) + " views";
+            label.Visibility = Visibility.Visible;
         }
 
         private void CloseNowPlayingMenu_Click(object sender, RoutedEventArgs e)

@@ -87,6 +87,7 @@
     <Compile Include="LiveMediaStreamSource.cs" />
     <Compile Include="MiniProtoWriter.cs" />
     <Compile Include="UmpParser.cs" />
+    <Compile Include="ListeningLog.cs" />
     <Compile Include="SabrMediaStreamSource.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="..\YTMusicWP\Services\SponsorBlockApi.cs">

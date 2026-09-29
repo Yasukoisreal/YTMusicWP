@@ -95,6 +95,8 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="10"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <!-- 1. Favorites -->
@@ -141,6 +143,18 @@
                                         <Path Fill="Black" Data="M19,9h-4V3H9v6H5l7,7 7-7z M5,18v2h14v-2H5z"/>
                                     </Viewbox>
                                     <TextBlock Text="Downloaded" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+
+                        <!-- 5. Listening stats -->
+                        <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Click="LibTileStats_Click" Style="{StaticResource CategoryButtonStyle}" Height="50">
+                            <Border Background="#B39DDB" CornerRadius="8" Height="50" Padding="12,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Viewbox Width="20" Height="20" Margin="0,0,8,0">
+                                        <Path Fill="Black" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12.5,7H11V13L16.2,16.2L17,14.9L12.5,12.2V7Z"/>
+                                    </Viewbox>
+                                    <TextBlock Text="Listening stats" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </Button>

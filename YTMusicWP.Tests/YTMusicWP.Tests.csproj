@@ -58,6 +58,18 @@
     <Compile Include="TrackDurationParserTests.cs" />
     <Compile Include="KuGouLyricsParserTests.cs" />
     <Compile Include="Mp4KeyframeParserTests.cs" />
+    <Compile Include="ListeningStatsCalculatorTests.cs" />
+    <Compile Include="LastFmRulesTests.cs" />
+    <Compile Include="NewReleaseRulesTests.cs" />
+    <Compile Include="..\YTMusicWP\Services\LastFmRules.cs">
+      <Link>Sources\LastFmRules.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\NewReleaseRules.cs">
+      <Link>Sources\NewReleaseRules.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\ListeningStatsCalculator.cs">
+      <Link>Sources\ListeningStatsCalculator.cs</Link>
+    </Compile>
     <Compile Include="..\AudioPlayerTask\MiniProtoWriter.cs">
       <Link>Sources\MiniProtoWriter.cs</Link>
     </Compile>

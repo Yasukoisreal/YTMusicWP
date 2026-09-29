@@ -21,6 +21,7 @@ namespace YTMusicWP.Controls
         public event RoutedEventHandler LibTileFavoriteClick;
         public event RoutedEventHandler LibTileFollowedClick;
         public event RoutedEventHandler LibTileMostPlayedClick;
+        public event RoutedEventHandler LibTileStatsClick;
         public event RoutedEventHandler LibrarySyncClick;
         public event RoutedEventHandler MenuAddToPlaylistClick;
         public event RoutedEventHandler MenuDownloadClick;
@@ -47,6 +48,7 @@ namespace YTMusicWP.Controls
         private void LibTileFavorite_Click(object sender, RoutedEventArgs e) { if (LibTileFavoriteClick != null) LibTileFavoriteClick(sender, e); }
         private void LibTileFollowed_Click(object sender, RoutedEventArgs e) { if (LibTileFollowedClick != null) LibTileFollowedClick(sender, e); }
         private void LibTileMostPlayed_Click(object sender, RoutedEventArgs e) { if (LibTileMostPlayedClick != null) LibTileMostPlayedClick(sender, e); }
+        private void LibTileStats_Click(object sender, RoutedEventArgs e) { if (LibTileStatsClick != null) LibTileStatsClick(sender, e); }
         private void LibrarySync_Click(object sender, RoutedEventArgs e) { if (LibrarySyncClick != null) LibrarySyncClick(sender, e); }
         private void MenuAddToPlaylist_Click(object sender, RoutedEventArgs e) { if (MenuAddToPlaylistClick != null) MenuAddToPlaylistClick(sender, e); }
         private void MenuDownload_Click(object sender, RoutedEventArgs e) { if (MenuDownloadClick != null) MenuDownloadClick(sender, e); }

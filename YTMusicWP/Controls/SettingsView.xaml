@@ -411,6 +411,25 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ═══════ LAST.FM (hidden in builds without API credentials) ═══════ -->
+                <Border x:Name="LastFmSection" x:FieldModifier="internal" Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16" Visibility="Collapsed">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Border Background="#D51007" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                <TextBlock Text="fm" FontSize="12" FontFamily="{StaticResource MontserratBold}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Last.fm" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock x:Name="LastFmStatusText" x:FieldModifier="internal" Foreground="#777" FontSize="12" Margin="0,0,0,14" TextWrapping="Wrap"
+                                   Text="Scrobble the songs you listen to (played for half their length or 4 minutes) to your Last.fm profile."/>
+                        <Button Click="LastFm_Click" Style="{StaticResource CategoryButtonStyle}" Height="46">
+                            <Border Background="#D51007" CornerRadius="12" Height="46">
+                                <TextBlock x:Name="LastFmButtonText" x:FieldModifier="internal" Text="Connect Last.fm" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
 
                 <!-- ═══════ APPEARANCE ═══════ -->
                 <Border Background="#1A1A1A" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
