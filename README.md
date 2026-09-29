@@ -6,7 +6,7 @@
   <br>
   <br>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/actions/workflows/ci.yml"><img src="https://github.com/Yasukoisreal/YTMusicWP/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI Status"></a>
-  <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Unit%20Tests-52%20Passed-brightgreen?logo=csharp" alt="Unit Tests"></a>
+  <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Unit%20Tests-92%20Passed-brightgreen?logo=csharp" alt="Unit Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPL v3"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/badge/Platform-Windows%20Phone%208.1%20%7C%20W10M-0078D7?logo=windows" alt="Platform"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/Language-C%23%20%2F%20XAML-239120?logo=c-sharp" alt="Language"></a>
@@ -45,6 +45,7 @@
 - Redesigned SimpMusic Library: 4 quick-access tiles, dynamic YouTube filter pills, sort dropdown, and full cloud/local sync
 - Mini Player Gestures: Swipe horizontally to skip tracks or swipe to dismiss
 - Playback Speed Control (0.5x – 2.0x) and detailed song credits dialog
+- Listening stats (top songs, artists, listening clock), Last.fm scrobbling, new releases from the artists you follow, and Return YouTube Dislike counts
 - Offline support & Smart Downloads: Download songs directly to your phone with native M4A metadata tagging and embedded artwork
 - Iconic Metro Live Tiles (Now Playing Flip Tile, People Hub Style Mosaic)
 - Pin your favorite artists, albums, or playlists directly to your Start Screen
@@ -83,6 +84,8 @@
 - This app safely connects directly to YouTube Music to get your songs and playlists using hidden APIs without needing a web browser.
 - Login is handled securely using Google's official device login method (`google.com/device`). We never see or store your password.
 - Synced lyrics are fetched directly from YouTube subtitles, [Lyrics API](https://lyrics-api.boidu.dev), and [LRCLIB](https://lrclib.net/).
+- Like and dislike counts come from [Return YouTube Dislike](https://returnyoutubedislike.com/) (only the video ID is sent).
+- Last.fm is optional: only after you connect your account are the songs you play (title, artist, time) sent to [Last.fm](https://www.last.fm/). Your listening stats stay on your device.
  
 ## Privacy    
 YTMusicWP is a completely free, open-source application. We do not include any third-party trackers, analytics, or hidden data collection. Your data stays on your device. The app communicates directly and only with YouTube's servers to fetch your music, playlists, and provide playback. No middleman servers are used to stream your music.
@@ -115,7 +118,13 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
 ## Changelog
 
 ### v2.4.0 (Latest)
-- 📡 **Live Streams on SABR:** Livestreams moved from DASH to YouTube's native SABR/UMP protocol (pure C#). Playback starts in ~2 s instead of ~12 s, with no time jump or fast-forward at the start, a ~13 s buffer, and a smooth switch back to normal songs. Long livestreams no longer crash or stop after ~40 minutes.
+- 📡 **Live Streams on SABR:** Livestreams moved from DASH to YouTube's native SABR/UMP protocol (pure C#). Playback starts in ~2 s instead of ~12 s, with no time jump or fast-forward at the start, a ~13 s buffer, and a smooth switch back to normal songs.
+  - Long livestreams play for hours: a memory leak that filled the 20 MB background audio limit is fixed, so they no longer stop after ~40 minutes.
+  - When YouTube asks to verify a stream mid-way, the app fetches a fresh token and carries on instead of skipping to the next song.
+- 📊 **Listening Stats:** A new Library tile with minutes listened, plays, top songs and artists, your listening clock and biggest day, for this week, month, year or all time.
+- 🎵 **Last.fm Scrobbling:** Connect your Last.fm account in Settings. Songs show as "now playing" and are scrobbled once played for half their length or 4 minutes, even when listened to with the app closed.
+- 🆕 **New from Your Artists:** Home shows new albums and singles from the artists you follow.
+- 👍 **Return YouTube Dislike:** Like, dislike and view counts in the Now Playing menu.
 - 🎬 **Samples Tab:** YouTube Music-style vertical feed of music video clips from your Home and the region's video charts. Clips start on a keyframe and are letterboxed over a blurred backdrop, with a stall watchdog and automatic URL refresh.
 - 👥 **Multiple Accounts:** Account switcher for several YouTube accounts and brand channels, remembered at startup.
 - 🎤 **Word-by-Word Lyrics:**
@@ -138,7 +147,7 @@ Yes! YTMusicWP has been carefully built for older Lumia devices. The app uses ve
   - Database repair.
   - Live Tile templates.
   - Rounded search category cards.
-- 🧪 **Project:** 75 unit tests with GitHub Actions CI, a new showcase website, and the project is now licensed under GPLv3.
+- 🧪 **Project:** 92 unit tests with GitHub Actions CI, a new showcase website, and the project is now licensed under GPLv3.
 
 ### v2.3.0
 - 🔴 **Continuous YouTube Live Streaming:** Zero-gap continuous live audio streaming engine with low-latency rolling buffer and live telemetry.
