@@ -44,14 +44,20 @@ namespace AudioPlayerTask
     /// </summary>
     internal sealed class ChunkedStreamReader
     {
-        private readonly Stream _stream;
+        private readonly Func<byte[], int, int, CancellationToken, Task<int>> _read;
         private readonly byte[] _buffer;
         private int _offset;
         private int _count;
 
         public ChunkedStreamReader(Stream stream, int bufferSize = 32768)
+            : this(stream.ReadAsync, bufferSize)
         {
-            _stream = stream;
+        }
+
+        /// <param name="read">Reads into the given array like Stream.ReadAsync (array, offset, count, token).</param>
+        public ChunkedStreamReader(Func<byte[], int, int, CancellationToken, Task<int>> read, int bufferSize = 32768)
+        {
+            _read = read;
             _buffer = new byte[bufferSize];
             _offset = 0;
             _count = 0;
@@ -62,7 +68,7 @@ namespace AudioPlayerTask
             if (_offset >= _count)
             {
                 _offset = 0;
-                _count = await _stream.ReadAsync(_buffer, 0, _buffer.Length, ct).ConfigureAwait(false);
+                _count = await _read(_buffer, 0, _buffer.Length, ct).ConfigureAwait(false);
                 if (_count <= 0) return -1;
             }
             return _buffer[_offset++];
@@ -91,13 +97,13 @@ namespace AudioPlayerTask
                     _count = 0;
                     if (length - written >= _buffer.Length)
                     {
-                        int read = await _stream.ReadAsync(result, written, length - written, ct).ConfigureAwait(false);
+                        int read = await _read(result, written, length - written, ct).ConfigureAwait(false);
                         if (read <= 0) break;
                         written += read;
                     }
                     else
                     {
-                        _count = await _stream.ReadAsync(_buffer, 0, _buffer.Length, ct).ConfigureAwait(false);
+                        _count = await _read(_buffer, 0, _buffer.Length, ct).ConfigureAwait(false);
                         if (_count <= 0) break;
                     }
                 }
@@ -172,15 +178,27 @@ namespace AudioPlayerTask
         /// <summary>
         /// Continuously reads UMP parts from the HTTP response stream and delivers them via callback.
         /// </summary>
-        public static async Task ProcessStreamAsync(
+        public static Task ProcessStreamAsync(
             Stream stream,
             Action<UmpPart> onPartReceived,
             CancellationToken ct)
         {
-            if (stream == null || onPartReceived == null) return;
+            if (stream == null || onPartReceived == null) return Task.FromResult(0);
+            return ProcessAsync(new ChunkedStreamReader(stream, 32768), onPartReceived, ct);
+        }
 
-            var reader = new ChunkedStreamReader(stream, 32768);
+        /// <param name="read">Reads into the given array like Stream.ReadAsync (array, offset, count, token).</param>
+        public static Task ProcessStreamAsync(
+            Func<byte[], int, int, CancellationToken, Task<int>> read,
+            Action<UmpPart> onPartReceived,
+            CancellationToken ct)
+        {
+            if (read == null || onPartReceived == null) return Task.FromResult(0);
+            return ProcessAsync(new ChunkedStreamReader(read, 32768), onPartReceived, ct);
+        }
 
+        private static async Task ProcessAsync(ChunkedStreamReader reader, Action<UmpPart> onPartReceived, CancellationToken ct)
+        {
             while (!ct.IsCancellationRequested)
             {
                 long partType = await ReadVarintAsync(reader, ct).ConfigureAwait(false);

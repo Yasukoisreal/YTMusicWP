@@ -24,7 +24,17 @@ namespace AudioPlayerTask
 
         private MediaStreamSource _mss;
         private readonly object _queueLock = new object();
-        private readonly Queue<MediaStreamSample> _sampleQueue = new Queue<MediaStreamSample>();
+        // Raw ADTS frames waiting for the player. The native MediaStreamSample is only created when the player asks for one:
+        // ~600 queued native samples (each with a pinned buffer freed only by a finalizer) filled most of the audio task's
+        // 20 MB cap on 512 MB phones, and the task is killed (exit code 14) when it reaches it.
+        private struct QueuedFrame
+        {
+            public byte[] Data;
+            public long Ticks;
+        }
+        private readonly Queue<QueuedFrame> _sampleQueue = new Queue<QueuedFrame>();
+
+        private static readonly TimeSpan FrameDuration = TimeSpan.FromTicks(232199); // 1024 samples at 44100Hz (~23.22ms)
 
         private struct PendingRequest
         {
@@ -85,6 +95,47 @@ namespace AudioPlayerTask
         public MediaStreamSource StreamSource { get { return _mss; } }
         public bool IsDisposed { get { return _isDisposed; } }
         public string LastError { get; private set; }
+
+        /// <summary>YouTube refused this stream's poToken (STREAM_PROTECTION_STATUS 3): only a fresh token helps.</summary>
+        public bool AttestationRequired { get { return _lastSpsCode == 3; } }
+
+        /// <summary>
+        /// Raised on the streaming thread when YouTube stops serving mid-stream because it wants attestation (SPS code 3).
+        /// The end of the stream is then held (see <see cref="HoldEndOfStream"/>) until the owner releases it.
+        /// </summary>
+        public event Action AttestationFailed;
+
+        private volatile bool _holdEndOfStream;
+        // The streaming loop ended while the end of the stream was held, leaving its pending requests to HoldEndOfStream
+        // (guarded by _queueLock, like the loop's own end)
+        private bool _endOfStreamHeld;
+
+        /// <summary>
+        /// While held, running out of audio after the streaming loop ended does not end the stream: the player's requests
+        /// stay pending, so a replacement source can take over before the player moves on to the next song. Releasing it
+        /// ends the stream if nothing more is coming.
+        /// </summary>
+        public void HoldEndOfStream(bool hold)
+        {
+            List<PendingRequest> ended = null;
+            lock (_queueLock)
+            {
+                _holdEndOfStream = hold;
+                // A loop still running ends the stream itself when it stops (it checks the hold under this lock)
+                if (hold || !_endOfStreamHeld) return;
+                _endOfStreamHeld = false;
+                if (_sampleQueue.Count == 0 && _pendingRequests.Count > 0)
+                {
+                    ended = new List<PendingRequest>(_pendingRequests);
+                    _pendingRequests.Clear();
+                }
+            }
+            if (ended == null) return;
+            foreach (var p in ended)
+            {
+                try { p.Request.Sample = null; p.Deferral.Complete(); } catch { }
+            }
+        }
 
         public double BufferedSeconds
         {
@@ -179,6 +230,13 @@ namespace AudioPlayerTask
             }
         }
 
+        /// <summary>Per-chunk details, logged only for the first requests: a livestream repeats them every 5 s for hours and
+        /// each log flush rewrites the LiveDebugLog setting.</summary>
+        private void LogChunk(string msg)
+        {
+            if (_requestNumber <= 3) Log(msg);
+        }
+
         private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
             var request = args.Request;
@@ -235,13 +293,11 @@ namespace AudioPlayerTask
                 {
                     if (_sampleQueue.Count > 0 && !nested)
                     {
-                        var sample = _sampleQueue.Dequeue();
-                        request.Sample = sample;
-                        _currentPositionMs = (long)sample.Timestamp.TotalMilliseconds;
+                        request.Sample = DequeueSample();
                         return;
                     }
 
-                    if (_sampleQueue.Count == 0 &&
+                    if (_sampleQueue.Count == 0 && !_holdEndOfStream &&
                         ((_cts != null && _cts.IsCancellationRequested) || _isDisposed || (_streamingTask != null && _streamingTask.IsCompleted)))
                     {
                         // No more samples and streaming loop ended -> EOS
@@ -258,6 +314,18 @@ namespace AudioPlayerTask
             {
                 Log("SampleRequested error: " + ex.Message);
             }
+        }
+
+        /// <summary>Wraps the next queued frame in a MediaStreamSample (callers hold _queueLock and checked Count).</summary>
+        private MediaStreamSample DequeueSample()
+        {
+            var frame = _sampleQueue.Dequeue();
+            var timestamp = TimeSpan.FromTicks(frame.Ticks);
+            var sample = MediaStreamSample.CreateFromBuffer(frame.Data.AsBuffer(), timestamp);
+            sample.Duration = FrameDuration;
+            sample.KeyFrame = true;
+            _currentPositionMs = (long)timestamp.TotalMilliseconds;
+            return sample;
         }
 
         [ThreadStatic] private static bool _completingDeferral;
@@ -284,9 +352,7 @@ namespace AudioPlayerTask
                     if (_pendingRequests.Count == 0 || _sampleQueue.Count == 0) return;
                     p = _pendingRequests[0];
                     _pendingRequests.RemoveAt(0);
-                    var s = _sampleQueue.Dequeue();
-                    p.Request.Sample = s;
-                    _currentPositionMs = (long)s.Timestamp.TotalMilliseconds;
+                    p.Request.Sample = DequeueSample();
                 }
                 _completingDeferral = true;
                 try { p.Deferral.Complete(); }
@@ -536,9 +602,9 @@ namespace AudioPlayerTask
 
                     // Stream-read UMP parts directly from network response stream
                     using (var winrtStream = await resp.Content.ReadAsInputStreamAsync().AsTask(ct).ConfigureAwait(false))
-                    using (var netStream = winrtStream.AsStreamForRead())
                     {
-                        await UmpParser.ProcessStreamAsync(netStream, OnUmpPartReceived, ct).ConfigureAwait(false);
+                        var reader = new NativeBufferReader(winrtStream, 32 * 1024);
+                        await UmpParser.ProcessStreamAsync(reader.ReadAsync, OnUmpPartReceived, ct).ConfigureAwait(false);
                     }
 
                     // Flush any completed media segments that were missing a trailing MEDIA_END
@@ -549,6 +615,34 @@ namespace AudioPlayerTask
             int parsed = 0;
             lock (_queueLock) { parsed = _chunkParsedSamples; }
             return parsed;
+        }
+
+        /// <summary>
+        /// Reads a WinRT input stream through a native buffer. AsStreamForRead caches its adapter (and the buffers behind
+        /// it) in a static table keyed by the WinRT stream, so each response kept ~109 KB of managed memory alive for as
+        /// long as the network stack held on to the stream; during livestreams that filled the audio task's 20 MB cap.
+        /// Here only native memory is handed to the network stack and the bytes are copied out afterwards.
+        /// </summary>
+        private sealed class NativeBufferReader
+        {
+            private readonly IInputStream _input;
+            private readonly Windows.Storage.Streams.Buffer _native;
+
+            public NativeBufferReader(IInputStream input, uint capacity)
+            {
+                _input = input;
+                _native = new Windows.Storage.Streams.Buffer(capacity);
+            }
+
+            public async Task<int> ReadAsync(byte[] destination, int offset, int count, CancellationToken ct)
+            {
+                if (count <= 0) return 0;
+                uint want = (uint)Math.Min(count, (int)_native.Capacity);
+                IBuffer filled = await _input.ReadAsync(_native, want, InputStreamOptions.Partial).AsTask(ct).ConfigureAwait(false);
+                int got = (int)filled.Length;
+                if (got > 0) filled.CopyTo(0, destination, offset, got);
+                return got;
+            }
         }
 
         private async Task StreamingLoopAsync(CancellationToken ct)
@@ -613,6 +707,13 @@ namespace AudioPlayerTask
                         {
                             LastError = "YouTube Stream Protection: Attestation required (SPS code 3)";
                             Log(LastError + ", stopping SABR streaming loop.");
+                            var attestationFailed = AttestationFailed;
+                            if (attestationFailed != null)
+                            {
+                                // The owner fetches a fresh token; the queued audio keeps playing meanwhile
+                                _holdEndOfStream = true;
+                                try { attestationFailed(); } catch { }
+                            }
                             break;
                         }
 
@@ -676,6 +777,12 @@ namespace AudioPlayerTask
             Log("Sabr streaming loop terminated");
             lock (_queueLock)
             {
+                if (_holdEndOfStream)
+                {
+                    // A replacement stream is on its way: releasing the hold ends this one (HoldEndOfStream)
+                    _endOfStreamHeld = true;
+                    return;
+                }
                 while (_pendingRequests.Count > 0)
                 {
                     var p = _pendingRequests[0];
@@ -798,7 +905,7 @@ namespace AudioPlayerTask
                                     }
                                 }
                                 _lastSuccessfulChunkTime = DateTime.UtcNow;
-                                Log("Segment " + headerId + " seq=" + seq + " finalized: " + samples + " samples parsed (" + segLen + " bytes)");
+                                LogChunk("Segment " + headerId + " seq=" + seq + " finalized: " + samples + " samples parsed (" + segLen + " bytes)");
                             }
                             else
                             {
@@ -856,7 +963,7 @@ namespace AudioPlayerTask
                     {
                         _pendingMediaHeaders[parsedHeader.HeaderId] = parsedHeader;
                     }
-                    Log("Received MEDIA_HEADER (headerId=" + parsedHeader.HeaderId + ", seq=" + parsedHeader.SequenceNumber + ", startMs=" + parsedHeader.StartMs + ", dur=" + parsedHeader.DurationMs + "ms, init=" + parsedHeader.IsInitSeg + ")");
+                    LogChunk("Received MEDIA_HEADER (headerId=" + parsedHeader.HeaderId + ", seq=" + parsedHeader.SequenceNumber + ", startMs=" + parsedHeader.StartMs + ", dur=" + parsedHeader.DurationMs + "ms, init=" + parsedHeader.IsInitSeg + ")");
                     break;
 
                 case UmpPartId.LIVE_METADATA:
@@ -865,16 +972,16 @@ namespace AudioPlayerTask
                     {
                         _liveHeadSeq = (int)liveMeta.HeadSequenceNumber;
                         _liveHeadTimeMs = liveMeta.HeadTimeMs;
-                        Log("Received LIVE_METADATA: headSeq=" + _liveHeadSeq + ", headTimeMs=" + _liveHeadTimeMs + " (" + part.Size + " bytes)");
+                        LogChunk("Received LIVE_METADATA: headSeq=" + _liveHeadSeq + ", headTimeMs=" + _liveHeadTimeMs + " (" + part.Size + " bytes)");
                     }
                     else
                     {
-                        Log("Received LIVE_METADATA (" + part.Size + " bytes)");
+                        LogChunk("Received LIVE_METADATA (" + part.Size + " bytes)");
                     }
                     break;
 
                 case UmpPartId.FORMAT_INITIALIZATION_METADATA:
-                    Log("Received FORMAT_INITIALIZATION_METADATA (" + part.Size + " bytes)");
+                    LogChunk("Received FORMAT_INITIALIZATION_METADATA (" + part.Size + " bytes)");
                     break;
 
                 case UmpPartId.SABR_REDIRECT:
@@ -897,7 +1004,7 @@ namespace AudioPlayerTask
                     if (nrp.PlaybackCookie != null && nrp.PlaybackCookie.Length > 0)
                     {
                         _playbackCookieBytes = nrp.PlaybackCookie;
-                        Log("Extracted playback cookie (" + nrp.PlaybackCookie.Length + " bytes)");
+                        LogChunk("Extracted playback cookie (" + nrp.PlaybackCookie.Length + " bytes)");
                     }
                     if (nrp.BackoffTimeMs > 0)
                     {
@@ -938,11 +1045,12 @@ namespace AudioPlayerTask
                     int spsCode = UmpParser.ExtractStreamProtectionStatus(part.Data);
                     _lastSpsCode = spsCode;
                     string spsDesc = spsCode == 1 ? "OK / Verified" : (spsCode == 2 ? "Attestation Pending" : (spsCode == 3 ? "Attestation Required" : "Code " + spsCode));
-                    Log("Received STREAM_PROTECTION_STATUS: code " + spsCode + " (" + spsDesc + ", " + part.Size + " bytes)");
+                    string spsLine = "Received STREAM_PROTECTION_STATUS: code " + spsCode + " (" + spsDesc + ", " + part.Size + " bytes)";
+                    if (spsCode == 1) LogChunk(spsLine); else Log(spsLine);
                     break;
 
                 default:
-                    Log("Received UMP part " + part.Type + " (" + part.Size + " bytes)");
+                    LogChunk("Received UMP part " + part.Type + " (" + part.Size + " bytes)");
                     break;
             }
         }
@@ -1035,7 +1143,7 @@ namespace AudioPlayerTask
 
         /// <summary>
         /// Lightweight fMP4 parser: extracts AAC frames from trun box and mdat payload,
-        /// prepends standard 7-byte ADTS header, and enqueues MediaStreamSample instances.
+        /// prepends standard 7-byte ADTS header, and enqueues the frames for the player.
         /// </summary>
         private int ParseAndEnqueueFmp4(byte[] chunk, int offset, int length)
         {
@@ -1076,7 +1184,6 @@ namespace AudioPlayerTask
             int rawOffset = mdatPos + 4;
             if (rawOffset >= offset + length) return 0;
 
-            var sampleDuration = TimeSpan.FromTicks(232199); // 1024 samples at 44100Hz (~23.22ms)
             int parsedCount = 0;
 
             lock (_queueLock)
@@ -1101,14 +1208,9 @@ namespace AudioPlayerTask
 
                     // Monotonic continuous timestamping
                     long ticks = (long)(_sampleIndex * (1024.0 / 44100.0 * 10000000.0));
-                    var timestamp = TimeSpan.FromTicks(ticks);
                     _sampleIndex++;
 
-                    var sample = MediaStreamSample.CreateFromBuffer(adtsFrame.AsBuffer(), timestamp);
-                    sample.Duration = sampleDuration;
-                    sample.KeyFrame = true;
-
-                    _sampleQueue.Enqueue(sample);
+                    _sampleQueue.Enqueue(new QueuedFrame { Data = adtsFrame, Ticks = ticks });
                     parsedCount++;
                     _chunkParsedSamples++;
                 }
