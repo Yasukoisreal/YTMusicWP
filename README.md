@@ -93,7 +93,7 @@ YTMusicWP is a completely free, open-source application. We do not include any t
 ## Installation Guide
 
 ### Method 1: Live Store (Recommended)
-The easiest way to install and update YTMusicWP is directly from the Live Store. Click the download button at the top of this page to get it.
+The easiest way to install and update YTMusicWP is directly from the Live Store. Click the download button at the top of this page to get it. YTMusicWP is also available on [WinArchive](https://winarchive.org/store/app/?id=1992).
 
 ### Method 2: Manual Sideloading
 **Windows Phone 8.1:**
