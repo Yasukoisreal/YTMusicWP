@@ -84,17 +84,36 @@
           </dl>
         </div>
 
-        <div class="stage" aria-hidden="true">
-          <div class="rig">
-            <figure class="phone">
-              <img src="./shots/apple-now-playing.jpg" srcset="./shots/apple-now-playing.jpg 360w, ./shots/apple-now-playing@2x.jpg 720w" sizes="(min-width: 960px) 320px, 62vw"
-                   width="360" height="640" alt="">
-              <div class="glare"></div>
-            </figure>
+        <div class="device">
+          <div class="stage" aria-hidden="true">
+            <div class="rig">
+              <!-- A Lumia 1520 drawn in CSS: 1080 x 1920 screenshots fill its 16:9 screen exactly -->
+              <figure class="phone">
+                <span class="side-key volume"></span><span class="side-key power"></span><span class="side-key shutter"></span>
+                <div class="glass">
+                  <span class="earpiece"></span><span class="camera"></span>
+                  <div class="screen">
+                    <img src="./shots/apple-now-playing.jpg" srcset="./shots/apple-now-playing.jpg 360w, ./shots/apple-now-playing@2x.jpg 720w" sizes="(min-width: 960px) 280px, 55vw"
+                         width="360" height="640" alt="">
+                  </div>
+                  <div class="keys">
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>
+                    <svg viewBox="0 0 88 88"><path d="M0 12.4 35.7 7.5v34.5L0 42.4zM40 6.9 87.3 0v41.6L40 42zM0 45.7l35.7.5v34.5L0 75.8zM40 46.6l47.3.3V88L40 81.3z"/></svg>
+                    <svg viewBox="0 0 24 24"><path transform="matrix(-1 0 0 1 24 0)" d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>
+                  </div>
+                </div>
+                <div class="glare"></div>
+              </figure>
+            </div>
+            <div class="floor"></div>
           </div>
-          <div class="floor"></div>
+          <div class="swatches" role="group" aria-label="Phone colour">
+            <button type="button" style="--c: #d0211c" data-body="#d0211c" aria-label="Red" aria-pressed="true"></button>
+            <button type="button" style="--c: #e2e21a" data-body="#e2e21a" aria-label="Yellow" aria-pressed="false"></button>
+            <button type="button" style="--c: #f2f2f2" data-body="#f2f2f2" aria-label="White" aria-pressed="false"></button>
+            <button type="button" style="--c: #1c1c1c" data-body="#1c1c1c" aria-label="Black" aria-pressed="false"></button>
+          </div>
         </div>
-      </div>
       <p class="wrap hint" aria-hidden="true">Move the pointer to look around</p>
     </section>
 

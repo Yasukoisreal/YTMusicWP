@@ -292,8 +292,24 @@ function initCopy() {
   });
 }
 
+/* ── Lumia colours: repaint the phone's body and the light under it ─────────── */
+function initSwatches() {
+  const phone = document.querySelector('.phone');
+  const floor = document.querySelector('.floor');
+  const buttons = [...document.querySelectorAll('.swatches button')];
+  if (!phone || !buttons.length) return;
+  buttons.forEach((button) => button.addEventListener('click', () => {
+    const colour = button.dataset.body;
+    phone.style.setProperty('--body', colour);
+    // The glow under the phone takes the body colour, faint (a white or black body barely tints it)
+    if (floor) floor.style.setProperty('--glow', `${colour}4d`);
+    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+  }));
+}
+
 initHero();
 initReveal();
 initTiles();
 initReel();
 initCopy();
+initSwatches();
