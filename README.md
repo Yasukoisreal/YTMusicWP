@@ -51,28 +51,38 @@
 - Pin your favorite artists, albums, or playlists directly to your Start Screen
 - Highly optimized for low-end hardware: runs smoothly even on older phones with just 512MB RAM like the Nokia Lumia 520
 
-## Screenshots    
-<p align="center">          
-  <img src="Pictures/01.png" width="200" />          
-  <img src="Pictures/02.png" width="200" />          
-  <img src="Pictures/03.png" width="200" />          
-  <img src="Pictures/04.png" width="200" /> 
-</p> 
-<p align="center">          
-  <img src="Pictures/05.png" width="200" />          
-  <img src="Pictures/06.png" width="200" />          
-  <img src="Pictures/07.png" width="200" /> 
-</p> 
-<p align="center">          
-  <img src="Pictures/08.png" width="200" />          
-  <img src="Pictures/09.png" width="200" />          
-  <img src="Pictures/10.png" width="200" /> 
-</p> 
-<p align="center">          
-  <img src="Pictures/11.png" width="200" />          
-  <img src="Pictures/12.png" width="200" />          
-  <img src="Pictures/13.png" width="200" /> 
-</p> 
+## Screenshots
+
+<p align="center"><b>Apple Music style</b></p>
+<p align="center">
+  <img src="Pictures/screenshots/apple-now-playing.jpg" width="200" alt="Apple Music style Now Playing" />
+  <img src="Pictures/screenshots/apple-lyrics.jpg" width="200" alt="Apple Music style word-by-word lyrics" />
+  <img src="Pictures/screenshots/apple-queue.jpg" width="200" alt="Apple Music style queue" />
+</p>
+<p align="center"><b>Classic style</b></p>
+<p align="center">
+  <img src="Pictures/screenshots/classic-now-playing.jpg" width="200" alt="Classic Now Playing" />
+  <img src="Pictures/screenshots/classic-lyrics.jpg" width="200" alt="Classic synced lyrics" />
+  <img src="Pictures/screenshots/classic-queue.jpg" width="200" alt="Classic queue" />
+</p>
+<p align="center"><b>Discover</b></p>
+<p align="center">
+  <img src="Pictures/screenshots/home.jpg" width="200" alt="Home" />
+  <img src="Pictures/screenshots/search.jpg" width="200" alt="Search: moods and moments" />
+  <img src="Pictures/screenshots/search-results.jpg" width="200" alt="Search results" />
+  <img src="Pictures/screenshots/artist.jpg" width="200" alt="Artist page" />
+</p>
+<p align="center"><b>Your music</b></p>
+<p align="center">
+  <img src="Pictures/screenshots/playlist.jpg" width="200" alt="Playlist" />
+  <img src="Pictures/screenshots/library.jpg" width="200" alt="Library" />
+  <img src="Pictures/screenshots/samples.jpg" width="200" alt="Samples" />
+</p>
+<p align="center"><b>Listen Together & Settings</b></p>
+<p align="center">
+  <img src="Pictures/screenshots/listen-together.jpg" width="200" alt="Listen Together" />
+  <img src="Pictures/screenshots/settings.jpg" width="200" alt="Settings and accounts" />
+</p>
 
 ## Supported Devices
 
