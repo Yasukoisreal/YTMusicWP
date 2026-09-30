@@ -23,6 +23,7 @@ namespace YTMusicWP.Controls
         public TrackActionsSheet()
         {
             this.InitializeComponent();
+            Services.MotionHelper.EnableSheetDrag(this, Sheet, Hide);
         }
 
         public bool IsOpen

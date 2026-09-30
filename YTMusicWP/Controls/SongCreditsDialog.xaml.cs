@@ -11,6 +11,7 @@ namespace YTMusicWP.Controls
         public SongCreditsDialog()
         {
             this.InitializeComponent();
+            Services.MotionHelper.EnableSheetDrag(this, Sheet, Close);
         }
 
         public bool IsOpen

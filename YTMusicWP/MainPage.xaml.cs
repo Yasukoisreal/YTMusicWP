@@ -247,6 +247,7 @@ namespace YTMusicWP
             this.InitializeComponent();
             LiveDebugDialog.ToastRequested += LiveDebugDialog_ToastRequested;
             StatsPanel.PlayRequested += StatsPanel_PlayRequested;
+            Services.MotionHelper.EnableSheetDrag(ArtistPickerBottomSheet, ArtistPickerPanel, () => CloseArtistPicker_Click(null, null));
             LoginWebContainer.LoginWebView.NavigationStarting += LoginWebView_NavigationStarting;
             LoginWebContainer.LoginWebView.NavigationCompleted += LoginWebView_NavigationCompleted;
             LoginWebContainer.LoginWebView.NavigationFailed += LoginWebView_NavigationFailed;

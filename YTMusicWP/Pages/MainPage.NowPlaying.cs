@@ -115,34 +115,16 @@ namespace YTMusicWP
             }
         }
 
-        private void MiniPlayer_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-        {
-            if (MiniPlayerTranslate == null) return;
-            double newX = MiniPlayerTranslate.X + e.Delta.Translation.X;
-            if (newX > 80) newX = 80;
-            if (newX < -80) newX = -80;
-            MiniPlayerTranslate.X = newX;
-        }
-
-        private void MiniPlayer_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-        {
-            if (MiniPlayerTranslate == null) return;
-            double totalX = e.Cumulative.Translation.X;
-            double velX = e.Velocities.Linear.X;
-
-            MiniPlayerTranslate.X = 0;
-
-            if (totalX < -40 || velX < -0.15)
-            {
-                NextButton_Click(null, null);
-            }
-            else if (totalX > 40 || velX > 0.15)
-            {
-                PrevButton_Click(null, null);
-            }
-        }
-
         private void MiniPlayer_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            OpenNowPlaying(true);
+        }
+
+        /// <summary>
+        /// Shows Now Playing. With <paramref name="slideIn"/> it slides up on its own; without, it is left just below the
+        /// screen for a swipe on the mini player to pull it up (MainPage.Gestures).
+        /// </summary>
+        private void OpenNowPlaying(bool slideIn)
         {
             Services.MemoryHelper.Mark("NowPlaying");
             _isClosingNowPlaying = false;
@@ -168,7 +150,7 @@ namespace YTMusicWP
                 }
             }
             UpdateLyricsFadeColors(_currentGradientColor);
-            SlideUpStoryboard.Begin();
+            if (slideIn) SlideUpStoryboard.Begin();
             // Start marquee after panel is visible and laid out
             var ignored3 = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () => StartTitleMarquee());
             UpdateWordTimerState();
@@ -1183,25 +1165,6 @@ namespace YTMusicWP
             _trackPendingForPlaylist = currentTrack;
             DialogPlaylistList.ItemsSource = _youtubeUserPlaylists;
             ShowAddToPlaylistDialog();
-        }
-
-        private double _amSwipeStartX;
-        private void AppleMusicArtworkGrid_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-        {
-            _amSwipeStartX = e.Position.X;
-        }
-
-        private void AppleMusicArtworkGrid_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-        {
-            double deltaX = e.Position.X - _amSwipeStartX;
-            if (deltaX < -50)
-            {
-                NextButton_Click(null, null);
-            }
-            else if (deltaX > 50)
-            {
-                PrevButton_Click(null, null);
-            }
         }
 
         // ---------- Apple Music Slider Inflate Animation ----------

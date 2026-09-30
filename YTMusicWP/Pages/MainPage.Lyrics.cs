@@ -959,6 +959,7 @@ namespace YTMusicWP
             _fullscreenLyricsMotion.Animate(Services.MotionHelper.ExitMs, Windows.UI.Xaml.Media.Animation.EasingMode.EaseIn, () =>
             {
                 FullscreenLyricsView.Visibility = Visibility.Collapsed;
+                lyricsT.TranslateY = 0; // it may have been pulled down to close (MainPage.Gestures)
                 UpdateStatusBarColor(npOpen, animate: false);
                 // Refresh regular lyrics containers to match current sync state
                 RefreshRegularLyricsContainers();

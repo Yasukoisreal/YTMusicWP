@@ -30,6 +30,8 @@ namespace YTMusicWP.Controls
         public NowPlayingMenu()
         {
             this.InitializeComponent();
+            // Pulled down: closes the same way as the backdrop and the Close button (through MainPage)
+            Services.MotionHelper.EnableSheetDrag(this, Sheet, () => Raise(CloseClick, this, new RoutedEventArgs()));
         }
 
         public bool IsOpen

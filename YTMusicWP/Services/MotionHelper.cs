@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 
@@ -154,6 +155,56 @@ namespace YTMusicWP.Services
         {
             PrepareSlideIn(view, transform, slideIn, slideOut);
             if (slideIn != null) slideIn.Begin();
+        }
+
+        /// <summary>
+        /// Lets a bottom sheet shown with <see cref="ShowSheet"/> be pulled down to close, as in YouTube Music and
+        /// Spotify: the panel follows the finger, and on release it closes through <paramref name="close"/> (which
+        /// should end in <see cref="HideSheet"/>, continuing from where the panel is) when it was pulled down a third
+        /// of its height or flicked, otherwise it springs back. The drag starts anywhere on the sheet, buttons included,
+        /// except inside a list that can scroll: that swipe scrolls the list.
+        /// </summary>
+        public static void EnableSheetDrag(FrameworkElement root, FrameworkElement panel, Action close)
+        {
+            if (root == null || panel == null || close == null) return;
+            bool dragging = false;
+            // System keeps touch scrolling in the sheet's lists (Now Playing menu, credits, artist picker): without
+            // it this mode on their ancestor takes the swipe away from them
+            panel.ManipulationMode = ManipulationModes.TranslateY | ManipulationModes.System;
+            // Measured against the backdrop: the panel itself moves under the finger
+            panel.ManipulationStarting += (s, e) => e.Container = root;
+            panel.ManipulationStarted += (s, e) =>
+            {
+                dragging = false;
+                if (_running.ContainsKey(root)) e.Complete(); // still opening or closing
+            };
+            panel.ManipulationDelta += (s, e) =>
+            {
+                var t = GetTransform(panel);
+                if (t == null || IsHiding(root)) return; // closed meanwhile (Back): the close animation owns it
+                double dy = e.Cumulative.Translation.Y;
+                if (!dragging && dy < 8) return;
+                dragging = true;
+                t.TranslateY = Math.Max(0, dy);
+            };
+            panel.ManipulationCompleted += (s, e) =>
+            {
+                var t = GetTransform(panel);
+                if (t == null || !dragging) return;
+                dragging = false;
+                // Closed during the drag: springing back would replace the close and leave the sheet up
+                if (IsHiding(root) || root.Visibility != Visibility.Visible) return;
+                double h = panel.ActualHeight > 0 ? panel.ActualHeight : 300;
+                double v = e.Velocities.Linear.Y;
+                if (v > 0.5 || (v > -0.5 && t.TranslateY > h / 3))
+                {
+                    close();
+                    return;
+                }
+                var sb = new Storyboard();
+                sb.Children.Add(Animate(t, "TranslateY", t.TranslateY, 0, EnterMs, EasingMode.EaseOut));
+                Run(root, sb, false, () => ResetToRest(root, panel));
+            };
         }
 
         /// <summary>True while <paramref name="root"/> is playing its closing animation.</summary>

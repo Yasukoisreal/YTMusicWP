@@ -139,6 +139,7 @@
     <Compile Include="Pages\MainPage.Accounts.cs" />
     <Compile Include="Pages\MainPage.AnimatedArtwork.cs" />
     <Compile Include="Pages\MainPage.NowPlaying.cs" />
+    <Compile Include="Pages\MainPage.Gestures.cs" />
     <Compile Include="Pages\MainPage.Library.cs" />
     <Compile Include="Pages\MainPage.Artist.cs" />
     <Compile Include="Pages\MainPage.Home.cs" />
