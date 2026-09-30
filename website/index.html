@@ -21,8 +21,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700&amp;family=Syne:wght@800&amp;display=swap">
   <link rel="stylesheet" href="./src/style.css">
-  <!-- Effects only where ES modules run: old Lumia browsers (IE Mobile 11, EdgeHTML) get the plain, complete page -->
-  <script>if ('noModule' in document.createElement('script')) document.documentElement.className += ' fx';</script>
+  <!-- Effects only where ES modules run. Old Lumia browsers (IE Mobile 11, EdgeHTML) get the plain, complete page,
+       marked "legacy" for the margins that stand in for flex gap there (end of src/style.css) -->
+  <script>document.documentElement.className += ('noModule' in document.createElement('script')) ? ' fx' : ' legacy';</script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -125,64 +126,64 @@
           <h2>Everything YouTube Music does, the Metro way.</h2>
         </header>
         <ul class="tiles">
-          <li class="tile wide" style="--c: #0050ef" data-reveal>
+          <li class="tile wide" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">no ads</span> <span class="t-name">Background playback</span></span>
-              <span class="face back"><span class="t-desc">Play music from YouTube Music for free, without ads, with the screen off. Control it from the lock screen, the volume buttons or your headset.</span></span>
+              <span class="face front" style="background: #0050ef"><span class="t-big">no ads</span> <span class="t-name">Background playback</span></span>
+              <span class="face back" style="background: #0050ef"><span class="t-desc">Play music from YouTube Music for free, without ads, with the screen off. Control it from the lock screen, the volume buttons or your headset.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #a20025" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">Aa</span> <span class="t-name">Word-by-word lyrics</span></span>
-              <span class="face back"><span class="t-desc">Karaoke-style lyrics from Apple Music, KuGou, LRCLIB and YouTube, with duets and background vocals.</span></span>
+              <span class="face front" style="background: #a20025"><span class="t-big">Aa</span> <span class="t-name">Word-by-word lyrics</span></span>
+              <span class="face back" style="background: #a20025"><span class="t-desc">Karaoke-style lyrics from Apple Music, KuGou, LRCLIB and YouTube, with duets and background vocals.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #d80073" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">live</span> <span class="t-name">YouTube livestreams</span></span>
-              <span class="face back"><span class="t-desc">Livestreams over SABR start in about two seconds and keep playing for hours.</span></span>
+              <span class="face front" style="background: #d80073"><span class="t-big">live</span> <span class="t-name">YouTube livestreams</span></span>
+              <span class="face back" style="background: #d80073"><span class="t-desc">Livestreams over SABR start in about two seconds and keep playing for hours.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #008a00" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">2 styles</span> <span class="t-name">Now Playing</span></span>
-              <span class="face back"><span class="t-desc">Apple Music style with a blurred backdrop and animated artwork, or classic Spotify dark.</span></span>
+              <span class="face front" style="background: #008a00"><span class="t-big">2 styles</span> <span class="t-name">Now Playing</span></span>
+              <span class="face back" style="background: #008a00"><span class="t-desc">Apple Music style with a blurred backdrop and animated artwork, or classic Spotify dark.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #aa00ff" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">together</span> <span class="t-name">Listen Together</span></span>
-              <span class="face back"><span class="t-desc">Shared rooms with a synced queue and playback, compatible with Metrolist and SimpMusic.</span></span>
+              <span class="face front" style="background: #aa00ff"><span class="t-big">together</span> <span class="t-name">Listen Together</span></span>
+              <span class="face back" style="background: #aa00ff"><span class="t-desc">Shared rooms with a synced queue and playback, compatible with Metrolist and SimpMusic.</span></span>
             </button>
           </li>
-          <li class="tile wide" style="--c: #e51400" data-reveal>
+          <li class="tile wide" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">512 MB</span> <span class="t-name">Built for the Lumia 520</span></span>
-              <span class="face back"><span class="t-desc">Every screen is tuned for low-memory phones: the 512 MB emulator peaks at about 116 MB, and livestreams stay inside the 20 MB background audio limit.</span></span>
+              <span class="face front" style="background: #e51400"><span class="t-big">512 MB</span> <span class="t-name">Built for the Lumia 520</span></span>
+              <span class="face back" style="background: #e51400"><span class="t-desc">Every screen is tuned for low-memory phones: the 512 MB emulator peaks at about 116 MB, and livestreams stay inside the 20 MB background audio limit.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #f09609; --ink: #000" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">offline</span> <span class="t-name">Smart downloads</span></span>
-              <span class="face back"><span class="t-desc">Save songs to your phone as tagged M4A files with embedded artwork.</span></span>
+              <span class="face front" style="background: #f09609; color: #000"><span class="t-big">offline</span> <span class="t-name">Smart downloads</span></span>
+              <span class="face back" style="background: #f09609; color: #000"><span class="t-desc">Save songs to your phone as tagged M4A files with embedded artwork.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #1ba1e2; --ink: #000" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">tiles</span> <span class="t-name">Live Tiles &amp; pins</span></span>
-              <span class="face back"><span class="t-desc">A flipping Now Playing tile, and artists, albums or playlists pinned to Start.</span></span>
+              <span class="face front" style="background: #1ba1e2; color: #000"><span class="t-big">tiles</span> <span class="t-name">Live Tiles &amp; pins</span></span>
+              <span class="face back" style="background: #1ba1e2; color: #000"><span class="t-desc">A flipping Now Playing tile, and artists, albums or playlists pinned to Start.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #6a00ff" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">stats</span> <span class="t-name">Stats &amp; Last.fm</span></span>
-              <span class="face back"><span class="t-desc">Your top songs, artists and listening clock, and optional scrobbling to Last.fm.</span></span>
+              <span class="face front" style="background: #6a00ff"><span class="t-big">stats</span> <span class="t-name">Stats &amp; Last.fm</span></span>
+              <span class="face back" style="background: #6a00ff"><span class="t-desc">Your top songs, artists and listening clock, and optional scrobbling to Last.fm.</span></span>
             </button>
           </li>
-          <li class="tile" style="--c: #00786f" data-reveal>
+          <li class="tile" data-reveal>
             <button class="tile-in" type="button">
-              <span class="face front"><span class="t-big">skip</span> <span class="t-name">SponsorBlock</span></span>
-              <span class="face back"><span class="t-desc">Skips sponsor segments, intros, music video interludes and outros automatically.</span></span>
+              <span class="face front" style="background: #00786f"><span class="t-big">skip</span> <span class="t-name">SponsorBlock</span></span>
+              <span class="face back" style="background: #00786f"><span class="t-desc">Skips sponsor segments, intros, music video interludes and outros automatically.</span></span>
             </button>
           </li>
         </ul>

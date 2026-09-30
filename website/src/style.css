@@ -1,15 +1,9 @@
-/* YTMusicWP site. Plain colours on body/links so old Lumia browsers (no CSS variables) still read white on black. */
-
-:root {
-  --bg: #000;
-  --ink: #f4f4f4;
-  --muted: #a8a8a8;
-  --faint: #7c7c7c;
-  --line: rgba(255, 255, 255, 0.12);
-  --accent: #ff1f45;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --pad: clamp(16px, 4vw, 40px);
-}
+/* YTMusicWP site.
+   Written so IE Mobile 11 (Windows Phone 8.1) and EdgeHTML (Windows 10 Mobile) render it too: no CSS variables for
+   anything static, a plain fallback line before every clamp()/min()/max() (old browsers keep the first, new ones the
+   second), and grids that simply stack where grid is unknown. Those engines ignore flex gap: the "legacy" block at the
+   end spaces things with margins instead, only for them (index.html marks them with the class). Colours used here:
+   text #f4f4f4, muted #a8a8a8, faint #7c7c7c, hairlines rgba(255, 255, 255, 0.12), accent #ff1f45. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -27,16 +21,16 @@ body {
 
 img { max-width: 100%; height: auto; display: block; }
 a { color: #f4f4f4; }
-code { font-family: Consolas, "Cascadia Mono", ui-monospace, monospace; font-size: 0.92em; color: var(--ink); overflow-wrap: anywhere; word-break: break-word; }
+code { font-family: Consolas, "Cascadia Mono", ui-monospace, monospace; font-size: 0.92em; color: #f4f4f4; overflow-wrap: anywhere; word-break: break-word; }
 h1, h2, h3 { margin: 0; line-height: 1.05; }
 p { margin: 0; }
 
-.wrap { max-width: 1240px; margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: 16px; padding-right: 16px; padding-left: clamp(16px, 4vw, 40px); padding-right: clamp(16px, 4vw, 40px); }
 
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 16px; top: 16px; z-index: 100; background: #fff; color: #000; padding: 8px 12px; }
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:focus-visible { outline: 2px solid #ff1f45; outline-offset: 3px; }
 
 /* ── Buttons ─────────────────────────────────────────── */
 .btn {
@@ -45,11 +39,11 @@ p { margin: 0; }
   background: #fff; color: #000;
   font-weight: 700; font-size: 15px; text-decoration: none;
   border: 1px solid #fff;
-  transition: transform 0.4s var(--ease), background-color 0.2s, color 0.2s;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, color 0.2s;
 }
 .btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .btn svg.fill { fill: currentColor; stroke: none; width: 20px; height: 20px; }
-.btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn:hover { background: #ff1f45; border-color: #ff1f45; color: #fff; }
 .btn-ghost { background: transparent; color: #f4f4f4; border-color: rgba(255, 255, 255, 0.35); }
 .btn-ghost:hover { background: #fff; border-color: #fff; color: #000; }
 .btn-icon { padding: 13px; background: transparent; color: #f4f4f4; border-color: rgba(255, 255, 255, 0.35); }
@@ -62,66 +56,66 @@ p { margin: 0; }
   background: rgba(0, 0, 0, 0.72);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
   backdrop-filter: saturate(160%) blur(14px);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 .bar-row { display: flex; align-items: center; gap: 24px; min-height: 60px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; letter-spacing: -0.01em; flex: none; }
 .brand img { width: 28px; height: 28px; }
-.pill { font-size: 12px; font-weight: 600; color: var(--muted); border: 1px solid var(--line); padding: 1px 8px; border-radius: 99px; }
+.pill { font-size: 12px; font-weight: 600; color: #a8a8a8; border: 1px solid rgba(255, 255, 255, 0.12); padding: 1px 8px; border-radius: 99px; }
 .nav { display: flex; gap: 22px; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
 .nav::-webkit-scrollbar { display: none; }
-.nav a { color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; transition: color 0.2s; }
+.nav a { color: #a8a8a8; text-decoration: none; font-size: 14px; white-space: nowrap; transition: color 0.2s; }
 .nav a:hover { color: #fff; }
 
 @media (max-width: 860px) {
   .bar-row { flex-wrap: wrap; gap: 0 12px; padding-top: 8px; }
   .bar-row .btn-small { margin-left: auto; }
-  .nav { order: 3; width: 100%; margin: 0 calc(var(--pad) * -1); padding: 8px var(--pad) 10px; gap: 20px; }
+  .nav { order: 3; width: 100%; margin: 0 -16px; margin: 0 calc(clamp(16px, 4vw, 40px) * -1); padding: 8px 16px 10px; padding: 8px clamp(16px, 4vw, 40px) 10px; gap: 20px; }
 }
 @media (max-width: 380px) { .pill { display: none; } }
 
 /* ── Hero ────────────────────────────────────────────── */
-.hero { position: relative; overflow: hidden; padding: clamp(40px, 7vw, 96px) 0 48px; border-bottom: 1px solid var(--line); }
+.hero { position: relative; overflow: hidden; padding: 40px 0 48px; padding: clamp(40px, 7vw, 96px) 0 48px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
 
 /* WP8 panorama title: bigger than the screen, sliding slower than the page */
 .panorama {
   position: absolute; left: 0; right: 0; bottom: -0.24em;
-  font-size: clamp(9rem, 27vw, 26rem); font-weight: 300; line-height: 1; letter-spacing: -0.05em;
+  font-size: 9rem; font-size: clamp(9rem, 27vw, 26rem); font-weight: 300; line-height: 1; letter-spacing: -0.05em;
   color: rgba(255, 255, 255, 0.07); white-space: nowrap; pointer-events: none; user-select: none;
 }
 .panorama span { display: inline-block; padding-left: 0.02em; will-change: transform; }
 
 .spot {
-  position: absolute; inset: 0; pointer-events: none;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;
   background: radial-gradient(600px circle at var(--mx, 70%) var(--my, 40%), rgba(255, 31, 69, 0.13), transparent 60%);
 }
 
 .hero-grid { position: relative; display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; align-items: center; }
 
-.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 28px; }
-.meta span:first-child { color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #a8a8a8; margin-bottom: 28px; }
+.meta span:first-child { color: #ff1f45; }
 
 /* Syne ExtraBold capitals are very wide: sized by the screen so "BREATHE" always fits its column */
 h1 {
   font-family: Syne, Montserrat, "Segoe UI", sans-serif; font-weight: 800; text-transform: uppercase;
-  font-size: clamp(2.1rem, 10.5vw, 6rem); letter-spacing: -0.035em; line-height: 0.95; margin-bottom: 28px;
+  font-size: 2.6rem; font-size: clamp(2.1rem, 10.5vw, 6rem); letter-spacing: -0.035em; line-height: 0.95; margin-bottom: 28px;
 }
-@media (min-width: 961px) { h1 { font-size: min(6.1vw, 4.8rem); } }
+@media (min-width: 961px) { h1 { font-size: 4.8rem; font-size: min(6.1vw, 4.8rem); } }
 h1 .line { display: block; }
-h1 .accent { color: var(--accent); }
+h1 .accent { color: #ff1f45; }
 
-.lede { font-size: clamp(16px, 1.4vw, 19px); color: #c8c8c8; max-width: 34em; font-weight: 400; }
+.lede { font-size: 17px; font-size: clamp(16px, 1.4vw, 19px); color: #c8c8c8; max-width: 34em; font-weight: 400; }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 
-.facts { display: flex; flex-wrap: wrap; margin: 44px 0 0; border-top: 1px solid var(--line); }
+.facts { display: flex; flex-wrap: wrap; margin: 44px 0 0; border-top: 1px solid rgba(255, 255, 255, 0.12); }
 .facts div { flex: 1 1 150px; padding: 18px 20px 0 0; }
 .facts dt { font-size: 28px; font-weight: 300; letter-spacing: -0.03em; }
-.facts dd { margin: 2px 0 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.facts dd { margin: 2px 0 0; font-size: 13px; color: #a8a8a8; line-height: 1.4; }
 
 /* 3D stage: the rig turns toward the pointer, children sit at their own depth */
 .stage { position: relative; perspective: 1400px; display: flex; justify-content: center; padding: 40px 0 28px; }
 /* Lumia 1520 proportions (85.4 x 162.8 mm), front layout after its spec sheet. The padding keeps the height where aspect-ratio is unknown (old Edge, IE) */
-.rig { position: relative; width: min(280px, 55vw); transform-style: preserve-3d; }
+.rig { position: relative; width: 55vw; max-width: 280px; transform-style: preserve-3d; }
 .rig::before { content: ""; display: block; padding-top: 190.6%; }
 
 /* The polycarbonate unibody: only its rim shows around the black glass front */
@@ -171,14 +165,14 @@ h1 .accent { color: var(--accent); }
 .swatches button {
   width: 22px; height: 22px; padding: 0; border-radius: 50%; cursor: pointer;
   background: var(--c); border: 2px solid rgba(255, 255, 255, 0.25);
-  transition: transform 0.3s var(--ease), border-color 0.2s;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
 }
 .swatches button:hover { transform: scale(1.15); }
 .swatches button[aria-pressed="true"] { border-color: #fff; transform: scale(1.2); }
 
 .floor { position: absolute; left: 50%; bottom: 0; width: 60%; height: 30px; margin-left: -30%; border-radius: 50%; background-color: rgba(208, 33, 28, 0.3); background-color: var(--glow, rgba(208, 33, 28, 0.3)); filter: blur(28px); transition: background-color 0.5s; }
 
-.hint { margin-top: 8px; font-size: 12px; color: var(--faint); display: none; }
+.hint { margin-top: 8px; font-size: 12px; color: #7c7c7c; display: none; }
 .fx .hint { display: block; }
 
 @media (max-width: 960px) {
@@ -189,15 +183,15 @@ h1 .accent { color: var(--accent); }
 @media (hover: none), (prefers-reduced-motion: reduce) { .fx .hint { display: none; } }
 
 /* ── Sections ────────────────────────────────────────── */
-.section { padding: clamp(72px, 10vw, 140px) 0; border-bottom: 1px solid var(--line); scroll-margin-top: 60px; overflow: hidden; }
-.head { margin-bottom: clamp(36px, 5vw, 64px); max-width: 820px; }
-.kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
-h2 { font-size: clamp(2.1rem, 5vw, 4.2rem); font-weight: 300; letter-spacing: -0.04em; text-wrap: balance; }
+.section { padding: 72px 0; padding: clamp(72px, 10vw, 140px) 0; border-bottom: 1px solid rgba(255, 255, 255, 0.12); scroll-margin-top: 60px; overflow: hidden; }
+.head { margin-bottom: 36px; margin-bottom: clamp(36px, 5vw, 64px); max-width: 820px; }
+.kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #ff1f45; margin-bottom: 16px; }
+h2 { font-size: 2.1rem; font-size: clamp(2.1rem, 5vw, 4.2rem); font-weight: 300; letter-spacing: -0.04em; text-wrap: balance; }
 h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 .head .lede { margin-top: 20px; }
 .more { margin-top: 40px; }
-.more a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
-.more a:hover { color: #fff; border-color: var(--accent); }
+.more a { color: #a8a8a8; text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 2px; transition: color 0.2s, border-color 0.2s; }
+.more a:hover { color: #fff; border-color: #ff1f45; }
 
 /* ── Live Tiles ──────────────────────────────────────── */
 .tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
@@ -206,75 +200,75 @@ h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 /* A real button, so screen readers read both faces and keyboards can flip it; reset to look like a tile */
 .tile-in { position: relative; display: block; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; background: transparent;
   color: inherit; font: inherit; text-align: left; cursor: pointer; transform-style: preserve-3d; }
-.face { display: block; background: var(--c); color: var(--ink, #fff); padding: 18px; }
+.face { display: block; color: #fff; padding: 18px; }
 .front { display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; }
-.t-big { display: block; font-size: clamp(30px, 3.2vw, 44px); font-weight: 300; letter-spacing: -0.04em; line-height: 1; }
+.t-big { display: block; font-size: 32px; font-size: clamp(30px, 3.2vw, 44px); font-weight: 300; letter-spacing: -0.04em; line-height: 1; }
 .t-name { display: block; font-size: 14px; font-weight: 600; }
 .t-desc { display: block; font-size: 15px; line-height: 1.5; }
 
 /* With effects: the faces stack and flip like a Live Tile; without, the description sits under the tile */
-.fx .tile-in { position: absolute; inset: 0; transition: transform 0.9s var(--ease); }
+.fx .tile-in { position: absolute; inset: 0; transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
 .fx .face { position: absolute; inset: 0; -webkit-backface-visibility: hidden; backface-visibility: hidden; }
 .fx .back { transform: rotateX(180deg); display: flex; align-items: flex-end; }
 .fx .tile.flipped .tile-in { transform: rotateX(180deg); }
-.fx .tile { transition: transform 0.35s var(--ease); transform-style: preserve-3d; }
+.fx .tile { transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); transform-style: preserve-3d; }
 
 @media (max-width: 900px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 420px) { .tile, .front { min-height: 168px; } .t-big { font-size: 28px; } .t-desc { font-size: 14px; } }
 
 /* ── What's new ──────────────────────────────────────── */
-.changes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
-.changes li { position: relative; padding: 28px 28px 36px 0; border-bottom: 1px solid var(--line); }
-.changes li::before { content: ""; position: absolute; left: 0; top: -1px; height: 1px; width: 0; background: var(--accent); transition: width 0.6s var(--ease); }
+.changes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(255, 255, 255, 0.12); }
+.changes li { position: relative; padding: 28px 28px 36px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.changes li::before { content: ""; position: absolute; left: 0; top: -1px; height: 1px; width: 0; background: #ff1f45; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 .changes li:hover::before { width: 100%; }
-.changes .n { display: block; font-size: 13px; font-weight: 600; color: var(--faint); margin-bottom: 18px; }
+.changes .n { display: block; font-size: 13px; font-weight: 600; color: #7c7c7c; margin-bottom: 18px; }
 .changes h3 { margin-bottom: 10px; }
-.changes p { color: var(--muted); font-size: 15px; }
+.changes p { color: #a8a8a8; font-size: 15px; }
 @media (max-width: 900px) { .changes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .changes { grid-template-columns: minmax(0, 1fr); } .changes li { padding-right: 0; } }
 
 /* ── Screens (pivot + reel) ──────────────────────────── */
 .pivot { display: flex; gap: 26px; overflow-x: auto; scrollbar-width: none; margin-top: -24px; padding-bottom: 8px; }
 .pivot::-webkit-scrollbar { display: none; }
-.pivot a { font-size: clamp(22px, 3vw, 34px); font-weight: 300; letter-spacing: -0.03em; color: #767676; text-decoration: none; white-space: nowrap; transition: color 0.3s; }
+.pivot a { font-size: 24px; font-size: clamp(22px, 3vw, 34px); font-weight: 300; letter-spacing: -0.03em; color: #767676; text-decoration: none; white-space: nowrap; transition: color 0.3s; }
 .pivot a:hover, .pivot a.on { color: #fff; }
 
 .reel {
   display: flex; gap: 28px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
-  padding: 48px max(var(--pad), calc(50vw - 130px)); perspective: 1200px;
+  padding: 48px 16px; padding: 48px max(clamp(16px, 4vw, 40px), calc(50vw - 130px)); perspective: 1200px;
 }
 .reel::-webkit-scrollbar { display: none; }
 .reel.dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; }
 .shot { flex: none; width: 260px; margin: 0; scroll-snap-align: center; transform-style: preserve-3d; }
 .shot-in { transform-origin: 50% 40%; }
 .shot img { width: 260px; height: 462px; object-fit: cover; object-position: top; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.14); background: #111; box-shadow: 0 40px 60px -30px rgba(0, 0, 0, 0.9); -webkit-user-drag: none; user-select: none; }
-.shot figcaption { margin-top: 18px; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.shot figcaption { margin-top: 18px; font-size: 14px; color: #a8a8a8; line-height: 1.45; }
 .shot figcaption b { display: block; color: #fff; font-size: 16px; margin-bottom: 4px; }
 .fx .reel { cursor: grab; }
 
 /* ── Devices ─────────────────────────────────────────── */
-.devices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.devices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(255, 255, 255, 0.12); }
 .devices article { padding: 32px 28px 8px 0; }
-.devices article + article { border-left: 1px solid var(--line); padding-left: 28px; }
-.d-big { font-size: clamp(40px, 5vw, 64px); font-weight: 200; letter-spacing: -0.05em; line-height: 1; margin-bottom: 22px; }
+.devices article + article { border-left: 1px solid rgba(255, 255, 255, 0.12); padding-left: 28px; }
+.d-big { font-size: 44px; font-size: clamp(40px, 5vw, 64px); font-weight: 200; letter-spacing: -0.05em; line-height: 1; margin-bottom: 22px; }
 .devices h3 { margin-bottom: 10px; }
-.devices p:last-child { color: var(--muted); font-size: 15px; }
+.devices p:last-child { color: #a8a8a8; font-size: 15px; }
 @media (max-width: 760px) {
   .devices { grid-template-columns: minmax(0, 1fr); }
-  .devices article + article { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
+  .devices article + article { border-left: 0; border-top: 1px solid rgba(255, 255, 255, 0.12); padding-left: 0; }
   .devices article { padding-bottom: 28px; }
 }
 
 /* ── Install ─────────────────────────────────────────── */
 .install { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.1fr) minmax(0, 1.1fr); gap: 10px; }
-.way { border: 1px solid var(--line); padding: 28px; background: rgba(255, 255, 255, 0.02); }
+.way { border: 1px solid rgba(255, 255, 255, 0.12); padding: 28px; background: rgba(255, 255, 255, 0.02); }
 .way h3 { margin-bottom: 14px; }
-.way > p { color: var(--muted); margin-bottom: 24px; }
+.way > p { color: #a8a8a8; margin-bottom: 24px; }
 .way .stores { margin-top: 0; gap: 10px; }
-.tag { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: var(--accent); color: #fff; padding: 2px 7px; vertical-align: middle; margin-left: 6px; }
+.tag { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; background: #ff1f45; color: #fff; padding: 2px 7px; vertical-align: middle; margin-left: 6px; }
 .steps { margin: 0; padding: 0; list-style: none; counter-reset: s; }
 .steps li { counter-increment: s; position: relative; padding-left: 44px; margin-bottom: 18px; color: #c8c8c8; font-size: 15px; }
-.steps li::before { content: "0" counter(s); position: absolute; left: 0; top: -2px; font-size: 20px; font-weight: 300; color: var(--accent); }
+.steps li::before { content: "0" counter(s); position: absolute; left: 0; top: -2px; font-size: 20px; font-weight: 300; color: #ff1f45; }
 .steps a { color: #fff; }
 @media (max-width: 960px) { .install { grid-template-columns: minmax(0, 1fr); } }
 
@@ -282,35 +276,35 @@ h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 .give { display: flex; flex-wrap: wrap; gap: 36px; align-items: center; }
 .qr { width: 200px; height: auto; background: #fff; padding: 10px; }
 .acct { font-size: 32px; font-weight: 300; letter-spacing: 0.02em; margin: 6px 0 2px; }
-.bank > p:not(.kicker):not(.acct) { color: var(--muted); }
+.bank > p:not(.kicker):not(.acct) { color: #a8a8a8; }
 .copy { font: inherit; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, 0.35); padding: 4px 10px; vertical-align: middle; cursor: pointer; }
 .copy:hover { background: #fff; color: #000; }
 
 /* ── Footer ──────────────────────────────────────────── */
 .foot { position: relative; overflow: hidden; padding: 120px 0 36px; }
-.panorama.small { top: 0; bottom: auto; font-size: clamp(6rem, 20vw, 19rem); color: rgba(255, 255, 255, 0.05); }
-.foot-row { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; font-size: 14px; color: var(--muted); }
+.panorama.small { top: 0; bottom: auto; font-size: 6rem; font-size: clamp(6rem, 20vw, 19rem); color: rgba(255, 255, 255, 0.05); }
+.foot-row { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; font-size: 14px; color: #a8a8a8; }
 .foot-row nav { display: flex; flex-wrap: wrap; gap: 20px; }
-.foot-row a { color: var(--muted); text-decoration: none; }
+.foot-row a { color: #a8a8a8; text-decoration: none; }
 .foot-row a:hover { color: #fff; }
 
 /* ── Opening: once per load. "backwards" fill only holds the first frame during the delay, so where animations
    don't run everything is simply there ── */
 @media (prefers-reduced-motion: no-preference) {
-  .fx .bar { animation: drop 0.8s var(--ease) backwards; }
-  .fx .hero .panorama { animation: slide-in 1.8s var(--ease) backwards; }
-  .fx .hero .meta { animation: rise 0.9s var(--ease) 0.1s backwards; }
+  .fx .bar { animation: drop 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+  .fx .hero .panorama { animation: slide-in 1.8s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+  .fx .hero .meta { animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards; }
   /* The headline lines swing up one after another, like Live Tiles flipping over */
-  .fx h1 .line { transform-origin: 50% 100%; animation: swivel 1s var(--ease) backwards; }
+  .fx h1 .line { transform-origin: 50% 100%; animation: swivel 1s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
   .fx h1 .line:nth-child(1) { animation-delay: 0.18s; }
   .fx h1 .line:nth-child(2) { animation-delay: 0.27s; }
   .fx h1 .line:nth-child(3) { animation-delay: 0.36s; }
   .fx h1 .line:nth-child(4) { animation-delay: 0.45s; }
-  .fx .hero .lede { animation: rise 0.9s var(--ease) 0.6s backwards; }
-  .fx .hero .cta { animation: rise 0.9s var(--ease) 0.7s backwards; }
-  .fx .hero .facts { animation: rise 0.9s var(--ease) 0.8s backwards; }
+  .fx .hero .lede { animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.6s backwards; }
+  .fx .hero .cta { animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.7s backwards; }
+  .fx .hero .facts { animation: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.8s backwards; }
   .fx .hero .hint { animation: fade 1s ease 1.2s backwards; }
-  .fx .phone { animation: phone-in 1.4s var(--ease) 0.3s backwards; }
+  .fx .phone { animation: phone-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards; }
   .fx .floor { animation: fade 1.6s ease 0.7s backwards; }
 }
 @keyframes drop { from { opacity: 0; transform: translateY(-100%); } }
@@ -326,9 +320,25 @@ h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
     opacity: 0;
     transform: perspective(900px) rotateY(38deg) translateX(-18px); /* hinged on the left, far edge swung away */
     transform-origin: 0 50%;
-    transition: opacity 0.8s var(--ease), transform 1s var(--ease);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1);
     transition-delay: calc(var(--i, 0) * 60ms);
   }
   .fx [data-reveal].in { opacity: 1; transform: none; }
   .fx .tile[data-reveal].in { transform: perspective(900px) rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg)); }
 }
+
+/* ── IE Mobile 11 and EdgeHTML ("legacy" from the script in index.html): flex gap and grid are unknown there, so the
+   spacing that gap gives everywhere else comes from margins, and grid items that stack get room between them ── */
+.legacy .btn svg { margin-right: 10px; }
+.legacy .btn-icon svg { margin-right: 0; }
+.legacy .brand > * + * { margin-left: 10px; }
+.legacy .brand { margin-right: 24px; }
+.legacy .nav a + a { margin-left: 20px; }
+.legacy .meta span { margin-right: 18px; }
+.legacy .cta > * { margin: 0 12px 12px 0; }
+.legacy .pivot a + a { margin-left: 26px; }
+.legacy .shot + .shot { margin-left: 28px; }
+.legacy .tile, .legacy .way { margin-bottom: 10px; }
+.legacy .give > * { margin: 0 36px 20px 0; }
+.legacy .foot-row p { margin-right: 16px; }
+.legacy .foot-row nav a { margin: 0 20px 8px 0; }
