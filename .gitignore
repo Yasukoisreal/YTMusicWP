@@ -41,3 +41,6 @@ __pycache__/
 
 # Last.fm API key and secret (see YTMusicWP/Services/LastFmCredentials.cs)
 YTMusicWP/Services/LastFmCredentials.Local.cs
+
+# Claude Code local settings (dev server launch config)
+.claude/
