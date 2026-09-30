@@ -253,6 +253,32 @@ h3 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 .foot-row a { color: var(--muted); text-decoration: none; }
 .foot-row a:hover { color: #fff; }
 
+/* ── Opening: once per load. "backwards" fill only holds the first frame during the delay, so where animations
+   don't run everything is simply there ── */
+@media (prefers-reduced-motion: no-preference) {
+  .fx .bar { animation: drop 0.8s var(--ease) backwards; }
+  .fx .hero .panorama { animation: slide-in 1.8s var(--ease) backwards; }
+  .fx .hero .meta { animation: rise 0.9s var(--ease) 0.1s backwards; }
+  /* The headline lines swing up one after another, like Live Tiles flipping over */
+  .fx h1 .line { transform-origin: 50% 100%; animation: swivel 1s var(--ease) backwards; }
+  .fx h1 .line:nth-child(1) { animation-delay: 0.18s; }
+  .fx h1 .line:nth-child(2) { animation-delay: 0.27s; }
+  .fx h1 .line:nth-child(3) { animation-delay: 0.36s; }
+  .fx h1 .line:nth-child(4) { animation-delay: 0.45s; }
+  .fx .hero .lede { animation: rise 0.9s var(--ease) 0.6s backwards; }
+  .fx .hero .cta { animation: rise 0.9s var(--ease) 0.7s backwards; }
+  .fx .hero .facts { animation: rise 0.9s var(--ease) 0.8s backwards; }
+  .fx .hero .hint { animation: fade 1s ease 1.2s backwards; }
+  .fx .phone { animation: phone-in 1.4s var(--ease) 0.3s backwards; }
+  .fx .floor { animation: fade 1.6s ease 0.7s backwards; }
+}
+@keyframes drop { from { opacity: 0; transform: translateY(-100%); } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(10%); } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes swivel { from { opacity: 0; transform: perspective(700px) rotateX(-85deg); } }
+@keyframes phone-in { from { opacity: 0; transform: translateY(70px) rotateX(22deg) scale(0.94); } }
+@keyframes fade { from { opacity: 0; } }
+
 /* ── Scroll reveal: WP turnstile, only with effects and motion allowed ── */
 @media (prefers-reduced-motion: no-preference) {
   .fx [data-reveal] {
