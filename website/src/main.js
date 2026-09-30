@@ -99,13 +99,22 @@ function initTiles() {
   const tiles = [...document.querySelectorAll('.tile')];
   if (!tiles.length) return;
 
+  // Each tile's face is a <button>: its name is the text of both faces, so screen readers read the description too
+  const autoTimers = new Map(); // tiles flipped by the timer, and the timeout that turns them back
+  const setFlipped = (tile, on) => {
+    tile.classList.toggle('flipped', on);
+    tile.querySelector('.tile-in').setAttribute('aria-pressed', String(on));
+  };
+
   tiles.forEach((tile) => {
-    tile.tabIndex = 0;
-    tile.setAttribute('role', 'button');
-    tile.setAttribute('aria-label', `${tile.querySelector('.t-name').textContent}: show details`);
-    const toggle = () => tile.classList.toggle('flipped');
-    tile.addEventListener('click', toggle);
-    tile.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    setFlipped(tile, false);
+    tile.querySelector('.tile-in').addEventListener('click', () => {
+      // A tile the user flipped stays as they left it: the timer that would turn it back is cancelled
+      clearTimeout(autoTimers.get(tile));
+      autoTimers.delete(tile);
+      tile.dataset.manual = '1';
+      setFlipped(tile, !tile.classList.contains('flipped'));
+    });
 
     if (finePointer && !reduceMotion) {
       // WP tilt effect: the tile leans away from where the pointer presses
@@ -135,12 +144,13 @@ function initTiles() {
 
   setInterval(() => {
     if (document.hidden) return;
-    const candidates = [...inView].filter((t) => !t.matches(':hover') && !t.dataset.auto && !t.classList.contains('flipped'));
+    // Never under the pointer or keyboard focus, and never one the user has flipped
+    const candidates = [...inView].filter((t) => !t.matches(':hover') && !t.contains(document.activeElement)
+      && !t.dataset.manual && !autoTimers.has(t) && !t.classList.contains('flipped'));
     if (!candidates.length) return;
     const tile = candidates[Math.floor(Math.random() * candidates.length)];
-    tile.dataset.auto = '1';
-    tile.classList.add('flipped');
-    setTimeout(() => { tile.classList.remove('flipped'); delete tile.dataset.auto; }, 3800);
+    setFlipped(tile, true);
+    autoTimers.set(tile, setTimeout(() => { setFlipped(tile, false); autoTimers.delete(tile); }, 3800));
   }, 2400);
 }
 
@@ -149,25 +159,38 @@ function initReel() {
   const reel = document.querySelector('.reel');
   if (!reel) return;
   const shots = [...reel.querySelectorAll('.shot')];
-  const pivotLinks = [...document.querySelectorAll('.pivot a')];
+  const pivot = document.querySelector('.pivot');
+  const pivotLinks = [...pivot.querySelectorAll('a')];
+
+  // Scroll snapping measures each screen's transformed box: turning the snap targets themselves moved the snap
+  // points while the reel scrolled, and smooth scrolls stopped a screen short. The figure stays put as the snap
+  // target and an inner layer turns (opacity too: on the figure it would flatten the 3D)
+  const layers = shots.map((shot) => {
+    const inner = document.createElement('div');
+    inner.className = 'shot-in';
+    while (shot.firstChild) inner.appendChild(shot.firstChild);
+    shot.appendChild(inner);
+    return inner;
+  });
 
   let queued = false;
+  let lastActive = null;
   function update() {
     queued = false;
     const box = reel.getBoundingClientRect();
     const mid = box.left + box.width / 2;
     let nearest = null;
     let best = Infinity;
-    for (const shot of shots) {
+    shots.forEach((shot, i) => {
       const r = shot.getBoundingClientRect();
       const d = clamp((r.left + r.width / 2 - mid) / (box.width / 2), -1.4, 1.4);
       if (!reduceMotion) {
         const a = Math.abs(d);
-        shot.style.transform = `rotateY(${-d * 24}deg) translateZ(${-a * 110}px)`;
-        shot.style.opacity = String(1 - Math.min(a, 1) * 0.45);
+        layers[i].style.transform = `rotateY(${(-d * 24).toFixed(2)}deg) translateZ(${(-a * 110).toFixed(1)}px)`;
+        layers[i].style.opacity = (1 - Math.min(a, 1) * 0.45).toFixed(3);
       }
       if (Math.abs(d) < best) { best = Math.abs(d); nearest = shot; }
-    }
+    });
     // The pivot header of the screen group in the middle lights up
     const idx = shots.indexOf(nearest);
     let active = null;
@@ -176,6 +199,14 @@ function initReel() {
       if (shots.indexOf(target) <= idx) active = link;
     }
     pivotLinks.forEach((l) => l.classList.toggle('on', l === active));
+    // On a phone the headers don't all fit: keep the lit one in view, like a WP pivot
+    if (active && active !== lastActive) {
+      lastActive = active;
+      const left = active.offsetLeft - pivot.offsetLeft;
+      if (left < pivot.scrollLeft || left + active.offsetWidth > pivot.scrollLeft + pivot.clientWidth) {
+        pivot.scrollTo({ left: left - 16, behavior: reduceMotion ? 'auto' : 'smooth' });
+      }
+    }
   }
   const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
   reel.addEventListener('scroll', schedule, { passive: true });
