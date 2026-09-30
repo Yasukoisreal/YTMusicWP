@@ -1,26 +1,310 @@
 <!doctype html>
-<html lang="en" class="dark scroll-smooth">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="./logo.png" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>YTMusicWP — The Definitive YouTube Music Client for Windows Phone & Lumia</title>
-    
-    <!-- Meta tags & SEO -->
-    <meta name="description" content="A modern, lightning-fast native YouTube Music client crafted for Windows Phone 8.1 and Windows 10 Mobile with 512MB RAM optimization, Apple Music UI, synced lyrics, and Live Tiles." />
-    <meta property="og:title" content="YTMusicWP — YouTube Music for Lumia & Windows Phone" />
-    <meta property="og:description" content="Breathe new life into legacy Nokia Lumia devices with direct stream playback, synced lyrics, and iconic Live Tiles." />
-    <meta property="og:image" content="./Pictures/banner.png" />
-    <meta name="theme-color" content="#06060A" />
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YTMusicWP · YouTube Music for Windows Phone &amp; Lumia</title>
+  <meta name="description" content="A free, open-source YouTube Music client for Windows Phone 8.1 and Windows 10 Mobile. Background playback without ads, synced word-by-word lyrics, livestreams, Live Tiles, and a player built for 512 MB Lumias.">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/png" href="./logo.png">
 
-    <!-- Google Fonts: Syne (Editorial Display), Plus Jakarta Sans (UI), JetBrains Mono (Blueprint Data) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-[#06060A] text-[#F1F3F9] font-sans antialiased selection:bg-[#00F0FF] selection:text-black overflow-x-hidden min-h-screen">
-    <div id="root"></div>
-    <script type="module" src="./src/main.jsx"></script>
-  </body>
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://yasukoisreal.github.io/YTMusicWP/">
+  <meta property="og:title" content="YTMusicWP · YouTube Music for Windows Phone &amp; Lumia">
+  <meta property="og:description" content="Breathe new life into your Lumia: background playback without ads, word-by-word lyrics, livestreams and Live Tiles on Windows Phone 8.1 and Windows 10 Mobile.">
+  <meta property="og:image" content="https://yasukoisreal.github.io/YTMusicWP/shots/og-banner.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800&amp;family=Syne:wght@800&amp;display=swap">
+  <link rel="stylesheet" href="./src/style.css">
+  <!-- Effects only where ES modules run: old Lumia browsers (IE Mobile 11, EdgeHTML) get the plain, complete page -->
+  <script>if ('noModule' in document.createElement('script')) document.documentElement.className += ' fx';</script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="bar">
+    <div class="wrap bar-row">
+      <a class="brand" href="#top" aria-label="YTMusicWP home">
+        <img src="./logo.png" alt="" width="28" height="28">
+        <span>YTMusicWP</span>
+        <span class="pill">v2.4.0</span>
+      </a>
+      <nav class="nav" aria-label="Sections">
+        <a href="#features">features</a>
+        <a href="#new">what's new</a>
+        <a href="#screens">screens</a>
+        <a href="#devices">devices</a>
+        <a href="#install">install</a>
+        <a href="#support">support</a>
+      </nav>
+      <a class="btn btn-small" href="https://github.com/Yasukoisreal/YTMusicWP/releases/latest">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO ─────────────────────────────────────────────── -->
+    <section class="hero" id="top">
+      <div class="panorama" aria-hidden="true"><span data-depth="-0.4">ytmusicwp</span></div>
+      <div class="spot" aria-hidden="true"></div>
+
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="meta">
+            <span>v2.4.0</span><span>Windows Phone 8.1</span><span>Windows 10 Mobile</span><span>Free &amp; open source</span>
+          </p>
+          <h1>
+            <span class="line">Breathe</span>
+            <span class="line">new life</span>
+            <span class="line">into</span>
+            <span class="line accent">Lumia.</span>
+          </h1>
+          <p class="lede">
+            A native YouTube Music client for Windows Phone. Background playback without ads, synced word-by-word
+            lyrics, livestreams and Live Tiles, built to run smoothly on a 512&nbsp;MB Lumia&nbsp;520.
+          </p>
+          <div class="cta">
+            <a class="btn" href="https://github.com/Yasukoisreal/YTMusicWP/releases/latest">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16" /></svg>
+              Download .appx
+            </a>
+            <a class="btn btn-ghost" href="https://store.live.net.co/app/447">Get it on Live Store</a>
+            <a class="btn btn-icon" href="https://github.com/Yasukoisreal/YTMusicWP" aria-label="Source code on GitHub">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="fill"><path fill-rule="evenodd" d="M12 2C6.48 2 2 6.48 2 12.02c0 4.42 2.87 8.18 6.84 9.5.5.09.68-.22.68-.48l-.01-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.64-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.56 9.56 0 0 1 5.01 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.94.36.31.68.92.68 1.86l-.01 2.75c0 .27.18.58.69.48A10.02 10.02 0 0 0 22 12.02C22 6.48 17.52 2 12 2Z"/></svg>
+            </a>
+          </div>
+          <dl class="facts">
+            <div><dt>~116 MB</dt><dd>peak memory on a 512 MB phone</dd></div>
+            <div><dt>~2 s</dt><dd>to start a livestream over SABR</dd></div>
+            <div><dt>92</dt><dd>unit tests on every commit</dd></div>
+          </dl>
+        </div>
+
+        <div class="stage" aria-hidden="true">
+          <div class="rig">
+            <figure class="phone">
+              <img src="./shots/11.jpg" srcset="./shots/11.jpg 360w, ./shots/11@2x.jpg 720w" sizes="(min-width: 960px) 320px, 62vw"
+                   width="360" height="640" alt="">
+              <div class="glare"></div>
+            </figure>
+          </div>
+          <div class="floor"></div>
+        </div>
+      </div>
+      <p class="wrap hint" aria-hidden="true">Move the pointer to look around</p>
+    </section>
+
+    <!-- FEATURES as Live Tiles ────────────────────────────── -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <header class="head">
+          <p class="kicker">01 · features</p>
+          <h2>Everything YouTube Music does, the Metro way.</h2>
+        </header>
+        <ul class="tiles">
+          <li class="tile wide" style="--c: #0050ef" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">no ads</span><span class="t-name">Background playback</span></div>
+              <div class="face back"><p>Play music from YouTube Music for free, without ads, with the screen off. Control it from the lock screen, the volume buttons or your headset.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #a20025" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">Aa</span><span class="t-name">Word-by-word lyrics</span></div>
+              <div class="face back"><p>Karaoke-style lyrics from Apple Music, KuGou, LRCLIB and YouTube, with duets and background vocals.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #d80073" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">live</span><span class="t-name">YouTube livestreams</span></div>
+              <div class="face back"><p>Livestreams over SABR start in about two seconds and keep playing for hours.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #008a00" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">2 styles</span><span class="t-name">Now Playing</span></div>
+              <div class="face back"><p>Apple Music style with a blurred backdrop and animated artwork, or classic Spotify dark.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #aa00ff" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">together</span><span class="t-name">Listen Together</span></div>
+              <div class="face back"><p>Shared rooms with a synced queue and playback, compatible with Metrolist and SimpMusic.</p></div>
+            </div>
+          </li>
+          <li class="tile wide" style="--c: #e51400" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">512 MB</span><span class="t-name">Built for the Lumia 520</span></div>
+              <div class="face back"><p>Every screen is tuned for low-memory phones: the 512 MB emulator peaks at about 116 MB, and livestreams stay inside the 20 MB background audio limit.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #f09609; --ink: #000" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">offline</span><span class="t-name">Smart downloads</span></div>
+              <div class="face back"><p>Save songs to your phone as tagged M4A files with embedded artwork.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #1ba1e2; --ink: #000" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">tiles</span><span class="t-name">Live Tiles &amp; pins</span></div>
+              <div class="face back"><p>A flipping Now Playing tile, and artists, albums or playlists pinned to Start.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #6a00ff" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">stats</span><span class="t-name">Stats &amp; Last.fm</span></div>
+              <div class="face back"><p>Your top songs, artists and listening clock, and optional scrobbling to Last.fm.</p></div>
+            </div>
+          </li>
+          <li class="tile" style="--c: #00786f" data-reveal>
+            <div class="tile-in">
+              <div class="face front"><span class="t-big">skip</span><span class="t-name">SponsorBlock</span></div>
+              <div class="face back"><p>Skips sponsor segments, intros, music video interludes and outros automatically.</p></div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- WHAT'S NEW ───────────────────────────────────────── -->
+    <section class="section" id="new">
+      <div class="wrap">
+        <header class="head">
+          <p class="kicker">02 · what's new in 2.4.0</p>
+          <h2>The biggest update yet.</h2>
+        </header>
+        <ol class="changes">
+          <li data-reveal><span class="n">01</span><h3>Livestreams on SABR</h3><p>YouTube's native streaming protocol, written in C#. Playback starts in about 2 s instead of 12, and long streams no longer stop after 40 minutes.</p></li>
+          <li data-reveal><span class="n">02</span><h3>Samples</h3><p>A vertical feed of music video clips from your Home and the local video charts.</p></li>
+          <li data-reveal><span class="n">03</span><h3>Word-by-word lyrics</h3><p>Karaoke animation, a new KuGou source, duet singers on either side and background vocals on their own line.</p></li>
+          <li data-reveal><span class="n">04</span><h3>Animated artwork</h3><p>Apple Music motion artwork on Now Playing, fading into the blurred backdrop.</p></li>
+          <li data-reveal><span class="n">05</span><h3>Multiple accounts</h3><p>Switch between YouTube accounts and brand channels.</p></li>
+          <li data-reveal><span class="n">06</span><h3>Listening stats &amp; Last.fm</h3><p>Minutes, top songs and artists, your listening clock, and scrobbling even when the app is closed.</p></li>
+          <li data-reveal><span class="n">07</span><h3>New from your artists</h3><p>New albums and singles of the artists you follow, right on Home.</p></li>
+          <li data-reveal><span class="n">08</span><h3>Return YouTube Dislike</h3><p>Like, dislike and view counts in the Now Playing menu.</p></li>
+          <li data-reveal><span class="n">09</span><h3>DNS over HTTPS</h3><p>Cloudflare with a Google fallback, for networks that throttle YouTube.</p></li>
+        </ol>
+        <p class="more"><a href="https://github.com/Yasukoisreal/YTMusicWP#changelog">Full changelog on GitHub →</a></p>
+      </div>
+    </section>
+
+    <!-- SCREENS as a Pivot ───────────────────────────────── -->
+    <section class="section screens" id="screens">
+      <div class="wrap">
+        <header class="head">
+          <p class="kicker">03 · screens</p>
+          <h2>Captured on a Lumia.</h2>
+        </header>
+        <nav class="pivot" aria-label="Jump to screen">
+          <a href="#s-11">now playing</a><a href="#s-12">lyrics</a><a href="#s-13">queue</a><a href="#s-01">home</a><a href="#s-02">search</a><a href="#s-04">library</a><a href="#s-07">settings</a>
+        </nav>
+      </div>
+      <div class="reel" tabindex="0" aria-label="Screenshots, scroll sideways">
+        <figure class="shot" id="s-11"><img loading="lazy" src="./shots/11.jpg" srcset="./shots/11.jpg 360w, ./shots/11@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Now Playing in Apple Music style"><figcaption><b>Apple Music Now Playing</b>Blurred backdrop with the controls docked below.</figcaption></figure>
+        <figure class="shot" id="s-08"><img loading="lazy" src="./shots/08.jpg" srcset="./shots/08.jpg 360w, ./shots/08@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Now Playing in Spotify style"><figcaption><b>Spotify Classic Dark</b>Pure black player with a scrolling mini lyric.</figcaption></figure>
+        <figure class="shot" id="s-12"><img loading="lazy" src="./shots/12.jpg" srcset="./shots/12.jpg 360w, ./shots/12@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Synced lyrics in Apple Music style"><figcaption><b>Synced lyrics</b>Lines fade with distance from the one being sung.</figcaption></figure>
+        <figure class="shot" id="s-09"><img loading="lazy" src="./shots/09.jpg" srcset="./shots/09.jpg 360w, ./shots/09@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Synced lyrics in Spotify style"><figcaption><b>Karaoke lyrics</b>Adjustable text size and a fullscreen mode.</figcaption></figure>
+        <figure class="shot" id="s-13"><img loading="lazy" src="./shots/13.jpg" srcset="./shots/13.jpg 360w, ./shots/13@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Queue in Apple Music style"><figcaption><b>Smart queue</b>Shuffle, repeat and endless radio.</figcaption></figure>
+        <figure class="shot" id="s-10"><img loading="lazy" src="./shots/10.jpg" srcset="./shots/10.jpg 360w, ./shots/10@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Queue in Spotify style"><figcaption><b>Up next</b>Reorder or remove tracks as you go.</figcaption></figure>
+        <figure class="shot" id="s-01"><img loading="lazy" src="./shots/01.jpg" srcset="./shots/01.jpg 360w, ./shots/01@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Home feed"><figcaption><b>Home</b>Quick picks, mixes and moods.</figcaption></figure>
+        <figure class="shot" id="s-02"><img loading="lazy" src="./shots/02.jpg" srcset="./shots/02.jpg 360w, ./shots/02@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Search and discover"><figcaption><b>Search &amp; discover</b>Charts and genres to explore.</figcaption></figure>
+        <figure class="shot" id="s-03"><img loading="lazy" src="./shots/03.jpg" srcset="./shots/03.jpg 360w, ./shots/03@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Search results"><figcaption><b>Search results</b>Songs, albums, playlists and artists.</figcaption></figure>
+        <figure class="shot" id="s-04"><img loading="lazy" src="./shots/04.jpg" srcset="./shots/04.jpg 360w, ./shots/04@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Library"><figcaption><b>Library</b>Your playlists and artists, synced with YouTube.</figcaption></figure>
+        <figure class="shot" id="s-05"><img loading="lazy" src="./shots/05.jpg" srcset="./shots/05.jpg 360w, ./shots/05@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Playlist page"><figcaption><b>Playlists &amp; mixes</b>Play all, or pin one to Start.</figcaption></figure>
+        <figure class="shot" id="s-06"><img loading="lazy" src="./shots/06.jpg" srcset="./shots/06.jpg 360w, ./shots/06@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Liked music"><figcaption><b>Liked music</b>Your favourites, always up to date.</figcaption></figure>
+        <figure class="shot" id="s-07"><img loading="lazy" src="./shots/07.jpg" srcset="./shots/07.jpg 360w, ./shots/07@2x.jpg 720w" sizes="260px" width="360" height="640" alt="Settings"><figcaption><b>Settings</b>Accounts, region, autoplay and volume normalisation.</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- DEVICES ──────────────────────────────────────────── -->
+    <section class="section" id="devices">
+      <div class="wrap">
+        <header class="head">
+          <p class="kicker">04 · devices</p>
+          <h2>From the Lumia 520 to the 950 XL.</h2>
+        </header>
+        <div class="devices">
+          <article data-reveal><p class="d-big">512 MB</p><h3>Low-end</h3><p>Lumia 520, 530, 620, 625, 630, 635, 720</p></article>
+          <article data-reveal><p class="d-big">1 GB+</p><h3>Mid-range &amp; flagships</h3><p>Lumia 525, 535, 730/735, 820, 830, 920, 925, 930, 1020, 1520, Icon</p></article>
+          <article data-reveal><p class="d-big">W10M</p><h3>Windows 10 Mobile</h3><p>Lumia 550, 640/640 XL, 650, 950/950 XL, HP Elite x3, Alcatel Idol 4S</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- INSTALL ──────────────────────────────────────────── -->
+    <section class="section" id="install">
+      <div class="wrap">
+        <header class="head">
+          <p class="kicker">05 · install</p>
+          <h2>Ready in a few minutes.</h2>
+        </header>
+        <div class="install">
+          <div class="way" data-reveal>
+            <h3>Live Store <span class="tag">easiest</span></h3>
+            <p>Install and update YTMusicWP from the Live Store.</p>
+            <a class="btn btn-ghost" href="https://store.live.net.co/app/447">Open Live Store</a>
+          </div>
+          <div class="way" data-reveal>
+            <h3>Windows Phone 8.1</h3>
+            <ol class="steps">
+              <li>Download the <code>.appx</code>, the <code>.cer</code> and <code>Microsoft.VCLibs.ARM.12.00.Phone.appx</code> from the <a href="https://github.com/Yasukoisreal/YTMusicWP/releases/latest">latest release</a>.</li>
+              <li>Open the <code>.cer</code> on your phone (from email or a file manager) to install the certificate.</li>
+              <li>Install VCLibs if the phone asks for it, then the <code>.appx</code> with WPAD, WPV Xap Deployer or Windows Phone Power Tools.</li>
+            </ol>
+          </div>
+          <div class="way" data-reveal>
+            <h3>Windows 10 Mobile</h3>
+            <ol class="steps">
+              <li>Turn on <b>Settings › Update &amp; security › For developers › Developer mode</b>.</li>
+              <li>Download the <code>.appx</code> to your phone, open it in File Explorer and tap <b>Install</b>.</li>
+            </ol>
+          </div>
+        </div>
+        <p class="more"><a href="https://github.com/Yasukoisreal/YTMusicWP/wiki">Step-by-step guide with pictures on the wiki →</a></p>
+      </div>
+    </section>
+
+    <!-- SUPPORT ──────────────────────────────────────────── -->
+    <section class="section" id="support">
+      <div class="wrap support">
+        <header class="head">
+          <p class="kicker">06 · support</p>
+          <h2>Keep the Lumias playing.</h2>
+          <p class="lede">YTMusicWP is free and has no ads. If it made your phone useful again, you can support its development.</p>
+        </header>
+        <div class="give" data-reveal>
+          <img class="qr" src="./shots/donate-qr.jpg" width="200" height="220" alt="MB Bank transfer QR code" loading="lazy">
+          <div class="bank">
+            <p class="kicker">MB Bank (Vietnam)</p>
+            <p class="acct"><span id="acct">700652007</span> <button class="copy" type="button" data-copy="700652007" hidden>copy</button></p>
+            <p>NGUYEN TRUONG AN</p>
+            <div class="cta">
+              <a class="btn btn-ghost" href="https://buymeacoffee.com/yasukoisreal">Buy me a coffee</a>
+              <a class="btn btn-ghost" href="https://paypal.me/yasukoisreal">PayPal</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="panorama small" aria-hidden="true"><span>ytmusicwp</span></div>
+    <div class="wrap foot-row">
+      <p>© YTMusicWP · GPLv3 · made by Yasuko (An)</p>
+      <nav aria-label="Project links">
+        <a href="https://github.com/Yasukoisreal/YTMusicWP">GitHub</a>
+        <a href="https://github.com/Yasukoisreal/YTMusicWP/wiki">Wiki</a>
+        <a href="https://github.com/Yasukoisreal/YTMusicWP/issues">Report an issue</a>
+        <a href="https://store.live.net.co/app/447">Live Store</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
 </html>

@@ -1,8 +1,10 @@
-import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
+// Static page: index.html holds all the content, src/main.js only adds effects
 export default defineConfig({
-  plugins: [react()],
   base: './',
+  build: {
+    // Keep the CSS as written: minifiers may drop the plain-colour fallbacks old Lumia browsers rely on
+    cssMinify: false,
+  },
 })

@@ -1,16 +1,13 @@
-# React + Vite
+# YTMusicWP website
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The project page at https://yasukoisreal.github.io/YTMusicWP/, deployed by `.github/workflows/deploy-pages.yml`.
 
-Currently, two official plugins are available:
+- `index.html` holds all the content, so the page reads fine in browsers without ES modules (IE Mobile 11 on Windows Phone 8.1, EdgeHTML on Windows 10 Mobile).
+- `src/main.js` adds the effects (3D hero, spinning disc, Live Tile flips, screen reel, scroll reveal) where modules run, and respects `prefers-reduced-motion`.
+- `public/shots/` has the screenshots as 360 px and 720 px JPEGs (resized from the full-size PNGs in the repo's `Pictures/`).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```bash
+npm install
+npm run dev
+npm run build
+```
