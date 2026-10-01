@@ -1,0 +1,8 @@
+- [No AI trailers](no-ai-trailers.md) — never add Co-Authored-By Claude / "Generated with" in YTMusicWP; user commits themselves
+- [User tests on emulator](user-tests-on-emulator.md) — build + checklist; user tests on WP8.1 emulator; no screenshots, no Live Visual Tree
+- [MainPage.xaml split](mainpage-xaml-split.md) — screens moved to Controls/; remaining screens blocked by page DataTemplates
+- [Samples video findings](samples-video-findings.md) — WP8.1 MediaElement video: what works/failed, keyframe seek, 1080p emulator stutter, FEmusic_immersive blocked
+- [Animated artwork findings](animated-artwork-findings.md) — probe: YTM none; Apple Music editorialVideo = direct fMP4, plays muted beside background audio
+- [Lyrics sources findings](lyrics-sources-findings.md) — boidu Apple Music lyrics API needs a key for uncached songs, cache keyed by duration ±2 s; TTML agent/x-bg markup; SimpMusic Lyrics API is UA-gated (don't spoof)
+- [Live memory growth findings](live-memory-growth-findings.md) — SABR live hit 20 MB cap; managed leak = AsStreamForRead (fixed, NativeBufferReader); rest was debugger-only (Release flat 1 h+)
+- [WP8.1 platform gotchas](wp81-platform-gotchas.md) — Newtonsoft POCO TypeAccessException, HttpClient cookie store vs cookie auth, Win10-only cookie APIs, no background-audio EQ
