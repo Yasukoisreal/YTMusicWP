@@ -13,6 +13,7 @@
   <a href="https://github.com/Yasukoisreal/YTMusicWP"><img src="https://img.shields.io/badge/RAM%20Target-512MB%20Optimized-orange" alt="RAM Target"></a>
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/github/v/release/Yasukoisreal/YTMusicWP"></a> 
   <a href="https://github.com/Yasukoisreal/YTMusicWP/releases"><img src="https://img.shields.io/github/downloads/Yasukoisreal/YTMusicWP/total"></a>
+  <a href="https://github.com/sponsors/Yasukoisreal"><img src="https://img.shields.io/badge/Sponsor-❤-ea4aaa?logo=github-sponsors" alt="Sponsor"></a>
   <br> 
   <h4>Download</h4>  
   <a href="https://store.live.net.co/app/447"><img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" width="200" alt="Get YTMusicWP from Live Store"></a> 
