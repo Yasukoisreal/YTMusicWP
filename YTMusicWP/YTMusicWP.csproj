@@ -344,18 +344,6 @@
       <HintPath>..\packages\XamlAnimatedGif.1.2.3\lib\portable-win81+wpa81\XamlAnimatedGif.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="WriteableBitmapEx.WinRT">
-      <HintPath>..\packages\WriteableBitmapEx.1.6.8\lib\wpa81\WriteableBitmapEx.WinRT.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="WinRTXamlToolkit">
-      <HintPath>..\packages\WinRTXamlToolkit.WindowsPhone.1.8.1.0\lib\wpa\WinRTXamlToolkit.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="QKit">
-      <HintPath>..\packages\QKit.0.4.1\lib\wpa81\QKit.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AudioPlayerTask\AudioPlayerTask.csproj">

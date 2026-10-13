@@ -11,6 +11,8 @@ nuget.exe
 AppPackages/
 BundleArtifacts/
 docs/html/
+TestResults/
+.bug-hunter/
 
 # Release builds
 Release_v*/
