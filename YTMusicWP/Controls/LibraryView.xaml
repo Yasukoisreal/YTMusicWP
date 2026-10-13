@@ -62,8 +62,8 @@
                     <MenuFlyout>
                         <MenuFlyoutItem Text="Export Playlists (JSON)" Click="ExportPlaylists_Click"/>
                         <MenuFlyoutItem Text="Import Playlists (JSON)" Click="ImportPlaylists_Click"/>
-                        <MenuFlyoutItem Text="💾 Export as M3U" Click="ExportAllPlaylistsM3u_Click"/>
-                        <MenuFlyoutItem Text="📥 Import M3U Playlist" Click="ImportM3uPlaylist_Click"/>
+                        <MenuFlyoutItem Text="Export as M3U" Click="ExportAllPlaylistsM3u_Click"/>
+                        <MenuFlyoutItem Text="Import M3U Playlist" Click="ImportM3uPlaylist_Click"/>
                     </MenuFlyout>
                 </Button.Flyout>
             </Button>
@@ -175,9 +175,9 @@
                                         <FlyoutBase.AttachedFlyout>
                                             <MenuFlyout>
                                                 <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                                                <MenuFlyoutItem Text="♡ Favorite" Click="MenuFavorite_Click"/>
-                                                <MenuFlyoutItem Text="🎵 Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                                                <MenuFlyoutItem Text="⬇ Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                                                <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
+                                                <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                                                <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                                             </MenuFlyout>
                                         </FlyoutBase.AttachedFlyout>
                                         <StackPanel>
@@ -258,7 +258,6 @@
 
         <!-- Empty State -->
         <StackPanel x:Name="LibraryEmptyState" x:FieldModifier="internal" Grid.Row="2" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="🎵" FontSize="48" HorizontalAlignment="Center"/>
             <TextBlock Text="No items yet" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#B3B3B3" HorizontalAlignment="Center" Margin="0,8,0,0"/>
         </StackPanel>
 

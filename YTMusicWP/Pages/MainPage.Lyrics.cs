@@ -644,7 +644,7 @@ namespace YTMusicWP
 
                 if (times.Count > 0)
                 {
-                    string text = string.IsNullOrWhiteSpace(tempLine) ? "♪" : tempLine;
+                    string text = string.IsNullOrWhiteSpace(tempLine) ? " " : tempLine;
                     foreach (var t in times)
                     {
                         double fSize = text.StartsWith("Lyrics provided by") ? _lyricFontSize * 0.65 : _lyricFontSize;

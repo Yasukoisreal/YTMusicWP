@@ -152,7 +152,7 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <Border Background="#3B82F6" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
-                                <TextBlock Text="🌐" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                
                             </Border>
                             <TextBlock Text="Language &amp; Location" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
@@ -345,7 +345,7 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
                             <Border Background="#A855F7" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
-                                <TextBlock Text="♫" FontSize="15" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                
                             </Border>
                             <TextBlock Text="Playback" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
@@ -479,7 +479,7 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
                             <Border Background="#00E5FF" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
-                                <TextBlock Text="👥" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                
                             </Border>
                             <TextBlock Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
@@ -590,7 +590,7 @@
                             <!-- Downloaded Music Item -->
                             <Grid Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🎵" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    
                                     <TextBlock Text="Downloaded Songs" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="StorageDownloadsCountText" x:FieldModifier="internal" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
@@ -600,7 +600,7 @@
                             <!-- Image Cache Item -->
                             <Grid Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="🖼️" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    
                                     <TextBlock Text="Image Cache" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="StorageImagesCountText" x:FieldModifier="internal" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
@@ -610,7 +610,7 @@
                             <!-- Temp Stream Files Item -->
                             <Grid Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="⚡" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    
                                     <TextBlock Text="Temporary Streams" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="StorageTempCountText" x:FieldModifier="internal" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
@@ -620,7 +620,7 @@
                             <!-- Data & Database Item -->
                             <Grid Margin="0,0,0,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="📄" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    
                                     <TextBlock Text="App Data &amp; Playlists" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                 </StackPanel>
                                  <TextBlock x:Name="StorageDataSizeText" x:FieldModifier="internal" Text="-- KB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
@@ -647,7 +647,7 @@
                             <Border Background="#252525" CornerRadius="10">
                                 <Grid Margin="16,0">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                        <TextBlock Text="📁" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        
                                         <TextBlock Text="Export Downloads to Music folder" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
@@ -704,7 +704,7 @@
                         <TextBlock Text="YTMusicWP" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954" HorizontalAlignment="Center"/>
                         <TextBlock Text="Version 2.4.0" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                         <TextBlock Text="A music streaming client for Windows Phone 8.1" FontSize="12" Foreground="#444" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
-                        <TextBlock Text="Made with ♥" FontSize="11" Foreground="#333" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        <TextBlock Text="Made with love" FontSize="11" Foreground="#333" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
 

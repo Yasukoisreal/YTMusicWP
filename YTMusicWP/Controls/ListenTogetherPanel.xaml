@@ -190,7 +190,7 @@
                             <TextBlock x:Name="LtRoomCodePoster" x:FieldModifier="internal" Text="ABCD EFGH" FontSize="36" FontFamily="Consolas" FontWeight="Bold" Foreground="White" Margin="0,2,0,4"/>
                             <TextBlock x:Name="LtRoomRoleText" x:FieldModifier="internal" Text="You are the host · 1 listening" FontSize="12" Foreground="#A0A0A0" Margin="0,0,0,12"/>
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="📋 Copy Code" Click="LtCopyCode_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="White" FontSize="12" Padding="12,6" Margin="0,0,8,0"/>
+                                <Button Content="Copy Code" Click="LtCopyCode_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="White" FontSize="12" Padding="12,6" Margin="0,0,8,0"/>
                                 <Button Content="↗ Share" Click="LtShareCode_Click" Style="{StaticResource ChipButtonStyle}" Background="#2B3242" Foreground="White" FontSize="12" Padding="12,6"/>
                             </StackPanel>
                         </StackPanel>

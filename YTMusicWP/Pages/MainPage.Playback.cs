@@ -231,7 +231,7 @@ namespace YTMusicWP
             }
 
             bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
-            BigHeartBtn.Content = isFav ? "♥" : "♡";
+            BigHeartBtn.Content = isFav ? "Liked" : "Like";
             BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
@@ -600,21 +600,21 @@ namespace YTMusicWP
             if (existing != null) 
             { 
                 favoriteTracks.Remove(existing); 
-                BigHeartBtn.Content = "♡"; 
+                BigHeartBtn.Content = "Like"; 
                 BigHeartBtn.Foreground = _whiteBrush; 
-                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "☆"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
-                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♡"; AppleMusicLyricsHeartBtn.Foreground = _whiteBrush; }
-                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♡"; AppleMusicQueueHeartBtn.Foreground = _whiteBrush; }
+                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "Like"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
+                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "Like"; AppleMusicLyricsHeartBtn.Foreground = _whiteBrush; }
+                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "Like"; AppleMusicQueueHeartBtn.Foreground = _whiteBrush; }
                 var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
             }
             else 
             { 
                 favoriteTracks.Insert(0, track); 
-                BigHeartBtn.Content = "♥"; 
+                BigHeartBtn.Content = "Liked"; 
                 BigHeartBtn.Foreground = _greenBrush; 
-                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "★"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
-                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♥"; AppleMusicLyricsHeartBtn.Foreground = _greenBrush; }
-                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♥"; AppleMusicQueueHeartBtn.Foreground = _greenBrush; }
+                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "Liked"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
+                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "Liked"; AppleMusicLyricsHeartBtn.Foreground = _greenBrush; }
+                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "Liked"; AppleMusicQueueHeartBtn.Foreground = _greenBrush; }
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }
             SaveFavoritesAsync();
@@ -1255,7 +1255,7 @@ namespace YTMusicWP
                     currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
                     UpdateAnimatedArtwork();
                     bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
-                    BigHeartBtn.Content = isFav ? "♥" : "♡";
+                    BigHeartBtn.Content = isFav ? "Liked" : "Like";
                     BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                     var ignored = UpdateLyricsAsync(title, artist);
@@ -1427,7 +1427,7 @@ namespace YTMusicWP
                         UpdateAnimatedArtwork();
 
                         bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
-                        BigHeartBtn.Content = isFav ? "♥" : "♡";
+                        BigHeartBtn.Content = isFav ? "Liked" : "Like";
                         BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                         var existingHistory = historyTracks.FirstOrDefault(t => t.VideoId == vid);

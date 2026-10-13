@@ -148,15 +148,15 @@ namespace YTMusicWP.Services
                 string safeTitle = WebUtility.HtmlEncode(title ?? "");
                 string safeArtist = WebUtility.HtmlEncode(artist ?? "");
 
-                // Medium tile: peek with "♪ Now Playing" prefix
+                // Medium tile: peek with "Now Playing" prefix
                 // Wide tile: Photo-style vertical slide/peek with song & artist
                 // Large tile: Photo-style vertical slide/peek with song & artist
                 string xml = string.Format(
                     "<tile><visual version=\"2\">" +
                     "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                    "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text></binding>" +
-                    "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
-                    "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">♪ {1}</text><text id=\"2\">{2}</text></binding>" +
+                    "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text></binding>" +
+                    "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
+                    "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{1}</text><text id=\"2\">{2}</text></binding>" +
                     "</visual></tile>", safeThumb, safeTitle, safeArtist);
 
                 var doc = new XmlDocument();
@@ -526,17 +526,17 @@ namespace YTMusicWP.Services
                 // Morning (06:00): Good Morning Mix
                 DateTime morningTime = now.Date.AddDays(now.Hour >= 6 ? 1 : 0).AddHours(6);
                 var morningTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, morningTrack, "☀️ Good Morning Mix", "daypart_morning", morningTime);
+                ScheduleSingleDaypart(updater, morningTrack, "Good Morning Mix", "daypart_morning", morningTime);
 
                 // Afternoon (13:00): Energy Boost
                 DateTime afternoonTime = now.Date.AddDays(now.Hour >= 13 ? 1 : 0).AddHours(13);
                 var afternoonTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, afternoonTrack, "⚡ Energy Boost", "daypart_afternoon", afternoonTime);
+                ScheduleSingleDaypart(updater, afternoonTrack, "Energy Boost", "daypart_afternoon", afternoonTime);
 
                 // Evening (20:00): Chill & Relax
                 DateTime eveningTime = now.Date.AddDays(now.Hour >= 20 ? 1 : 0).AddHours(20);
                 var eveningTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, eveningTrack, "🌙 Chill & Relax", "daypart_evening", eveningTime);
+                ScheduleSingleDaypart(updater, eveningTrack, "Chill & Relax", "daypart_evening", eveningTime);
             }
             catch { }
         }

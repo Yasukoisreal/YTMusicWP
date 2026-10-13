@@ -106,7 +106,7 @@ namespace YTMusicWP
                     {
                         Title = "Recently Played",
                         Subtitle = "Playlist • " + historyTracks.Count + " songs",
-                        IconGlyph = "🕐",
+                        IconGlyph = null,
                         ThumbnailUrl = null,
                         IsCircle = false,
                         ItemType = "recent",
@@ -122,7 +122,7 @@ namespace YTMusicWP
                 {
                     Title = "Liked Songs",
                     Subtitle = "Playlist • " + favoriteTracks.Count + " songs",
-                    IconGlyph = "♥",
+                    IconGlyph = null,
                     ThumbnailUrl = null,
                     IsCircle = false,
                     ItemType = "favorites",
@@ -165,7 +165,7 @@ namespace YTMusicWP
                         Title = track.Title,
                         Subtitle = track.ChannelName,
                         ThumbnailUrl = track.ThumbnailUrl,
-                        IconGlyph = "🎵",
+                        IconGlyph = null,
                         IsCircle = false,
                         ItemType = "song",
                         Tag = track
@@ -210,7 +210,7 @@ namespace YTMusicWP
                     {
                         Title = "Downloaded Songs",
                         Subtitle = "Playlist • " + downloadedTracks.Count + " songs",
-                        IconGlyph = "⬇",
+                        IconGlyph = null,
                         ThumbnailUrl = null,
                         IsCircle = false,
                         ItemType = "downloads",
@@ -252,7 +252,7 @@ namespace YTMusicWP
                     {
                         Title = "Recently Played",
                         Subtitle = "Playlist • " + historyTracks.Count + " songs",
-                        IconGlyph = "🕐",
+                        IconGlyph = null,
                         ThumbnailUrl = null,
                         IsCircle = false,
                         ItemType = "recent",
@@ -639,7 +639,7 @@ namespace YTMusicWP
                 else
                 {
                     bool pinned = await YTMusicWP.Services.TileService.PinSecondaryTileAsync(tileId, title, args, tracks);
-                    if (pinned) ShowToast("📌 Pinned to Start Screen!");
+                    if (pinned) ShowToast("Pinned to Start Screen!");
                 }
             }
             catch { }
@@ -914,7 +914,7 @@ namespace YTMusicWP
                 {
                     args.Request.Data.Properties.Title = "YTMusicWP";
                     args.Request.Data.Properties.Description = _trackToShare.Title;
-                    args.Request.Data.SetText("🎵 " + _trackToShare.Title + " — " + _trackToShare.ChannelName);
+                    args.Request.Data.SetText(_trackToShare.Title + " — " + _trackToShare.ChannelName);
                 }
                 else
                 {
@@ -1081,7 +1081,7 @@ namespace YTMusicWP
 
             if (currentTrack != null && currentTrack.VideoId == track.VideoId)
             {
-                BigHeartBtn.Content = isAdding ? "♥" : "♡";
+                BigHeartBtn.Content = isAdding ? "Liked" : "Like";
                 BigHeartBtn.Foreground = isAdding ? _greenBrush : _whiteBrush;
             }
 
@@ -1517,7 +1517,7 @@ namespace YTMusicWP
                 return;
             }
 
-            ShowToast("✨ Enhancing playlist...");
+            ShowToast("Enhancing playlist...");
 
             try
             {
@@ -1555,7 +1555,7 @@ namespace YTMusicWP
                     if (added > 0)
                     {
                         PlaylistDetailsTrackCount.Text = _currentViewingPlaylist.Tracks.Count + " tracks";
-                        ShowToast("✨ Added " + added + " songs!");
+                        ShowToast("Added " + added + " songs!");
                     }
                     else
                     {

@@ -815,7 +815,7 @@ namespace YTMusicWP
                 }
 
                 bool isFav = favoriteTracks.Any(t => t.VideoId == ytTrack.VideoId);
-                BigHeartBtn.Content = isFav ? "♥" : "♡";
+                BigHeartBtn.Content = isFav ? "Liked" : "Like";
                 BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                 var ignoredLyrics = UpdateLyricsAsync(ytTrack.Title, ytTrack.ChannelName);
