@@ -41,7 +41,6 @@ namespace YTMusicWP
                 return;
             }
 
-            HomeNewReleasesTitleText.Text = InnerTubeClient.CurrentLanguage == "vi" ? "Mới từ nghệ sĩ bạn theo dõi" : "New from your artists";
             // "ALBUM:" items open the album page (PlayTrack routes them) instead of playing
             HomeNewReleasesCarousel.ItemsSource = releases.Select(r => new YouTubeTrack
             {

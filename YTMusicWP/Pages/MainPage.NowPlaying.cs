@@ -42,7 +42,7 @@ namespace YTMusicWP
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
-                ShowToast("Login required to Like");
+                ShowToast(Services.Loc.T("Toast_LoginToLike", "Login required to Like"));
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace YTMusicWP
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
-                ShowToast("Login required for Watch Later");
+                ShowToast(Services.Loc.T("Toast_LoginWatchLater", "Login required for Watch Later"));
                 return;
             }
 
@@ -83,7 +83,7 @@ namespace YTMusicWP
             {
                 _lyricFontSize += 2;
                 RefreshLyricsSize();
-                ShowToast("A+ (" + _lyricFontSize + "px)");
+                ShowToast(Services.Loc.F("Toast_LyricSizeUp", "A+ ({0}px)", _lyricFontSize));
             }
         }
 
@@ -93,7 +93,7 @@ namespace YTMusicWP
             {
                 _lyricFontSize -= 2;
                 RefreshLyricsSize();
-                ShowToast("A- (" + _lyricFontSize + "px)");
+                ShowToast(Services.Loc.F("Toast_LyricSizeDown", "A- ({0}px)", _lyricFontSize));
             }
         }
 
@@ -307,7 +307,7 @@ namespace YTMusicWP
             if (playing != null) currentQueueTracks.Add(playing);
             UpdateQueueActiveState();
             SyncQueueToBackground(false);
-            ShowToast("Queue cleared");
+            ShowToast(Services.Loc.T("Toast_QueueCleared", "Queue cleared"));
         }
 
         private void NowPlayingPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -427,7 +427,7 @@ namespace YTMusicWP
 
                 if (string.IsNullOrEmpty(artistStr))
                 {
-                    ShowToast("Artist info not available");
+                    ShowToast(Services.Loc.T("Toast_NoArtistInfo", "Artist info not available"));
                     return;
                 }
 
@@ -548,11 +548,11 @@ namespace YTMusicWP
                     PlaylistDetailsTrackCount.Text = downloadedTracks.Count + " tracks";
                 }
 
-                ShowToast("File deleted from device");
+                ShowToast(Services.Loc.T("Toast_FileDeleted", "File deleted from device"));
             }
             catch
             {
-                ShowToast("Failed to delete file");
+                ShowToast(Services.Loc.T("Toast_FailedDeleteFile", "Failed to delete file"));
             }
         }
 
@@ -665,7 +665,7 @@ namespace YTMusicWP
             UpdateQueueActiveState();
             SyncQueueToBackground(false);
 
-            ShowToast("Added to queue: " + _bottomSheetTrack.Title);
+            ShowToast(Services.Loc.F("Toast_AddedToQueue", "Added to queue: {0}", _bottomSheetTrack.Title));
         }
 
         // ══════════════════════════════════════════
@@ -677,7 +677,7 @@ namespace YTMusicWP
             var track = _bottomSheetTrack;
             if (track == null || track.VideoId.StartsWith("LOCAL:")) return;
 
-            ShowToast("Loading radio for " + track.Title + "...");
+            ShowToast(Services.Loc.F("Toast_LoadingRadioFor", "Loading radio for {0}...", track.Title));
 
             try
             {
@@ -693,7 +693,7 @@ namespace YTMusicWP
                     }
 
                     PlayTrack(track, radio);
-                    ShowToast("Radio: " + radio.Count + " songs");
+                    ShowToast(Services.Loc.F("Toast_RadioSongs", "Radio: {0} songs", radio.Count));
                     return;
                 }
 
@@ -724,21 +724,21 @@ namespace YTMusicWP
 
                         // Auto-play from the original track
                         PlayTrack(track, radio);
-                        ShowToast("Radio: " + radio.Count + " songs");
+                        ShowToast(Services.Loc.F("Toast_RadioSongs", "Radio: {0} songs", radio.Count));
                     }
                     else
                     {
-                        ShowToast("No radio results found");
+                        ShowToast(Services.Loc.T("Toast_NoRadioResults", "No radio results found"));
                     }
                 }
                 else
                 {
-                    ShowToast("No radio results found");
+                    ShowToast(Services.Loc.T("Toast_NoRadioResults", "No radio results found"));
                 }
             }
             catch
             {
-                ShowToast("Failed to load radio");
+                ShowToast(Services.Loc.T("Toast_RadioFailed", "Failed to load radio"));
             }
         }
 
@@ -800,14 +800,14 @@ namespace YTMusicWP
             // Don't remove currently playing track
             if (currentTrack != null && track.VideoId == currentTrack.VideoId)
             {
-                ShowToast("Can't remove current track");
+                ShowToast(Services.Loc.T("Toast_CantRemoveCurrent", "Can't remove current track"));
                 return;
             }
 
             currentQueueTracks.Remove(track);
             UpdateQueueActiveState();
             SyncQueueToBackground(false);
-            ShowToast("Removed from queue");
+            ShowToast(Services.Loc.T("Toast_RemovedFromQueue", "Removed from queue"));
         }
 
         // ══════════════════════════════════════════

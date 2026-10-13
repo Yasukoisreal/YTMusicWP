@@ -117,7 +117,7 @@ namespace YTMusicWP
             if (_samples.Count == 0)
             {
                 ShortsView.SampleLoading.IsActive = false;
-                ShowSampleMessage(SamplesVi ? "Chưa có đoạn nhạc nào.\nHãy kiểm tra kết nối rồi thử lại." : "No samples available right now.\nCheck your connection and try again.");
+                ShowSampleMessage(Services.Loc.T("Samples_Empty", "No samples available right now.\nCheck your connection and try again."));
                 return;
             }
             ShowSample(Math.Min(_sampleIndex, _samples.Count - 1));
@@ -931,22 +931,17 @@ namespace YTMusicWP
         // ==========================================
         // ACTIONS
         // ==========================================
-        private static bool SamplesVi
-        {
-            get { return InnerTubeClient.CurrentLanguage == "vi"; }
-        }
-
         private static string SampleUnplayableText
         {
-            get { return SamplesVi ? "Không phát được video này.\nVuốt lên để xem đoạn tiếp theo." : "This video can't be played.\nSwipe up for the next one."; }
+            get { return Services.Loc.T("Samples_Unplayable", "This video can't be played.\nSwipe up for the next one."); }
         }
 
         /// <summary>Action labels follow the app language (called from UpdateLocalizedUI).</summary>
         private void UpdateSamplesLocalizedText()
         {
-            ShortsView.SampleSaveText.Text = SamplesVi ? "Lưu" : "Save";
-            ShortsView.SampleShareText.Text = SamplesVi ? "Chia sẻ" : "Share";
-            ShortsView.SamplePlayText.Text = SamplesVi ? "Phát" : "Play";
+            ShortsView.SampleSaveText.Text = Services.Loc.T("SamplePlay_Save", "Save");
+            ShortsView.SampleShareText.Text = Services.Loc.T("SamplePlay_Share", "Share");
+            ShortsView.SamplePlayText.Text = Services.Loc.T("SamplePlay_Play", "Play");
             UpdateSampleLikeState(CurrentSample);
         }
 
@@ -956,7 +951,7 @@ namespace YTMusicWP
         {
             bool liked = track != null && favoriteTracks.Any(t => t.VideoId == track.VideoId);
             ShortsView.SampleLikeIcon.Fill = liked ? _samplesLikedBrush : _whiteBrush;
-            ShortsView.SampleLikeText.Text = liked ? (SamplesVi ? "Đã thích" : "Liked") : (SamplesVi ? "Thích" : "Like");
+            ShortsView.SampleLikeText.Text = liked ? Services.Loc.T("SamplePlay_Liked", "Liked") : Services.Loc.T("SamplePlay_Like", "Like");
         }
 
         private async void SamplesLike_Click(object sender, RoutedEventArgs e)
@@ -967,7 +962,7 @@ namespace YTMusicWP
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
-                ShowToast("Sign in to like songs");
+                ShowToast(Services.Loc.T("Toast_SignInToLike", "Sign in to like songs"));
                 return;
             }
 
@@ -976,13 +971,13 @@ namespace YTMusicWP
             if (existing != null)
             {
                 favoriteTracks.Remove(existing);
-                ShowToast("Removed from Favorites");
+                ShowToast(Services.Loc.T("Toast_RemovedFromFavorites", "Removed from Favorites"));
                 var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
             }
             else
             {
                 favoriteTracks.Insert(0, track);
-                ShowToast("Added to Favorites");
+                ShowToast(Services.Loc.T("Toast_AddedToFavoritesOne", "Added to Favorites"));
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }
             UpdateSampleLikeState(track);

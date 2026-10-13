@@ -1,0 +1,1112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  English is the package's default language (see DefaultLanguage in YTMusicWP.csproj): this is the text a phone in a
+  language the app is not translated into shows. It also has to carry every key the translated files carry, or the
+  build warns that a resource has no neutral value (MakePRI 0xdef01051) and a phone in another language may fail to
+  read it.
+
+  The strings read from code (Services/Loc.cs) are the same text the call sites pass as the English fallback; the
+  x:Uid ones are the text the markup already carries. LocalizationResourcesTests keeps this file in step with both.
+-->
+<root>
+  <data name="Artist_About.Text" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Artist_Follow.Content" xml:space="preserve">
+    <value>Follow</value>
+  </data>
+  <data name="Artist_Followers.Text" xml:space="preserve">
+    <value>followers</value>
+  </data>
+  <data name="Artist_Popular.Text" xml:space="preserve">
+    <value>Popular</value>
+  </data>
+  <data name="Common_Cancel.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Common_Close.Text" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Common_Create.Content" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Common_Done.Text" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Common_Like.Content" xml:space="preserve">
+    <value>Like</value>
+  </data>
+  <data name="Common_PlayAll.Text" xml:space="preserve">
+    <value>Play all</value>
+  </data>
+  <data name="Common_Save.Content" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Common_Share.Content" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="Create_Blend.Text" xml:space="preserve">
+    <value>Blend</value>
+  </data>
+  <data name="Create_BlendDesc.Text" xml:space="preserve">
+    <value>Create a playlist that combines music tastes with friends</value>
+  </data>
+  <data name="Create_Collab.Text" xml:space="preserve">
+    <value>Collaborative playlist</value>
+  </data>
+  <data name="Create_CollabDesc.Text" xml:space="preserve">
+    <value>Create a playlist together with friends</value>
+  </data>
+  <data name="Create_ListenTogether.Text" xml:space="preserve">
+    <value>Listen Together</value>
+  </data>
+  <data name="Create_ListenTogetherDesc.Text" xml:space="preserve">
+    <value>Listen to music together with friends in real-time</value>
+  </data>
+  <data name="Create_Playlist.Text" xml:space="preserve">
+    <value>Playlist</value>
+  </data>
+  <data name="Create_PlaylistDesc.Text" xml:space="preserve">
+    <value>Create a playlist with songs or podcast episodes</value>
+  </data>
+  <data name="Credits_Album.Text" xml:space="preserve">
+    <value>ALBUM</value>
+  </data>
+  <data name="Credits_AudioStream.Text" xml:space="preserve">
+    <value>AUDIO STREAM</value>
+  </data>
+  <data name="Credits_Loading.Text" xml:space="preserve">
+    <value>Loading credits...</value>
+  </data>
+  <data name="Credits_PerformedBy.Text" xml:space="preserve">
+    <value>PERFORMED BY</value>
+  </data>
+  <data name="Credits_PlaysViews.Text" xml:space="preserve">
+    <value>PLAYS / VIEWS</value>
+  </data>
+  <data name="Credits_ProducedBy.Text" xml:space="preserve">
+    <value>PRODUCED BY</value>
+  </data>
+  <data name="Credits_Released.Text" xml:space="preserve">
+    <value>RELEASED</value>
+  </data>
+  <data name="Credits_Source.Text" xml:space="preserve">
+    <value>SOURCE</value>
+  </data>
+  <data name="Credits_Title.Text" xml:space="preserve">
+    <value>Song credits</value>
+  </data>
+  <data name="Credits_WrittenBy.Text" xml:space="preserve">
+    <value>WRITTEN BY</value>
+  </data>
+  <data name="Debug_Clear.Text" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Debug_Refresh.Text" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Debug_SelectAll.Content" xml:space="preserve">
+    <value>Select All</value>
+  </data>
+  <data name="Debug_Title.Text" xml:space="preserve">
+    <value>Live Stream Logs</value>
+  </data>
+  <data name="Greeting_Afternoon" xml:space="preserve">
+    <value>Good afternoon</value>
+  </data>
+  <data name="Greeting_Evening" xml:space="preserve">
+    <value>Good evening</value>
+  </data>
+  <data name="Greeting_Morning" xml:space="preserve">
+    <value>Good morning</value>
+  </data>
+  <data name="Home_BasedOnYourLibrary" xml:space="preserve">
+    <value>BASED ON YOUR LIBRARY</value>
+  </data>
+  <data name="Home_Chip_Commute" xml:space="preserve">
+    <value>Commute</value>
+  </data>
+  <data name="Home_Chip_Energize" xml:space="preserve">
+    <value>Energize</value>
+  </data>
+  <data name="Home_Chip_FeelGood" xml:space="preserve">
+    <value>Feel good</value>
+  </data>
+  <data name="Home_Chip_Focus" xml:space="preserve">
+    <value>Focus</value>
+  </data>
+  <data name="Home_Chip_Party" xml:space="preserve">
+    <value>Party</value>
+  </data>
+  <data name="Home_Chip_Relax" xml:space="preserve">
+    <value>Relax</value>
+  </data>
+  <data name="Home_Chip_Romance" xml:space="preserve">
+    <value>Romance</value>
+  </data>
+  <data name="Home_Chip_Sad" xml:space="preserve">
+    <value>Sad</value>
+  </data>
+  <data name="Home_Chip_Sleep" xml:space="preserve">
+    <value>Sleep</value>
+  </data>
+  <data name="Home_Chip_Workout" xml:space="preserve">
+    <value>Workout</value>
+  </data>
+  <data name="Home_DiscoverySubtitle.Text" xml:space="preserve">
+    <value>Check out the hottest new songs this week on YouTube Music</value>
+  </data>
+  <data name="Home_DiscoveryTitle.Text" xml:space="preserve">
+    <value>THIS WEEK'S DISCOVERY</value>
+  </data>
+  <data name="Home_JumpBackIn.Text" xml:space="preserve">
+    <value>Jump back in</value>
+  </data>
+  <data name="Home_Live.Text" xml:space="preserve">
+    <value>LIVE</value>
+  </data>
+  <data name="Home_MadeForYou" xml:space="preserve">
+    <value>Made for you</value>
+  </data>
+  <data name="Home_NewFromYourArtists.Text" xml:space="preserve">
+    <value>New from your artists</value>
+  </data>
+  <data name="Home_PullToRefresh.Text" xml:space="preserve">
+    <value>Pull to refresh</value>
+  </data>
+  <data name="Home_RecentlyPlayedArtists.Text" xml:space="preserve">
+    <value>Recently played artists</value>
+  </data>
+  <data name="Home_TopCharts.Text" xml:space="preserve">
+    <value>Top Charts</value>
+  </data>
+  <data name="Lib_ChipAll.Content" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Lib_ChipArtists.Content" xml:space="preserve">
+    <value>Artists</value>
+  </data>
+  <data name="Lib_ChipDownloads.Content" xml:space="preserve">
+    <value>Downloads</value>
+  </data>
+  <data name="Lib_ChipPlaylists.Content" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="Lib_ChipSongs.Content" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="Lib_Downloaded.Text" xml:space="preserve">
+    <value>Downloaded</value>
+  </data>
+  <data name="Lib_ExportM3U.Text" xml:space="preserve">
+    <value>Export as M3U</value>
+  </data>
+  <data name="Lib_ExportPlaylists.Text" xml:space="preserve">
+    <value>Export Playlists (JSON)</value>
+  </data>
+  <data name="Lib_Favorites.Text" xml:space="preserve">
+    <value>Favorites</value>
+  </data>
+  <data name="Lib_Followed.Text" xml:space="preserve">
+    <value>Followed</value>
+  </data>
+  <data name="Lib_ImportM3U.Text" xml:space="preserve">
+    <value>Import M3U Playlist</value>
+  </data>
+  <data name="Lib_ImportPlaylists.Text" xml:space="preserve">
+    <value>Import Playlists (JSON)</value>
+  </data>
+  <data name="Lib_ListeningStats.Text" xml:space="preserve">
+    <value>Listening stats</value>
+  </data>
+  <data name="Lib_MostPlayed.Text" xml:space="preserve">
+    <value>Most Played</value>
+  </data>
+  <data name="Lib_NoItems.Text" xml:space="preserve">
+    <value>No items yet</value>
+  </data>
+  <data name="Lt_ActiveServer.Text" xml:space="preserve">
+    <value>Active Server</value>
+  </data>
+  <data name="Lt_ApplyUrl.Content" xml:space="preserve">
+    <value>Apply URL</value>
+  </data>
+  <data name="Lt_AutoApproveJoins.Text" xml:space="preserve">
+    <value>Auto-approve joins</value>
+  </data>
+  <data name="Lt_AutoApproveJoinsDesc.Text" xml:space="preserve">
+    <value>Automatically accept join requests from friends</value>
+  </data>
+  <data name="Lt_AutoApproveSuggestions.Text" xml:space="preserve">
+    <value>Auto-approve suggestions</value>
+  </data>
+  <data name="Lt_AutoApproveSuggestionsDesc.Text" xml:space="preserve">
+    <value>Allow members to queue recommended songs</value>
+  </data>
+  <data name="Lt_CancelRequest.Content" xml:space="preserve">
+    <value>Cancel request</value>
+  </data>
+  <data name="Lt_Compatible.Text" xml:space="preserve">
+    <value>Compatible with MetroList &amp; SimpMusic</value>
+  </data>
+  <data name="Lt_Connect.Content" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="Lt_CopyCode.Content" xml:space="preserve">
+    <value>Copy Code</value>
+  </data>
+  <data name="Lt_CreateRoom.Content" xml:space="preserve">
+    <value>Create room</value>
+  </data>
+  <data name="Lt_CustomServerUrl.Text" xml:space="preserve">
+    <value>Custom Server URL</value>
+  </data>
+  <data name="Lt_DefaultDisplayName.Text" xml:space="preserve">
+    <value>Default Display Name</value>
+  </data>
+  <data name="Lt_DefaultDisplayNameDesc.Text" xml:space="preserve">
+    <value>The name others see in room lobby and member list</value>
+  </data>
+  <data name="Lt_DisplayName.Text" xml:space="preserve">
+    <value>Display name</value>
+  </data>
+  <data name="Lt_DisplayNameDesc.Text" xml:space="preserve">
+    <value>The name everyone in the room sees</value>
+  </data>
+  <data name="Lt_HostOptions.Text" xml:space="preserve">
+    <value>HOST OPTIONS</value>
+  </data>
+  <data name="Lt_JoinRequests.Text" xml:space="preserve">
+    <value>JOIN REQUESTS</value>
+  </data>
+  <data name="Lt_JoinRoom.Content" xml:space="preserve">
+    <value>Join room</value>
+  </data>
+  <data name="Lt_LeaveRoom.Content" xml:space="preserve">
+    <value>Leave room</value>
+  </data>
+  <data name="Lt_LeavingHint.Text" xml:space="preserve">
+    <value>Leaving the app or switching away for too long will disconnect you from the room.</value>
+  </data>
+  <data name="Lt_MembersInRoom.Text" xml:space="preserve">
+    <value>MEMBERS IN ROOM</value>
+  </data>
+  <data name="Lt_OrJoinCode.Text" xml:space="preserve">
+    <value>or join with a code</value>
+  </data>
+  <data name="Lt_PlaybackSync.Text" xml:space="preserve">
+    <value>PLAYBACK SYNC</value>
+  </data>
+  <data name="Lt_Profile.Text" xml:space="preserve">
+    <value>PROFILE</value>
+  </data>
+  <data name="Lt_Protocol.Text" xml:space="preserve">
+    <value>Protocol: metroproto v1 (Binary Proto3 over WebSocket)</value>
+  </data>
+  <data name="Lt_Remove.Content" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Lt_ResetDefault.Content" xml:space="preserve">
+    <value>Reset Default</value>
+  </data>
+  <data name="Lt_ResumeHint.Text" xml:space="preserve">
+    <value>Playback resumes when everyone finishes loading</value>
+  </data>
+  <data name="Lt_RoomCode.Text" xml:space="preserve">
+    <value>ROOM CODE</value>
+  </data>
+  <data name="Lt_ServerConfig.Text" xml:space="preserve">
+    <value>SERVER CONFIGURATION</value>
+  </data>
+  <data name="Lt_SettingsDesc.Text" xml:space="preserve">
+    <value>Server URL, Auto-approval &amp; Sync</value>
+  </data>
+  <data name="Lt_SettingsHeader.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Lt_SettingsTitle.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Lt_Subtitle.Text" xml:space="preserve">
+    <value>One song, one position, together. Create a room and share the code with friends.</value>
+  </data>
+  <data name="Lt_SyncVolume.Text" xml:space="preserve">
+    <value>Sync host volume</value>
+  </data>
+  <data name="Lt_SyncVolumeDesc.Text" xml:space="preserve">
+    <value>Keep device volume synchronized with host</value>
+  </data>
+  <data name="Lt_Title.Text" xml:space="preserve">
+    <value>Listen Together</value>
+  </data>
+  <data name="Lt_WaitingApproval.Text" xml:space="preserve">
+    <value>Waiting for host approval…</value>
+  </data>
+  <data name="Lt_WaitingApprovalDesc.Text" xml:space="preserve">
+    <value>The host must accept your request before playback can sync.</value>
+  </data>
+  <data name="Lt_WantsToJoin.Text" xml:space="preserve">
+    <value>Wants to join</value>
+  </data>
+  <data name="Menu_AddToPlaylist.Text" xml:space="preserve">
+    <value>Add to Playlist</value>
+  </data>
+  <data name="Menu_AddToQueue.Text" xml:space="preserve">
+    <value>Add to Queue</value>
+  </data>
+  <data name="Menu_DeleteLocal.Text" xml:space="preserve">
+    <value>Delete (Local file)</value>
+  </data>
+  <data name="Menu_DeletePlaylist.Text" xml:space="preserve">
+    <value>Delete Playlist</value>
+  </data>
+  <data name="Menu_Download.Text" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Menu_ExportM3U.Text" xml:space="preserve">
+    <value>Export to M3U</value>
+  </data>
+  <data name="Menu_ExportToMusic.Text" xml:space="preserve">
+    <value>Export to Music folder</value>
+  </data>
+  <data name="Menu_Favorite.Text" xml:space="preserve">
+    <value>Favorite</value>
+  </data>
+  <data name="Menu_GoToRadio.Text" xml:space="preserve">
+    <value>Go to Radio</value>
+  </data>
+  <data name="Menu_PinToStart.Text" xml:space="preserve">
+    <value>Pin to Start Screen</value>
+  </data>
+  <data name="Menu_RemoveFromPlaylist.Text" xml:space="preserve">
+    <value>Remove from Playlist</value>
+  </data>
+  <data name="Menu_Share.Text" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="Menu_ToggleFavorite.Text" xml:space="preserve">
+    <value>Toggle Favorite</value>
+  </data>
+  <data name="Menu_Play.Text" xml:space="preserve">
+    <value>▶ Play</value>
+  </data>
+  <data name="Menu_PlaybackSpeed.Text" xml:space="preserve">
+    <value>Playback speed</value>
+  </data>
+  <data name="Menu_SleepTimer.Text" xml:space="preserve">
+    <value>Sleep timer</value>
+  </data>
+  <data name="Menu_WatchLater.Text" xml:space="preserve">
+    <value>Watch Later</value>
+  </data>
+  <data name="NavCreate.Text" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="NavHome.Text" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="NavLibrary.Text" xml:space="preserve">
+    <value>Library</value>
+  </data>
+  <data name="NavSamples.Text" xml:space="preserve">
+    <value>Samples</value>
+  </data>
+  <data name="NavSearch.Text" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Player_CloseHint.Text" xml:space="preserve">
+    <value>Tap or pull the title down to close</value>
+  </data>
+  <data name="Player_LyricsHint.Text" xml:space="preserve">
+    <value>Swipe to see lyrics...</value>
+  </data>
+  <data name="Player_NowPlaying.Text" xml:space="preserve">
+    <value>NOW PLAYING</value>
+  </data>
+  <data name="Playlist_AddTitle.Text" xml:space="preserve">
+    <value>Add to Playlist</value>
+  </data>
+  <data name="Playlist_Enhance.Text" xml:space="preserve">
+    <value>Enhance</value>
+  </data>
+  <data name="Playlist_FilterSongs.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Filter songs</value>
+  </data>
+  <data name="Playlist_Find.Text" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="Playlist_FindPlaceholder.PlaceholderText" xml:space="preserve">
+    <value>Find in playlist...</value>
+  </data>
+  <data name="Playlist_NamePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>Playlist name...</value>
+  </data>
+  <data name="Playlist_NewTitle.Text" xml:space="preserve">
+    <value>New Playlist</value>
+  </data>
+  <data name="Playlist_Pin.Text" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="Playlist_PinToStart.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Pin to Start</value>
+  </data>
+  <data name="Queue_Clear.Content" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Queue_UpNext.Text" xml:space="preserve">
+    <value>UP NEXT</value>
+  </data>
+  <data name="SamplePlay_Like" xml:space="preserve">
+    <value>Like</value>
+  </data>
+  <data name="SamplePlay_Liked" xml:space="preserve">
+    <value>Liked</value>
+  </data>
+  <data name="SamplePlay_Play" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="SamplePlay_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SamplePlay_Share" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="Sample_Radio.Text" xml:space="preserve">
+    <value>Radio</value>
+  </data>
+  <data name="Sample_Save.Text" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Samples_Empty" xml:space="preserve">
+    <value>No samples available right now.
+Check your connection and try again.</value>
+  </data>
+  <data name="Samples_Unplayable" xml:space="preserve">
+    <value>This video can't be played.
+Swipe up for the next one.</value>
+  </data>
+  <data name="Search_Chip_Albums" xml:space="preserve">
+    <value>Albums</value>
+  </data>
+  <data name="Search_Chip_Artists" xml:space="preserve">
+    <value>Artists</value>
+  </data>
+  <data name="Search_Chip_CommunityPlaylists" xml:space="preserve">
+    <value>Community playlists</value>
+  </data>
+  <data name="Search_Chip_Episodes" xml:space="preserve">
+    <value>Episodes</value>
+  </data>
+  <data name="Search_Chip_Podcasts" xml:space="preserve">
+    <value>Podcasts</value>
+  </data>
+  <data name="Search_Chip_Profiles" xml:space="preserve">
+    <value>Profiles</value>
+  </data>
+  <data name="Search_Chip_Songs" xml:space="preserve">
+    <value>Songs</value>
+  </data>
+  <data name="Search_Chip_Videos" xml:space="preserve">
+    <value>Videos</value>
+  </data>
+  <data name="Search_Placeholder.PlaceholderText" xml:space="preserve">
+    <value>What do you want to listen to?</value>
+  </data>
+  <data name="Search_Title.Text" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Settings_AboutTagline.Text" xml:space="preserve">
+    <value>A music streaming client for Windows Phone 8.1</value>
+  </data>
+  <data name="Settings_Account.Text" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="Settings_AddAccount.Text" xml:space="preserve">
+    <value>Add account</value>
+  </data>
+  <data name="Settings_AnimatedArtwork.Text" xml:space="preserve">
+    <value>Animated Artwork</value>
+  </data>
+  <data name="Settings_AnimatedArtworkDesc.Text" xml:space="preserve">
+    <value>Moving album covers in Now Playing (~2 MB per album)</value>
+  </data>
+  <data name="Settings_AppData.Text" xml:space="preserve">
+    <value>App Data &amp; Playlists</value>
+  </data>
+  <data name="Settings_AppLanguageAuto.Content" xml:space="preserve">
+    <value>Auto (device language)</value>
+  </data>
+  <data name="Settings_AppLanguageHint.Text" xml:space="preserve">
+    <value>The app follows the phone's language unless you pick one here. Changing it needs a restart.</value>
+  </data>
+  <data name="Settings_AppLanguageLabel.Text" xml:space="preserve">
+    <value>App language (interface)</value>
+  </data>
+  <data name="Settings_Appearance.Text" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="Settings_Autoplay.Text" xml:space="preserve">
+    <value>Autoplay</value>
+  </data>
+  <data name="Settings_AutoplayDesc.Text" xml:space="preserve">
+    <value>Play similar songs when queue ends</value>
+  </data>
+  <data name="Settings_Calculating.Text" xml:space="preserve">
+    <value>Calculating...</value>
+  </data>
+  <data name="Settings_CleanAllCache.Text" xml:space="preserve">
+    <value>Clean All Cache</value>
+  </data>
+  <data name="Settings_ClearHistory.Text" xml:space="preserve">
+    <value>Clear Recent History</value>
+  </data>
+  <data name="Settings_ClearImageCache.Text" xml:space="preserve">
+    <value>Clear Image Cache</value>
+  </data>
+  <data name="Settings_ClearTempStreams.Text" xml:space="preserve">
+    <value>Clear Temporary Streams</value>
+  </data>
+  <data name="Settings_ContentLanguageLabel.Text" xml:space="preserve">
+    <value>Content language (YouTube titles &amp; labels)</value>
+  </data>
+  <data name="Settings_CycleSpeed.Text" xml:space="preserve">
+    <value>Cycle Speed</value>
+  </data>
+  <data name="Settings_CycleSpeedDesc.Text" xml:space="preserve">
+    <value>Pace of Live Tile rotation &amp; flips</value>
+  </data>
+  <data name="Settings_DisplayMode.Text" xml:space="preserve">
+    <value>Display Mode</value>
+  </data>
+  <data name="Settings_DisplayModeDesc.Text" xml:space="preserve">
+    <value>Choose what appears on Live Tile</value>
+  </data>
+  <data name="Settings_DownloadedSongs.Text" xml:space="preserve">
+    <value>Downloaded Songs</value>
+  </data>
+  <data name="Settings_ExportDownloads.Text" xml:space="preserve">
+    <value>Export Downloads to Music folder</value>
+  </data>
+  <data name="Settings_Gapless.Text" xml:space="preserve">
+    <value>Gapless Playback</value>
+  </data>
+  <data name="Settings_GaplessDesc.Text" xml:space="preserve">
+    <value>No silence between tracks</value>
+  </data>
+  <data name="Settings_ImageCache.Text" xml:space="preserve">
+    <value>Image Cache</value>
+  </data>
+  <data name="Settings_LanguageLocation.Text" xml:space="preserve">
+    <value>Language &amp; Location</value>
+  </data>
+  <data name="Settings_ListenTogether.Text" xml:space="preserve">
+    <value>Listen Together</value>
+  </data>
+  <data name="Settings_ListenTogetherDesc.Text" xml:space="preserve">
+    <value>Sync playback in real-time with friends across WP8.1, Android, and PC.</value>
+  </data>
+  <data name="Settings_LiveTile.Text" xml:space="preserve">
+    <value>Live Tile (Start Screen)</value>
+  </data>
+  <data name="Settings_LiveTileDynamic.Text" xml:space="preserve">
+    <value>Dynamic Live Tile</value>
+  </data>
+  <data name="Settings_LiveTileDynamicDesc.Text" xml:space="preserve">
+    <value>Flip &amp; cycle music artwork on Start screen</value>
+  </data>
+  <data name="Settings_LocationLabel.Text" xml:space="preserve">
+    <value>Location (affects trending music &amp; charts)</value>
+  </data>
+  <data name="Settings_MadeWithLove.Text" xml:space="preserve">
+    <value>Made with love</value>
+  </data>
+  <data name="Settings_NormalizeVolume.Text" xml:space="preserve">
+    <value>Normalize Volume</value>
+  </data>
+  <data name="Settings_NormalizeVolumeDesc.Text" xml:space="preserve">
+    <value>Set the same volume for all songs</value>
+  </data>
+  <data name="Settings_NowPlayingStyle.Text" xml:space="preserve">
+    <value>Now Playing Style</value>
+  </data>
+  <data name="Settings_NowPlayingStyleDesc.Text" xml:space="preserve">
+    <value>Visual style for the player screen</value>
+  </data>
+  <data name="Settings_OpenListenTogether.Text" xml:space="preserve">
+    <value>Open Listen Together</value>
+  </data>
+  <data name="Settings_Playback.Text" xml:space="preserve">
+    <value>Playback</value>
+  </data>
+  <data name="Settings_RegionAuto.Content" xml:space="preserve">
+    <value>Auto-detect</value>
+  </data>
+  <data name="Settings_RegionWorldwide.Content" xml:space="preserve">
+    <value>Worldwide</value>
+  </data>
+  <data name="Settings_SignInHint.Text" xml:space="preserve">
+    <value>Sign in to sync liked songs, playlists, and subscriptions.</value>
+  </data>
+  <data name="Settings_SmartDownloads.Text" xml:space="preserve">
+    <value>Smart Downloads</value>
+  </data>
+  <data name="Settings_SmartDownloadsDesc.Text" xml:space="preserve">
+    <value>Auto-download liked songs on Wi-Fi</value>
+  </data>
+  <data name="Settings_StartupAnimation.Text" xml:space="preserve">
+    <value>Startup Animation</value>
+  </data>
+  <data name="Settings_StartupAnimationDesc.Text" xml:space="preserve">
+    <value>Play animated logo on app launch</value>
+  </data>
+  <data name="Settings_Storage.Text" xml:space="preserve">
+    <value>Storage &amp; Cache</value>
+  </data>
+  <data name="Settings_StyleAppleMusic.Content" xml:space="preserve">
+    <value>Apple Music (Blur)</value>
+  </data>
+  <data name="Settings_StyleDefault.Content" xml:space="preserve">
+    <value>Default (Gradient)</value>
+  </data>
+  <data name="Settings_Subtitle.Text" xml:space="preserve">
+    <value>Customize your experience</value>
+  </data>
+  <data name="Settings_SwitchAccount.Text" xml:space="preserve">
+    <value>Switch account</value>
+  </data>
+  <data name="Settings_SyncNow.Text" xml:space="preserve">
+    <value>Sync Now</value>
+  </data>
+  <data name="Settings_TempStreams.Text" xml:space="preserve">
+    <value>Temporary Streams</value>
+  </data>
+  <data name="Settings_TileModeNowPlaying.Content" xml:space="preserve">
+    <value>Now Playing Only</value>
+  </data>
+  <data name="Settings_TileModeNowPlayingRecs.Content" xml:space="preserve">
+    <value>Now Playing &amp; Recs</value>
+  </data>
+  <data name="Settings_TileModeTransparent.Content" xml:space="preserve">
+    <value>Transparent Only</value>
+  </data>
+  <data name="Settings_TileSpeedCalm.Content" xml:space="preserve">
+    <value>Calm (Slow)</value>
+  </data>
+  <data name="Settings_TileSpeedDynamic.Content" xml:space="preserve">
+    <value>Dynamic</value>
+  </data>
+  <data name="Settings_TileSpeedModerate.Content" xml:space="preserve">
+    <value>Moderate</value>
+  </data>
+  <data name="Settings_Title.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings_TotalStorage.Text" xml:space="preserve">
+    <value>TOTAL APP STORAGE</value>
+  </data>
+  <data name="Settings_Version.Text" xml:space="preserve">
+    <value>Version 2.4.0</value>
+  </data>
+  <data name="SignIn_Google.Text" xml:space="preserve">
+    <value>Sign in with Google</value>
+  </data>
+  <data name="SignIn_ManualCode.Text" xml:space="preserve">
+    <value>OR ENTER CODE MANUALLY</value>
+  </data>
+  <data name="SignIn_QrHint.Text" xml:space="preserve">
+    <value>Scan QR code with your phone camera to sign in instantly</value>
+  </data>
+  <data name="SignIn_TvCode.Text" xml:space="preserve">
+    <value>Sign in with TV Code</value>
+  </data>
+  <data name="Song_GoToArtist.Text" xml:space="preserve">
+    <value>Go to Artist</value>
+  </data>
+  <data name="Stats_AllTime.Content" xml:space="preserve">
+    <value>All time</value>
+  </data>
+  <data name="Stats_Artists.Text" xml:space="preserve">
+    <value>artists</value>
+  </data>
+  <data name="Stats_Minutes.Text" xml:space="preserve">
+    <value>minutes listened</value>
+  </data>
+  <data name="Stats_NothingYet.Text" xml:space="preserve">
+    <value>Nothing yet</value>
+  </data>
+  <data name="Stats_Plays.Text" xml:space="preserve">
+    <value>plays</value>
+  </data>
+  <data name="Stats_Songs.Text" xml:space="preserve">
+    <value>songs</value>
+  </data>
+  <data name="Stats_Subtitle.Text" xml:space="preserve">
+    <value>Recorded on this phone, plays over 30 seconds</value>
+  </data>
+  <data name="Stats_ThisMonth.Content" xml:space="preserve">
+    <value>This month</value>
+  </data>
+  <data name="Stats_ThisWeek.Content" xml:space="preserve">
+    <value>This week</value>
+  </data>
+  <data name="Stats_ThisYear.Content" xml:space="preserve">
+    <value>This year</value>
+  </data>
+  <data name="Stats_TopArtists.Text" xml:space="preserve">
+    <value>Top artists</value>
+  </data>
+  <data name="Stats_TopSongs.Text" xml:space="preserve">
+    <value>Top songs</value>
+  </data>
+  <data name="Stats_WhenYouListen.Text" xml:space="preserve">
+    <value>When you listen</value>
+  </data>
+  <data name="Toast_AddSongsFirst" xml:space="preserve">
+    <value>Add some songs first!</value>
+  </data>
+  <data name="Toast_AddedSongs" xml:space="preserve">
+    <value>Added {0} songs!</value>
+  </data>
+  <data name="Toast_AddedToFavorites" xml:space="preserve">
+    <value>Added {0} songs to Favorites</value>
+  </data>
+  <data name="Toast_AddedToFavoritesOne" xml:space="preserve">
+    <value>Added to Favorites</value>
+  </data>
+  <data name="Toast_AddedToPlaylist" xml:space="preserve">
+    <value>Added to {0}</value>
+  </data>
+  <data name="Toast_AddedToQueue" xml:space="preserve">
+    <value>Added to queue: {0}</value>
+  </data>
+  <data name="Toast_AddingToPlaylist" xml:space="preserve">
+    <value>Adding to {0}...</value>
+  </data>
+  <data name="Toast_AllAlreadyFavorites" xml:space="preserve">
+    <value>All songs are already in Favorites</value>
+  </data>
+  <data name="Toast_AppLanguageRestart" xml:space="preserve">
+    <value>App language saved — restart the app to apply it</value>
+  </data>
+  <data name="Toast_AuthError" xml:space="preserve">
+    <value>Auth Error! Please try again.</value>
+  </data>
+  <data name="Toast_CacheCleanError" xml:space="preserve">
+    <value>Error cleaning cache</value>
+  </data>
+  <data name="Toast_CacheCleaned" xml:space="preserve">
+    <value>Cleaned {0} cache items</value>
+  </data>
+  <data name="Toast_CannotFollow" xml:space="preserve">
+    <value>Cannot follow this artist</value>
+  </data>
+  <data name="Toast_CannotResolveUrl" xml:space="preserve">
+    <value>Cannot resolve audio URL for this track</value>
+  </data>
+  <data name="Toast_CantRemoveCurrent" xml:space="preserve">
+    <value>Can't remove current track</value>
+  </data>
+  <data name="Toast_DeleteLocalOnly" xml:space="preserve">
+    <value>Can only delete downloaded (LOCAL) files!</value>
+  </data>
+  <data name="Toast_DeletingPlaylist" xml:space="preserve">
+    <value>Deleting playlist...</value>
+  </data>
+  <data name="Toast_DisplayNameSaved" xml:space="preserve">
+    <value>Display name saved: {0}</value>
+  </data>
+  <data name="Toast_DownloadFailed" xml:space="preserve">
+    <value>Download failed or cancelled.</value>
+  </data>
+  <data name="Toast_EnhanceFailed" xml:space="preserve">
+    <value>Enhance failed</value>
+  </data>
+  <data name="Toast_EnhancingPlaylist" xml:space="preserve">
+    <value>Enhancing playlist...</value>
+  </data>
+  <data name="Toast_EnterClientId" xml:space="preserve">
+    <value>Please enter Client ID first!</value>
+  </data>
+  <data name="Toast_EnterDisplayName" xml:space="preserve">
+    <value>Please enter a display name</value>
+  </data>
+  <data name="Toast_ErrorAddingToPlaylist" xml:space="preserve">
+    <value>Error adding to playlist: {0}</value>
+  </data>
+  <data name="Toast_ErrorDeletingPlaylist" xml:space="preserve">
+    <value>Error deleting playlist: {0}</value>
+  </data>
+  <data name="Toast_ErrorRemovingTrack" xml:space="preserve">
+    <value>Error removing track: {0}</value>
+  </data>
+  <data name="Toast_ExportFailed" xml:space="preserve">
+    <value>Export failed: {0}</value>
+  </data>
+  <data name="Toast_ExportM3UFailed" xml:space="preserve">
+    <value>Export M3U failed: {0}</value>
+  </data>
+  <data name="Toast_ExportedM3U" xml:space="preserve">
+    <value>Exported M3U playlist successfully!</value>
+  </data>
+  <data name="Toast_ExportedPlaylists" xml:space="preserve">
+    <value>Exported {0} playlists!</value>
+  </data>
+  <data name="Toast_ExportedToMusic" xml:space="preserve">
+    <value>Exported to Music folder: {0}</value>
+  </data>
+  <data name="Toast_FailedAddToPlaylist" xml:space="preserve">
+    <value>Failed to add to playlist</value>
+  </data>
+  <data name="Toast_FailedCreatePlaylist" xml:space="preserve">
+    <value>Failed to create playlist: {0}</value>
+  </data>
+  <data name="Toast_FailedDeleteFile" xml:space="preserve">
+    <value>Failed to delete file</value>
+  </data>
+  <data name="Toast_FailedDeletePlaylist" xml:space="preserve">
+    <value>Failed to delete playlist</value>
+  </data>
+  <data name="Toast_FailedImportM3U" xml:space="preserve">
+    <value>Failed to import M3U: {0}</value>
+  </data>
+  <data name="Toast_FailedLoadPlaylist" xml:space="preserve">
+    <value>Failed to load playlist</value>
+  </data>
+  <data name="Toast_FailedRemoveDownload" xml:space="preserve">
+    <value>Failed to remove download</value>
+  </data>
+  <data name="Toast_FailedSubscribe" xml:space="preserve">
+    <value>Failed to subscribe</value>
+  </data>
+  <data name="Toast_FailedToExport" xml:space="preserve">
+    <value>Failed to export: {0}</value>
+  </data>
+  <data name="Toast_FailedToRemove" xml:space="preserve">
+    <value>Failed to remove</value>
+  </data>
+  <data name="Toast_FailedUnsubscribe" xml:space="preserve">
+    <value>Failed to unsubscribe</value>
+  </data>
+  <data name="Toast_FileDeleted" xml:space="preserve">
+    <value>File deleted from device</value>
+  </data>
+  <data name="Toast_HistoryCleared" xml:space="preserve">
+    <value>Recent history cleared!</value>
+  </data>
+  <data name="Toast_ImageCacheClearError" xml:space="preserve">
+    <value>Error clearing image cache</value>
+  </data>
+  <data name="Toast_ImagesCleared" xml:space="preserve">
+    <value>Cleared {0} cached images</value>
+  </data>
+  <data name="Toast_ImportFailed" xml:space="preserve">
+    <value>Import failed: {0}</value>
+  </data>
+  <data name="Toast_ImportM3UFailed" xml:space="preserve">
+    <value>Import M3U failed: {0}</value>
+  </data>
+  <data name="Toast_ImportedPlaylists" xml:space="preserve">
+    <value>Imported {0} playlists!</value>
+  </data>
+  <data name="Toast_InternetRequired" xml:space="preserve">
+    <value>Internet required to download</value>
+  </data>
+  <data name="Toast_InvalidFile" xml:space="preserve">
+    <value>Invalid file</value>
+  </data>
+  <data name="Toast_InvalidServerUrl" xml:space="preserve">
+    <value>Enter a valid ws:// or wss:// URL</value>
+  </data>
+  <data name="Toast_LanguageChanged" xml:space="preserve">
+    <value>Language changed!</value>
+  </data>
+  <data name="Toast_LastFmCancelled" xml:space="preserve">
+    <value>Last.fm sign-in cancelled</value>
+  </data>
+  <data name="Toast_LastFmDisconnected" xml:space="preserve">
+    <value>Disconnected from Last.fm</value>
+  </data>
+  <data name="Toast_LastFmSignInFailed" xml:space="preserve">
+    <value>Couldn't open Last.fm sign-in: {0}</value>
+  </data>
+  <data name="Toast_LoadingRadioFor" xml:space="preserve">
+    <value>Loading radio for {0}...</value>
+  </data>
+  <data name="Toast_LocationChanged" xml:space="preserve">
+    <value>Location changed!</value>
+  </data>
+  <data name="Toast_LoggedOut" xml:space="preserve">
+    <value>Logged out successfully</value>
+  </data>
+  <data name="Toast_LoginSuccess" xml:space="preserve">
+    <value>Login successful!</value>
+  </data>
+  <data name="Toast_LoginSyncing" xml:space="preserve">
+    <value>Login successful! Syncing...</value>
+  </data>
+  <data name="Toast_LoginToLike" xml:space="preserve">
+    <value>Login required to Like</value>
+  </data>
+  <data name="Toast_LoginWatchLater" xml:space="preserve">
+    <value>Login required for Watch Later</value>
+  </data>
+  <data name="Toast_LyricSizeDown" xml:space="preserve">
+    <value>A- ({0}px)</value>
+  </data>
+  <data name="Toast_LyricSizeUp" xml:space="preserve">
+    <value>A+ ({0}px)</value>
+  </data>
+  <data name="Toast_NameEmpty" xml:space="preserve">
+    <value>Name cannot be empty</value>
+  </data>
+  <data name="Toast_NetworkError" xml:space="preserve">
+    <value>Network error. Please try again.</value>
+  </data>
+  <data name="Toast_NoArtistInfo" xml:space="preserve">
+    <value>Artist info not available</value>
+  </data>
+  <data name="Toast_NoInternet" xml:space="preserve">
+    <value>No Internet</value>
+  </data>
+  <data name="Toast_NoInternetConnection" xml:space="preserve">
+    <value>No Internet connection</value>
+  </data>
+  <data name="Toast_NoLyrics" xml:space="preserve">
+    <value>No lyrics available</value>
+  </data>
+  <data name="Toast_NoNewSongs" xml:space="preserve">
+    <value>No new songs found to add</value>
+  </data>
+  <data name="Toast_NoRadioResults" xml:space="preserve">
+    <value>No radio results found</value>
+  </data>
+  <data name="Toast_NoResults" xml:space="preserve">
+    <value>No results found.</value>
+  </data>
+  <data name="Toast_NoSimilarSongs" xml:space="preserve">
+    <value>No similar songs found</value>
+  </data>
+  <data name="Toast_NoTracksToExport" xml:space="preserve">
+    <value>No tracks to export!</value>
+  </data>
+  <data name="Toast_NoValidTracks" xml:space="preserve">
+    <value>No valid tracks found in M3U file</value>
+  </data>
+  <data name="Toast_OfflineMode" xml:space="preserve">
+    <value>Offline Mode. Play downloads in Library.</value>
+  </data>
+  <data name="Toast_OpeningBrowser" xml:space="preserve">
+    <value>Opening browser! After approving on PC, return here.</value>
+  </data>
+  <data name="Toast_PinnedToStart" xml:space="preserve">
+    <value>Pinned to Start Screen!</value>
+  </data>
+  <data name="Toast_PlaylistCreated" xml:space="preserve">
+    <value>Playlist created!</value>
+  </data>
+  <data name="Toast_PlaylistDeleted" xml:space="preserve">
+    <value>Playlist deleted!</value>
+  </data>
+  <data name="Toast_PlaylistEmpty" xml:space="preserve">
+    <value>Playlist is empty!</value>
+  </data>
+  <data name="Toast_QueueCleared" xml:space="preserve">
+    <value>Queue cleared</value>
+  </data>
+  <data name="Toast_RadioFailed" xml:space="preserve">
+    <value>Failed to load radio</value>
+  </data>
+  <data name="Toast_RadioSongs" xml:space="preserve">
+    <value>Radio: {0} songs</value>
+  </data>
+  <data name="Toast_RemovedFromDownloads" xml:space="preserve">
+    <value>Removed from downloads</value>
+  </data>
+  <data name="Toast_RemovedFromFavorites" xml:space="preserve">
+    <value>Removed from Favorites</value>
+  </data>
+  <data name="Toast_RemovedFromPlaylist" xml:space="preserve">
+    <value>Removed from playlist</value>
+  </data>
+  <data name="Toast_RemovedFromQueue" xml:space="preserve">
+    <value>Removed from queue</value>
+  </data>
+  <data name="Toast_RoomCode8Chars" xml:space="preserve">
+    <value>Room code must be 8 characters</value>
+  </data>
+  <data name="Toast_ServerReset" xml:space="preserve">
+    <value>Reset to default server!</value>
+  </data>
+  <data name="Toast_ServerUpdated" xml:space="preserve">
+    <value>Server updated!</value>
+  </data>
+  <data name="Toast_ShareRoomCode" xml:space="preserve">
+    <value>Share or copy room code: {0}</value>
+  </data>
+  <data name="Toast_SignInToFollow" xml:space="preserve">
+    <value>Sign in to follow artists</value>
+  </data>
+  <data name="Toast_SignInToLike" xml:space="preserve">
+    <value>Sign in to like songs</value>
+  </data>
+  <data name="Toast_SignInToSync" xml:space="preserve">
+    <value>Sign in first to sync</value>
+  </data>
+  <data name="Toast_SleepOff" xml:space="preserve">
+    <value>Sleep Timer: Off</value>
+  </data>
+  <data name="Toast_SleepPaused" xml:space="preserve">
+    <value>Sleep Timer: Music paused.</value>
+  </data>
+  <data name="Toast_SleepSet" xml:space="preserve">
+    <value>Sleep Timer set for {0} minutes</value>
+  </data>
+  <data name="Toast_SmartDownloads" xml:space="preserve">
+    <value>Smart Downloads: {0} new song(s) downloaded</value>
+  </data>
+  <data name="Toast_StorageRefreshed" xml:space="preserve">
+    <value>Storage refreshed</value>
+  </data>
+  <data name="Toast_SubscribedTo" xml:space="preserve">
+    <value>Subscribed to {0}</value>
+  </data>
+  <data name="Toast_SwitchedTo" xml:space="preserve">
+    <value>Switched to {0}</value>
+  </data>
+  <data name="Toast_SyncFailed" xml:space="preserve">
+    <value>Sync failed</value>
+  </data>
+  <data name="Toast_Synced" xml:space="preserve">
+    <value>Synced!</value>
+  </data>
+  <data name="Toast_Syncing" xml:space="preserve">
+    <value>Syncing...</value>
+  </data>
+  <data name="Toast_TempStreamsClearError" xml:space="preserve">
+    <value>Error clearing temp streams</value>
+  </data>
+  <data name="Toast_TempStreamsCleared" xml:space="preserve">
+    <value>Cleared {0} temp stream files</value>
+  </data>
+  <data name="Toast_UnpinnedFromStart" xml:space="preserve">
+    <value>Unpinned from Start</value>
+  </data>
+  <data name="Toast_UnsubscribedFrom" xml:space="preserve">
+    <value>Unsubscribed from {0}</value>
+  </data>
+  <data name="Toast_UseYoutubeForPlaylists" xml:space="preserve">
+    <value>Use YouTube to manage playlists</value>
+  </data>
+  <data name="TopCard_Radio.Text" xml:space="preserve">
+    <value>Radio</value>
+  </data>
+  <data name="TopCard_Shuffle.Text" xml:space="preserve">
+    <value>Shuffle</value>
+  </data>
+  <data name="Login_Step1.Text" xml:space="preserve">
+    <value>1. Go to google.com/device</value>
+  </data>
+  <data name="Login_Step2.Text" xml:space="preserve">
+    <value>2. Enter this code:</value>
+  </data>
+</root>

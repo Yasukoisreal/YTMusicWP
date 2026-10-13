@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Background="{StaticResource SurfaceHighBrush}" Padding="15">
             <Grid>
-                <TextBlock Text="Sign in with Google" Foreground="White" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <TextBlock x:Uid="SignIn_Google" Text="Sign in with Google" Foreground="White" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 <Button Content="✕" Click="CloseLoginWeb_Click" Foreground="White" FontSize="20" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Padding="0" MinHeight="0" MinWidth="0"/>
             </Grid>
         </Border>
@@ -34,21 +34,21 @@
                 </Border>
                 
                 <!-- Scan Instructions -->
-                <TextBlock Text="Scan QR code with your phone camera to sign in instantly" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                <TextBlock x:Uid="SignIn_QrHint" Text="Scan QR code with your phone camera to sign in instantly" Foreground="White" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,16"/>
                 
                 <!-- Divider with OR -->
                 <Grid Margin="0,0,0,14">
                     <Rectangle Height="1" Fill="#333333" VerticalAlignment="Center"/>
                     <Border Background="{StaticResource SurfaceBrush}" Padding="12,0" HorizontalAlignment="Center">
-                        <TextBlock Text="OR ENTER CODE MANUALLY" Foreground="#777777" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}"/>
+                        <TextBlock x:Uid="SignIn_ManualCode" Text="OR ENTER CODE MANUALLY" Foreground="#777777" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}"/>
                     </Border>
                 </Grid>
                 
                 <!-- URL and Code in compact card -->
                 <Border Background="{StaticResource SurfaceElevated2Brush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,16">
                     <StackPanel>
-                        <TextBlock Text="1. Go to google.com/device" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextAlignment="Center" Margin="0,0,0,4"/>
-                        <TextBlock Text="2. Enter this code:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock x:Uid="Login_Step1" Text="1. Go to google.com/device" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextAlignment="Center" Margin="0,0,0,4"/>
+                        <TextBlock x:Uid="Login_Step2" Text="2. Enter this code:" Foreground="{StaticResource TextSecondaryBrush}" FontSize="13" TextAlignment="Center" Margin="0,0,0,8"/>
                         <Border Background="{StaticResource SurfaceHighBrush}" CornerRadius="8" Padding="12,8">
                             <TextBlock x:Name="DeviceCodeText" x:FieldModifier="internal" Text="----" Foreground="{StaticResource BrandGreenBrush}" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" TextAlignment="Center" CharacterSpacing="60" IsTextSelectionEnabled="True"/>
                         </Border>

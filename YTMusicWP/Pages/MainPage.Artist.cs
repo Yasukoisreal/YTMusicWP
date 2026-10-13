@@ -145,7 +145,7 @@ namespace YTMusicWP
 
                 HookPlaylistSongsScroll(); // Make sure scroll is hooked for continuation
             }
-            catch { ShowToast("Failed to load playlist"); }
+            catch { ShowToast(Services.Loc.T("Toast_FailedLoadPlaylist", "Failed to load playlist")); }
         }
 
         private bool ApplyArtistProfileResult(ArtistResult artistResult, ref List<YouTubeTrack> tracks, ref List<ArtistAlbum> albums, ref string subscriberCount, ref string description, ref string avatarUrl)
@@ -437,7 +437,7 @@ namespace YTMusicWP
         {
             if (string.IsNullOrEmpty(_currentArtistChannelId))
             {
-                ShowToast("Cannot follow this artist");
+                ShowToast(Services.Loc.T("Toast_CannotFollow", "Cannot follow this artist"));
                 return;
             }
 
@@ -445,7 +445,7 @@ namespace YTMusicWP
             string accessToken = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(accessToken) && !InnerTubeClient.HasCookieAuth)
             {
-                ShowToast("Sign in to follow artists");
+                ShowToast(Services.Loc.T("Toast_SignInToFollow", "Sign in to follow artists"));
                 return;
             }
 
@@ -485,11 +485,11 @@ namespace YTMusicWP
                         }
                         UpdateFollowButton();
                         RefreshLibraryList();
-                        ShowToast("Subscribed to " + ArtistProfileTitle.Text);
+                        ShowToast(Services.Loc.F("Toast_SubscribedTo", "Subscribed to {0}", ArtistProfileTitle.Text));
                     }
                     else
                     {
-                        ShowToast("Failed to subscribe");
+                        ShowToast(Services.Loc.T("Toast_FailedSubscribe", "Failed to subscribe"));
                     }
                 }
                 else
@@ -520,11 +520,11 @@ namespace YTMusicWP
                         if (byName != null) _youtubeSubscriptions.Remove(byName);
                         UpdateFollowButton();
                         RefreshLibraryList();
-                        ShowToast("Unsubscribed from " + ArtistProfileTitle.Text);
+                        ShowToast(Services.Loc.F("Toast_UnsubscribedFrom", "Unsubscribed from {0}", ArtistProfileTitle.Text));
                     }
                     else
                     {
-                        ShowToast("Failed to unsubscribe");
+                        ShowToast(Services.Loc.T("Toast_FailedUnsubscribe", "Failed to unsubscribe"));
                     }
                 }
             }

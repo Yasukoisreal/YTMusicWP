@@ -156,7 +156,7 @@ namespace YTMusicWP
                 SettingsPanel.LoginStatusText.Foreground = _authOrangeBrush;
                 LoadHomeAvatar();
                 RenderAccountList();
-                ShowToast("Switched to " + acc.Name);
+                ShowToast(Services.Loc.F("Toast_SwitchedTo", "Switched to {0}", acc.Name));
 
                 await ResetAccountDataAsync();
                 await SyncAllAsync();

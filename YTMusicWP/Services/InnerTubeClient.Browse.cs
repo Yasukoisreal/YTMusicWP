@@ -1501,7 +1501,7 @@ namespace YTMusicWP
                 {
                     string cardTitle = cardShelf["title"]?["runs"]?[0]?["text"]?.ToString() ?? "";
                     string cardSubtitle = cardShelf["subtitle"]?["runs"]?[0]?["text"]?.ToString() ?? "";
-                    string defaultStrapline = (CurrentLanguage == "vi") ? "DỰA TRÊN THƯ VIỆN CỦA BẠN" : "BASED ON YOUR LIBRARY";
+                    string defaultStrapline = Services.Loc.T("Home_BasedOnYourLibrary", "BASED ON YOUR LIBRARY");
                     string strapline = cardShelf["header"]?["musicCardShelfHeaderBasicRenderer"]?["strapline"]?["runs"]?[0]?["text"]?.ToString() ?? defaultStrapline;
                     if (string.IsNullOrEmpty(cardTitle) && cardShelf["header"] != null)
                     {

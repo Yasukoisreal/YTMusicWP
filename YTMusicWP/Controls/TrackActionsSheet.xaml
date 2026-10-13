@@ -89,7 +89,7 @@
                     </Grid>
                 </Button>
                 <Button Click="Close_Click" Style="{StaticResource IconButtonStyle}" Height="55" Margin="0,5,0,15">
-                    <TextBlock Text="Close" FontSize="17" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold"/>
+                    <TextBlock x:Uid="Common_Close" Text="Close" FontSize="17" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold"/>
                 </Button>
             </StackPanel>
         </Border>

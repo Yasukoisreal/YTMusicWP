@@ -414,7 +414,7 @@ namespace YTMusicWP
             }
             else
             {
-                string madeForYou = (InnerTubeClient.CurrentLanguage == "vi") ? "Dành cho bạn" : "Made for you";
+                string madeForYou = Services.Loc.T("Home_MadeForYou", "Made for you");
                 switch (region)
                 {
                     case "VN":
@@ -578,8 +578,6 @@ namespace YTMusicWP
                 {
                     if (HomeChartsTitle != null)
                     {
-                        if (HomeChartsTitleText != null)
-                            HomeChartsTitleText.Text = (InnerTubeClient.CurrentLanguage == "vi") ? "Bảng xếp hạng hàng đầu" : "Top Charts";
                         HomeChartsTitle.Visibility = Visibility.Visible;
                     }
                     if (HomeChartsCarousel != null)
@@ -1208,11 +1206,11 @@ namespace YTMusicWP
                 if (addedCount > 0)
                 {
                     SaveFavoritesAsync();
-                    ShowToast("Added " + addedCount + " songs to Favorites");
+                    ShowToast(Services.Loc.F("Toast_AddedToFavorites", "Added {0} songs to Favorites", addedCount));
                 }
                 else
                 {
-                    ShowToast("All songs are already in Favorites");
+                    ShowToast(Services.Loc.T("Toast_AllAlreadyFavorites", "All songs are already in Favorites"));
                 }
             }
         }
@@ -1278,18 +1276,18 @@ namespace YTMusicWP
         {
             if (HomeChipsPanel == null) return;
 
-            string[] defaultTitlesVi = new[] { "Nạp năng lượng", "Cảm thấy vui vẻ", "Thư giãn", "Tiệc tùng", "Tập luyện", "Đi lại", "Lãng mạn", "Buồn bã", "Tập trung", "Đi ngủ" };
+            // One key per mood: the app language decides the wording (Strings/<language>/Resources.resw)
+            string[] chipKeys = new[] { "Home_Chip_Energize", "Home_Chip_FeelGood", "Home_Chip_Relax", "Home_Chip_Party", "Home_Chip_Workout", "Home_Chip_Commute", "Home_Chip_Romance", "Home_Chip_Sad", "Home_Chip_Focus", "Home_Chip_Sleep" };
             string[] defaultTitlesEn = new[] { "Energize", "Feel good", "Relax", "Party", "Workout", "Commute", "Romance", "Sad", "Focus", "Sleep" };
-            var titles = (InnerTubeClient.CurrentLanguage == "vi") ? defaultTitlesVi : defaultTitlesEn;
 
-            int count = Math.Min(HomeChipsPanel.Children.Count, titles.Length);
+            int count = Math.Min(HomeChipsPanel.Children.Count, chipKeys.Length);
             for (int i = 0; i < count; i++)
             {
                 var border = HomeChipsPanel.Children[i] as Border;
                 var tb = border != null ? border.Child as TextBlock : null;
                 if (tb != null)
                 {
-                    tb.Text = titles[i];
+                    tb.Text = Services.Loc.T(chipKeys[i], defaultTitlesEn[i]);
                 }
             }
         }

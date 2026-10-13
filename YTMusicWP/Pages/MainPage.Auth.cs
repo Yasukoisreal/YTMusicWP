@@ -66,6 +66,31 @@ namespace YTMusicWP
             catch { return "US"; }
         }
 
+        /// <summary>
+        /// The phone's own language, e.g. "it-IT". ApplicationLanguages.Languages is the device list narrowed down to
+        /// the languages this package declares, so an Italian phone reports "it-IT" and a French one (not translated)
+        /// reports the default language.
+        /// </summary>
+        private string DetectOsLanguage()
+        {
+            try
+            {
+                var languages = Windows.Globalization.ApplicationLanguages.Languages;
+                if (languages != null && languages.Count > 0) return languages[0];
+            }
+            catch { }
+            return "";
+        }
+
+        /// <summary>
+        /// Content language for the "Auto" setting: the phone's language when the app is translated into it, so an
+        /// Italian phone gets Italian titles and labels; otherwise what the trending region implies, as before.
+        /// </summary>
+        private string AutoContentLanguage(string region)
+        {
+            return Services.LocaleSupport.AutoContentLanguage(DetectOsLanguage(), InnerTubeClient.DetectLanguageFromRegion(region));
+        }
+
         // Safe helpers to prevent crash when upgrading with stale LocalSettings data
         private static int SafeGetInt(Windows.Foundation.Collections.IPropertySet s, string key, int def)
         {
@@ -139,8 +164,22 @@ namespace YTMusicWP
                     if (!langFound) SettingsPanel.LanguageComboBox.SelectedIndex = 0; // Fallback: Auto
                 }
 
+                string savedUiLang = Services.Loc.SavedLanguage();
+                if (SettingsPanel.AppLanguageComboBox != null)
+                {
+                    for (int i = 0; i < SettingsPanel.AppLanguageComboBox.Items.Count; i++)
+                    {
+                        var tag = ((ComboBoxItem)SettingsPanel.AppLanguageComboBox.Items[i]).Tag;
+                        if (tag != null && tag.ToString() == savedUiLang)
+                        {
+                            SettingsPanel.AppLanguageComboBox.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
                 if (savedLang == "AUTO")
-                    InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(savedRegion));
+                    InnerTubeClient.SetLanguage(AutoContentLanguage(savedRegion));
                 else
                     InnerTubeClient.SetLanguage(savedLang);
 
@@ -224,6 +263,8 @@ namespace YTMusicWP
                 SettingsPanel.RegionComboBox.SelectionChanged += RegionComboBox_SelectionChanged;
                 if (SettingsPanel.LanguageComboBox != null)
                     SettingsPanel.LanguageComboBox.SelectionChanged += LanguageComboBox_SelectionChanged;
+                if (SettingsPanel.AppLanguageComboBox != null)
+                    SettingsPanel.AppLanguageComboBox.SelectionChanged += AppLanguageComboBox_SelectionChanged;
                 SettingsPanel.LiveTileToggle.Toggled += LiveTileToggle_Toggled;
                 SettingsPanel.LiveTileModeComboBox.SelectionChanged += LiveTileModeComboBox_SelectionChanged;
                 SettingsPanel.LiveTileSpeedComboBox.SelectionChanged += LiveTileSpeedComboBox_SelectionChanged;
@@ -252,11 +293,11 @@ namespace YTMusicWP
             string appLang = settings.ContainsKey("AppLanguage") ? settings["AppLanguage"].ToString() : "AUTO";
             if (appLang == "AUTO")
             {
-                InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(regionTag));
+                InnerTubeClient.SetLanguage(AutoContentLanguage(regionTag));
                 UpdateLocalizedUI();
             }
 
-            ShowToast("Location changed!");
+            ShowToast(Services.Loc.T("Toast_LocationChanged", "Location changed!"));
 
             if (IsInternetAvailable())
             {
@@ -284,7 +325,7 @@ namespace YTMusicWP
             if (langTag == "AUTO")
             {
                 string currentRegion = settings.ContainsKey("TrendingRegion") ? settings["TrendingRegion"].ToString() : DetectOsRegion();
-                InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(currentRegion));
+                InnerTubeClient.SetLanguage(AutoContentLanguage(currentRegion));
             }
             else
             {
@@ -293,7 +334,7 @@ namespace YTMusicWP
 
             UpdateLocalizedUI();
 
-            ShowToast("Language changed!");
+            ShowToast(Services.Loc.T("Toast_LanguageChanged", "Language changed!"));
 
             if (IsInternetAvailable())
             {
@@ -302,6 +343,23 @@ namespace YTMusicWP
                 InnerTubeClient.ClearHomeCache();
                 await LoadHomeRecommendations();
             }
+        }
+
+        /// <summary>
+        /// App interface language. WP8.1 cannot swap its own resources while the app runs, so this saves the pick and
+        /// asks for a restart; the new language is there on the next launch.
+        /// </summary>
+        private void AppLanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SettingsPanel.AppLanguageComboBox == null) return;
+            var selected = SettingsPanel.AppLanguageComboBox.SelectedItem as ComboBoxItem;
+            if (selected == null || selected.Tag == null) return;
+
+            string tag = selected.Tag.ToString();
+            if (tag == Services.Loc.SavedLanguage()) return;
+
+            Services.Loc.SaveLanguage(tag);
+            ShowToast(Services.Loc.T("Toast_AppLanguageRestart", "App language saved — restart the app to apply it"));
         }
 
 
@@ -402,7 +460,7 @@ namespace YTMusicWP
         private async void RefreshStorageStats_Click(object sender, RoutedEventArgs e)
         {
             await UpdateStorageDisplayAsync();
-            ShowToast("Storage refreshed");
+            ShowToast(Services.Loc.T("Toast_StorageRefreshed", "Storage refreshed"));
         }
 
         private async void CleanAllCache_Click(object sender, RoutedEventArgs e)
@@ -411,11 +469,11 @@ namespace YTMusicWP
             {
                 int count = await CleanAllCacheInternalAsync();
                 await UpdateStorageDisplayAsync();
-                ShowToast("Cleaned " + count + " cache items");
+                ShowToast(Services.Loc.F("Toast_CacheCleaned", "Cleaned {0} cache items", count));
             }
             catch
             {
-                ShowToast("Error cleaning cache");
+                ShowToast(Services.Loc.T("Toast_CacheCleanError", "Error cleaning cache"));
             }
         }
 
@@ -425,11 +483,11 @@ namespace YTMusicWP
             {
                 int count = await CleanImageCacheInternalAsync();
                 await UpdateStorageDisplayAsync();
-                ShowToast("Cleared " + count + " cached images");
+                ShowToast(Services.Loc.F("Toast_ImagesCleared", "Cleared {0} cached images", count));
             }
             catch
             {
-                ShowToast("Error clearing image cache");
+                ShowToast(Services.Loc.T("Toast_ImageCacheClearError", "Error clearing image cache"));
             }
         }
 
@@ -439,11 +497,11 @@ namespace YTMusicWP
             {
                 int count = await CleanTempStreamsInternalAsync();
                 await UpdateStorageDisplayAsync();
-                ShowToast("Cleared " + count + " temp stream files");
+                ShowToast(Services.Loc.F("Toast_TempStreamsCleared", "Cleared {0} temp stream files", count));
             }
             catch
             {
-                ShowToast("Error clearing temp streams");
+                ShowToast(Services.Loc.T("Toast_TempStreamsClearError", "Error clearing temp streams"));
             }
         }
 
@@ -519,7 +577,7 @@ namespace YTMusicWP
                 var _ = LoadHomeRecommendations();
             }
 
-            ShowToast("Logged out successfully");
+            ShowToast(Services.Loc.T("Toast_LoggedOut", "Logged out successfully"));
         }
 
         private async void CopyAuthLink_Click(object sender, RoutedEventArgs e)
@@ -527,7 +585,7 @@ namespace YTMusicWP
             string clientId = SettingsPanel.ClientIdTextBox.Text.Trim();
             if (string.IsNullOrEmpty(clientId))
             {
-                ShowToast("Please enter Client ID first!");
+                ShowToast(Services.Loc.T("Toast_EnterClientId", "Please enter Client ID first!"));
                 return;
             }
 
@@ -539,7 +597,7 @@ namespace YTMusicWP
                              "&access_type=offline";
 
             await Windows.System.Launcher.LaunchUriAsync(new Uri(authUrl));
-            ShowToast("Opening browser! After approving on PC, return here.");
+            ShowToast(Services.Loc.T("Toast_OpeningBrowser", "Opening browser! After approving on PC, return here."));
         }
         private string _deviceVerificationUrl = "";
         private string _deviceUserCode = "";
@@ -691,7 +749,7 @@ namespace YTMusicWP
 
                             UpdateAccountPanel(true, "Logged In & Syncing...");
                             SettingsPanel.LoginStatusText.Foreground = _greenBrush;
-                            ShowToast("Login successful! Syncing...");
+                            ShowToast(Services.Loc.T("Toast_LoginSyncing", "Login successful! Syncing..."));
 
                             await SyncAllAsync(accessToken);
 
@@ -841,7 +899,7 @@ namespace YTMusicWP
                 UpdateAccountPanel(true, "Logged in (Cookie)");
                 SettingsPanel.LoginStatusText.Foreground = _greenBrush;
                 SettingsPanel.SyncNowBtn.Visibility = Visibility.Visible;
-                ShowToast("Login successful!");
+                ShowToast(Services.Loc.T("Toast_LoginSuccess", "Login successful!"));
 
                 // Fetch user info from cookie session
                 await FetchCookieUserInfoAsync();
@@ -937,14 +995,14 @@ namespace YTMusicWP
                         long expiresIn = json["expires_in"]?.Value<long>() ?? 3600;
                         settings["GoogleTokenExpiry"] = DateTimeOffset.UtcNow.AddSeconds(expiresIn - 60).UtcDateTime.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 
-                        ShowToast("Login successful! Syncing...");
+                        ShowToast(Services.Loc.T("Toast_LoginSyncing", "Login successful! Syncing..."));
                         await SyncAllAsync(accessToken);
                     }
                     else
                     {
                         SettingsPanel.LoginStatusText.Text = "Status: Auth Failed";
                         SettingsPanel.LoginStatusText.Foreground = _authRedBrush;
-                        ShowToast("Auth Error! Please try again.");
+                        ShowToast(Services.Loc.T("Toast_AuthError", "Auth Error! Please try again."));
                     }
                 }
             }
@@ -952,7 +1010,7 @@ namespace YTMusicWP
             {
                 SettingsPanel.LoginStatusText.Text = "Status: Network Error";
                 SettingsPanel.LoginStatusText.Foreground = _authRedBrush;
-                ShowToast("Network error. Please try again.");
+                ShowToast(Services.Loc.T("Toast_NetworkError", "Network error. Please try again."));
             }
         }
 

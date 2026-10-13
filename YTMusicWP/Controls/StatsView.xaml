@@ -31,7 +31,7 @@
         <Grid Grid.Row="0" Margin="20,15,15,0">
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="Listening stats" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                <TextBlock Text="Recorded on this phone, plays over 30 seconds" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
+                <TextBlock x:Uid="Stats_Subtitle" Text="Recorded on this phone, plays over 30 seconds" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
             </StackPanel>
             <Button Click="Close_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Width="40" Height="40" VerticalAlignment="Top">
                 <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="20" Width="36" Height="36">
@@ -43,10 +43,10 @@
         <!-- Period chips -->
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="0,14,0,0">
             <StackPanel x:Name="PeriodChips" Orientation="Horizontal" Margin="16,0">
-                <Button Content="This week" Tag="week" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
-                <Button Content="This month" Tag="month" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
-                <Button Content="This year" Tag="year" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
-                <Button Content="All time" Tag="all" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Uid="Stats_ThisWeek" Content="This week" Tag="week" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Uid="Stats_ThisMonth" Content="This month" Tag="month" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Uid="Stats_ThisYear" Content="This year" Tag="year" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Uid="Stats_AllTime" Content="All time" Tag="all" Click="Period_Click" Style="{StaticResource ChipButtonStyle}" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
             </StackPanel>
         </ScrollViewer>
 
@@ -57,7 +57,7 @@
                 <!-- Empty state -->
                 <Border x:Name="EmptyCard" Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,20" Visibility="Collapsed">
                     <StackPanel>
-                        <TextBlock Text="Nothing yet" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                        <TextBlock x:Uid="Stats_NothingYet" Text="Nothing yet" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
                         <TextBlock x:Name="EmptyText" Foreground="#777" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
                                    Text="No listening recorded in this period. Every song you play for more than 30 seconds counts from now on."/>
                     </StackPanel>
@@ -68,7 +68,7 @@
                     <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock x:Name="MinutesText" FontSize="40" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="{StaticResource BrandGreenBrush}"/>
-                            <TextBlock Text="minutes listened" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,14"/>
+                            <TextBlock x:Uid="Stats_Minutes" Text="minutes listened" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,14"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -77,15 +77,15 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBlock x:Name="PlaysText" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                    <TextBlock Text="plays" FontSize="12" Foreground="#777"/>
+                                    <TextBlock x:Uid="Stats_Plays" Text="plays" FontSize="12" Foreground="#777"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1">
                                     <TextBlock x:Name="SongsText" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                    <TextBlock Text="songs" FontSize="12" Foreground="#777"/>
+                                    <TextBlock x:Uid="Stats_Songs" Text="songs" FontSize="12" Foreground="#777"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock x:Name="ArtistsText" FontSize="20" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                    <TextBlock Text="artists" FontSize="12" Foreground="#777"/>
+                                    <TextBlock x:Uid="Stats_Artists" Text="artists" FontSize="12" Foreground="#777"/>
                                 </StackPanel>
                             </Grid>
                             <TextBlock x:Name="BiggestDayText" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,14,0,0" TextWrapping="Wrap"/>
@@ -95,7 +95,7 @@
                     <!-- Listening clock -->
                     <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="When you listen" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                            <TextBlock x:Uid="Stats_WhenYouListen" Text="When you listen" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
                             <TextBlock x:Name="PeakHourText" FontSize="12" Foreground="#777" Margin="0,2,0,12"/>
                             <Grid x:Name="ClockBars" Height="90"/>
                             <Grid x:Name="ClockLabels" Margin="0,6,0,0"/>
@@ -105,7 +105,7 @@
                     <!-- Top songs -->
                     <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="Top songs" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
+                            <TextBlock x:Uid="Stats_TopSongs" Text="Top songs" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
                             <StackPanel x:Name="TopSongsPanel"/>
                         </StackPanel>
                     </Border>
@@ -113,7 +113,7 @@
                     <!-- Top artists -->
                     <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16">
                         <StackPanel>
-                            <TextBlock Text="Top artists" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
+                            <TextBlock x:Uid="Stats_TopArtists" Text="Top artists" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
                             <StackPanel x:Name="TopArtistsPanel"/>
                         </StackPanel>
                     </Border>

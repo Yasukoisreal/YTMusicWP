@@ -30,8 +30,8 @@
                             </Viewbox>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                            <TextBlock Text="Playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Create a playlist with songs or podcast episodes" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
+                            <TextBlock x:Uid="Create_Playlist" Text="Playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock x:Uid="Create_PlaylistDesc" Text="Create a playlist with songs or podcast episodes" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
@@ -49,8 +49,8 @@
                             </Viewbox>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                            <TextBlock Text="Collaborative playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Create a playlist together with friends" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
+                            <TextBlock x:Uid="Create_Collab" Text="Collaborative playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock x:Uid="Create_CollabDesc" Text="Create a playlist together with friends" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
@@ -68,8 +68,8 @@
                             </Viewbox>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                            <TextBlock Text="Blend" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Create a playlist that combines music tastes with friends" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
+                            <TextBlock x:Uid="Create_Blend" Text="Blend" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock x:Uid="Create_BlendDesc" Text="Create a playlist that combines music tastes with friends" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
@@ -87,8 +87,8 @@
                             </Viewbox>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                            <TextBlock Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Listen to music together with friends in real-time" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
+                            <TextBlock x:Uid="Create_ListenTogether" Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock x:Uid="Create_ListenTogetherDesc" Text="Listen to music together with friends in real-time" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>

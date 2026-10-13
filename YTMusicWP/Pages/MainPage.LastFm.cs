@@ -16,7 +16,7 @@ namespace YTMusicWP
             {
                 LastFmClient.SignOut();
                 RefreshLastFmSettings();
-                ShowToast("Disconnected from Last.fm");
+                ShowToast(Services.Loc.T("Toast_LastFmDisconnected", "Disconnected from Last.fm"));
                 return;
             }
 
@@ -28,7 +28,7 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                ShowToast("Couldn't open Last.fm sign-in: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_LastFmSignInFailed", "Couldn't open Last.fm sign-in: {0}", ex.Message));
             }
         }
 
@@ -36,7 +36,7 @@ namespace YTMusicWP
         {
             if (result == null || result.ResponseStatus != WebAuthenticationStatus.Success)
             {
-                ShowToast("Last.fm sign-in cancelled");
+                ShowToast(Services.Loc.T("Toast_LastFmCancelled", "Last.fm sign-in cancelled"));
                 return;
             }
 

@@ -47,6 +47,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -59,6 +61,8 @@
     <Compile Include="KuGouLyricsParserTests.cs" />
     <Compile Include="Mp4KeyframeParserTests.cs" />
     <Compile Include="ListeningStatsCalculatorTests.cs" />
+    <Compile Include="LocaleSupportTests.cs" />
+    <Compile Include="LocalizationResourcesTests.cs" />
     <Compile Include="LastFmRulesTests.cs" />
     <Compile Include="NewReleaseRulesTests.cs" />
     <Compile Include="..\YTMusicWP\Services\LastFmRules.cs">
@@ -69,6 +73,9 @@
     </Compile>
     <Compile Include="..\YTMusicWP\Services\ListeningStatsCalculator.cs">
       <Link>Sources\ListeningStatsCalculator.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\LocaleSupport.cs">
+      <Link>Sources\LocaleSupport.cs</Link>
     </Compile>
     <Compile Include="..\AudioPlayerTask\MiniProtoWriter.cs">
       <Link>Sources\MiniProtoWriter.cs</Link>

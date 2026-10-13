@@ -16,7 +16,7 @@ namespace YTMusicWP
     {
         private void SearchButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsInternetAvailable()) { ShowToast("No Internet"); return; }
+            if (!IsInternetAvailable()) { ShowToast(Services.Loc.T("Toast_NoInternet", "No Internet")); return; }
             _typingTimer.Stop(); SuggestionPopup.Visibility = Visibility.Collapsed;
             if (!string.IsNullOrWhiteSpace(SearchBox.Text))
             {
@@ -61,7 +61,7 @@ namespace YTMusicWP
             }
             else if (_lastSearchCard == null)
             {
-                ShowToast("No results found.");
+                ShowToast(Services.Loc.T("Toast_NoResults", "No results found."));
             }
 
             // Populate Top Result Card
@@ -870,29 +870,20 @@ namespace YTMusicWP
 
         private void UpdateDefaultSearchChips()
         {
-            if (SearchTitleText != null)
-            {
-                SearchTitleText.Text = (InnerTubeClient.CurrentLanguage == "vi") ? "Tìm kiếm" : "Search";
-            }
-            if (SearchBox != null)
-            {
-                SearchBox.PlaceholderText = (InnerTubeClient.CurrentLanguage == "vi") ? "Bạn muốn nghe gì?" : "What do you want to listen to?";
-            }
-
+            // The search title and the box hint come from their x:Uid resources; only the filter chips are built here
             if (SearchChipsPanel == null) return;
 
-            string[] defaultTitlesVi = new[] { "Nghệ sĩ", "Bài hát", "Album", "Video", "Danh sách phát cộng đồng", "Tập", "Hồ sơ", "Podcast" };
+            string[] chipKeys = new[] { "Search_Chip_Artists", "Search_Chip_Songs", "Search_Chip_Albums", "Search_Chip_Videos", "Search_Chip_CommunityPlaylists", "Search_Chip_Episodes", "Search_Chip_Profiles", "Search_Chip_Podcasts" };
             string[] defaultTitlesEn = new[] { "Artists", "Songs", "Albums", "Videos", "Community playlists", "Episodes", "Profiles", "Podcasts" };
-            var titles = (InnerTubeClient.CurrentLanguage == "vi") ? defaultTitlesVi : defaultTitlesEn;
 
-            int count = Math.Min(SearchChipsPanel.Children.Count, titles.Length);
+            int count = Math.Min(SearchChipsPanel.Children.Count, chipKeys.Length);
             for (int i = 0; i < count; i++)
             {
                 var border = SearchChipsPanel.Children[i] as Border;
                 var tb = border != null ? border.Child as TextBlock : null;
                 if (tb != null)
                 {
-                    tb.Text = titles[i];
+                    tb.Text = Services.Loc.T(chipKeys[i], defaultTitlesEn[i]);
                 }
             }
         }

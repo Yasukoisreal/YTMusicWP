@@ -1,0 +1,902 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- Navigation -->
+  <data name="NavHome.Text" xml:space="preserve">
+    <value>Trang chủ</value>
+  </data>
+  <data name="NavSearch.Text" xml:space="preserve">
+    <value>Tìm kiếm</value>
+  </data>
+  <data name="NavLibrary.Text" xml:space="preserve">
+    <value>Thư viện</value>
+  </data>
+  <data name="NavSamples.Text" xml:space="preserve">
+    <value>Đoạn nhạc</value>
+  </data>
+  <data name="NavCreate.Text" xml:space="preserve">
+    <value>Tạo</value>
+  </data>
+  <!-- Home -->
+  <data name="Home_Live.Text" xml:space="preserve">
+    <value>TRỰC TIẾP</value>
+  </data>
+  <data name="Home_DiscoveryTitle.Text" xml:space="preserve">
+    <value>KHÁM PHÁ TUẦN NÀY</value>
+  </data>
+  <data name="Home_DiscoverySubtitle.Text" xml:space="preserve">
+    <value>Nghe những bài hát mới hot nhất tuần này trên YouTube Music</value>
+  </data>
+  <data name="Home_PullToRefresh.Text" xml:space="preserve">
+    <value>Kéo để làm mới</value>
+  </data>
+  <data name="Home_NewFromYourArtists.Text" xml:space="preserve">
+    <value>Mới từ nghệ sĩ bạn theo dõi</value>
+  </data>
+  <data name="Home_JumpBackIn.Text" xml:space="preserve">
+    <value>Nghe lại</value>
+  </data>
+  <data name="Home_RecentlyPlayedArtists.Text" xml:space="preserve">
+    <value>Nghệ sĩ nghe gần đây</value>
+  </data>
+  <data name="Home_TopCharts.Text" xml:space="preserve">
+    <value>Bảng xếp hạng hàng đầu</value>
+  </data>
+  <data name="TopCard_Shuffle.Text" xml:space="preserve">
+    <value>Phát ngẫu nhiên</value>
+  </data>
+  <data name="TopCard_Radio.Text" xml:space="preserve">
+    <value>Radio</value>
+  </data>
+  <!-- Search -->
+  <data name="Search_Title.Text" xml:space="preserve">
+    <value>Tìm kiếm</value>
+  </data>
+  <data name="Search_Placeholder.PlaceholderText" xml:space="preserve">
+    <value>Bạn muốn nghe gì?</value>
+  </data>
+  <!-- Player -->
+  <data name="Player_NowPlaying.Text" xml:space="preserve">
+    <value>ĐANG PHÁT</value>
+  </data>
+  <data name="Player_LyricsHint.Text" xml:space="preserve">
+    <value>Vuốt để xem lời bài hát...</value>
+  </data>
+  <data name="Player_CloseHint.Text" xml:space="preserve">
+    <value>Chạm hoặc kéo tiêu đề xuống để đóng</value>
+  </data>
+  <data name="Queue_UpNext.Text" xml:space="preserve">
+    <value>TIẾP THEO</value>
+  </data>
+  <data name="Queue_Clear.Content" xml:space="preserve">
+    <value>Xóa hết</value>
+  </data>
+  <data name="Song_GoToArtist.Text" xml:space="preserve">
+    <value>Mở nghệ sĩ</value>
+  </data>
+  <data name="Sample_Radio.Text" xml:space="preserve">
+    <value>Radio</value>
+  </data>
+  <data name="Sample_Save.Text" xml:space="preserve">
+    <value>Lưu</value>
+  </data>
+  <!-- Samples list -->
+  <data name="Common_PlayAll.Text" xml:space="preserve">
+    <value>Phát tất cả</value>
+  </data>
+  <!-- Playlists -->
+  <data name="Playlist_Enhance.Text" xml:space="preserve">
+    <value>Nâng cao</value>
+  </data>
+  <data name="Playlist_Pin.Text" xml:space="preserve">
+    <value>Ghim</value>
+  </data>
+  <data name="Playlist_PinToStart.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Ghim vào màn hình Bắt đầu</value>
+  </data>
+  <data name="Playlist_FilterSongs.[using:Windows.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Lọc bài hát</value>
+  </data>
+  <data name="Playlist_Find.Text" xml:space="preserve">
+    <value>Tìm</value>
+  </data>
+  <data name="Playlist_FindPlaceholder.PlaceholderText" xml:space="preserve">
+    <value>Tìm trong danh sách phát...</value>
+  </data>
+  <data name="Playlist_AddTitle.Text" xml:space="preserve">
+    <value>Thêm vào danh sách phát</value>
+  </data>
+  <data name="Playlist_NewTitle.Text" xml:space="preserve">
+    <value>Danh sách phát mới</value>
+  </data>
+  <data name="Playlist_NamePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>Tên danh sách phát...</value>
+  </data>
+  <!-- Artist -->
+  <data name="Artist_Popular.Text" xml:space="preserve">
+    <value>Phổ biến</value>
+  </data>
+  <data name="Artist_About.Text" xml:space="preserve">
+    <value>Giới thiệu</value>
+  </data>
+  <data name="Artist_Followers.Text" xml:space="preserve">
+    <value>người theo dõi</value>
+  </data>
+  <data name="Artist_Follow.Content" xml:space="preserve">
+    <value>Theo dõi</value>
+  </data>
+  <!-- Song menu -->
+  <data name="Menu_AddToQueue.Text" xml:space="preserve">
+    <value>Thêm vào hàng đợi</value>
+  </data>
+  <data name="Menu_ToggleFavorite.Text" xml:space="preserve">
+    <value>Bật/tắt yêu thích</value>
+  </data>
+  <data name="Menu_Favorite.Text" xml:space="preserve">
+    <value>Yêu thích</value>
+  </data>
+  <data name="Menu_AddToPlaylist.Text" xml:space="preserve">
+    <value>Thêm vào danh sách phát</value>
+  </data>
+  <data name="Menu_RemoveFromPlaylist.Text" xml:space="preserve">
+    <value>Xóa khỏi danh sách phát</value>
+  </data>
+  <data name="Menu_GoToRadio.Text" xml:space="preserve">
+    <value>Mở radio</value>
+  </data>
+  <data name="Menu_Share.Text" xml:space="preserve">
+    <value>Chia sẻ</value>
+  </data>
+  <data name="Menu_Download.Text" xml:space="preserve">
+    <value>Tải xuống</value>
+  </data>
+  <data name="Menu_DeleteLocal.Text" xml:space="preserve">
+    <value>Xóa (tệp trên máy)</value>
+  </data>
+  <data name="Menu_ExportToMusic.Text" xml:space="preserve">
+    <value>Xuất vào thư mục Nhạc</value>
+  </data>
+  <data name="Menu_PinToStart.Text" xml:space="preserve">
+    <value>Ghim vào màn hình Bắt đầu</value>
+  </data>
+  <data name="Menu_ExportM3U.Text" xml:space="preserve">
+    <value>Xuất sang M3U</value>
+  </data>
+  <data name="Menu_DeletePlaylist.Text" xml:space="preserve">
+    <value>Xóa danh sách phát</value>
+  </data>
+  <data name="Menu_Play.Text" xml:space="preserve">
+    <value>▶ Phát</value>
+  </data>
+  <data name="Menu_PlaybackSpeed.Text" xml:space="preserve">
+    <value>Tốc độ phát</value>
+  </data>
+  <data name="Menu_SleepTimer.Text" xml:space="preserve">
+    <value>Hẹn giờ tắt</value>
+  </data>
+  <data name="Menu_WatchLater.Text" xml:space="preserve">
+    <value>Xem sau</value>
+  </data>
+  <!-- Settings -->
+  <data name="Settings_ContentLanguageLabel.Text" xml:space="preserve">
+    <value>Ngôn ngữ nội dung (tiêu đề &amp; nhãn YouTube)</value>
+  </data>
+  <data name="Settings_AppLanguageLabel.Text" xml:space="preserve">
+    <value>Ngôn ngữ ứng dụng (giao diện)</value>
+  </data>
+  <data name="Settings_AppLanguageAuto.Content" xml:space="preserve">
+    <value>Tự động (ngôn ngữ thiết bị)</value>
+  </data>
+  <data name="Settings_AppLanguageHint.Text" xml:space="preserve">
+    <value>Ứng dụng theo ngôn ngữ của điện thoại trừ khi bạn chọn ở đây. Đổi ngôn ngữ cần khởi động lại ứng dụng.</value>
+  </data>
+  <!-- Dialog buttons -->
+  <data name="Common_Cancel.Content" xml:space="preserve">
+    <value>Hủy</value>
+  </data>
+  <data name="Common_Create.Content" xml:space="preserve">
+    <value>Tạo</value>
+  </data>
+  <data name="Common_Close.Text" xml:space="preserve">
+    <value>Đóng</value>
+  </data>
+  <data name="Common_Like.Content" xml:space="preserve">
+    <value>Thích</value>
+  </data>
+  <!-- Library -->
+  <data name="Lib_ExportPlaylists.Text" xml:space="preserve">
+    <value>Xuất danh sách phát (JSON)</value>
+  </data>
+  <data name="Lib_ImportPlaylists.Text" xml:space="preserve">
+    <value>Nhập danh sách phát (JSON)</value>
+  </data>
+  <data name="Lib_ExportM3U.Text" xml:space="preserve">
+    <value>Xuất dạng M3U</value>
+  </data>
+  <data name="Lib_ImportM3U.Text" xml:space="preserve">
+    <value>Nhập danh sách phát M3U</value>
+  </data>
+  <data name="Lib_ChipAll.Content" xml:space="preserve">
+    <value>Tất cả</value>
+  </data>
+  <data name="Lib_ChipPlaylists.Content" xml:space="preserve">
+    <value>Danh sách phát</value>
+  </data>
+  <data name="Lib_ChipSongs.Content" xml:space="preserve">
+    <value>Bài hát</value>
+  </data>
+  <data name="Lib_ChipArtists.Content" xml:space="preserve">
+    <value>Nghệ sĩ</value>
+  </data>
+  <data name="Lib_ChipDownloads.Content" xml:space="preserve">
+    <value>Đã tải xuống</value>
+  </data>
+  <data name="Lib_Favorites.Text" xml:space="preserve">
+    <value>Yêu thích</value>
+  </data>
+  <data name="Lib_Followed.Text" xml:space="preserve">
+    <value>Đang theo dõi</value>
+  </data>
+  <data name="Lib_MostPlayed.Text" xml:space="preserve">
+    <value>Nghe nhiều nhất</value>
+  </data>
+  <data name="Lib_Downloaded.Text" xml:space="preserve">
+    <value>Đã tải xuống</value>
+  </data>
+  <data name="Lib_ListeningStats.Text" xml:space="preserve">
+    <value>Thống kê nghe nhạc</value>
+  </data>
+  <data name="Lib_NoItems.Text" xml:space="preserve">
+    <value>Chưa có mục nào</value>
+  </data>
+  <!-- Create sheet -->
+  <data name="Create_Playlist.Text" xml:space="preserve">
+    <value>Danh sách phát</value>
+  </data>
+  <data name="Create_PlaylistDesc.Text" xml:space="preserve">
+    <value>Tạo danh sách phát với bài hát hoặc tập podcast</value>
+  </data>
+  <data name="Create_Collab.Text" xml:space="preserve">
+    <value>Danh sách phát cộng tác</value>
+  </data>
+  <data name="Create_CollabDesc.Text" xml:space="preserve">
+    <value>Tạo danh sách phát cùng bạn bè</value>
+  </data>
+  <data name="Create_Blend.Text" xml:space="preserve">
+    <value>Kết hợp</value>
+  </data>
+  <data name="Create_BlendDesc.Text" xml:space="preserve">
+    <value>Tạo danh sách phát kết hợp sở thích âm nhạc với bạn bè</value>
+  </data>
+  <data name="Create_ListenTogether.Text" xml:space="preserve">
+    <value>Nghe cùng nhau</value>
+  </data>
+  <data name="Create_ListenTogetherDesc.Text" xml:space="preserve">
+    <value>Nghe nhạc cùng bạn bè theo thời gian thực</value>
+  </data>
+  <!-- Sign in -->
+  <data name="SignIn_Google.Text" xml:space="preserve">
+    <value>Đăng nhập bằng Google</value>
+  </data>
+  <data name="SignIn_QrHint.Text" xml:space="preserve">
+    <value>Quét mã QR bằng camera điện thoại để đăng nhập ngay</value>
+  </data>
+  <data name="SignIn_ManualCode.Text" xml:space="preserve">
+    <value>HOẶC NHẬP MÃ THỦ CÔNG</value>
+  </data>
+  <data name="SignIn_TvCode.Text" xml:space="preserve">
+    <value>Đăng nhập bằng mã TV</value>
+  </data>
+  <!-- Live debug dialog -->
+  <data name="Debug_Title.Text" xml:space="preserve">
+    <value>Nhật ký phát trực tiếp</value>
+  </data>
+  <data name="Debug_Clear.Text" xml:space="preserve">
+    <value>Xóa</value>
+  </data>
+  <data name="Debug_Refresh.Text" xml:space="preserve">
+    <value>Làm mới</value>
+  </data>
+  <data name="Debug_SelectAll.Content" xml:space="preserve">
+    <value>Chọn tất cả</value>
+  </data>
+  <data name="Common_Save.Content" xml:space="preserve">
+    <value>Lưu</value>
+  </data>
+  <data name="Common_Share.Content" xml:space="preserve">
+    <value>Chia sẻ</value>
+  </data>
+  <data name="Common_Done.Text" xml:space="preserve">
+    <value>Xong</value>
+  </data>
+  <!-- Song credits -->
+  <data name="Credits_Title.Text" xml:space="preserve">
+    <value>Thông tin bài hát</value>
+  </data>
+  <data name="Credits_Loading.Text" xml:space="preserve">
+    <value>Đang tải thông tin...</value>
+  </data>
+  <data name="Credits_PerformedBy.Text" xml:space="preserve">
+    <value>TRÌNH BÀY BỞI</value>
+  </data>
+  <data name="Credits_WrittenBy.Text" xml:space="preserve">
+    <value>SÁNG TÁC BỞI</value>
+  </data>
+  <data name="Credits_ProducedBy.Text" xml:space="preserve">
+    <value>SẢN XUẤT BỞI</value>
+  </data>
+  <data name="Credits_Source.Text" xml:space="preserve">
+    <value>NGUỒN</value>
+  </data>
+  <data name="Credits_PlaysViews.Text" xml:space="preserve">
+    <value>LƯỢT NGHE / LƯỢT XEM</value>
+  </data>
+  <data name="Credits_Released.Text" xml:space="preserve">
+    <value>PHÁT HÀNH</value>
+  </data>
+  <data name="Credits_Album.Text" xml:space="preserve">
+    <value>ALBUM</value>
+  </data>
+  <data name="Credits_AudioStream.Text" xml:space="preserve">
+    <value>LUỒNG ÂM THANH</value>
+  </data>
+  <!-- Listening stats -->
+  <data name="Stats_Subtitle.Text" xml:space="preserve">
+    <value>Ghi trên máy này, bài hát trên 30 giây</value>
+  </data>
+  <data name="Stats_NothingYet.Text" xml:space="preserve">
+    <value>Chưa có gì</value>
+  </data>
+  <data name="Stats_Minutes.Text" xml:space="preserve">
+    <value>phút đã nghe</value>
+  </data>
+  <data name="Stats_Plays.Text" xml:space="preserve">
+    <value>lượt phát</value>
+  </data>
+  <data name="Stats_Songs.Text" xml:space="preserve">
+    <value>bài hát</value>
+  </data>
+  <data name="Stats_Artists.Text" xml:space="preserve">
+    <value>nghệ sĩ</value>
+  </data>
+  <data name="Stats_WhenYouListen.Text" xml:space="preserve">
+    <value>Khi bạn nghe</value>
+  </data>
+  <data name="Stats_TopSongs.Text" xml:space="preserve">
+    <value>Bài hát hàng đầu</value>
+  </data>
+  <data name="Stats_TopArtists.Text" xml:space="preserve">
+    <value>Nghệ sĩ hàng đầu</value>
+  </data>
+  <data name="Stats_ThisWeek.Content" xml:space="preserve">
+    <value>Tuần này</value>
+  </data>
+  <data name="Stats_ThisMonth.Content" xml:space="preserve">
+    <value>Tháng này</value>
+  </data>
+  <data name="Stats_ThisYear.Content" xml:space="preserve">
+    <value>Năm nay</value>
+  </data>
+  <data name="Stats_AllTime.Content" xml:space="preserve">
+    <value>Mọi lúc</value>
+  </data>
+  <!-- Settings -->
+  <data name="Settings_Title.Text" xml:space="preserve">
+    <value>Cài đặt</value>
+  </data>
+  <data name="Settings_Subtitle.Text" xml:space="preserve">
+    <value>Tùy chỉnh trải nghiệm của bạn</value>
+  </data>
+  <data name="Settings_Account.Text" xml:space="preserve">
+    <value>Tài khoản</value>
+  </data>
+  <data name="Settings_SignInHint.Text" xml:space="preserve">
+    <value>Đăng nhập để đồng bộ bài hát yêu thích, danh sách phát và kênh đăng ký.</value>
+  </data>
+  <data name="Settings_SwitchAccount.Text" xml:space="preserve">
+    <value>Đổi tài khoản</value>
+  </data>
+  <data name="Settings_AddAccount.Text" xml:space="preserve">
+    <value>Thêm tài khoản</value>
+  </data>
+  <data name="Settings_SyncNow.Text" xml:space="preserve">
+    <value>Đồng bộ ngay</value>
+  </data>
+  <data name="Settings_LanguageLocation.Text" xml:space="preserve">
+    <value>Ngôn ngữ &amp; vị trí</value>
+  </data>
+  <data name="Settings_LocationLabel.Text" xml:space="preserve">
+    <value>Vị trí (ảnh hưởng thịnh hành &amp; bảng xếp hạng)</value>
+  </data>
+  <data name="Settings_RegionAuto.Content" xml:space="preserve">
+    <value>Tự động phát hiện</value>
+  </data>
+  <data name="Settings_RegionWorldwide.Content" xml:space="preserve">
+    <value>Toàn cầu</value>
+  </data>
+  <data name="Settings_Playback.Text" xml:space="preserve">
+    <value>Phát nhạc</value>
+  </data>
+  <data name="Settings_Autoplay.Text" xml:space="preserve">
+    <value>Tự động phát</value>
+  </data>
+  <data name="Settings_AutoplayDesc.Text" xml:space="preserve">
+    <value>Phát bài tương tự khi hết hàng đợi</value>
+  </data>
+  <data name="Settings_Gapless.Text" xml:space="preserve">
+    <value>Phát liền mạch</value>
+  </data>
+  <data name="Settings_GaplessDesc.Text" xml:space="preserve">
+    <value>Không khoảng lặng giữa các bài</value>
+  </data>
+  <data name="Settings_AnimatedArtwork.Text" xml:space="preserve">
+    <value>Bìa động</value>
+  </data>
+  <data name="Settings_AnimatedArtworkDesc.Text" xml:space="preserve">
+    <value>Bìa album chuyển động trong màn hình phát (~2 MB mỗi album)</value>
+  </data>
+  <data name="Settings_NormalizeVolume.Text" xml:space="preserve">
+    <value>Cân bằng âm lượng</value>
+  </data>
+  <data name="Settings_NormalizeVolumeDesc.Text" xml:space="preserve">
+    <value>Cùng mức âm lượng cho mọi bài hát</value>
+  </data>
+  <data name="Settings_Appearance.Text" xml:space="preserve">
+    <value>Giao diện</value>
+  </data>
+  <data name="Settings_NowPlayingStyle.Text" xml:space="preserve">
+    <value>Kiểu màn hình phát</value>
+  </data>
+  <data name="Settings_NowPlayingStyleDesc.Text" xml:space="preserve">
+    <value>Kiểu hiển thị của màn hình phát nhạc</value>
+  </data>
+  <data name="Settings_StyleDefault.Content" xml:space="preserve">
+    <value>Mặc định (chuyển sắc)</value>
+  </data>
+  <data name="Settings_StyleAppleMusic.Content" xml:space="preserve">
+    <value>Apple Music (làm mờ)</value>
+  </data>
+  <data name="Settings_StartupAnimation.Text" xml:space="preserve">
+    <value>Hoạt ảnh khởi động</value>
+  </data>
+  <data name="Settings_StartupAnimationDesc.Text" xml:space="preserve">
+    <value>Phát logo động khi mở ứng dụng</value>
+  </data>
+  <data name="Settings_ListenTogether.Text" xml:space="preserve">
+    <value>Nghe cùng nhau</value>
+  </data>
+  <data name="Settings_ListenTogetherDesc.Text" xml:space="preserve">
+    <value>Đồng bộ phát nhạc theo thời gian thực với bạn bè trên WP8.1, Android và PC.</value>
+  </data>
+  <data name="Settings_OpenListenTogether.Text" xml:space="preserve">
+    <value>Mở Nghe cùng nhau</value>
+  </data>
+  <data name="Settings_LiveTile.Text" xml:space="preserve">
+    <value>Live Tile (màn hình Bắt đầu)</value>
+  </data>
+  <data name="Settings_LiveTileDynamic.Text" xml:space="preserve">
+    <value>Live Tile động</value>
+  </data>
+  <data name="Settings_LiveTileDynamicDesc.Text" xml:space="preserve">
+    <value>Lật &amp; xoay bìa nhạc trên màn hình Bắt đầu</value>
+  </data>
+  <data name="Settings_DisplayMode.Text" xml:space="preserve">
+    <value>Chế độ hiển thị</value>
+  </data>
+  <data name="Settings_DisplayModeDesc.Text" xml:space="preserve">
+    <value>Chọn nội dung hiển thị trên Live Tile</value>
+  </data>
+  <data name="Settings_TileModeNowPlayingRecs.Content" xml:space="preserve">
+    <value>Đang phát &amp; gợi ý</value>
+  </data>
+  <data name="Settings_TileModeNowPlaying.Content" xml:space="preserve">
+    <value>Chỉ đang phát</value>
+  </data>
+  <data name="Settings_TileModeTransparent.Content" xml:space="preserve">
+    <value>Chỉ trong suốt</value>
+  </data>
+  <data name="Settings_CycleSpeed.Text" xml:space="preserve">
+    <value>Tốc độ xoay</value>
+  </data>
+  <data name="Settings_CycleSpeedDesc.Text" xml:space="preserve">
+    <value>Nhịp xoay &amp; lật của Live Tile</value>
+  </data>
+  <data name="Settings_TileSpeedCalm.Content" xml:space="preserve">
+    <value>Nhẹ nhàng (chậm)</value>
+  </data>
+  <data name="Settings_TileSpeedModerate.Content" xml:space="preserve">
+    <value>Vừa phải</value>
+  </data>
+  <data name="Settings_TileSpeedDynamic.Content" xml:space="preserve">
+    <value>Năng động</value>
+  </data>
+  <data name="Settings_Storage.Text" xml:space="preserve">
+    <value>Bộ nhớ &amp; bộ đệm</value>
+  </data>
+  <data name="Settings_TotalStorage.Text" xml:space="preserve">
+    <value>TỔNG BỘ NHỚ ỨNG DỤNG</value>
+  </data>
+  <data name="Settings_Calculating.Text" xml:space="preserve">
+    <value>Đang tính...</value>
+  </data>
+  <data name="Settings_DownloadedSongs.Text" xml:space="preserve">
+    <value>Bài hát đã tải</value>
+  </data>
+  <data name="Settings_ImageCache.Text" xml:space="preserve">
+    <value>Bộ đệm hình ảnh</value>
+  </data>
+  <data name="Settings_TempStreams.Text" xml:space="preserve">
+    <value>Luồng tạm thời</value>
+  </data>
+  <data name="Settings_AppData.Text" xml:space="preserve">
+    <value>Dữ liệu ứng dụng &amp; danh sách phát</value>
+  </data>
+  <data name="Settings_SmartDownloads.Text" xml:space="preserve">
+    <value>Tải xuống thông minh</value>
+  </data>
+  <data name="Settings_SmartDownloadsDesc.Text" xml:space="preserve">
+    <value>Tự động tải bài hát yêu thích khi dùng Wi-Fi</value>
+  </data>
+  <data name="Settings_ExportDownloads.Text" xml:space="preserve">
+    <value>Xuất bài đã tải vào thư mục Nhạc</value>
+  </data>
+  <data name="Settings_CleanAllCache.Text" xml:space="preserve">
+    <value>Xóa toàn bộ bộ đệm</value>
+  </data>
+  <data name="Settings_ClearImageCache.Text" xml:space="preserve">
+    <value>Xóa bộ đệm hình ảnh</value>
+  </data>
+  <data name="Settings_ClearTempStreams.Text" xml:space="preserve">
+    <value>Xóa luồng tạm thời</value>
+  </data>
+  <data name="Settings_ClearHistory.Text" xml:space="preserve">
+    <value>Xóa lịch sử gần đây</value>
+  </data>
+  <data name="Settings_Version.Text" xml:space="preserve">
+    <value>Phiên bản 2.4.0</value>
+  </data>
+  <data name="Settings_AboutTagline.Text" xml:space="preserve">
+    <value>Ứng dụng nghe nhạc trực tuyến cho Windows Phone 8.1</value>
+  </data>
+  <data name="Settings_MadeWithLove.Text" xml:space="preserve">
+    <value>Làm bằng cả trái tim</value>
+  </data>
+  <!-- Listen Together -->
+  <data name="Lt_Title.Text" xml:space="preserve">
+    <value>Nghe cùng nhau</value>
+  </data>
+  <data name="Lt_Subtitle.Text" xml:space="preserve">
+    <value>Một bài hát, một vị trí, cùng nhau. Tạo phòng và chia sẻ mã với bạn bè.</value>
+  </data>
+  <data name="Lt_WaitingApproval.Text" xml:space="preserve">
+    <value>Đang chờ chủ phòng chấp nhận…</value>
+  </data>
+  <data name="Lt_WaitingApprovalDesc.Text" xml:space="preserve">
+    <value>Chủ phòng phải chấp nhận yêu cầu của bạn trước khi phát nhạc được đồng bộ.</value>
+  </data>
+  <data name="Lt_DisplayName.Text" xml:space="preserve">
+    <value>Tên hiển thị</value>
+  </data>
+  <data name="Lt_DisplayNameDesc.Text" xml:space="preserve">
+    <value>Tên mà mọi người trong phòng nhìn thấy</value>
+  </data>
+  <data name="Lt_OrJoinCode.Text" xml:space="preserve">
+    <value>hoặc tham gia bằng mã</value>
+  </data>
+  <data name="Lt_SettingsTitle.Text" xml:space="preserve">
+    <value>Cài đặt</value>
+  </data>
+  <data name="Lt_SettingsHeader.Text" xml:space="preserve">
+    <value>Cài đặt</value>
+  </data>
+  <data name="Lt_SettingsDesc.Text" xml:space="preserve">
+    <value>URL máy chủ, tự động duyệt &amp; đồng bộ</value>
+  </data>
+  <data name="Lt_LeavingHint.Text" xml:space="preserve">
+    <value>Rời ứng dụng hoặc chuyển sang việc khác quá lâu sẽ ngắt kết nối khỏi phòng.</value>
+  </data>
+  <data name="Lt_RoomCode.Text" xml:space="preserve">
+    <value>MÃ PHÒNG</value>
+  </data>
+  <data name="Lt_ResumeHint.Text" xml:space="preserve">
+    <value>Phát nhạc tiếp tục khi mọi người tải xong</value>
+  </data>
+  <data name="Lt_JoinRequests.Text" xml:space="preserve">
+    <value>YÊU CẦU THAM GIA</value>
+  </data>
+  <data name="Lt_WantsToJoin.Text" xml:space="preserve">
+    <value>Muốn tham gia</value>
+  </data>
+  <data name="Lt_MembersInRoom.Text" xml:space="preserve">
+    <value>THÀNH VIÊN TRONG PHÒNG</value>
+  </data>
+  <data name="Lt_Profile.Text" xml:space="preserve">
+    <value>HỒ SƠ</value>
+  </data>
+  <data name="Lt_DefaultDisplayName.Text" xml:space="preserve">
+    <value>Tên hiển thị mặc định</value>
+  </data>
+  <data name="Lt_DefaultDisplayNameDesc.Text" xml:space="preserve">
+    <value>Tên người khác thấy trong phòng và danh sách thành viên</value>
+  </data>
+  <data name="Lt_HostOptions.Text" xml:space="preserve">
+    <value>TÙY CHỌN CHỦ PHÒNG</value>
+  </data>
+  <data name="Lt_AutoApproveJoins.Text" xml:space="preserve">
+    <value>Tự động duyệt lượt tham gia</value>
+  </data>
+  <data name="Lt_AutoApproveJoinsDesc.Text" xml:space="preserve">
+    <value>Tự động chấp nhận yêu cầu tham gia của bạn bè</value>
+  </data>
+  <data name="Lt_AutoApproveSuggestions.Text" xml:space="preserve">
+    <value>Tự động duyệt gợi ý</value>
+  </data>
+  <data name="Lt_AutoApproveSuggestionsDesc.Text" xml:space="preserve">
+    <value>Cho phép thành viên thêm bài hát gợi ý vào hàng đợi</value>
+  </data>
+  <data name="Lt_PlaybackSync.Text" xml:space="preserve">
+    <value>ĐỒNG BỘ PHÁT NHẠC</value>
+  </data>
+  <data name="Lt_SyncVolume.Text" xml:space="preserve">
+    <value>Đồng bộ âm lượng với chủ phòng</value>
+  </data>
+  <data name="Lt_SyncVolumeDesc.Text" xml:space="preserve">
+    <value>Giữ âm lượng thiết bị đồng bộ với chủ phòng</value>
+  </data>
+  <data name="Lt_ServerConfig.Text" xml:space="preserve">
+    <value>CẤU HÌNH MÁY CHỦ</value>
+  </data>
+  <data name="Lt_ActiveServer.Text" xml:space="preserve">
+    <value>Máy chủ đang dùng</value>
+  </data>
+  <data name="Lt_CustomServerUrl.Text" xml:space="preserve">
+    <value>URL máy chủ tùy chỉnh</value>
+  </data>
+  <data name="Lt_Compatible.Text" xml:space="preserve">
+    <value>Tương thích với MetroList &amp; SimpMusic</value>
+  </data>
+  <data name="Lt_Protocol.Text" xml:space="preserve">
+    <value>Giao thức: metroproto v1 (Binary Proto3 qua WebSocket)</value>
+  </data>
+  <data name="Lt_Connect.Content" xml:space="preserve">
+    <value>Kết nối</value>
+  </data>
+  <data name="Lt_CancelRequest.Content" xml:space="preserve">
+    <value>Hủy yêu cầu</value>
+  </data>
+  <data name="Lt_CreateRoom.Content" xml:space="preserve">
+    <value>Tạo phòng</value>
+  </data>
+  <data name="Lt_JoinRoom.Content" xml:space="preserve">
+    <value>Tham gia phòng</value>
+  </data>
+  <data name="Lt_CopyCode.Content" xml:space="preserve">
+    <value>Sao chép mã</value>
+  </data>
+  <data name="Lt_Remove.Content" xml:space="preserve">
+    <value>Xóa</value>
+  </data>
+  <data name="Lt_LeaveRoom.Content" xml:space="preserve">
+    <value>Rời phòng</value>
+  </data>
+  <data name="Lt_ApplyUrl.Content" xml:space="preserve">
+    <value>Áp dụng URL</value>
+  </data>
+  <data name="Lt_ResetDefault.Content" xml:space="preserve">
+    <value>Khôi phục mặc định</value>
+  </data>
+  <!-- Home chips and greeting (built in code, so these carry the English text as fallback) -->
+  <data name="Greeting_Morning">
+    <value>Chào buổi sáng</value>
+  </data>
+  <data name="Greeting_Afternoon">
+    <value>Chào buổi chiều</value>
+  </data>
+  <data name="Greeting_Evening">
+    <value>Chào buổi tối</value>
+  </data>
+  <data name="Home_MadeForYou">
+    <value>Dành cho bạn</value>
+  </data>
+  <data name="Home_Chip_Energize">
+    <value>Nạp năng lượng</value>
+  </data>
+  <data name="Home_Chip_FeelGood">
+    <value>Cảm thấy vui vẻ</value>
+  </data>
+  <data name="Home_Chip_Relax">
+    <value>Thư giãn</value>
+  </data>
+  <data name="Home_Chip_Party">
+    <value>Tiệc tùng</value>
+  </data>
+  <data name="Home_Chip_Workout">
+    <value>Tập luyện</value>
+  </data>
+  <data name="Home_Chip_Commute">
+    <value>Đi lại</value>
+  </data>
+  <data name="Home_Chip_Romance">
+    <value>Lãng mạn</value>
+  </data>
+  <data name="Home_Chip_Sad">
+    <value>Buồn bã</value>
+  </data>
+  <data name="Home_Chip_Focus">
+    <value>Tập trung</value>
+  </data>
+  <data name="Home_Chip_Sleep">
+    <value>Đi ngủ</value>
+  </data>
+  <data name="Search_Chip_Artists">
+    <value>Nghệ sĩ</value>
+  </data>
+  <data name="Search_Chip_Songs">
+    <value>Bài hát</value>
+  </data>
+  <data name="Search_Chip_Albums">
+    <value>Album</value>
+  </data>
+  <data name="Search_Chip_Videos">
+    <value>Video</value>
+  </data>
+  <data name="Search_Chip_CommunityPlaylists">
+    <value>Danh sách phát cộng đồng</value>
+  </data>
+  <data name="Search_Chip_Episodes">
+    <value>Tập</value>
+  </data>
+  <data name="Search_Chip_Profiles">
+    <value>Hồ sơ</value>
+  </data>
+  <data name="Search_Chip_Podcasts">
+    <value>Podcast</value>
+  </data>
+  <!-- Samples player -->
+  <data name="SamplePlay_Save">
+    <value>Lưu</value>
+  </data>
+  <data name="SamplePlay_Share">
+    <value>Chia sẻ</value>
+  </data>
+  <data name="SamplePlay_Play">
+    <value>Phát</value>
+  </data>
+  <data name="SamplePlay_Liked">
+    <value>Đã thích</value>
+  </data>
+  <data name="SamplePlay_Like">
+    <value>Thích</value>
+  </data>
+  <data name="Samples_Unplayable">
+    <value>Không phát được video này.
+Vuốt lên để xem đoạn tiếp theo.</value>
+  </data>
+  <data name="Samples_Empty">
+    <value>Chưa có đoạn nhạc nào.
+Hãy kiểm tra kết nối rồi thử lại.</value>
+  </data>
+  <!-- Toast messages (Library, downloads, playlists) -->
+  <data name="Toast_UnpinnedFromStart"><value>Đã bỏ ghim khỏi màn hình Bắt đầu</value></data>
+  <data name="Toast_PinnedToStart"><value>Đã ghim vào màn hình Bắt đầu!</value></data>
+  <data name="Toast_PlaylistCreated"><value>Đã tạo danh sách phát!</value></data>
+  <data name="Toast_FailedCreatePlaylist"><value>Không tạo được danh sách phát: {0}</value></data>
+  <data name="Toast_UseYoutubeForPlaylists"><value>Dùng YouTube để quản lý danh sách phát</value></data>
+  <data name="Toast_DeletingPlaylist"><value>Đang xóa danh sách phát...</value></data>
+  <data name="Toast_PlaylistDeleted"><value>Đã xóa danh sách phát!</value></data>
+  <data name="Toast_FailedDeletePlaylist"><value>Không xóa được danh sách phát</value></data>
+  <data name="Toast_ErrorDeletingPlaylist"><value>Lỗi khi xóa danh sách phát: {0}</value></data>
+  <data name="Toast_RemovedFromPlaylist"><value>Đã xóa khỏi danh sách phát</value></data>
+  <data name="Toast_FailedToRemove"><value>Không xóa được</value></data>
+  <data name="Toast_ErrorRemovingTrack"><value>Lỗi khi xóa bài hát: {0}</value></data>
+  <data name="Toast_PlaylistEmpty"><value>Danh sách phát trống!</value></data>
+  <data name="Toast_AddingToPlaylist"><value>Đang thêm vào {0}...</value></data>
+  <data name="Toast_AddedToPlaylist"><value>Đã thêm vào {0}</value></data>
+  <data name="Toast_FailedAddToPlaylist"><value>Không thêm được vào danh sách phát</value></data>
+  <data name="Toast_ErrorAddingToPlaylist"><value>Lỗi khi thêm vào danh sách phát: {0}</value></data>
+  <data name="Toast_SleepPaused"><value>Hẹn giờ ngủ: đã tạm dừng nhạc.</value></data>
+  <data name="Toast_SleepOff"><value>Hẹn giờ ngủ: tắt</value></data>
+  <data name="Toast_SleepSet"><value>Hẹn giờ ngủ sau {0} phút</value></data>
+  <data name="Toast_HistoryCleared"><value>Đã xóa lịch sử gần đây!</value></data>
+  <data name="Toast_SignInToLike"><value>Đăng nhập để thích bài hát</value></data>
+  <data name="Toast_FileDeleted"><value>Đã xóa tệp khỏi thiết bị</value></data>
+  <data name="Toast_DeleteLocalOnly"><value>Chỉ xóa được tệp đã tải (LOCAL)!</value></data>
+  <data name="Toast_ExportedToMusic"><value>Đã xuất vào thư mục Nhạc: {0}</value></data>
+  <data name="Toast_FailedToExport"><value>Không xuất được: {0}</value></data>
+  <data name="Toast_ExportFailed"><value>Lỗi khi xuất: {0}</value></data>
+  <data name="Toast_RemovedFromDownloads"><value>Đã xóa khỏi mục tải xuống</value></data>
+  <data name="Toast_FailedRemoveDownload"><value>Không xóa được khỏi mục tải xuống</value></data>
+  <data name="Toast_InternetRequired"><value>Cần Internet để tải xuống</value></data>
+  <data name="Toast_CannotResolveUrl"><value>Không lấy được URL âm thanh cho bài này</value></data>
+  <data name="Toast_DownloadFailed"><value>Tải xuống thất bại hoặc đã hủy.</value></data>
+  <data name="Toast_SmartDownloads"><value>Tải xuống thông minh: {0} bài mới đã tải</value></data>
+  <data name="Toast_AddSongsFirst"><value>Hãy thêm bài hát trước!</value></data>
+  <data name="Toast_EnhancingPlaylist"><value>Đang nâng cao danh sách phát...</value></data>
+  <data name="Toast_AddedSongs"><value>Đã thêm {0} bài hát!</value></data>
+  <data name="Toast_NoNewSongs"><value>Không có bài mới để thêm</value></data>
+  <data name="Toast_NoSimilarSongs"><value>Không tìm thấy bài hát tương tự</value></data>
+  <data name="Toast_EnhanceFailed"><value>Nâng cao thất bại</value></data>
+  <data name="Toast_Syncing"><value>Đang đồng bộ...</value></data>
+  <data name="Toast_Synced"><value>Đã đồng bộ!</value></data>
+  <data name="Toast_SignInToSync"><value>Đăng nhập trước để đồng bộ</value></data>
+  <data name="Toast_SyncFailed"><value>Đồng bộ thất bại</value></data>
+  <data name="Toast_ExportedM3U"><value>Đã xuất danh sách phát M3U!</value></data>
+  <data name="Toast_ExportedPlaylists"><value>Đã xuất {0} danh sách phát!</value></data>
+  <data name="Toast_ExportM3UFailed"><value>Xuất M3U thất bại: {0}</value></data>
+  <data name="Toast_NoTracksToExport"><value>Không có bài nào để xuất!</value></data>
+  <data name="Toast_ImportM3UFailed"><value>Nhập M3U thất bại: {0}</value></data>
+  <data name="Toast_NoValidTracks"><value>Không có bài hợp lệ trong tệp M3U</value></data>
+  <data name="Toast_FailedImportM3U"><value>Không nhập được M3U: {0}</value></data>
+  <data name="Toast_ImportFailed"><value>Nhập thất bại: {0}</value></data>
+  <data name="Toast_InvalidFile"><value>Tệp không hợp lệ</value></data>
+  <data name="Toast_ImportedPlaylists"><value>Đã nhập {0} danh sách phát!</value></data>
+  <!-- Toast messages (account, player, artists, rooms) -->
+  <data name="Toast_LocationChanged"><value>Đã đổi vị trí!</value></data>
+  <data name="Toast_LanguageChanged"><value>Đã đổi ngôn ngữ!</value></data>
+  <data name="Toast_StorageRefreshed"><value>Đã làm mới bộ nhớ</value></data>
+  <data name="Toast_CacheCleaned"><value>Đã xóa {0} mục bộ đệm</value></data>
+  <data name="Toast_CacheCleanError"><value>Lỗi khi xóa bộ đệm</value></data>
+  <data name="Toast_ImagesCleared"><value>Đã xóa {0} ảnh trong bộ đệm</value></data>
+  <data name="Toast_ImageCacheClearError"><value>Lỗi khi xóa bộ đệm hình ảnh</value></data>
+  <data name="Toast_TempStreamsCleared"><value>Đã xóa {0} tệp phát tạm</value></data>
+  <data name="Toast_TempStreamsClearError"><value>Lỗi khi xóa luồng tạm</value></data>
+  <data name="Toast_LoggedOut"><value>Đã đăng xuất</value></data>
+  <data name="Toast_EnterClientId"><value>Hãy nhập Client ID trước!</value></data>
+  <data name="Toast_OpeningBrowser"><value>Đang mở trình duyệt! Sau khi xác nhận trên PC, hãy quay lại đây.</value></data>
+  <data name="Toast_LoginSyncing"><value>Đăng nhập thành công! Đang đồng bộ...</value></data>
+  <data name="Toast_LoginSuccess"><value>Đăng nhập thành công!</value></data>
+  <data name="Toast_AuthError"><value>Lỗi xác thực! Hãy thử lại.</value></data>
+  <data name="Toast_NetworkError"><value>Lỗi mạng. Hãy thử lại.</value></data>
+  <data name="Toast_LoginToLike"><value>Đăng nhập để thích bài hát</value></data>
+  <data name="Toast_LoginWatchLater"><value>Đăng nhập để dùng Xem sau</value></data>
+  <data name="Toast_LyricSizeUp"><value>Chữ lớn hơn ({0}px)</value></data>
+  <data name="Toast_LyricSizeDown"><value>Chữ nhỏ hơn ({0}px)</value></data>
+  <data name="Toast_QueueCleared"><value>Đã xóa hàng đợi</value></data>
+  <data name="Toast_NoArtistInfo"><value>Không có thông tin nghệ sĩ</value></data>
+  <data name="Toast_FailedDeleteFile"><value>Không xóa được tệp</value></data>
+  <data name="Toast_AddedToQueue"><value>Đã thêm vào hàng đợi: {0}</value></data>
+  <data name="Toast_LoadingRadioFor"><value>Đang tải radio cho {0}...</value></data>
+  <data name="Toast_RadioSongs"><value>Radio: {0} bài hát</value></data>
+  <data name="Toast_NoRadioResults"><value>Không có kết quả radio</value></data>
+  <data name="Toast_RadioFailed"><value>Tải radio thất bại</value></data>
+  <data name="Toast_CantRemoveCurrent"><value>Không thể xóa bài đang phát</value></data>
+  <data name="Toast_RemovedFromQueue"><value>Đã xóa khỏi hàng đợi</value></data>
+  <data name="Toast_AddedToFavorites"><value>Đã thêm {0} bài vào Yêu thích</value></data>
+  <data name="Toast_AllAlreadyFavorites"><value>Tất cả bài hát đã có trong Yêu thích</value></data>
+  <data name="Toast_SwitchedTo"><value>Đã chuyển sang {0}</value></data>
+  <data name="Toast_FailedLoadPlaylist"><value>Không tải được danh sách phát</value></data>
+  <data name="Toast_CannotFollow"><value>Không thể theo dõi nghệ sĩ này</value></data>
+  <data name="Toast_SignInToFollow"><value>Đăng nhập để theo dõi nghệ sĩ</value></data>
+  <data name="Toast_SubscribedTo"><value>Đã đăng ký {0}</value></data>
+  <data name="Toast_FailedSubscribe"><value>Đăng ký thất bại</value></data>
+  <data name="Toast_UnsubscribedFrom"><value>Đã hủy đăng ký {0}</value></data>
+  <data name="Toast_FailedUnsubscribe"><value>Hủy đăng ký thất bại</value></data>
+  <data name="Toast_LastFmDisconnected"><value>Đã ngắt kết nối Last.fm</value></data>
+  <data name="Toast_LastFmSignInFailed"><value>Không mở được đăng nhập Last.fm: {0}</value></data>
+  <data name="Toast_LastFmCancelled"><value>Đã hủy đăng nhập Last.fm</value></data>
+  <data name="Toast_EnterDisplayName"><value>Hãy nhập tên hiển thị</value></data>
+  <data name="Toast_RoomCode8Chars"><value>Mã phòng phải có 8 ký tự</value></data>
+  <data name="Toast_ShareRoomCode"><value>Chia sẻ hoặc sao chép mã phòng: {0}</value></data>
+  <data name="Toast_NameEmpty"><value>Tên không được để trống</value></data>
+  <data name="Toast_DisplayNameSaved"><value>Đã lưu tên hiển thị: {0}</value></data>
+  <data name="Toast_InvalidServerUrl"><value>Nhập URL ws:// hoặc wss:// hợp lệ</value></data>
+  <data name="Toast_ServerUpdated"><value>Đã cập nhật máy chủ!</value></data>
+  <data name="Toast_ServerReset"><value>Đã khôi phục máy chủ mặc định!</value></data>
+  <data name="Toast_NoLyrics"><value>Không có lời bài hát</value></data>
+  <data name="Toast_NoInternetConnection"><value>Không có kết nối Internet</value></data>
+  <data name="Toast_NoInternet"><value>Không có Internet</value></data>
+  <data name="Toast_NoResults"><value>Không có kết quả.</value></data>
+  <data name="Toast_RemovedFromFavorites"><value>Đã xóa khỏi Yêu thích</value></data>
+  <data name="Toast_AddedToFavoritesOne"><value>Đã thêm vào Yêu thích</value></data>
+  <data name="Toast_OfflineMode"><value>Chế độ ngoại tuyến. Phát bài đã tải trong Thư viện.</value></data>
+  <data name="Home_BasedOnYourLibrary"><value>DỰA TRÊN THƯ VIỆN CỦA BẠN</value></data>
+  <!-- Code-behind strings (Loc) -->
+  <data name="Toast_AppLanguageRestart" xml:space="preserve">
+    <value>Đã lưu ngôn ngữ ứng dụng — khởi động lại ứng dụng để áp dụng</value>
+  </data>
+  <data name="Login_Step1.Text" xml:space="preserve">
+    <value>1. Truy cập google.com/device</value>
+  </data>
+  <data name="Login_Step2.Text" xml:space="preserve">
+    <value>2. Nhập mã này:</value>
+  </data>
+</root>

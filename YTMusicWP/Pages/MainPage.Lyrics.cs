@@ -873,7 +873,7 @@ namespace YTMusicWP
         {
             if (currentLyrics == null || currentLyrics.Count == 0)
             {
-                ShowToast("No lyrics available");
+                ShowToast(Services.Loc.T("Toast_NoLyrics", "No lyrics available"));
                 return;
             }
 

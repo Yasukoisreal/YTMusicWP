@@ -192,7 +192,7 @@ namespace YTMusicWP
             }
 
             // Offline: keep the current song playing instead of pausing it for a song that cannot load
-            if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast("No Internet connection"); return; }
+            if (!track.VideoId.StartsWith("LOCAL:") && !IsInternetAvailable()) { ShowToast(Services.Loc.T("Toast_NoInternetConnection", "No Internet connection")); return; }
 
             try { _appMediaPlayer.Pause(); } catch { }
             SetPositionTimerRunning(true); // in case a state change was missed (audio task reconnect)
@@ -588,7 +588,7 @@ namespace YTMusicWP
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
-                ShowToast("Sign in to like songs");
+                ShowToast(Services.Loc.T("Toast_SignInToLike", "Sign in to like songs"));
                 return;
             }
 

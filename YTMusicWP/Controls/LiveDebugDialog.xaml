@@ -34,10 +34,10 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Live Stream Logs" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#00E5FF" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Click="Save_Click" Content="Save" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceDividerBrush}" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <Button Grid.Column="2" Click="Share_Click" Content="Share" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceDividerBrush}" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <Button Grid.Column="3" Click="SelectAll_Click" Content="Select All" Style="{StaticResource ChipButtonStyle}" Background="#00E5FF" Foreground="Black" FontWeight="Bold" FontSize="12" Padding="10,6" VerticalAlignment="Center"/>
+                        <TextBlock x:Uid="Debug_Title" Text="Live Stream Logs" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#00E5FF" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Click="Save_Click" x:Uid="Common_Save" Content="Save" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceDividerBrush}" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <Button Grid.Column="2" Click="Share_Click" x:Uid="Common_Share" Content="Share" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceDividerBrush}" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <Button Grid.Column="3" Click="SelectAll_Click" x:Uid="Debug_SelectAll" Content="Select All" Style="{StaticResource ChipButtonStyle}" Background="#00E5FF" Foreground="Black" FontWeight="Bold" FontSize="12" Padding="10,6" VerticalAlignment="Center"/>
                     </Grid>
                     <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
                 </StackPanel>
@@ -53,13 +53,13 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Button Grid.Column="0" Click="Clear_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="0,0,4,0" Background="{StaticResource SurfaceHighBrush}">
-                        <TextBlock Text="Clear" FontSize="14" Foreground="#FF6666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock x:Uid="Debug_Clear" Text="Clear" FontSize="14" Foreground="#FF6666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
                     <Button Grid.Column="1" Click="Refresh_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,4,0" Background="{StaticResource SurfaceHighBrush}">
-                        <TextBlock Text="Refresh" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock x:Uid="Debug_Refresh" Text="Refresh" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
                     <Button Grid.Column="2" Click="Close_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,0,0" Background="{StaticResource SurfaceHighBrush}">
-                        <TextBlock Text="Close" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock x:Uid="Common_Close" Text="Close" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
                 </Grid>
             </Grid>

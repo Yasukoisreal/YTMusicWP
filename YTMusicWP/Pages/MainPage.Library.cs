@@ -634,12 +634,12 @@ namespace YTMusicWP
                 if (YTMusicWP.Services.TileService.IsSecondaryTilePinned(tileId))
                 {
                     bool unpinned = await YTMusicWP.Services.TileService.UnpinSecondaryTileAsync(tileId);
-                    if (unpinned) ShowToast("Unpinned from Start");
+                    if (unpinned) ShowToast(Services.Loc.T("Toast_UnpinnedFromStart", "Unpinned from Start"));
                 }
                 else
                 {
                     bool pinned = await YTMusicWP.Services.TileService.PinSecondaryTileAsync(tileId, title, args, tracks);
-                    if (pinned) ShowToast("Pinned to Start Screen!");
+                    if (pinned) ShowToast(Services.Loc.T("Toast_PinnedToStart", "Pinned to Start Screen!"));
                 }
             }
             catch { }
@@ -669,11 +669,11 @@ namespace YTMusicWP
                 });
                 SaveYouTubePlaylistsCacheAsync();
                 RefreshLibraryList();
-                ShowToast("Playlist created!");
+                ShowToast(Services.Loc.T("Toast_PlaylistCreated", "Playlist created!"));
             }
             catch (Exception ex)
             {
-                ShowToast("Failed to create playlist: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_FailedCreatePlaylist", "Failed to create playlist: {0}", ex.Message));
             }
         }
 
@@ -693,7 +693,7 @@ namespace YTMusicWP
         private void MenuDeletePlaylist_Click(object sender, RoutedEventArgs e)
         {
             // This handler is kept for compatibility but now unused for YT playlists
-            ShowToast("Use YouTube to manage playlists");
+            ShowToast(Services.Loc.T("Toast_UseYoutubeForPlaylists", "Use YouTube to manage playlists"));
         }
 
         private async void MenuDeletePlaylistInside_Click(object sender, RoutedEventArgs e)
@@ -702,24 +702,24 @@ namespace YTMusicWP
             {
                 try
                 {
-                    ShowToast("Deleting playlist...");
+                    ShowToast(Services.Loc.T("Toast_DeletingPlaylist", "Deleting playlist..."));
                     bool success = await DeleteYouTubePlaylistAsync(_currentViewingYtPlaylistId);
                     if (success)
                     {
                         var pl = _youtubeUserPlaylists.FirstOrDefault(p => p.PlaylistId == _currentViewingYtPlaylistId);
                         if (pl != null) _youtubeUserPlaylists.Remove(pl);
                         RefreshLibraryList();
-                        ShowToast("Playlist deleted!");
+                        ShowToast(Services.Loc.T("Toast_PlaylistDeleted", "Playlist deleted!"));
                         PlaylistSlideOutStoryboard.Begin();
                     }
                     else
                     {
-                        ShowToast("Failed to delete playlist");
+                        ShowToast(Services.Loc.T("Toast_FailedDeletePlaylist", "Failed to delete playlist"));
                     }
                 }
                 catch (Exception ex)
                 {
-                    ShowToast("Error deleting playlist: " + ex.Message);
+                    ShowToast(Services.Loc.F("Toast_ErrorDeletingPlaylist", "Error deleting playlist: {0}", ex.Message));
                 }
             }
         }
@@ -745,16 +745,16 @@ namespace YTMusicWP
                         }
                         var ytTracks = PlaylistSongsList.ItemsSource as ObservableCollection<YouTubeTrack>;
                         if (ytTracks != null) ytTracks.Remove(track);
-                        ShowToast("Removed from playlist");
+                        ShowToast(Services.Loc.T("Toast_RemovedFromPlaylist", "Removed from playlist"));
                     }
                     else
                     {
-                        ShowToast("Failed to remove");
+                        ShowToast(Services.Loc.T("Toast_FailedToRemove", "Failed to remove"));
                     }
                 }
                 catch (Exception ex)
                 {
-                    ShowToast("Error removing track: " + ex.Message);
+                    ShowToast(Services.Loc.F("Toast_ErrorRemovingTrack", "Error removing track: {0}", ex.Message));
                 }
             }
         }
@@ -819,7 +819,7 @@ namespace YTMusicWP
                 return;
             }
 
-            ShowToast("Playlist is empty!");
+            ShowToast(Services.Loc.T("Toast_PlaylistEmpty", "Playlist is empty!"));
         }
 
         private void MenuAddToPlaylist_Click(object sender, RoutedEventArgs e)
@@ -853,7 +853,7 @@ namespace YTMusicWP
             {
                 try
                 {
-                    ShowToast("Adding to " + ytPlaylist.Title + "...");
+                    ShowToast(Services.Loc.F("Toast_AddingToPlaylist", "Adding to {0}...", ytPlaylist.Title));
 
                     bool success = (await AddToYouTubePlaylistAsync(ytPlaylist.PlaylistId, track.VideoId)) != null;
                     if (success)
@@ -868,16 +868,16 @@ namespace YTMusicWP
                         }
                         ytPlaylist.TrackCount++;
                         SaveYouTubePlaylistsCacheAsync();
-                        ShowToast("Added to " + ytPlaylist.Title);
+                        ShowToast(Services.Loc.F("Toast_AddedToPlaylist", "Added to {0}", ytPlaylist.Title));
                     }
                     else
                     {
-                        ShowToast("Failed to add to playlist");
+                        ShowToast(Services.Loc.T("Toast_FailedAddToPlaylist", "Failed to add to playlist"));
                     }
                 }
                 catch (Exception ex)
                 {
-                    ShowToast("Error adding to playlist: " + ex.Message);
+                    ShowToast(Services.Loc.F("Toast_ErrorAddingToPlaylist", "Error adding to playlist: {0}", ex.Message));
                 }
             }
         }
@@ -935,7 +935,7 @@ namespace YTMusicWP
                 _sleepTimerMode = 0;
                 NowPlayingMenuDialog.MenuSleepTimerStatus.Text = "Off";
                 try { _appMediaPlayer.Pause(); } catch { }
-                ShowToast("Sleep Timer: Music paused.");
+                ShowToast(Services.Loc.T("Toast_SleepPaused", "Sleep Timer: Music paused."));
             }
             else
             {
@@ -955,7 +955,7 @@ namespace YTMusicWP
             {
                 _sleepMinutesLeft = 0;
                 NowPlayingMenuDialog.MenuSleepTimerStatus.Text = "Off";
-                ShowToast("Sleep Timer: Off");
+                ShowToast(Services.Loc.T("Toast_SleepOff", "Sleep Timer: Off"));
                 try { BackgroundMediaPlayer.SendMessageToBackground(new Windows.Foundation.Collections.ValueSet { { "SetSleepTimer", 0 } }); } catch { }
             }
             else
@@ -966,7 +966,7 @@ namespace YTMusicWP
 
                 NowPlayingMenuDialog.MenuSleepTimerStatus.Text = _sleepMinutesLeft + " min left";
                 _sleepTimer.Start();
-                ShowToast("Sleep Timer set for " + _sleepMinutesLeft + " minutes");
+                ShowToast(Services.Loc.F("Toast_SleepSet", "Sleep Timer set for {0} minutes", _sleepMinutesLeft));
                 try { BackgroundMediaPlayer.SendMessageToBackground(new Windows.Foundation.Collections.ValueSet { { "SetSleepTimer", _sleepMinutesLeft } }); } catch { }
             }
         }
@@ -980,7 +980,7 @@ namespace YTMusicWP
             await SaveHistoryAsyncTask();
             await YTMusicWP.Services.DatabaseHelper.ClearHistoryAsync();
             await UpdateStorageDisplayAsync();
-            ShowToast("Recent history cleared!");
+            ShowToast(Services.Loc.T("Toast_HistoryCleared", "Recent history cleared!"));
         }
 
         private async Task SaveHistoryAsyncTask()
@@ -1060,7 +1060,7 @@ namespace YTMusicWP
             string token = await GetAccessTokenAsync();
             if (string.IsNullOrEmpty(token) && !InnerTubeClient.HasCookieAuth)
             {
-                ShowToast("Sign in to like songs");
+                ShowToast(Services.Loc.T("Toast_SignInToLike", "Sign in to like songs"));
                 return;
             }
 
@@ -1140,13 +1140,13 @@ namespace YTMusicWP
                     }
                     SavePlaylistsAsync();
 
-                    ShowToast("File deleted from device");
+                    ShowToast(Services.Loc.T("Toast_FileDeleted", "File deleted from device"));
                 }
                 catch { }
             }
             else if (track != null)
             {
-                ShowToast("Can only delete downloaded (LOCAL) files!");
+                ShowToast(Services.Loc.T("Toast_DeleteLocalOnly", "Can only delete downloaded (LOCAL) files!"));
             }
         }
 
@@ -1161,11 +1161,11 @@ namespace YTMusicWP
                 var localFile = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
                 var musicFolder = KnownFolders.MusicLibrary;
                 await localFile.CopyAsync(musicFolder, fileName, NameCollisionOption.ReplaceExisting);
-                ShowToast("Exported to Music folder: " + track.Title);
+                ShowToast(Services.Loc.F("Toast_ExportedToMusic", "Exported to Music folder: {0}", track.Title));
             }
             catch (Exception ex)
             {
-                ShowToast("Failed to export: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_FailedToExport", "Failed to export: {0}", ex.Message));
             }
         }
 
@@ -1192,7 +1192,7 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                ShowToast("Export failed: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_ExportFailed", "Export failed: {0}", ex.Message));
             }
         }
 
@@ -1283,11 +1283,11 @@ namespace YTMusicWP
                     PlaylistDetailsTrackCount.Text = downloadedTracks.Count + " tracks";
                 }
 
-                ShowToast("Removed from downloads");
+                ShowToast(Services.Loc.T("Toast_RemovedFromDownloads", "Removed from downloads"));
             }
             catch
             {
-                ShowToast("Failed to remove download");
+                ShowToast(Services.Loc.T("Toast_FailedRemoveDownload", "Failed to remove download"));
             }
         }
 
@@ -1296,7 +1296,7 @@ namespace YTMusicWP
             if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
             if (!IsInternetAvailable())
             {
-                if (!isSilent) ShowToast("Internet required to download");
+                if (!isSilent) ShowToast(Services.Loc.T("Toast_InternetRequired", "Internet required to download"));
                 return;
             }
 
@@ -1318,7 +1318,7 @@ namespace YTMusicWP
                     if (!isSilent)
                     {
                         DownloadStatusBar.Visibility = Visibility.Collapsed;
-                        ShowToast("Cannot resolve audio URL for this track");
+                        ShowToast(Services.Loc.T("Toast_CannotResolveUrl", "Cannot resolve audio URL for this track"));
                     }
                     return;
                 }
@@ -1404,7 +1404,7 @@ namespace YTMusicWP
                 if (!isSilent)
                 {
                     DownloadStatusBar.Visibility = Visibility.Collapsed;
-                    ShowToast("Download failed or cancelled.");
+                    ShowToast(Services.Loc.T("Toast_DownloadFailed", "Download failed or cancelled."));
                 }
             }
         }
@@ -1475,7 +1475,7 @@ namespace YTMusicWP
 
                 if (downloadedCount > 0)
                 {
-                    ShowToast("Smart Downloads: " + downloadedCount + " new song(s) downloaded");
+                    ShowToast(Services.Loc.F("Toast_SmartDownloads", "Smart Downloads: {0} new song(s) downloaded", downloadedCount));
                 }
             }
             catch { }
@@ -1513,11 +1513,11 @@ namespace YTMusicWP
         {
             if (_currentViewingPlaylist == null || _currentViewingPlaylist.Tracks.Count == 0)
             {
-                ShowToast("Add some songs first!");
+                ShowToast(Services.Loc.T("Toast_AddSongsFirst", "Add some songs first!"));
                 return;
             }
 
-            ShowToast("Enhancing playlist...");
+            ShowToast(Services.Loc.T("Toast_EnhancingPlaylist", "Enhancing playlist..."));
 
             try
             {
@@ -1555,21 +1555,21 @@ namespace YTMusicWP
                     if (added > 0)
                     {
                         PlaylistDetailsTrackCount.Text = _currentViewingPlaylist.Tracks.Count + " tracks";
-                        ShowToast("Added " + added + " songs!");
+                        ShowToast(Services.Loc.F("Toast_AddedSongs", "Added {0} songs!", added));
                     }
                     else
                     {
-                        ShowToast("No new songs found to add");
+                        ShowToast(Services.Loc.T("Toast_NoNewSongs", "No new songs found to add"));
                     }
                 }
                 else
                 {
-                    ShowToast("No similar songs found");
+                    ShowToast(Services.Loc.T("Toast_NoSimilarSongs", "No similar songs found"));
                 }
             }
             catch
             {
-                ShowToast("Enhance failed");
+                ShowToast(Services.Loc.T("Toast_EnhanceFailed", "Enhance failed"));
             }
         }
 
@@ -1581,19 +1581,19 @@ namespace YTMusicWP
                 string accessToken = await GetAccessTokenAsync();
                 if (!string.IsNullOrEmpty(accessToken) || YTMusicWP.InnerTubeClient.HasCookieAuth)
                 {
-                    ShowToast("Syncing...");
+                    ShowToast(Services.Loc.T("Toast_Syncing", "Syncing..."));
                     await SyncAllAsync(accessToken);
                     RefreshLibraryList();
-                    ShowToast("Synced!");
+                    ShowToast(Services.Loc.T("Toast_Synced", "Synced!"));
                 }
                 else
                 {
-                    ShowToast("Sign in first to sync");
+                    ShowToast(Services.Loc.T("Toast_SignInToSync", "Sign in first to sync"));
                 }
             }
             catch
             {
-                ShowToast("Sync failed");
+                ShowToast(Services.Loc.T("Toast_SyncFailed", "Sync failed"));
             }
             finally
             {
@@ -1753,7 +1753,7 @@ namespace YTMusicWP
                 picker.SuggestedFileName = "beatora_playlists";
                 picker.PickSaveFileAndContinue();
             }
-            catch (Exception ex) { ShowToast("Export failed: " + ex.Message); }
+            catch (Exception ex) { ShowToast(Services.Loc.F("Toast_ExportFailed", "Export failed: {0}", ex.Message)); }
         }
 
         public async void HandleFileSaveContinuation(StorageFile file)
@@ -1763,17 +1763,17 @@ namespace YTMusicWP
                 if (!string.IsNullOrEmpty(_pendingExportM3u))
                 {
                     await FileIO.WriteTextAsync(file, _pendingExportM3u);
-                    ShowToast("Exported M3U playlist successfully!");
+                    ShowToast(Services.Loc.T("Toast_ExportedM3U", "Exported M3U playlist successfully!"));
                     _pendingExportM3u = null;
                 }
                 else if (!string.IsNullOrEmpty(_pendingExportJson))
                 {
                     await FileIO.WriteTextAsync(file, _pendingExportJson);
-                    ShowToast("Exported " + _youtubeUserPlaylists.Count + " playlists!");
+                    ShowToast(Services.Loc.F("Toast_ExportedPlaylists", "Exported {0} playlists!", _youtubeUserPlaylists.Count));
                     _pendingExportJson = null;
                 }
             }
-            catch (Exception ex) { ShowToast("Export failed: " + ex.Message); }
+            catch (Exception ex) { ShowToast(Services.Loc.F("Toast_ExportFailed", "Export failed: {0}", ex.Message)); }
         }
 
         private void ExportPlaylistM3u_Click(object sender, RoutedEventArgs e)
@@ -1789,7 +1789,7 @@ namespace YTMusicWP
 
                 if (tracks == null || tracks.Count == 0)
                 {
-                    ShowToast("Playlist is empty!");
+                    ShowToast(Services.Loc.T("Toast_PlaylistEmpty", "Playlist is empty!"));
                     return;
                 }
 
@@ -1818,7 +1818,7 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                ShowToast("Export M3U failed: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_ExportM3UFailed", "Export M3U failed: {0}", ex.Message));
             }
         }
 
@@ -1862,7 +1862,7 @@ namespace YTMusicWP
 
                 if (count == 0)
                 {
-                    ShowToast("No tracks to export!");
+                    ShowToast(Services.Loc.T("Toast_NoTracksToExport", "No tracks to export!"));
                     return;
                 }
 
@@ -1876,7 +1876,7 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                ShowToast("Export M3U failed: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_ExportM3UFailed", "Export M3U failed: {0}", ex.Message));
             }
         }
 
@@ -1892,7 +1892,7 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                ShowToast("Import M3U failed: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_ImportM3UFailed", "Import M3U failed: {0}", ex.Message));
             }
         }
 
@@ -1956,7 +1956,7 @@ namespace YTMusicWP
 
                 if (tracks.Count == 0)
                 {
-                    ShowToast("No valid tracks found in M3U file");
+                    ShowToast(Services.Loc.T("Toast_NoValidTracks", "No valid tracks found in M3U file"));
                     return;
                 }
 
@@ -1978,7 +1978,7 @@ namespace YTMusicWP
             }
             catch (Exception ex)
             {
-                ShowToast("Failed to import M3U: " + ex.Message);
+                ShowToast(Services.Loc.F("Toast_FailedImportM3U", "Failed to import M3U: {0}", ex.Message));
             }
         }
 
@@ -2044,7 +2044,7 @@ namespace YTMusicWP
                 picker.FileTypeFilter.Add(".json");
                 picker.PickSingleFileAndContinue();
             }
-            catch (Exception ex) { ShowToast("Import failed: " + ex.Message); }
+            catch (Exception ex) { ShowToast(Services.Loc.F("Toast_ImportFailed", "Import failed: {0}", ex.Message)); }
         }
 
         public async void HandleFileOpenContinuation(StorageFile file)
@@ -2061,7 +2061,7 @@ namespace YTMusicWP
                 string json = await FileIO.ReadTextAsync(file);
                 var data = JObject.Parse(json);
                 var playlists = data["playlists"] as JArray;
-                if (playlists == null) { ShowToast("Invalid file"); return; }
+                if (playlists == null) { ShowToast(Services.Loc.T("Toast_InvalidFile", "Invalid file")); return; }
 
                 int imported = 0;
                 foreach (var item in playlists)
@@ -2100,9 +2100,9 @@ namespace YTMusicWP
 
                 SaveYouTubePlaylistsCacheAsync();
                 RefreshLibraryList();
-                ShowToast("Imported " + imported + " playlists!");
+                ShowToast(Services.Loc.F("Toast_ImportedPlaylists", "Imported {0} playlists!", imported));
             }
-            catch (Exception ex) { ShowToast("Import failed: " + ex.Message); }
+            catch (Exception ex) { ShowToast(Services.Loc.F("Toast_ImportFailed", "Import failed: {0}", ex.Message)); }
         }
 
     }

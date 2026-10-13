@@ -46,7 +46,7 @@
                     </Ellipse.Fill>
                 </Ellipse>
             </Grid>
-            <TextBlock Grid.Column="1" Text="Library" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+            <TextBlock x:Uid="NavLibrary" Grid.Column="1" Text="Library" FontSize="24" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
             <Button x:Name="LibrarySyncBtn" x:FieldModifier="internal" Grid.Column="2" Click="LibrarySync_Click" Style="{StaticResource IconButtonStyle}" Width="40" Height="40">
                 <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="18" Foreground="White"/>
             </Button>
@@ -60,10 +60,10 @@
                 <TextBlock Text="⋮" FontSize="22" Foreground="White" FontWeight="Bold"/>
                 <Button.Flyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="Export Playlists (JSON)" Click="ExportPlaylists_Click"/>
-                        <MenuFlyoutItem Text="Import Playlists (JSON)" Click="ImportPlaylists_Click"/>
-                        <MenuFlyoutItem Text="Export as M3U" Click="ExportAllPlaylistsM3u_Click"/>
-                        <MenuFlyoutItem Text="Import M3U Playlist" Click="ImportM3uPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Lib_ExportPlaylists" Text="Export Playlists (JSON)" Click="ExportPlaylists_Click"/>
+                        <MenuFlyoutItem x:Uid="Lib_ImportPlaylists" Text="Import Playlists (JSON)" Click="ImportPlaylists_Click"/>
+                        <MenuFlyoutItem x:Uid="Lib_ExportM3U" Text="Export as M3U" Click="ExportAllPlaylistsM3u_Click"/>
+                        <MenuFlyoutItem x:Uid="Lib_ImportM3U" Text="Import M3U Playlist" Click="ImportM3uPlaylist_Click"/>
                     </MenuFlyout>
                 </Button.Flyout>
             </Button>
@@ -72,11 +72,11 @@
         <!-- Filter Chips -->
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" Margin="15,0,0,8">
             <StackPanel Orientation="Horizontal">
-                <Button x:Name="LibChipAll" x:FieldModifier="internal" Content="All" Click="LibChip_Click" Tag="all" Style="{StaticResource ChipButtonStyle}" Background="White" Foreground="#0F0F0F" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
-                <Button x:Name="LibChipPlaylists" x:FieldModifier="internal" Content="Playlists" Click="LibChip_Click" Tag="playlists" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
-                <Button x:Name="LibChipSongs" x:FieldModifier="internal" Content="Songs" Click="LibChip_Click" Tag="songs" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
-                <Button x:Name="LibChipArtists" x:FieldModifier="internal" Content="Artists" Click="LibChip_Click" Tag="artists" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
-                <Button x:Name="LibChipDownloads" x:FieldModifier="internal" Content="Downloads" Click="LibChip_Click" Tag="downloads" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,15,0"/>
+                <Button x:Name="LibChipAll" x:Uid="Lib_ChipAll" x:FieldModifier="internal" Content="All" Click="LibChip_Click" Tag="all" Style="{StaticResource ChipButtonStyle}" Background="White" Foreground="#0F0F0F" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Name="LibChipPlaylists" x:Uid="Lib_ChipPlaylists" x:FieldModifier="internal" Content="Playlists" Click="LibChip_Click" Tag="playlists" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Name="LibChipSongs" x:Uid="Lib_ChipSongs" x:FieldModifier="internal" Content="Songs" Click="LibChip_Click" Tag="songs" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Name="LibChipArtists" x:Uid="Lib_ChipArtists" x:FieldModifier="internal" Content="Artists" Click="LibChip_Click" Tag="artists" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,8,0"/>
+                <Button x:Name="LibChipDownloads" x:Uid="Lib_ChipDownloads" x:FieldModifier="internal" Content="Downloads" Click="LibChip_Click" Tag="downloads" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceElevatedBrush}" Foreground="White" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="13" Padding="14,6" Margin="0,0,15,0"/>
             </StackPanel>
         </ScrollViewer>
 
@@ -106,7 +106,7 @@
                                     <Viewbox Width="20" Height="20" Margin="0,0,8,0">
                                         <Path Fill="#D10000" Data="M12,21.35L10.55,20.03C5.4,15.36 2,12.28 2,8.5C2,5.42 4.42,3 7.5,3C9.24,3 10.91,3.81 12,5.09C13.09,3.81 14.76,3 16.5,3C19.58,3 22,5.42 22,8.5C22,12.28 18.6,15.36 13.45,20.04L12,21.35Z"/>
                                     </Viewbox>
-                                    <TextBlock Text="Favorites" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Lib_Favorites" Text="Favorites" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </Button>
@@ -118,7 +118,7 @@
                                     <Viewbox Width="20" Height="20" Margin="0,0,8,0">
                                         <Path Fill="Black" Data="M5,9.2h3V19H5V9.2z M10.6,5h2.8v14h-2.8V5z M16.2,13H19v6h-2.8V13z"/>
                                     </Viewbox>
-                                    <TextBlock Text="Followed" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Lib_Followed" Text="Followed" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </Button>
@@ -130,7 +130,7 @@
                                     <Viewbox Width="20" Height="20" Margin="0,0,8,0">
                                         <Path Fill="Black" Data="M16,6l2.29,2.29-4.88,4.88-4-4L2,16.59 3.41,18l6-6 4,4 6.3-6.29L22,12V6z"/>
                                     </Viewbox>
-                                    <TextBlock Text="Most Played" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Lib_MostPlayed" Text="Most Played" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </Button>
@@ -142,7 +142,7 @@
                                     <Viewbox Width="20" Height="20" Margin="0,0,8,0">
                                         <Path Fill="Black" Data="M19,9h-4V3H9v6H5l7,7 7-7z M5,18v2h14v-2H5z"/>
                                     </Viewbox>
-                                    <TextBlock Text="Downloaded" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Lib_Downloaded" Text="Downloaded" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </Button>
@@ -154,7 +154,7 @@
                                     <Viewbox Width="20" Height="20" Margin="0,0,8,0">
                                         <Path Fill="Black" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12.5,7H11V13L16.2,16.2L17,14.9L12.5,12.2V7Z"/>
                                     </Viewbox>
-                                    <TextBlock Text="Listening stats" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Lib_ListeningStats" Text="Listening stats" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </Button>
@@ -162,7 +162,7 @@
 
                     <!-- Most Played Shelf -->
                     <StackPanel x:Name="LibMostPlayedSection" x:FieldModifier="internal" Visibility="Collapsed" Margin="0,0,0,16">
-                        <TextBlock Text="Most Played" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
+                        <TextBlock x:Uid="Lib_MostPlayed" Text="Most Played" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,10"/>
                         <ListView x:Name="LibMostPlayedCarousel" x:FieldModifier="internal" Height="175" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -175,9 +175,9 @@
                                         <FlyoutBase.AttachedFlyout>
                                             <MenuFlyout>
                                                 <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                                                <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                                                <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                                                <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                                                <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                                                <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                                                <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                                             </MenuFlyout>
                                         </FlyoutBase.AttachedFlyout>
                                         <StackPanel>
@@ -258,7 +258,7 @@
 
         <!-- Empty State -->
         <StackPanel x:Name="LibraryEmptyState" x:FieldModifier="internal" Grid.Row="2" Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock Text="No items yet" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+            <TextBlock x:Uid="Lib_NoItems" Text="No items yet" FontSize="18" FontFamily="{StaticResource MontserratSemiBold}" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
         </StackPanel>
 
         <!-- Hidden old ListViews (keep bindings working) -->

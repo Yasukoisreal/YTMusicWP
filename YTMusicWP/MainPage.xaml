@@ -39,15 +39,15 @@
             <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Add to Queue" Click="MenuAddToQueue_Click"/>
-                        <MenuFlyoutItem Text="Toggle Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Go to Radio" Click="MenuGoToRadio_Click"/>
-                        <MenuFlyoutItem Text="Share" Click="MenuShare_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
-                        <MenuFlyoutItem Text="Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
-                        <MenuFlyoutItem Text="Export to Music folder" Click="MenuExportToMusic_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToQueue" Text="Add to Queue" Click="MenuAddToQueue_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_ToggleFavorite" Text="Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_GoToRadio" Text="Go to Radio" Click="MenuGoToRadio_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Share" Text="Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_DeleteLocal" Text="Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_ExportToMusic" Text="Export to Music folder" Click="MenuExportToMusic_Click" Visibility="{Binding DeleteVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -76,15 +76,15 @@
             <Grid Margin="0,0,0,12" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Add to Queue" Click="MenuAddToQueue_Click"/>
-                        <MenuFlyoutItem Text="Toggle Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Go to Radio" Click="MenuGoToRadio_Click"/>
-                        <MenuFlyoutItem Text="Share" Click="MenuShare_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
-                        <MenuFlyoutItem Text="Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
-                        <MenuFlyoutItem Text="Export to Music folder" Click="MenuExportToMusic_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToQueue" Text="Add to Queue" Click="MenuAddToQueue_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_ToggleFavorite" Text="Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_GoToRadio" Text="Go to Radio" Click="MenuGoToRadio_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Share" Text="Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_DeleteLocal" Text="Delete (Local file)" Click="MenuDelete_Click" Visibility="{Binding DeleteVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_ExportToMusic" Text="Export to Music folder" Click="MenuExportToMusic_Click" Visibility="{Binding DeleteVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -120,7 +120,7 @@
                     <TextBlock Text="{Binding Title}" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="{Binding IsPlaying, Converter={StaticResource IsPlayingToColorConverter}}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,2"/>
                     <StackPanel Orientation="Horizontal">
                         <Border Background="#CC0000" CornerRadius="3" Padding="4,1" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding LiveBadgeVisibility}">
-                            <TextBlock Text="LIVE" Foreground="White" FontSize="10" FontWeight="Bold"/>
+                            <TextBlock x:Uid="Home_Live" Text="LIVE" Foreground="White" FontSize="10" FontWeight="Bold"/>
                         </Border>
                         <TextBlock Text="{Binding DisplaySubtitle}" FontSize="13" Foreground="#AAAAAA" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
@@ -134,13 +134,13 @@
             <Grid Margin="0,0,0,15" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Add to Queue" Click="MenuAddToQueue_Click"/>
-                        <MenuFlyoutItem Text="Toggle Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Go to Radio" Click="MenuGoToRadio_Click"/>
-                        <MenuFlyoutItem Text="Share" Click="MenuShare_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToQueue" Text="Add to Queue" Click="MenuAddToQueue_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_ToggleFavorite" Text="Toggle Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_RemoveFromPlaylist" Text="Remove from Playlist" Click="MenuRemoveFromPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_GoToRadio" Text="Go to Radio" Click="MenuGoToRadio_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Share" Text="Share" Click="MenuShare_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -169,10 +169,10 @@
             <Grid Width="{Binding CoverWidth}" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <StackPanel>
@@ -195,10 +195,10 @@
             <Grid Width="320" Margin="0,0,15,10" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -227,10 +227,10 @@
             <Grid Width="260" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <StackPanel>
@@ -253,7 +253,7 @@
             <Border Background="{StaticResource SurfaceElevated2Brush}" CornerRadius="8" Margin="0,0,10,10" Height="56" HorizontalAlignment="Stretch" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid>
@@ -397,10 +397,10 @@
             <Grid Width="310" Height="54" Margin="0,0,0,8" Background="Transparent" Tapped="HomeTrackRow_Tapped" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <Grid.ColumnDefinitions>
@@ -441,7 +441,7 @@
                     <Border Grid.Column="1" Background="{StaticResource SurfaceElevatedBrush}" CornerRadius="14" Padding="12,5" Margin="8,0,0,0" VerticalAlignment="Center" Tapped="PlayAllSection_Tapped" Tag="{Binding}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="▶" FontSize="10" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Play all" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Common_PlayAll" Text="Play all" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -462,10 +462,10 @@
             <Grid Width="{Binding SpeedDialCardSize}" Height="{Binding SpeedDialCardSize}" Margin="{Binding SpeedDialCardMargin}" Background="{StaticResource SurfaceElevated2Brush}" Tapped="HomeTrackRow_Tapped" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
 
@@ -649,10 +649,10 @@
                             <TextBlock Text="▶" Foreground="Black" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0"/>
                         </Border>
                         <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource SurfaceHighBrush}" BorderBrush="#3D3D3D" BorderThickness="1" Margin="0,0,12,0" Tapped="FeaturedCardRadio_Tapped" Tag="{Binding}">
-                            <TextBlock Text="Radio" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Sample_Radio" Text="Radio" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource SurfaceHighBrush}" BorderBrush="#3D3D3D" BorderThickness="1" Tapped="FeaturedCardSave_Tapped" Tag="{Binding}">
-                            <TextBlock Text="Save" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Sample_Save" Text="Save" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </StackPanel>
@@ -663,10 +663,10 @@
             <Border Width="300" Background="{StaticResource SurfaceElevated2Brush}" CornerRadius="12" Margin="0,0,14,0" Padding="12" Tapped="HomeTrackRow_Tapped" Holding="SongItem_Holding">
                 <FlyoutBase.AttachedFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                        <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                     </MenuFlyout>
                 </FlyoutBase.AttachedFlyout>
                 <StackPanel>
@@ -715,7 +715,7 @@
                     <Border Grid.Column="1" Background="{StaticResource SurfaceElevatedBrush}" CornerRadius="14" Padding="12,5" Margin="8,0,0,0" VerticalAlignment="Center" Tapped="PlayAllSection_Tapped" Tag="{Binding}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="▶" FontSize="10" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Play all" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Common_PlayAll" Text="Play all" FontSize="12" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -735,10 +735,10 @@
                             <Grid Width="260" Margin="0,0,15,0" Background="Transparent" Holding="SongItem_Holding">
                                 <FlyoutBase.AttachedFlyout>
                                     <MenuFlyout>
-                                        <MenuFlyoutItem Text="▶ Play" Click="MenuPlay_Click"/>
-                                        <MenuFlyoutItem Text="Favorite" Click="MenuFavorite_Click"/>
-                                        <MenuFlyoutItem Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
-                                        <MenuFlyoutItem Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
+                                        <MenuFlyoutItem x:Uid="Menu_Play" Text="▶ Play" Click="MenuPlay_Click"/>
+                                        <MenuFlyoutItem x:Uid="Menu_Favorite" Text="Favorite" Click="MenuFavorite_Click"/>
+                                        <MenuFlyoutItem x:Uid="Menu_AddToPlaylist" Text="Add to Playlist" Click="MenuAddToPlaylist_Click"/>
+                                        <MenuFlyoutItem x:Uid="Menu_Download" Text="Download" Click="MenuDownload_Click" Visibility="{Binding DownloadVisibility}"/>
                                     </MenuFlyout>
                                 </FlyoutBase.AttachedFlyout>
                                 <StackPanel>
@@ -786,8 +786,8 @@
                         <Ellipse Width="8" Height="8" Fill="#111111"/>
                     </Grid>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="THIS WEEK'S DISCOVERY" FontSize="10" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#FFAA88" CharacterSpacing="30"/>
-                        <TextBlock Text="Check out the hottest new songs this week on YouTube Music" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" MaxLines="2" Margin="0,3,0,0"/>
+                        <TextBlock x:Uid="Home_DiscoveryTitle" Text="THIS WEEK'S DISCOVERY" FontSize="10" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#FFAA88" CharacterSpacing="30"/>
+                        <TextBlock x:Uid="Home_DiscoverySubtitle" Text="Check out the hottest new songs this week on YouTube Music" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap" MaxLines="2" Margin="0,3,0,0"/>
                     </StackPanel>
                     <Border Grid.Column="2" Width="36" Height="36" CornerRadius="18" Background="#33FFFFFF" VerticalAlignment="Center" Margin="8,0,0,0">
                         <TextBlock Text="→" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -961,7 +961,7 @@
                                                 </Grid>
                                             </Grid>
 
-                                            <TextBlock x:Name="HomePullText" Text="Pull to refresh" FontSize="12" 
+                                            <TextBlock x:Name="HomePullText" x:Uid="Home_PullToRefresh" Text="Pull to refresh" FontSize="12" 
                                                        FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" 
                                                        Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                         </StackPanel>
@@ -980,14 +980,14 @@
 
                                     <!-- New albums and singles of followed artists (NewReleasesTracker) -->
                                     <StackPanel x:Name="HomeNewReleasesSection" Visibility="Collapsed">
-                                        <TextBlock x:Name="HomeNewReleasesTitleText" Text="New from your artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                                        <TextBlock x:Name="HomeNewReleasesTitleText" x:Uid="Home_NewFromYourArtists" Text="New from your artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
                                         <ListView x:Name="HomeNewReleasesCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
                                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                                         </ListView>
                                     </StackPanel>
 
                                     <StackPanel x:Name="HomeHistorySection" Visibility="Collapsed">
-                                        <TextBlock x:Name="HomeHistoryTitleText" Text="Jump back in" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                                        <TextBlock x:Name="HomeHistoryTitleText" x:Uid="Home_JumpBackIn" Text="Jump back in" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
                                         <ListView x:Name="HomeHistoryCarousel" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource HorizontalSongItemTemplate}" ItemContainerStyle="{StaticResource HorizontalItemStyle}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
                                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                                         </ListView>
@@ -995,7 +995,7 @@
 
                                     <!-- Recently Played Artists -->
                                     <StackPanel x:Name="HomeArtistsSection" Visibility="Collapsed">
-                                        <TextBlock x:Name="HomeArtistsTitleText" Text="Recently played artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
+                                        <TextBlock x:Name="HomeArtistsTitleText" x:Uid="Home_RecentlyPlayedArtists" Text="Recently played artists" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,10"/>
                                         <ListView x:Name="HomeArtistsCarousel" IsItemClickEnabled="True" ItemClick="RecentArtist_ItemClick" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.IsHorizontalScrollChainingEnabled="False" Margin="10,0,0,25">
                                             <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
                                             <ListView.ItemContainerStyle>
@@ -1065,7 +1065,7 @@
 
                                 <!-- ═══════ CHARTS SECTION ═══════ -->
                                 <Grid Margin="0,10,0,12" x:Name="HomeChartsTitle" Visibility="Collapsed">
-                                    <TextBlock x:Name="HomeChartsTitleText" Text="Top Charts" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,0"/>
+                                    <TextBlock x:Name="HomeChartsTitleText" x:Uid="Home_TopCharts" Text="Top Charts" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="20" Margin="10,0,0,0"/>
                                 </Grid>
                                 <ListView x:Name="HomeChartsCarousel" Height="210" IsItemClickEnabled="True" ItemClick="DiscoverItem_Click" SelectionMode="None" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" Visibility="Collapsed">
                                     <ListView.ItemsPanel><ItemsPanelTemplate><VirtualizingStackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ListView.ItemsPanel>
@@ -1133,7 +1133,7 @@
             </Grid.RowDefinitions>
 
             <!-- Search title -->
-            <TextBlock x:Name="SearchTitleText" Text="Search" FontSize="28" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="15,15,0,10"/>
+            <TextBlock x:Name="SearchTitleText" x:Uid="Search_Title" Text="Search" FontSize="28" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="15,15,0,10"/>
 
             <!-- Search bar with icon -->
             <Border Grid.Row="1" Margin="10,0,15,10" Height="46" Background="{StaticResource SurfaceElevated2Brush}" CornerRadius="23" BorderThickness="0" VerticalAlignment="Top">
@@ -1146,7 +1146,7 @@
                     <Grid Grid.Column="0" Background="Transparent" Tapped="SearchIcon_Tapped" Width="36" VerticalAlignment="Stretch">
                         <Viewbox Width="18" Height="18" Margin="14,0,0,0" HorizontalAlignment="Left"><Path Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.49L20.49,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5S7.01,5 9.5,5 14,7.01 14,9.5 11.99,14 9.5,14Z" Fill="#B3B3B3"/></Viewbox>
                     </Grid>
-                    <TextBox x:Name="SearchBox" Grid.Column="1" TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown" PlaceholderText="What do you want to listen to?" Margin="6,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
+                    <TextBox x:Name="SearchBox" Grid.Column="1" TextChanged="SearchBox_TextChanged" KeyDown="SearchBox_KeyDown" x:Uid="Search_Placeholder" PlaceholderText="What do you want to listen to?" Margin="6,0,0,0" InputScope="Search" Style="{StaticResource DarkTextBoxStyle}"/>
                     <Grid x:Name="SearchClearBtn" Grid.Column="2" Tapped="SearchClear_Click" VerticalAlignment="Center" Margin="0,0,2,0" Width="44" Height="44" Background="Transparent" Visibility="Collapsed" AutomationProperties.Name="Clear search">
                         <Ellipse Fill="#666666" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Viewbox Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center"><Path Data="M1,0 L5,4 L9,0 L10,1 L6,5 L10,9 L9,10 L5,6 L1,10 L0,9 L4,5 L0,1 Z" Fill="White"/></Viewbox>
@@ -1305,14 +1305,14 @@
                                         <Border x:Name="TopCardShuffleBtn" Background="{StaticResource SurfaceElevatedBrush}" CornerRadius="16" Padding="14,6" Margin="0,0,10,0" Tapped="TopResultShuffle_Tapped">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 
-                                                <TextBlock x:Name="TopCardShuffleText" Text="Shuffle" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="TopCardShuffleText" x:Uid="TopCard_Shuffle" Text="Shuffle" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
                                         <!-- Mix Button -->
                                         <Border x:Name="TopCardMixBtn" Background="{StaticResource SurfaceElevatedBrush}" CornerRadius="16" Padding="14,6" Tapped="TopResultMix_Tapped">
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                 
-                                                <TextBlock x:Name="TopCardMixText" Text="Radio" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="TopCardMixText" x:Uid="TopCard_Radio" Text="Radio" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -1551,20 +1551,20 @@
                         </Button.Template>
                     </Button>
                     <Button Grid.Column="1" Click="EnhancePlaylist_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="10,0,0,0">
-                        <TextBlock Text="Enhance" FontSize="11" Foreground="{StaticResource BrandGreenBrush}"/>
+                        <TextBlock x:Uid="Playlist_Enhance" Text="Enhance" FontSize="11" Foreground="{StaticResource BrandGreenBrush}"/>
                     </Button>
-                    <Button Grid.Column="2" Click="PlaylistPinToStart_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" ToolTipService.ToolTip="Pin to Start">
-                        <TextBlock Text="Pin" FontSize="12" Foreground="White"/>
+                    <Button Grid.Column="2" Click="PlaylistPinToStart_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" x:Uid="Playlist_PinToStart" ToolTipService.ToolTip="Pin to Start">
+                        <TextBlock x:Uid="Playlist_Pin" Text="Pin" FontSize="12" Foreground="White"/>
                     </Button>
-                    <Button Grid.Column="3" Click="PlaylistSearchToggle_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" ToolTipService.ToolTip="Filter songs">
-                        <TextBlock Text="Find" FontSize="12" Foreground="White"/>
+                    <Button Grid.Column="3" Click="PlaylistSearchToggle_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" x:Uid="Playlist_FilterSongs" ToolTipService.ToolTip="Filter songs">
+                        <TextBlock x:Uid="Playlist_Find" Text="Find" FontSize="12" Foreground="White"/>
                     </Button>
                     <Button Grid.Column="5" Content="⋮" Foreground="{StaticResource TextSecondaryBrush}" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
                         <Button.Flyout>
                             <MenuFlyout>
-                                <MenuFlyoutItem Text="Pin to Start Screen" Click="PlaylistPinToStart_Click"/>
-                                <MenuFlyoutItem Text="Export to M3U" Click="ExportPlaylistM3u_Click"/>
-                                <MenuFlyoutItem Text="Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
+                                <MenuFlyoutItem x:Uid="Menu_PinToStart" Text="Pin to Start Screen" Click="PlaylistPinToStart_Click"/>
+                                <MenuFlyoutItem x:Uid="Menu_ExportM3U" Text="Export to M3U" Click="ExportPlaylistM3u_Click"/>
+                                <MenuFlyoutItem x:Uid="Menu_DeletePlaylist" Text="Delete Playlist" Click="MenuDeletePlaylistInside_Click"/>
                             </MenuFlyout>
                         </Button.Flyout>
                     </Button>
@@ -1575,7 +1575,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="PlaylistFilterBox" PlaceholderText="Find in playlist..." 
+                    <TextBox x:Name="PlaylistFilterBox" x:Uid="Playlist_FindPlaceholder" PlaceholderText="Find in playlist..." 
                              TextChanged="PlaylistFilterBox_TextChanged"
                              Background="#242424" Foreground="White" BorderThickness="0"
                              FontSize="14" Height="42" Padding="12,8" Margin="0"/>
@@ -1634,7 +1634,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <!-- Follow button (outline) -->
-                        <Button x:Name="ArtistFollowBtn" Grid.Column="0" Click="ArtistFollow_Click" Content="Follow" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center" MinHeight="36" MinWidth="80">
+                        <Button x:Name="ArtistFollowBtn" x:Uid="Artist_Follow" Grid.Column="0" Click="ArtistFollow_Click" Content="Follow" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center" MinHeight="36" MinWidth="80">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border CornerRadius="4" BorderBrush="{TemplateBinding Foreground}" BorderThickness="1" Padding="16,8" Background="Transparent">
@@ -1658,7 +1658,7 @@
                     </Grid>
 
                     <!-- ======= PHỔ BIẾN (Popular) ======= -->
-                    <TextBlock Text="Popular" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,14,16,6"/>
+                    <TextBlock x:Uid="Artist_Popular" Text="Popular" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="16,14,16,6"/>
 
                     <!-- Songs list -->
                     <ListView x:Name="ArtistSongsList" IsItemClickEnabled="True" ItemClick="SongList_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource SongItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" Margin="6,0,6,0"/>
@@ -1679,7 +1679,7 @@
 
                     <!-- ======= GIỚI THIỆU (About) ======= -->
                     <StackPanel x:Name="ArtistAboutSection" Visibility="Collapsed" Margin="16,16,16,8">
-                        <TextBlock Text="About" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
+                        <TextBlock x:Uid="Artist_About" Text="About" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,8"/>
                         <Border CornerRadius="12" MinHeight="200" Background="{StaticResource SurfaceAltBrush}" Tapped="ArtistAbout_Tapped">
                             <Grid>
                                 <Border CornerRadius="12">
@@ -1697,7 +1697,7 @@
                                 </Rectangle>
                                 <StackPanel VerticalAlignment="Bottom" Margin="16,16,16,16">
                                     <TextBlock x:Name="ArtistAboutListeners" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                                    <TextBlock Text="followers" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock x:Uid="Artist_Followers" Text="followers" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                     <TextBlock x:Name="ArtistAboutDescription" FontSize="12" Foreground="{StaticResource TextSoftBrush}" Margin="0,8,0,0" MaxLines="3" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
                             </Grid>
@@ -1780,7 +1780,7 @@
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavHomeIcon" Fill="White" Stretch="Uniform" Data="M12,2 L3,10 L3,22 L9,22 L9,16 L15,16 L15,22 L21,22 L21,10 Z"/>
                         </Viewbox>
-                        <TextBlock x:Name="NavHomeText" Text="Home" FontSize="10" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavHomeText" x:Uid="NavHome" Text="Home" FontSize="10" Foreground="White" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Samples -->
@@ -1789,7 +1789,7 @@
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavSamplesIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M13,6V18L21.5,12M4,18L12.5,12L4,6V18Z"/>
                         </Viewbox>
-                        <TextBlock x:Name="NavSamplesText" Text="Samples" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavSamplesText" x:Uid="NavSamples" Text="Samples" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Search -->
@@ -1798,7 +1798,7 @@
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavSearchIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M9.5,2 C5.36,2 2,5.36 2,9.5 C2,13.64 5.36,17 9.5,17 C11.24,17 12.84,16.41 14.12,15.42 L19.35,20.65 L20.65,19.35 L15.42,14.12 C16.41,12.84 17,11.24 17,9.5 C17,5.36 13.64,2 9.5,2 Z M9.5,4.5 C12.26,4.5 14.5,6.74 14.5,9.5 C14.5,12.26 12.26,14.5 9.5,14.5 C6.74,14.5 4.5,12.26 4.5,9.5 C4.5,6.74 6.74,4.5 9.5,4.5 Z"/>
                         </Viewbox>
-                        <TextBlock x:Name="NavSearchText" Text="Search" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavSearchText" x:Uid="NavSearch" Text="Search" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Library -->
@@ -1807,7 +1807,7 @@
                         <Viewbox Width="22" Height="22" HorizontalAlignment="Center">
                             <Path x:Name="NavLibraryIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M3,21 L3,3 L6,3 L6,21 Z M10,21 L10,3 L13,3 L13,21 Z M17,21 L17,7 L20,7 L20,21 Z"/>
                         </Viewbox>
-                        <TextBlock x:Name="NavLibraryText" Text="Library" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavLibraryText" x:Uid="NavLibrary" Text="Library" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
                 <!-- Create -->
@@ -1822,7 +1822,7 @@
                                 <Path x:Name="NavCreateIcon" Fill="#B3B3B3" Stretch="Uniform" Data="M11,2 L13,2 L13,11 L22,11 L22,13 L13,13 L13,22 L11,22 L11,13 L2,13 L2,11 L11,11 Z"/>
                             </Viewbox>
                         </Grid>
-                        <TextBlock x:Name="NavCreateText" Text="Create" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                        <TextBlock x:Name="NavCreateText" x:Uid="NavCreate" Text="Create" FontSize="10" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -1916,7 +1916,7 @@
                         <Viewbox Width="22" Height="22"><Path Data="M7.41,8.58L12,13.17 16.59,8.58 18,10 12,16 6,10Z" Fill="White"/></Viewbox>
                     </Button>
                     <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="NOW PLAYING" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="#AAFFFFFF" CharacterSpacing="150" HorizontalAlignment="Center"/>
+                        <TextBlock x:Uid="Player_NowPlaying" Text="NOW PLAYING" FontSize="11" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" Foreground="#AAFFFFFF" CharacterSpacing="150" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,0">
                             <Border Background="Transparent" Padding="8,6" Tapped="DotPlayer_Tapped">
                                 <Ellipse x:Name="DotPlayer" Width="7" Height="7" Fill="{StaticResource BrandGreenBrush}" Opacity="1.0"/>
@@ -1992,7 +1992,7 @@
                                     <TextBlock x:Name="AppleMusicLyricsArtist" Text="" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button x:Name="AppleMusicLyricsHeartBtn" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
+                                    <Button x:Name="AppleMusicLyricsHeartBtn" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
                                     <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="More options">
                                         <Viewbox Width="18" Height="18"><Path Data="M12,16A2,2 0 0,1 10,14A2,2 0 0,1 12,12A2,2 0 0,1 14,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10M12,22A2,2 0 0,1 10,20A2,2 0 0,1 12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22Z" Fill="White"/></Viewbox>
                                     </Button>
@@ -2000,7 +2000,7 @@
                             </Grid>
                             <ProgressBar x:Name="LyricsLoadingBar" Grid.Row="0" IsIndeterminate="True" VerticalAlignment="Top" Visibility="Collapsed" Foreground="White"/>
                             <ScrollViewer x:Name="LyricsFallbackScrollViewer" Grid.Row="1" Visibility="Collapsed" Margin="1,20,1,60" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
-                                <TextBlock x:Name="LyricsFallbackText" Text="Swipe to see lyrics..." Foreground="{StaticResource TextSecondaryBrush}" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
+                                <TextBlock x:Name="LyricsFallbackText" x:Uid="Player_LyricsHint" Text="Swipe to see lyrics..." Foreground="{StaticResource TextSecondaryBrush}" FontSize="16" TextWrapping="Wrap" TextAlignment="Left"/>
                             </ScrollViewer>
                             <ListView x:Name="LyricsListView" Grid.Row="1" IsItemClickEnabled="True" ItemClick="LyricsListView_ItemClick" SelectionMode="None" Margin="1,0" Padding="0,10,0,70" ShowsScrollingPlaceholders="False" ContainerContentChanging="LyricsListView_ContainerContentChanging" VirtualizingStackPanel.VirtualizationMode="Recycling">
                                 <ListView.ItemTemplate>
@@ -2094,7 +2094,7 @@
                                         <TextBlock x:Name="AppleMusicQueueArtist" Text="" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button x:Name="AppleMusicQueueHeartBtn" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
+                                        <Button x:Name="AppleMusicQueueHeartBtn" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
                                         <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="More options">
                                             <Viewbox Width="18" Height="18"><Path Data="M12,16A2,2 0 0,1 10,14A2,2 0 0,1 12,12A2,2 0 0,1 14,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10M12,22A2,2 0 0,1 10,20A2,2 0 0,1 12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22Z" Fill="White"/></Viewbox>
                                         </Button>
@@ -2119,10 +2119,10 @@
                                 </StackPanel>
                                 <Grid Margin="1,10,1,10">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="UP NEXT" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="50"/>
+                                        <TextBlock x:Uid="Queue_UpNext" Text="UP NEXT" FontSize="14" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" CharacterSpacing="50"/>
                                         <TextBlock x:Name="QueueCountText" Text="" FontSize="12" Foreground="{StaticResource TextMutedBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                    <Button Content="Clear" Click="QueueClear_Click" Foreground="{StaticResource TextMutedBrush}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Padding="10,6" MinWidth="44" MinHeight="44" AutomationProperties.Name="Clear queue"/>
+                                    <Button x:Uid="Queue_Clear" Content="Clear" Click="QueueClear_Click" Foreground="{StaticResource TextMutedBrush}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Padding="10,6" MinWidth="44" MinHeight="44" AutomationProperties.Name="Clear queue"/>
                                 </Grid>
                             </StackPanel>
                             <ListView Grid.Row="1" x:Name="QueueListView" Margin="1,0,1,10" IsItemClickEnabled="True" ItemClick="QueueListView_ItemClick" SelectionMode="None" ItemTemplate="{StaticResource QueueItemTemplate}" ItemContainerStyle="{StaticResource StretchItemStyle}" VirtualizingStackPanel.VirtualizationMode="Recycling" ShowsScrollingPlaceholders="False"/>
@@ -2160,7 +2160,7 @@
                         <Button x:Name="NowPlayingQueueBtn" Grid.Column="1" Click="QueueButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48" VerticalAlignment="Center" Margin="0,0,4,0" AutomationProperties.Name="Queue">
                             <SymbolIcon x:Name="QueueIcon" Symbol="List" Foreground="White"/>
                         </Button>
-                        <Button x:Name="BigHeartBtn" Grid.Column="2" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="15" Width="50" Height="50" Margin="5,0,0,0" AutomationProperties.Name="Favorite"/>
+                        <Button x:Name="BigHeartBtn" Grid.Column="2" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="15" Width="50" Height="50" Margin="5,0,0,0" AutomationProperties.Name="Favorite"/>
                     </Grid>
                     <StackPanel Margin="0,0,0,5">
                         <Slider x:Name="MusicSlider" Minimum="0" Maximum="100" Value="0" Margin="-5,-5,-5,-5" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerReleased="MusicSlider_PointerCaptureLost" PointerCanceled="MusicSlider_PointerCanceled" PointerPressed="MusicSlider_PointerPressed" Foreground="{StaticResource BrandGreenBrush}" Background="#404040" Style="{StaticResource ModernSliderStyle}"/>
@@ -2221,7 +2221,7 @@
                             <TextBlock x:Name="AppleMusicMainArtist" Text="" FontSize="13" Foreground="#B3FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button x:Name="AppleMusicMainHeartBtn" Content="Like" Click="HeartButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
+                            <Button x:Name="AppleMusicMainHeartBtn" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
                             <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource AppleMusicButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" Margin="4,0,0,0" AutomationProperties.Name="More options">
                                 <Viewbox Width="18" Height="18">
                                     <Path Data="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" Fill="White"/>
@@ -2396,7 +2396,7 @@
                 </ListView>
             </Grid>
             <!-- Tap hint -->
-            <TextBlock Text="Tap or pull the title down to close" FontSize="12" Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,25"/>
+            <TextBlock x:Uid="Player_CloseHint" Text="Tap or pull the title down to close" FontSize="12" Foreground="{StaticResource TextFaintBrush}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,25"/>
         </Grid>
 
         <!-- ═══════════════════════════════════ NOW PLAYING MENU ═══════════════════════════════════ -->
@@ -2426,7 +2426,7 @@
             <Border x:Name="ArtistPickerPanel" Grid.Row="1" Background="{StaticResource SurfaceCardBrush}" CornerRadius="20,20,0,0" Padding="0,10,0,15">
                 <StackPanel>
                     <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,5,0,12" HorizontalAlignment="Center"/>
-                    <TextBlock Text="Go to Artist" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="20,0,20,12"/>
+                    <TextBlock x:Uid="Song_GoToArtist" Text="Go to Artist" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="20,0,20,12"/>
                     <ListView x:Name="ArtistPickerList" IsItemClickEnabled="True" ItemClick="ArtistPickerList_ItemClick" SelectionMode="None" MaxHeight="300">
                         <ListView.ItemTemplate>
                             <DataTemplate>
@@ -2444,7 +2444,7 @@
                         </ListView.ItemTemplate>
                     </ListView>
                     <Button Click="CloseArtistPicker_Click" Style="{StaticResource IconButtonStyle}" Height="45" Margin="0,5,0,5">
-                        <TextBlock Text="Close" FontSize="16" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold"/>
+                        <TextBlock x:Uid="Common_Close" Text="Close" FontSize="16" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold"/>
                     </Button>
                 </StackPanel>
             </Border>
@@ -2454,7 +2454,7 @@
         <Grid x:Name="AddToPlaylistDialog" Visibility="Collapsed" Canvas.ZIndex="280" Background="#AA000000" Grid.RowSpan="3">
             <Border x:Name="AddToPlaylistCard" Background="{StaticResource SurfaceCardBrush}" CornerRadius="16" Width="300" MaxHeight="400" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
                 <StackPanel>
-                    <TextBlock Text="Add to Playlist" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
+                    <TextBlock x:Uid="Playlist_AddTitle" Text="Add to Playlist" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
                     <ListView x:Name="DialogPlaylistList" MaxHeight="250" IsItemClickEnabled="True" ItemClick="DialogPlaylistList_ItemClick" SelectionMode="None">
                         <ListView.ItemTemplate>
                             <DataTemplate>
@@ -2462,7 +2462,7 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <Button Content="Cancel" Click="CancelAddToPlaylist_Click" HorizontalAlignment="Stretch" Foreground="White" Margin="0,15,0,0"/>
+                    <Button x:Uid="Common_Cancel" Content="Cancel" Click="CancelAddToPlaylist_Click" HorizontalAlignment="Stretch" Foreground="White" Margin="0,15,0,0"/>
                 </StackPanel>
             </Border>
         </Grid>
@@ -2472,11 +2472,11 @@
         <Grid x:Name="CreatePlaylistDialog" Visibility="Collapsed" Canvas.ZIndex="280" Background="#AA000000" Grid.RowSpan="3">
             <Border x:Name="CreatePlaylistCard" Background="{StaticResource SurfaceCardBrush}" CornerRadius="16" Width="300" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20">
                 <StackPanel>
-                    <TextBlock Text="New Playlist" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
-                    <TextBox x:Name="NewPlaylistNameTextBox" PlaceholderText="Playlist name..." Style="{StaticResource DarkTextBoxStyle}" Margin="0,0,0,20"/>
+                    <TextBlock x:Uid="Playlist_NewTitle" Text="New Playlist" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,15"/>
+                    <TextBox x:Name="NewPlaylistNameTextBox" x:Uid="Playlist_NamePlaceholder" PlaceholderText="Playlist name..." Style="{StaticResource DarkTextBoxStyle}" Margin="0,0,0,20"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Content="Cancel" Click="CancelCreatePlaylist_Click" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,10,0"/>
-                        <Button Content="Create" Click="ConfirmCreatePlaylist_Click" Foreground="{StaticResource BrandGreenBrush}" FontWeight="Bold"/>
+                        <Button x:Uid="Common_Cancel" Content="Cancel" Click="CancelCreatePlaylist_Click" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,10,0"/>
+                        <Button x:Uid="Common_Create" Content="Create" Click="ConfirmCreatePlaylist_Click" Foreground="{StaticResource BrandGreenBrush}" FontWeight="Bold"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

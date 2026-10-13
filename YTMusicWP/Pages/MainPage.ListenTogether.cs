@@ -239,7 +239,7 @@ namespace YTMusicWP
             string name = ListenTogetherView.LtDisplayNameBox.Text.Trim();
             if (string.IsNullOrEmpty(name))
             {
-                ShowToast("Please enter a display name");
+                ShowToast(Services.Loc.T("Toast_EnterDisplayName", "Please enter a display name"));
                 return;
             }
 
@@ -262,14 +262,14 @@ namespace YTMusicWP
             string name = ListenTogetherView.LtDisplayNameBox.Text.Trim();
             if (string.IsNullOrEmpty(name))
             {
-                ShowToast("Please enter a display name");
+                ShowToast(Services.Loc.T("Toast_EnterDisplayName", "Please enter a display name"));
                 return;
             }
 
             string code = GetEnteredRoomCode().Trim().ToUpper();
             if (code.Length != 8)
             {
-                ShowToast("Room code must be 8 characters");
+                ShowToast(Services.Loc.T("Toast_RoomCode8Chars", "Room code must be 8 characters"));
                 return;
             }
 
@@ -303,7 +303,7 @@ namespace YTMusicWP
             {
                 _shareRoomCode = code;
                 DataTransferManager.ShowShareUI();
-                ShowToast("Share or copy room code: " + code);
+                ShowToast(Services.Loc.F("Toast_ShareRoomCode", "Share or copy room code: {0}", code));
             }
         }
 
@@ -1112,7 +1112,7 @@ namespace YTMusicWP
             string name = ListenTogetherView.LtSettingsNicknameBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(name))
             {
-                ShowToast("Name cannot be empty");
+                ShowToast(Services.Loc.T("Toast_NameEmpty", "Name cannot be empty"));
                 return;
             }
 
@@ -1126,7 +1126,7 @@ namespace YTMusicWP
             }
             catch { }
 
-            ShowToast("Display name saved: " + name);
+            ShowToast(Services.Loc.F("Toast_DisplayNameSaved", "Display name saved: {0}", name));
         }
 
         private async void LtSettingsApplyServer_Click(object sender, RoutedEventArgs e)
@@ -1135,7 +1135,7 @@ namespace YTMusicWP
             string newUrl = ListenTogetherView.LtSettingsServerUrlBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(newUrl) || (!newUrl.StartsWith("ws://") && !newUrl.StartsWith("wss://")))
             {
-                ShowToast("Enter a valid ws:// or wss:// URL");
+                ShowToast(Services.Loc.T("Toast_InvalidServerUrl", "Enter a valid ws:// or wss:// URL"));
                 return;
             }
 
@@ -1159,7 +1159,7 @@ namespace YTMusicWP
                 await mgr.ConnectAsync();
             }
 
-            ShowToast("Server updated!");
+            ShowToast(Services.Loc.T("Toast_ServerUpdated", "Server updated!"));
         }
 
         private async void LtSettingsResetServer_Click(object sender, RoutedEventArgs e)
@@ -1187,7 +1187,7 @@ namespace YTMusicWP
                 await mgr.ConnectAsync();
             }
 
-            ShowToast("Reset to default server!");
+            ShowToast(Services.Loc.T("Toast_ServerReset", "Reset to default server!"));
         }
 
         #endregion

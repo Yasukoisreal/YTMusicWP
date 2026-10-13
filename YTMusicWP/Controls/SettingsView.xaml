@@ -35,8 +35,8 @@
         <!-- Header -->
         <Grid Grid.Row="0" Margin="20,15,15,0">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Settings" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                <TextBlock Text="Customize your experience" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
+                <TextBlock x:Uid="Settings_Title" Text="Settings" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                <TextBlock x:Uid="Settings_Subtitle" Text="Customize your experience" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
             </StackPanel>
             <Button Click="Close_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Width="40" Height="40" VerticalAlignment="Top">
                 <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="20" Width="36" Height="36">
@@ -55,7 +55,7 @@
                             <Border Background="{StaticResource BrandGreenBrush}" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                 <TextBlock Text="&#xE13D;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="Account" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Settings_Account" Text="Account" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <!-- Hidden: OAuth credentials (auto-filled by app) -->
@@ -68,7 +68,7 @@
 
                         <!-- NOT LOGGED IN state -->
                         <StackPanel x:Name="AccountSignedOutPanel" x:FieldModifier="internal">
-                            <TextBlock Text="Sign in to sync liked songs, playlists, and subscriptions." Foreground="#777" FontSize="12" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                            <TextBlock x:Uid="Settings_SignInHint" Text="Sign in to sync liked songs, playlists, and subscriptions." Foreground="#777" FontSize="12" Margin="0,0,0,14" TextWrapping="Wrap"/>
                             <Button Click="LoginCookie_Click" Style="{StaticResource CategoryButtonStyle}" Height="46" Margin="0,0,0,8">
                                 <Border CornerRadius="12">
                                     <Border.Background>
@@ -79,7 +79,7 @@
                                     </Border.Background>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="&#xE13D;" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="White" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Sign in with Google" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                        <TextBlock x:Uid="SignIn_Google" Text="Sign in with Google" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </Button>
@@ -87,7 +87,7 @@
                                 <Border CornerRadius="12" Background="#333">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="&#xE15B;" FontFamily="Segoe UI Symbol" FontSize="14" Foreground="#999" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Sign in with TV Code" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#999" VerticalAlignment="Center"/>
+                                        <TextBlock x:Uid="SignIn_TvCode" Text="Sign in with TV Code" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#999" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </Button>
@@ -113,7 +113,7 @@
 
                             <!-- Other accounts / brand channels (rows built by MainPage.RenderAccountList; shown with 2+) -->
                             <StackPanel x:Name="AccountListSection" x:FieldModifier="internal" Visibility="Collapsed" Margin="0,0,0,4">
-                                <TextBlock Text="Switch account" FontSize="12" Foreground="#999" Margin="2,0,0,8"/>
+                                <TextBlock x:Uid="Settings_SwitchAccount" Text="Switch account" FontSize="12" Foreground="#999" Margin="2,0,0,8"/>
                                 <StackPanel x:Name="AccountListPanel" x:FieldModifier="internal"/>
                             </StackPanel>
 
@@ -121,7 +121,7 @@
                                 <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="&#xE109;" FontFamily="Segoe UI Symbol" FontSize="15" Foreground="{StaticResource BrandGreenBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Add account" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                        <TextBlock x:Uid="Settings_AddAccount" Text="Add account" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </Button>
@@ -130,7 +130,7 @@
                                 <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="15" Foreground="{StaticResource BrandGreenBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Sync Now" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                        <TextBlock x:Uid="Settings_SyncNow" Text="Sync Now" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </Button>
@@ -154,12 +154,12 @@
                             <Border Background="#3B82F6" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                 
                             </Border>
-                            <TextBlock Text="Language &amp; Location" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Settings_LanguageLocation" Text="Language &amp; Location" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="Location (affects trending music &amp; charts)" Foreground="#777" FontSize="12" Margin="0,0,0,8"/>
+                        <TextBlock x:Uid="Settings_LocationLabel" Text="Location (affects trending music &amp; charts)" Foreground="#777" FontSize="12" Margin="0,0,0,8"/>
                         <ComboBox x:Name="RegionComboBox" x:FieldModifier="internal" Background="{StaticResource SurfaceCardBrush}" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch" Margin="0,0,0,16">
-                            <ComboBoxItem Content="Auto-detect" Tag="AUTO"/>
-                            <ComboBoxItem Content="Worldwide" Tag=""/>
+                            <ComboBoxItem x:Uid="Settings_RegionAuto" Content="Auto-detect" Tag="AUTO"/>
+                            <ComboBoxItem x:Uid="Settings_RegionWorldwide" Content="Worldwide" Tag=""/>
                             <ComboBoxItem Content="Algeria (DZ)" Tag="DZ"/>
                             <ComboBoxItem Content="Argentina (AR)" Tag="AR"/>
                             <ComboBoxItem Content="Australia (AU)" Tag="AU"/>
@@ -251,7 +251,7 @@
                             <ComboBoxItem Content="Yemen (YE)" Tag="YE"/>
                         </ComboBox>
 
-                        <TextBlock Text="Language (affects titles &amp; labels)" Foreground="#777" FontSize="12" Margin="0,0,0,8"/>
+                        <TextBlock Text="Content language (YouTube titles &amp; labels)" x:Uid="Settings_ContentLanguageLabel" Foreground="#777" FontSize="12" Margin="0,0,0,8"/>
                         <ComboBox x:Name="LanguageComboBox" x:FieldModifier="internal" Background="{StaticResource SurfaceCardBrush}" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch">
                             <ComboBoxItem Content="Auto (match location)" Tag="AUTO"/>
                             <ComboBoxItem Content="Afrikaans" Tag="af"/>
@@ -337,6 +337,16 @@
                             <ComboBoxItem Content="中文 (香港) - Chinese Hong Kong" Tag="zh-HK"/>
                             <ComboBoxItem Content="isiZulu (Zulu)" Tag="zu"/>
                         </ComboBox>
+
+                        <TextBlock Text="App language (interface)" x:Uid="Settings_AppLanguageLabel" Foreground="#777" FontSize="12" Margin="0,14,0,8"/>
+                        <ComboBox x:Name="AppLanguageComboBox" x:FieldModifier="internal" Background="{StaticResource SurfaceCardBrush}" Foreground="White" BorderThickness="0" HorizontalAlignment="Stretch">
+                            <ComboBoxItem x:Uid="Settings_AppLanguageAuto" Content="Auto (device language)" Tag="AUTO"/>
+                            <!-- Shown in their own language on purpose: nobody wants to hunt for "italiano" under "Italian" -->
+                            <ComboBoxItem Content="English" Tag="en-US"/>
+                            <ComboBoxItem Content="Italiano" Tag="it-IT"/>
+                            <ComboBoxItem Content="Tiếng Việt" Tag="vi-VN"/>
+                        </ComboBox>
+                        <TextBlock Text="The app follows the phone's language unless you pick one here. Changing it needs a restart." x:Uid="Settings_AppLanguageHint" Foreground="#555" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
@@ -347,7 +357,7 @@
                             <Border Background="#A855F7" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                 
                             </Border>
-                            <TextBlock Text="Playback" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Settings_Playback" Text="Playback" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
 
 
@@ -361,8 +371,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Autoplay" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Play similar songs when queue ends" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_Autoplay" Text="Autoplay" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_AutoplayDesc" Text="Play similar songs when queue ends" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="AutoplayToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
                         </Grid>
@@ -375,8 +385,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Gapless Playback" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="No silence between tracks" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_Gapless" Text="Gapless Playback" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_GaplessDesc" Text="No silence between tracks" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="GaplessToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
                         </Grid>
@@ -389,8 +399,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Animated Artwork" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Moving album covers in Now Playing (~2 MB per album)" Foreground="#555" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock x:Uid="Settings_AnimatedArtwork" Text="Animated Artwork" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_AnimatedArtworkDesc" Text="Moving album covers in Now Playing (~2 MB per album)" Foreground="#555" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="AnimatedArtworkToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
                         </Grid>
@@ -403,8 +413,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Normalize Volume" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Set the same volume for all songs" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_NormalizeVolume" Text="Normalize Volume" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_NormalizeVolumeDesc" Text="Set the same volume for all songs" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="NormalizeVolumeToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
                         </Grid>
@@ -438,7 +448,7 @@
                             <Border Background="#EC4899" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                 <TextBlock Text="&#xE2B1;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="Appearance" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Settings_Appearance" Text="Appearance" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <Grid Margin="0,0,0,0">
@@ -447,12 +457,12 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Now Playing Style" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Visual style for the player screen" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_NowPlayingStyle" Text="Now Playing Style" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_NowPlayingStyleDesc" Text="Visual style for the player screen" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ComboBox x:Name="NowPlayingStyleComboBox" x:FieldModifier="internal" Grid.Column="1" Background="{StaticResource SurfaceCardBrush}" Foreground="White" BorderThickness="0" Width="160" VerticalAlignment="Center">
-                                <ComboBoxItem Content="Default (Gradient)" Tag="0" IsSelected="True"/>
-                                <ComboBoxItem Content="Apple Music (Blur)" Tag="1"/>
+                                <ComboBoxItem x:Uid="Settings_StyleDefault" Content="Default (Gradient)" Tag="0" IsSelected="True"/>
+                                <ComboBoxItem x:Uid="Settings_StyleAppleMusic" Content="Apple Music (Blur)" Tag="1"/>
                             </ComboBox>
                         </Grid>
 
@@ -465,8 +475,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Startup Animation" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Play animated logo on app launch" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_StartupAnimation" Text="Startup Animation" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_StartupAnimationDesc" Text="Play animated logo on app launch" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="SplashAnimationToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
                         </Grid>
@@ -481,14 +491,14 @@
                             <Border Background="#00E5FF" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                 
                             </Border>
-                            <TextBlock Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Settings_ListenTogether" Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="Sync playback in real-time with friends across WP8.1, Android, and PC." Foreground="#777" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                        <TextBlock x:Uid="Settings_ListenTogetherDesc" Text="Sync playback in real-time with friends across WP8.1, Android, and PC." Foreground="#777" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
                         <Button Click="ListenTogether_Click" Style="{StaticResource CategoryButtonStyle}" Height="42">
                             <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <SymbolIcon Symbol="People" Foreground="{StaticResource AccentCyanBrush}" Margin="0,0,8,0"/>
-                                    <TextBlock Text="Open Listen Together" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_OpenListenTogether" Text="Open Listen Together" FontFamily="{StaticResource MontserratSemiBold}" FontWeight="SemiBold" FontSize="14" Foreground="White" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </Button>
@@ -503,7 +513,7 @@
                             <Border Background="#0078D7" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                 <TextBlock Text="&#xE17C;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="Live Tile (Start Screen)" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock x:Uid="Settings_LiveTile" Text="Live Tile (Start Screen)" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <!-- Enable Live Tile Toggle -->
@@ -513,8 +523,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Dynamic Live Tile" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Flip &amp; cycle music artwork on Start screen" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_LiveTileDynamic" Text="Dynamic Live Tile" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_LiveTileDynamicDesc" Text="Flip &amp; cycle music artwork on Start screen" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch x:Name="LiveTileToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
                         </Grid>
@@ -527,13 +537,13 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Display Mode" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Choose what appears on Live Tile" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_DisplayMode" Text="Display Mode" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_DisplayModeDesc" Text="Choose what appears on Live Tile" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ComboBox x:Name="LiveTileModeComboBox" x:FieldModifier="internal" Grid.Column="1" Background="{StaticResource SurfaceCardBrush}" Foreground="White" BorderThickness="0" Width="140" VerticalAlignment="Center">
-                                <ComboBoxItem Content="Now Playing &amp; Recs" Tag="0"/>
-                                <ComboBoxItem Content="Now Playing Only" Tag="1"/>
-                                <ComboBoxItem Content="Transparent Only" Tag="2"/>
+                                <ComboBoxItem x:Uid="Settings_TileModeNowPlayingRecs" Content="Now Playing &amp; Recs" Tag="0"/>
+                                <ComboBoxItem x:Uid="Settings_TileModeNowPlaying" Content="Now Playing Only" Tag="1"/>
+                                <ComboBoxItem x:Uid="Settings_TileModeTransparent" Content="Transparent Only" Tag="2"/>
                             </ComboBox>
                         </Grid>
                         <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
@@ -545,13 +555,13 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Cycle Speed" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
-                                <TextBlock Text="Pace of Live Tile rotation &amp; flips" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
+                                <TextBlock x:Uid="Settings_CycleSpeed" Text="Cycle Speed" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_CycleSpeedDesc" Text="Pace of Live Tile rotation &amp; flips" Foreground="#555" FontSize="11" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ComboBox x:Name="LiveTileSpeedComboBox" x:FieldModifier="internal" Grid.Column="1" Background="{StaticResource SurfaceCardBrush}" Foreground="White" BorderThickness="0" Width="140" VerticalAlignment="Center">
-                                <ComboBoxItem Content="Calm (Slow)" Tag="0"/>
-                                <ComboBoxItem Content="Moderate" Tag="1"/>
-                                <ComboBoxItem Content="Dynamic" Tag="2"/>
+                                <ComboBoxItem x:Uid="Settings_TileSpeedCalm" Content="Calm (Slow)" Tag="0"/>
+                                <ComboBoxItem x:Uid="Settings_TileSpeedModerate" Content="Moderate" Tag="1"/>
+                                <ComboBoxItem x:Uid="Settings_TileSpeedDynamic" Content="Dynamic" Tag="2"/>
                             </ComboBox>
                         </Grid>
                     </StackPanel>
@@ -567,7 +577,7 @@
                                 <Border Background="#3B82F6" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
                                     <TextBlock Text="&#xE14E;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="Storage &amp; Cache" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                                <TextBlock x:Uid="Settings_Storage" Text="Storage &amp; Cache" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
                             </StackPanel>
                             <Button Click="RefreshStorageStats_Click" HorizontalAlignment="Right" Padding="6" Background="Transparent" BorderThickness="0">
                                 <TextBlock Text="&#xE117;" FontFamily="Segoe UI Symbol" FontSize="14" Foreground="#888"/>
@@ -578,8 +588,8 @@
                         <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12" Padding="14,12" Margin="0,0,0,14">
                             <Grid>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="TOTAL APP STORAGE" FontSize="10" FontFamily="{StaticResource MontserratBold}" Foreground="#888"/>
-                                    <TextBlock x:Name="StorageTotalText" x:FieldModifier="internal" Text="Calculating..." FontSize="20" FontFamily="{StaticResource MontserratBold}" Foreground="{StaticResource BrandGreenBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock x:Uid="Settings_TotalStorage" Text="TOTAL APP STORAGE" FontSize="10" FontFamily="{StaticResource MontserratBold}" Foreground="#888"/>
+                                    <TextBlock x:Name="StorageTotalText" x:FieldModifier="internal" x:Uid="Settings_Calculating" Text="Calculating..." FontSize="20" FontFamily="{StaticResource MontserratBold}" Foreground="{StaticResource BrandGreenBrush}" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <ProgressRing x:Name="StorageLoadingRing" x:FieldModifier="internal" IsActive="True" Width="22" Height="22" Foreground="{StaticResource BrandGreenBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
@@ -591,7 +601,7 @@
                             <Grid Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     
-                                    <TextBlock Text="Downloaded Songs" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_DownloadedSongs" Text="Downloaded Songs" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="StorageDownloadsCountText" x:FieldModifier="internal" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock x:Name="StorageDownloadsSizeText" x:FieldModifier="internal" Text="-- MB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
@@ -601,7 +611,7 @@
                             <Grid Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     
-                                    <TextBlock Text="Image Cache" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_ImageCache" Text="Image Cache" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="StorageImagesCountText" x:FieldModifier="internal" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock x:Name="StorageImagesSizeText" x:FieldModifier="internal" Text="-- MB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
@@ -611,7 +621,7 @@
                             <Grid Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     
-                                    <TextBlock Text="Temporary Streams" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_TempStreams" Text="Temporary Streams" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     <TextBlock x:Name="StorageTempCountText" x:FieldModifier="internal" Text="" FontSize="11" Foreground="#666" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <TextBlock x:Name="StorageTempSizeText" x:FieldModifier="internal" Text="-- MB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
@@ -621,7 +631,7 @@
                             <Grid Margin="0,0,0,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     
-                                    <TextBlock Text="App Data &amp; Playlists" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_AppData" Text="App Data &amp; Playlists" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                 </StackPanel>
                                  <TextBlock x:Name="StorageDataSizeText" x:FieldModifier="internal" Text="-- KB" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Foreground="#FFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
                             </Grid>
@@ -635,8 +645,8 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Smart Downloads" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
-                                    <TextBlock Text="Auto-download liked songs on Wi-Fi" Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    <TextBlock x:Uid="Settings_SmartDownloads" Text="Smart Downloads" FontSize="14" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
+                                    <TextBlock x:Uid="Settings_SmartDownloadsDesc" Text="Auto-download liked songs on Wi-Fi" Foreground="#888" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <ToggleSwitch x:Name="SmartDownloadsToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="False" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
@@ -648,7 +658,7 @@
                                 <Grid Margin="16,0">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         
-                                        <TextBlock Text="Export Downloads to Music folder" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
+                                        <TextBlock x:Uid="Settings_ExportDownloads" Text="Export Downloads to Music folder" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#DDD" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -660,7 +670,7 @@
                                 <Grid Margin="16,0">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="&#xE107;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="Black" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="Clean All Cache" FontFamily="{StaticResource MontserratBold}" FontSize="14" Foreground="Black" VerticalAlignment="Center"/>
+                                        <TextBlock x:Uid="Settings_CleanAllCache" Text="Clean All Cache" FontFamily="{StaticResource MontserratBold}" FontSize="14" Foreground="Black" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -670,7 +680,7 @@
                         <Button Click="ClearCache_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="40">
                             <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="10">
                                 <Grid Margin="16,0">
-                                    <TextBlock Text="Clear Image Cache" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_ClearImageCache" Text="Clear Image Cache" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                 </Grid>
                             </Border>
                         </Button>
@@ -679,7 +689,7 @@
                         <Button Click="ClearTempStreams_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,8" Height="40">
                             <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="10">
                                 <Grid Margin="16,0">
-                                    <TextBlock Text="Clear Temporary Streams" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_ClearTempStreams" Text="Clear Temporary Streams" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#CCC" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                 </Grid>
                             </Border>
                         </Button>
@@ -688,7 +698,7 @@
                         <Button Click="ClearRecentHistory_Click" Style="{StaticResource CategoryButtonStyle}" Margin="0,0,0,0" Height="40">
                             <Border Background="#2A1215" CornerRadius="10">
                                 <Grid Margin="16,0">
-                                    <TextBlock Text="Clear Recent History" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#FF6B6B" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Uid="Settings_ClearHistory" Text="Clear Recent History" FontFamily="{StaticResource MontserratSemiBold}" FontSize="13" Foreground="#FF6B6B" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                 </Grid>
                             </Border>
                         </Button>
@@ -702,9 +712,9 @@
                 <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Margin="0,0,0,16" Padding="18,18">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="YTMusicWP" FontSize="22" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="{StaticResource BrandGreenBrush}" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Version 2.4.0" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                        <TextBlock Text="A music streaming client for Windows Phone 8.1" FontSize="12" Foreground="#444" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
-                        <TextBlock Text="Made with love" FontSize="11" Foreground="#333" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                        <TextBlock x:Uid="Settings_Version" Text="Version 2.4.0" FontSize="12" Foreground="#555" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        <TextBlock x:Uid="Settings_AboutTagline" Text="A music streaming client for Windows Phone 8.1" FontSize="12" Foreground="#444" HorizontalAlignment="Center" Margin="0,4,0,0" TextWrapping="Wrap" TextAlignment="Center"/>
+                        <TextBlock x:Uid="Settings_MadeWithLove" Text="Made with love" FontSize="11" Foreground="#333" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
 

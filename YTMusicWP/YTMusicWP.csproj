@@ -204,11 +204,16 @@
     <Compile Include="Services\InnerTubeClient.Moods.cs" />
     <Compile Include="Services\SecureDnsResolver.cs" />
     <Compile Include="Models\MoodCategoryItem.cs" />
+    <Compile Include="Services\LocaleSupport.cs" />
+    <Compile Include="Services\Loc.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <PRIResource Include="Strings\**\*.resw" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\BadgeLogo.scale-100.png" />

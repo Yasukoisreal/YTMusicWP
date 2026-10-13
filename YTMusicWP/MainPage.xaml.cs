@@ -496,18 +496,10 @@ namespace YTMusicWP
         {
             if (GreetingText == null) return;
             int hour = DateTime.Now.Hour;
-            if (InnerTubeClient.CurrentLanguage == "vi")
-            {
-                if (hour < 12) GreetingText.Text = "Chào buổi sáng";
-                else if (hour < 18) GreetingText.Text = "Chào buổi chiều";
-                else GreetingText.Text = "Chào buổi tối";
-            }
-            else
-            {
-                if (hour < 12) GreetingText.Text = "Good morning";
-                else if (hour < 18) GreetingText.Text = "Good afternoon";
-                else GreetingText.Text = "Good evening";
-            }
+            // The greeting is a label the user reads: it follows the app language, not the YouTube content language
+            if (hour < 12) GreetingText.Text = Services.Loc.T("Greeting_Morning", "Good morning");
+            else if (hour < 18) GreetingText.Text = Services.Loc.T("Greeting_Afternoon", "Good afternoon");
+            else GreetingText.Text = Services.Loc.T("Greeting_Evening", "Good evening");
         }
 
         public void UpdateLocalizedUI()
@@ -516,22 +508,11 @@ namespace YTMusicWP
             {
                 UpdateGreetingText();
 
-                bool isVi = (InnerTubeClient.CurrentLanguage == "vi");
-
-                // Bottom Nav
-                if (NavHomeText != null) NavHomeText.Text = isVi ? "Trang chủ" : "Home";
-                if (NavSearchText != null) NavSearchText.Text = isVi ? "Tìm kiếm" : "Search";
-                if (NavLibraryText != null) NavLibraryText.Text = isVi ? "Thư viện" : "Library";
-                if (NavSamplesText != null) NavSamplesText.Text = isVi ? "Đoạn nhạc" : "Samples";
+                // Navigation, home headers and the search bar get their text from their x:Uid resources
+                // (Strings/<language>/Resources.resw), so only what is built in code needs doing here
                 if (ShortsView != null) UpdateSamplesLocalizedText();
 
-                // Home Headers
-                if (HomePullText != null) HomePullText.Text = isVi ? "Kéo để làm mới" : "Pull to refresh";
-                if (HomeHistoryTitleText != null) HomeHistoryTitleText.Text = isVi ? "Nghe lại" : "Jump back in";
-                if (HomeArtistsTitleText != null) HomeArtistsTitleText.Text = isVi ? "Nghệ sĩ nghe gần đây" : "Recently played artists";
-                if (HomeChartsTitleText != null) HomeChartsTitleText.Text = isVi ? "Bảng xếp hạng hàng đầu" : "Top Charts";
-
-                // Chips & Search
+                // Chips carry mood names and search filters, which are built from arrays in code
                 UpdateDefaultHomeChips();
                 UpdateDefaultSearchChips();
             }
@@ -820,7 +801,7 @@ namespace YTMusicWP
                 lang = ApplicationData.Current.LocalSettings.Values["AppLanguage"].ToString();
 
             if (lang == "AUTO")
-                InnerTubeClient.SetLanguage(InnerTubeClient.DetectLanguageFromRegion(region));
+                InnerTubeClient.SetLanguage(AutoContentLanguage(region));
             else
                 InnerTubeClient.SetLanguage(lang);
 
@@ -839,7 +820,7 @@ namespace YTMusicWP
 
             if (!IsInternetAvailable())
             {
-                ShowToast("Offline Mode. Play downloads in Library.");
+                ShowToast(Services.Loc.T("Toast_OfflineMode", "Offline Mode. Play downloads in Library."));
             }
             else
             {

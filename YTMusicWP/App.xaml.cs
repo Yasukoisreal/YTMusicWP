@@ -14,6 +14,9 @@ namespace YTMusicWP
 
         public App()
         {
+            // Before anything is loaded: the language picked in Settings decides which Strings\<language>
+            // resources the app reads (AUTO = follow the phone's language)
+            Services.Loc.ApplySavedLanguage();
             this.InitializeComponent();
             Services.MemoryHelper.Initialize();
             this.Suspending += this.OnSuspending;
