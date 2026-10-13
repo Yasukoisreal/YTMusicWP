@@ -6,6 +6,24 @@
          Fonts, implicit styles, converters, DataTemplates and Storyboards stay in MainPage.xaml
          because they reference page event handlers / named elements or are looked up via this.Resources. -->
 
+    <!-- ═══ Design tokens (ui-ux-pro-max: Dark Mode / OLED, brand-green accent).
+         Semantic brushes keep component styling consistent instead of ad-hoc hex values. ═══ -->
+    <SolidColorBrush x:Key="BrandGreenBrush" Color="#1DB954"/>
+    <SolidColorBrush x:Key="BrandGreenPressedBrush" Color="#169C46"/>
+    <SolidColorBrush x:Key="OnBrandBrush" Color="#0A0A0A"/>
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B3B3B3"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#8A8A8A"/>
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#121212"/>
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#262626"/>
+    <SolidColorBrush x:Key="SurfaceInsetBrush" Color="#2B3242"/>
+    <SolidColorBrush x:Key="BorderSoftBrush" Color="#2E2E2E"/>
+    <SolidColorBrush x:Key="TrackBrush" Color="#535353"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="#FF5B5B"/>
+    <SolidColorBrush x:Key="AccentCyanBrush" Color="#00E5FF"/>
+    <SolidColorBrush x:Key="ScrimButtonBrush" Color="#3DFFFFFF"/>
+
     <Style x:Key="IconButtonStyle" TargetType="Button">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -168,8 +186,8 @@
         <Setter Property="Height" Value="40"/>
         <Setter Property="MinHeight" Value="0"/>
         <Setter Property="MinWidth" Value="0"/>
-        <Setter Property="Background" Value="#3DFFFFFF"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="{StaticResource ScrimButtonBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -289,7 +307,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Grid Background="{TemplateBinding Background}">
-                        <TextBlock x:Name="PlaceholderTextContentPresenter" Foreground="#888888" Text="{TemplateBinding PlaceholderText}" Margin="{TemplateBinding Padding}" IsHitTestVisible="False" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="PlaceholderTextContentPresenter" Foreground="{StaticResource TextMutedBrush}" Text="{TemplateBinding PlaceholderText}" Margin="{TemplateBinding Padding}" IsHitTestVisible="False" VerticalAlignment="Center"/>
                         <ScrollViewer x:Name="ContentElement" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" Foreground="{TemplateBinding Foreground}"/>
                     </Grid>
                 </ControlTemplate>
@@ -298,8 +316,8 @@
     </Style>
 
     <Style x:Key="ModernSliderStyle" TargetType="Slider">
-        <Setter Property="Background" Value="#535353"/>
-        <Setter Property="Foreground" Value="#1DB954"/>
+        <Setter Property="Background" Value="{StaticResource TrackBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource BrandGreenBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Slider">
