@@ -95,6 +95,10 @@ namespace AudioPlayerTask
         {
             _deferral = taskInstance.GetDeferral();
 
+            // This process has no CoreWindow, so point the resource loader at the language saved in Settings before
+            // the first toast or error line reads a string: the background text then matches the foreground UI.
+            YTMusicWP.Services.Loc.ApplySavedLanguage();
+
             _systemControls = SystemMediaTransportControls.GetForCurrentView();
             _systemControls.IsEnabled = true;
             _systemControls.ButtonPressed += SystemControls_ButtonPressed;
@@ -1052,7 +1056,9 @@ namespace AudioPlayerTask
                             {
                                 var segs = await YTMusicWP.Services.SponsorBlockApi.GetSkipSegmentsAsync(vidId);
                                 if (_currentTrackIndex >= 0 && _currentTrackIndex < _videoIdList.Count && _videoIdList[_currentTrackIndex] == vidId) {
-                                    _skipSegments = segs;
+                                    // Overlapping or touching segments become one, so a skip cannot land in the middle of
+                                    // a neighbouring segment and seek twice.
+                                    _skipSegments = YTMusicWP.Services.SponsorBlockFilter.MergeSegments(segs);
                                 }
                             }
                             catch { }
@@ -1119,12 +1125,12 @@ namespace AudioPlayerTask
                 else
                 {
                     if (currentSeq == _playbackSequence)
-                        ReportErrorToUI("No stream available: " + _innerTubeDebug);
+                        ReportErrorToUI(YTMusicWP.Services.Loc.F("Err_NoStream", "No stream available: {0}", _innerTubeDebug));
                 }
             }
             catch (Exception ex)
             {
-                ReportErrorToUI("Playback error: " + ex.Message);
+                ReportErrorToUI(YTMusicWP.Services.Loc.F("Err_Playback", "Playback error: {0}", ex.Message));
             }
         }
 
@@ -1598,7 +1604,7 @@ namespace AudioPlayerTask
             // [TEMP DISABLED FOR SABR TESTING] LiveMediaStreamSource tạm thời vô hiệu hóa để test SABR
             LogLive("[Live MSS] LiveMediaStreamSource tạm thời vô hiệu hóa để test SABR.");
             // Livestreams play through SABR; this fallback is off, so tell the user plainly instead of a debug note
-            ReportErrorToUI("This livestream can't be played right now");
+            ReportErrorToUI(YTMusicWP.Services.Loc.T("Err_LiveUnplayable", "This livestream can't be played right now"));
             await Task.Yield();
         }
 
@@ -1744,7 +1750,7 @@ namespace AudioPlayerTask
 
                 if (!setSuccess)
                 {
-                    ReportErrorToUI("Failed to set stream source");
+                    ReportErrorToUI(YTMusicWP.Services.Loc.T("Err_SetStreamSource", "Failed to set stream source"));
                     return;
                 }
 
@@ -1768,7 +1774,7 @@ namespace AudioPlayerTask
             }
             catch (Exception ex)
             {
-                ReportErrorToUI("Stream Error: " + ex.Message.Split('\n')[0]);
+                ReportErrorToUI(YTMusicWP.Services.Loc.F("Err_Stream", "Stream Error: {0}", ex.Message.Split('\n')[0]));
             }
         }
 
@@ -1829,9 +1835,9 @@ namespace AudioPlayerTask
 
                 if (!preloaded)
                 {
-                    string err = !string.IsNullOrEmpty(localSabrMss.LastError) ? localSabrMss.LastError : "Unknown error";
+                    string err = !string.IsNullOrEmpty(localSabrMss.LastError) ? localSabrMss.LastError : YTMusicWP.Services.Loc.T("Err_Unknown", "Unknown error");
                     LogLive("[SABR Init Error] " + err);
-                    ReportErrorToUI("SABR Error: " + err);
+                    ReportErrorToUI(YTMusicWP.Services.Loc.F("Err_Sabr", "SABR Error: {0}", err));
                     try { localSabrMss.Dispose(); } catch { }
                     return;
                 }
@@ -1884,7 +1890,7 @@ namespace AudioPlayerTask
             catch (Exception ex)
             {
                 LogLive("[SABR Error] " + ex.Message);
-                ReportErrorToUI("SABR playback failed: " + ex.Message);
+                ReportErrorToUI(YTMusicWP.Services.Loc.F("Err_SabrPlayback", "SABR playback failed: {0}", ex.Message));
             }
         }
 
@@ -1940,7 +1946,7 @@ namespace AudioPlayerTask
                 if (retriedRecently)
                 {
                     LogLive("[SABR] Attestation required again, giving up on this stream");
-                    SendToast("YouTube is asking to verify this stream. Try again later.");
+                    SendToast(YTMusicWP.Services.Loc.T("Toast_VerifyStream", "YouTube is asking to verify this stream. Try again later."));
                     return;
                 }
                 _attestationRetryVid = vidId;
@@ -1957,7 +1963,7 @@ namespace AudioPlayerTask
                     if (!preloaded)
                     {
                         LogLive("[SABR] Fresh stream failed too: " + (fresh.LastError ?? "unknown"));
-                        if (fresh.AttestationRequired) SendToast("YouTube is asking to verify this stream. Try again later.");
+                        if (fresh.AttestationRequired) SendToast(YTMusicWP.Services.Loc.T("Toast_VerifyStream", "YouTube is asking to verify this stream. Try again later."));
                     }
                     return;
                 }
@@ -2061,14 +2067,14 @@ namespace AudioPlayerTask
             if (string.IsNullOrEmpty(vidId) || vidId.StartsWith("LOCAL:"))
             {
                 ResetRetryState();
-                ReportErrorToUI("Playback failed");
+                ReportErrorToUI(YTMusicWP.Services.Loc.T("Err_PlaybackFailed", "Playback failed"));
                 return;
             }
 
             if (_retryCount > MAX_RETRIES)
             {
                 ResetRetryState();
-                string err = "All sources failed";
+                string err = YTMusicWP.Services.Loc.T("Err_AllSourcesFailed", "All sources failed");
                 if (args.ExtendedErrorCode != null) err += " (" + args.ExtendedErrorCode.HResult + ")";
                 ReportErrorToUI(err);
                 return;
@@ -2347,7 +2353,7 @@ namespace AudioPlayerTask
                 {
                     _sleepTimerExpiry = DateTime.MaxValue;
                     _mediaPlayer.Pause();
-                    SendToast("Sleep Timer: Music paused.");
+                    SendToast(YTMusicWP.Services.Loc.T("Toast_SleepPaused", "Sleep Timer: Music paused."));
                     return;
                 }
 
@@ -2416,19 +2422,29 @@ namespace AudioPlayerTask
 
                 double remaining = (naturalDuration - pos).TotalSeconds;
 
-                // SponsorBlock Auto-Skip
+                // SponsorBlock Auto-Skip. SponsorBlockFilter.ShouldSkip is the tested [Start, End) test; the inline
+                // comparison this replaced required pos < End - 1, so a segment shorter than a second never matched
+                // and the last second of every longer segment stayed unskippable.
                 var segs = _skipSegments;
                 if (segs != null && segs.Count > 0)
                 {
-                    for (int i = 0; i < segs.Count; i++)
+                    double skipTarget;
+                    if (YTMusicWP.Services.SponsorBlockFilter.ShouldSkip(pos.TotalSeconds, segs, out skipTarget))
                     {
-                        var seg = segs[i];
-                        if (seg != null && pos.TotalSeconds >= seg.Start && pos.TotalSeconds < seg.End - 1) // -1s buffer
+                        string category = null;
+                        for (int i = 0; i < segs.Count; i++)
                         {
-                            _mediaPlayer.Position = TimeSpan.FromSeconds(seg.End);
-                            SendToast("Skipped " + (seg.Category ?? "segment"));
-                            break;
+                            var seg = segs[i];
+                            if (seg != null && pos.TotalSeconds >= seg.Start && pos.TotalSeconds < seg.End)
+                            {
+                                category = seg.Category;
+                                break;
+                            }
                         }
+
+                        _mediaPlayer.Position = TimeSpan.FromSeconds(skipTarget);
+                        SendToast(YTMusicWP.Services.Loc.F("Toast_Skipped", "Skipped {0}",
+                            string.IsNullOrEmpty(category) ? YTMusicWP.Services.Loc.T("Toast_SkippedSegment", "segment") : category));
                     }
                 }
 

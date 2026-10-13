@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -20,12 +21,53 @@ namespace YTMusicWP.Tests
         /// <summary>Guards the scans below: if a pattern stops matching, these tests must fail rather than pass.</summary>
         private const int MinimumUids = 150;
         private const int MinimumCodeKeys = 100;
+        private const int MinimumVisibleLiterals = 50;
 
         private static readonly Regex TagPattern = new Regex("<([A-Za-z:]+)((?:[^\">]|\"[^\"]*\")*)>", RegexOptions.Compiled);
         private static readonly Regex UidPattern = new Regex("x:Uid=\"([^\"]+)\"", RegexOptions.Compiled);
         private static readonly Regex CodeKeyPattern = new Regex("Loc\\.[TF]\\(\"([^\"]+)\"", RegexOptions.Compiled);
         private static readonly Regex ArrayKeyUsePattern = new Regex("Loc\\.[TF]\\(\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*\\[", RegexOptions.Compiled);
         private static readonly Regex ArrayLiteralPattern = new Regex("\"([^\"]+)\"", RegexOptions.Compiled);
+
+        /// <summary>Attributes whose value the user reads on screen.</summary>
+        private static readonly Regex VisibleAttributePattern = new Regex(
+            "(?:^|\\s)(Text|Content|Header|PlaceholderText|ToolTipService\\.ToolTip)=\"([^\"]*)\"", RegexOptions.Compiled);
+
+        private static readonly Regex XNamePattern = new Regex("x:Name=\"([^\"]+)\"", RegexOptions.Compiled);
+
+        /// <summary>An assignment of the form <c>SomeText.Text =</c> (or Content/PlaceholderText).</summary>
+        private static readonly Regex AssignedNamePattern = new Regex(
+            "([A-Za-z_][A-Za-z0-9_]*)\\s*\\.\\s*(Text|Content|PlaceholderText)\\s*=", RegexOptions.Compiled);
+
+        private static readonly Regex AsciiWordPattern = new Regex("[A-Za-z]", RegexOptions.Compiled);
+
+        private static readonly Regex IdentifierPattern = new Regex("[A-Za-z_][A-Za-z0-9_]*", RegexOptions.Compiled);
+
+        /// <summary>A <c>string[] name = new[] { "a", "b" }</c> declaration, captured as name + body.</summary>
+        private static readonly Regex StringArrayPattern = new Regex(
+            "string\\[\\]\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*=\\s*new\\[\\]\\s*\\{([^}]*)\\}", RegexOptions.Compiled);
+
+        /// <summary>
+        /// The few literals that stay as they are, keyed by file and text, with the reason. Everything else that has
+        /// no x:Uid is either a binding, a glyph, a value the code writes when the screen opens, or a bug.
+        /// </summary>
+        private static readonly Dictionary<string, string> NotTranslatedLiterals = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { Key("MainPage.xaml", "@2026 YTMusicWP v2.4.0 Yasukoisreal"), "product name and version in the about footer" },
+            { Key("MainPage.xaml", "A+"), "lyric size control: a symbol, not a word" },
+            { Key("MainPage.xaml", "A-"), "lyric size control: a symbol, not a word" },
+            { Key("MainPage.xaml", "OPUS"), "audio codec badge" },
+            { Key("ListenTogetherPanel.xaml", "The Meowery · Poland"), "the default room server's own name" },
+            { Key("ListenTogetherPanel.xaml", "wss://..."), "an example URL" },
+            { Key("SettingsView.xaml", "fm"), "the Last.fm mark" },
+            { Key("SettingsView.xaml", "Last.fm"), "a brand name" },
+            { Key("SettingsView.xaml", "YTMusicWP"), "the app's own name" },
+        };
+
+        private static string Key(string file, string literal)
+        {
+            return file + "\u0000" + literal;
+        }
 
         [TestMethod]
         public void AllThreeLanguagesCarryTheSameKeys()
@@ -67,6 +109,59 @@ namespace YTMusicWP.Tests
                 .ToList();
 
             Assert.AreEqual(0, untranslated.Count, "x:Uid without a matching resource:" + Environment.NewLine + string.Join(Environment.NewLine, untranslated));
+        }
+
+        [TestMethod]
+        public void EveryVisibleXamlLiteralHasAUid()
+        {
+            // An x:Uid is what makes markup text translatable, and a label written straight into the markup looks
+            // fine in English and stays English on an Italian or Vietnamese phone: only reading every file by hand
+            // caught those. This walks the markup instead, and accepts a literal only when something else explains
+            // why it is not translated: it is a binding or a glyph, the code fills that element in when the screen
+            // opens, a Loc array in the code already carries it, or it is one of the few names in
+            // NotTranslatedLiterals.
+            var assignedNames = CodeAssignedNames();
+            var codeLiterals = CodeManagedLiterals();
+            var offenders = new List<string>();
+            int scanned = 0;
+
+            foreach (string file in ProjectFiles("YTMusicWP", "*.xaml"))
+            {
+                string name = Path.GetFileName(file);
+                string text = File.ReadAllText(file);
+                foreach (Match tag in TagPattern.Matches(text))
+                {
+                    string attributes = tag.Groups[2].Value;
+                    if (attributes.Contains("x:Uid=\"")) continue;
+                    // A Tag marks a data item (the region and content-language pickers): its text follows the content
+                    // language the user picked, not the interface one.
+                    if (attributes.Contains("Tag=\"")) continue;
+
+                    Match named = XNamePattern.Match(attributes);
+                    bool filledFromCode = named.Success && assignedNames.Contains(named.Groups[1].Value);
+
+                    foreach (Match visible in VisibleAttributePattern.Matches(attributes))
+                    {
+                        string value = visible.Groups[2].Value;
+                        if (value.StartsWith("{")) continue;                    // a binding or a resource reference
+                        if (!AsciiWordPattern.IsMatch(WebUtility.HtmlDecode(value))) continue; // an entity, a glyph or empty
+                        scanned++;
+                        if (filledFromCode) continue;
+                        if (codeLiterals.Contains(value)) continue;
+                        if (NotTranslatedLiterals.ContainsKey(Key(name, value))) continue;
+
+                        int line = text.Substring(0, tag.Index).Count(c => c == '\n') + 1;
+                        offenders.Add(name + "(" + line + "): <" + tag.Groups[1].Value + "> "
+                                      + visible.Groups[1].Value + "=\"" + value + "\"");
+                    }
+                }
+            }
+
+            Assert.IsTrue(scanned >= MinimumVisibleLiterals,
+                "the visibility scan read only " + scanned + " literals: has the markup changed shape?");
+            Assert.AreEqual(0, offenders.Count,
+                "visible XAML text with no x:Uid - give it one, or list it in NotTranslatedLiterals with the reason:"
+                + Environment.NewLine + string.Join(Environment.NewLine, offenders.OrderBy(o => o)));
         }
 
         [TestMethod]
@@ -232,6 +327,58 @@ namespace YTMusicWP.Tests
                 }
             }
             return keys;
+        }
+
+        /// <summary>
+        /// The element names the code writes to ("SomeLabel.Text = ..."). A literal in the markup of such an
+        /// element is the value shown before the screen loads, not the text the user ends up reading.
+        /// </summary>
+        private static HashSet<string> CodeAssignedNames()
+        {
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string file in ProjectFiles("YTMusicWP", "*.cs"))
+            {
+                foreach (Match match in AssignedNamePattern.Matches(File.ReadAllText(file)))
+                {
+                    names.Add(match.Groups[1].Value);
+                }
+            }
+            return names;
+        }
+
+        /// <summary>
+        /// The literals that sit in a string array feeding Loc.T/Loc.F (the home and search chip titles). The chip
+        /// panels are built in the markup with one literal each and their text is then replaced from such an array
+        /// (Loc.T(chipKeys[i], defaultTitlesEn[i])), so the array is what the test should be reading.
+        /// </summary>
+        private static HashSet<string> CodeManagedLiterals()
+        {
+            var literals = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string file in ProjectFiles("YTMusicWP", "*.cs"))
+            {
+                string text = File.ReadAllText(file);
+
+                // The arrays feeding Loc are the ones named on a line that calls Loc.T/Loc.F: both the key list and
+                // the English titles next to it sit in that argument list.
+                var names = new HashSet<string>(StringComparer.Ordinal);
+                foreach (string line in text.Split('\n'))
+                {
+                    if (line.IndexOf("Loc.T(", StringComparison.Ordinal) < 0
+                        && line.IndexOf("Loc.F(", StringComparison.Ordinal) < 0) continue;
+                    foreach (Match identifier in IdentifierPattern.Matches(line)) names.Add(identifier.Value);
+                }
+                if (names.Count == 0) continue;
+
+                foreach (Match declaration in StringArrayPattern.Matches(text))
+                {
+                    if (!names.Contains(declaration.Groups[1].Value)) continue;
+                    foreach (Match literal in ArrayLiteralPattern.Matches(declaration.Groups[2].Value))
+                    {
+                        literals.Add(literal.Groups[1].Value);
+                    }
+                }
+            }
+            return literals;
         }
 
         private static IEnumerable<string> ProjectFiles(string folder, string pattern)

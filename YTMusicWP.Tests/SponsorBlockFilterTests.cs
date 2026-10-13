@@ -81,6 +81,39 @@ namespace YTMusicWP.Tests
         }
 
         [TestMethod]
+        public void ShouldSkip_SegmentShorterThanASecond_ReturnsTrueAndEndTarget()
+        {
+            // SponsorBlock has sub-second segments (a quick interaction reminder). The audio task used to compare
+            // against End - 1, so a segment this short never matched and was never skipped.
+            var segments = new List<SponsorBlockSegment>
+            {
+                new SponsorBlockSegment { Start = 10.0, End = 10.4, Category = "interaction" }
+            };
+
+            double skipTarget;
+            bool result = SponsorBlockFilter.ShouldSkip(10.2, segments, out skipTarget);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(10.4, skipTarget, 0.001);
+        }
+
+        [TestMethod]
+        public void ShouldSkip_LastSecondOfSegment_ReturnsTrueAndEndTarget()
+        {
+            // The same End - 1 buffer used to leave the final second of every segment playing through.
+            var segments = new List<SponsorBlockSegment>
+            {
+                new SponsorBlockSegment { Start = 30.0, End = 60.0, Category = "sponsor" }
+            };
+
+            double skipTarget;
+            bool result = SponsorBlockFilter.ShouldSkip(59.5, segments, out skipTarget);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(60.0, skipTarget, 0.001);
+        }
+
+        [TestMethod]
         public void ShouldSkip_MalformedOrNegativeSegments_ReturnsFalseSafely()
         {
             var segments = new List<SponsorBlockSegment>

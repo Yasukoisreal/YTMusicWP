@@ -44,7 +44,9 @@ namespace YTMusicWP.Controls
         {
             DownloadIcon.Visibility = downloaded ? Visibility.Collapsed : Visibility.Visible;
             DownloadedIcon.Visibility = downloaded ? Visibility.Visible : Visibility.Collapsed;
-            DownloadText.Text = downloaded ? "Downloaded" : "Download";
+            DownloadText.Text = downloaded
+                ? Services.Loc.T("Menu_DownloadedLabel", "Downloaded")
+                : Services.Loc.T("Menu_DownloadLabel", "Download");
             DownloadText.Foreground = downloaded ? DownloadedIcon.Fill : DownloadIcon.Fill;
         }
 

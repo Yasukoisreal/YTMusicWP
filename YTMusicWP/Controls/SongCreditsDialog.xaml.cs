@@ -33,8 +33,9 @@ namespace YTMusicWP.Controls
             CreditsProvidedBySection.Visibility = Visibility.Collapsed;
             CreditsViewsText.Text = "--";
             CreditsDateText.Text = "--";
-            CreditsAlbumText.Text = !string.IsNullOrEmpty(albumName) ? albumName : "Single / Album";
-            CreditsAudioText.Text = "Opus / AAC";
+            CreditsAlbumText.Text = !string.IsNullOrEmpty(albumName)
+                ? albumName : Services.Loc.T("Credits_SingleAlbum", "Single / Album");
+            CreditsAudioText.Text = Services.Loc.T("Credits_OpusAac", "Opus / AAC");
         }
 
         /// <summary>Fills in whatever the credits contain; empty fields keep their placeholders.</summary>

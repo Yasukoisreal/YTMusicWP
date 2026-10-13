@@ -1109,4 +1109,102 @@ Swipe up for the next one.</value>
   <data name="Login_Step2.Text" xml:space="preserve">
     <value>2. Enter this code:</value>
   </data>
+  <!-- Live tile labels and the text the background audio task sends to the UI (Loc) -->
+  <data name="Tile_UpNext" xml:space="preserve">
+    <value>Up Next</value>
+  </data>
+  <data name="Tile_UpNextUpper" xml:space="preserve">
+    <value>UP NEXT</value>
+  </data>
+  <data name="Tile_YourFavorite" xml:space="preserve">
+    <value>Your Favorite</value>
+  </data>
+  <data name="Tile_Trending" xml:space="preserve">
+    <value>Trending</value>
+  </data>
+  <data name="Tile_RecentlyPlayed" xml:space="preserve">
+    <value>Recently Played</value>
+  </data>
+  <data name="Tile_TopCharts" xml:space="preserve">
+    <value>Top Charts</value>
+  </data>
+  <data name="Tile_DaypartMorning" xml:space="preserve">
+    <value>Good Morning Mix</value>
+  </data>
+  <data name="Tile_DaypartAfternoon" xml:space="preserve">
+    <value>Energy Boost</value>
+  </data>
+  <data name="Tile_DaypartEvening" xml:space="preserve">
+    <value>Chill &amp; Relax</value>
+  </data>
+  <data name="Toast_VerifyStream" xml:space="preserve">
+    <value>YouTube is asking to verify this stream. Try again later.</value>
+  </data>
+  <data name="Toast_Skipped" xml:space="preserve">
+    <value>Skipped {0}</value>
+  </data>
+  <data name="Toast_SkippedSegment" xml:space="preserve">
+    <value>segment</value>
+  </data>
+  <data name="Err_NoStream" xml:space="preserve">
+    <value>No stream available: {0}</value>
+  </data>
+  <data name="Err_Playback" xml:space="preserve">
+    <value>Playback error: {0}</value>
+  </data>
+  <data name="Err_PlaybackFailed" xml:space="preserve">
+    <value>Playback failed</value>
+  </data>
+  <data name="Err_LiveUnplayable" xml:space="preserve">
+    <value>This livestream can't be played right now</value>
+  </data>
+  <data name="Err_SetStreamSource" xml:space="preserve">
+    <value>Failed to set stream source</value>
+  </data>
+  <data name="Err_Stream" xml:space="preserve">
+    <value>Stream Error: {0}</value>
+  </data>
+  <data name="Err_Sabr" xml:space="preserve">
+    <value>SABR Error: {0}</value>
+  </data>
+  <data name="Err_SabrPlayback" xml:space="preserve">
+    <value>SABR playback failed: {0}</value>
+  </data>
+  <data name="Err_Unknown" xml:space="preserve">
+    <value>Unknown error</value>
+  </data>
+  <data name="Err_AllSourcesFailed" xml:space="preserve">
+    <value>All sources failed</value>
+  </data>
+  <!-- Labels that were still written straight into the markup (EveryVisibleXamlLiteralHasAUid guards them) -->
+  <data name="Common_PlayAllButton.Content" xml:space="preserve">
+    <value>▶ Play All</value>
+  </data>
+  <data name="Lt_ShareCode.Content" xml:space="preserve">
+    <value>↗ Share</value>
+  </data>
+  <data name="Menu_Like.Text" xml:space="preserve">
+    <value>Like</value>
+  </data>
+  <data name="Menu_DownloadLabel" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Menu_DownloadedLabel" xml:space="preserve">
+    <value>Downloaded</value>
+  </data>
+  <data name="Sheet_Play.Text" xml:space="preserve">
+    <value>Play</value>
+  </data>
+  <data name="Sheet_DeleteFromDevice.Text" xml:space="preserve">
+    <value>Delete from device</value>
+  </data>
+  <data name="Stats_EmptyPeriod.Text" xml:space="preserve">
+    <value>No listening recorded in this period. Every song you play for more than 30 seconds counts from now on.</value>
+  </data>
+  <data name="Credits_SingleAlbum" xml:space="preserve">
+    <value>Single / Album</value>
+  </data>
+  <data name="Credits_OpusAac" xml:space="preserve">
+    <value>Opus / AAC</value>
+  </data>
 </root>

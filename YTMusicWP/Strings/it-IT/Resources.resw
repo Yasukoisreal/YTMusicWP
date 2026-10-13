@@ -899,4 +899,102 @@ Controlla la connessione e riprova.</value>
   <data name="Login_Step2.Text" xml:space="preserve">
     <value>2. Inserisci questo codice:</value>
   </data>
+  <!-- Etichette delle live tile e testi inviati all'interfaccia dal task audio in background (Loc) -->
+  <data name="Tile_UpNext" xml:space="preserve">
+    <value>Prossimo</value>
+  </data>
+  <data name="Tile_UpNextUpper" xml:space="preserve">
+    <value>PROSSIMO</value>
+  </data>
+  <data name="Tile_YourFavorite" xml:space="preserve">
+    <value>I tuoi preferiti</value>
+  </data>
+  <data name="Tile_Trending" xml:space="preserve">
+    <value>Di tendenza</value>
+  </data>
+  <data name="Tile_RecentlyPlayed" xml:space="preserve">
+    <value>Ascoltati di recente</value>
+  </data>
+  <data name="Tile_TopCharts" xml:space="preserve">
+    <value>Classifica</value>
+  </data>
+  <data name="Tile_DaypartMorning" xml:space="preserve">
+    <value>Mix del mattino</value>
+  </data>
+  <data name="Tile_DaypartAfternoon" xml:space="preserve">
+    <value>Carica di energia</value>
+  </data>
+  <data name="Tile_DaypartEvening" xml:space="preserve">
+    <value>Relax</value>
+  </data>
+  <data name="Toast_VerifyStream" xml:space="preserve">
+    <value>YouTube chiede di verificare questo stream. Riprova più tardi.</value>
+  </data>
+  <data name="Toast_Skipped" xml:space="preserve">
+    <value>Saltato {0}</value>
+  </data>
+  <data name="Toast_SkippedSegment" xml:space="preserve">
+    <value>segmento</value>
+  </data>
+  <data name="Err_NoStream" xml:space="preserve">
+    <value>Nessuno stream disponibile: {0}</value>
+  </data>
+  <data name="Err_Playback" xml:space="preserve">
+    <value>Errore di riproduzione: {0}</value>
+  </data>
+  <data name="Err_PlaybackFailed" xml:space="preserve">
+    <value>Riproduzione non riuscita</value>
+  </data>
+  <data name="Err_LiveUnplayable" xml:space="preserve">
+    <value>Questo streaming non può essere riprodotto adesso</value>
+  </data>
+  <data name="Err_SetStreamSource" xml:space="preserve">
+    <value>Impossibile impostare la sorgente audio</value>
+  </data>
+  <data name="Err_Stream" xml:space="preserve">
+    <value>Errore dello stream: {0}</value>
+  </data>
+  <data name="Err_Sabr" xml:space="preserve">
+    <value>Errore SABR: {0}</value>
+  </data>
+  <data name="Err_SabrPlayback" xml:space="preserve">
+    <value>Riproduzione SABR non riuscita: {0}</value>
+  </data>
+  <data name="Err_Unknown" xml:space="preserve">
+    <value>Errore sconosciuto</value>
+  </data>
+  <data name="Err_AllSourcesFailed" xml:space="preserve">
+    <value>Tutte le sorgenti hanno fallito</value>
+  </data>
+  <!-- Etichette che erano ancora scritte direttamente nel markup (le protegge EveryVisibleXamlLiteralHasAUid) -->
+  <data name="Common_PlayAllButton.Content" xml:space="preserve">
+    <value>▶ Riproduci tutto</value>
+  </data>
+  <data name="Lt_ShareCode.Content" xml:space="preserve">
+    <value>↗ Condividi</value>
+  </data>
+  <data name="Menu_Like.Text" xml:space="preserve">
+    <value>Mi piace</value>
+  </data>
+  <data name="Menu_DownloadLabel" xml:space="preserve">
+    <value>Scarica</value>
+  </data>
+  <data name="Menu_DownloadedLabel" xml:space="preserve">
+    <value>Scaricato</value>
+  </data>
+  <data name="Sheet_Play.Text" xml:space="preserve">
+    <value>Riproduci</value>
+  </data>
+  <data name="Sheet_DeleteFromDevice.Text" xml:space="preserve">
+    <value>Elimina dal dispositivo</value>
+  </data>
+  <data name="Stats_EmptyPeriod.Text" xml:space="preserve">
+    <value>Nessun ascolto registrato in questo periodo. Ogni brano riprodotto per più di 30 secondi conta da adesso.</value>
+  </data>
+  <data name="Credits_SingleAlbum" xml:space="preserve">
+    <value>Singolo / Album</value>
+  </data>
+  <data name="Credits_OpusAac" xml:space="preserve">
+    <value>Opus / AAC</value>
+  </data>
 </root>

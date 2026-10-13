@@ -8,7 +8,11 @@ namespace YTMusicWP.Services
     /// the supported languages a device (or a manually picked) language tag maps to. Pure logic, no WinRT, so the
     /// unit tests can run it.
     /// </summary>
-    public static class LocaleSupport
+    /// <remarks>
+    /// Internal, not public: the background audio task links this file, and a public type in a namespace outside
+    /// AudioPlayerTask is rejected by the Windows Metadata exporter (WME1023/WME1024/WME1044).
+    /// </remarks>
+    internal static class LocaleSupport
     {
         public const string English = "en";
         public const string Italian = "it";

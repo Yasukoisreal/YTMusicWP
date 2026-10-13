@@ -191,7 +191,7 @@
                             <TextBlock x:Name="LtRoomRoleText" x:FieldModifier="internal" Text="You are the host · 1 listening" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,0,0,12"/>
                             <StackPanel Orientation="Horizontal">
                                 <Button x:Uid="Lt_CopyCode" Content="Copy Code" Click="LtCopyCode_Click" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceInsetBrush}" Foreground="White" FontSize="12" Padding="12,6" Margin="0,0,8,0"/>
-                                <Button Content="↗ Share" Click="LtShareCode_Click" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceInsetBrush}" Foreground="White" FontSize="12" Padding="12,6"/>
+                                <Button x:Uid="Lt_ShareCode" Content="↗ Share" Click="LtShareCode_Click" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceInsetBrush}" Foreground="White" FontSize="12" Padding="12,6"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>

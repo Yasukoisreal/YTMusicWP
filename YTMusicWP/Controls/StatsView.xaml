@@ -30,7 +30,7 @@
         <!-- Header -->
         <Grid Grid.Row="0" Margin="20,15,15,0">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Listening stats" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
+                <TextBlock x:Uid="Lib_ListeningStats" Text="Listening stats" FontSize="26" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
                 <TextBlock x:Uid="Stats_Subtitle" Text="Recorded on this phone, plays over 30 seconds" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
             </StackPanel>
             <Button Click="Close_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Width="40" Height="40" VerticalAlignment="Top">
@@ -58,7 +58,7 @@
                 <Border x:Name="EmptyCard" Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,20" Visibility="Collapsed">
                     <StackPanel>
                         <TextBlock x:Uid="Stats_NothingYet" Text="Nothing yet" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
-                        <TextBlock x:Name="EmptyText" Foreground="#777" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                        <TextBlock x:Name="EmptyText" x:Uid="Stats_EmptyPeriod" Foreground="#777" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
                                    Text="No listening recorded in this period. Every song you play for more than 30 seconds counts from now on."/>
                     </StackPanel>
                 </Border>

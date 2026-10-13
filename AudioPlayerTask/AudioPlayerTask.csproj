@@ -93,6 +93,15 @@
     <Compile Include="..\YTMusicWP\Services\SponsorBlockApi.cs">
       <Link>SponsorBlockApi.cs</Link>
     </Compile>
+    <Compile Include="..\YTMusicWP\Services\SponsorBlockFilter.cs">
+      <Link>SponsorBlockFilter.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\Loc.cs">
+      <Link>Loc.cs</Link>
+    </Compile>
+    <Compile Include="..\YTMusicWP\Services\LocaleSupport.cs">
+      <Link>LocaleSupport.cs</Link>
+    </Compile>
     <Compile Include="..\YTMusicWP\Models\SponsorBlockSegment.cs">
       <Link>SponsorBlockSegment.cs</Link>
     </Compile>

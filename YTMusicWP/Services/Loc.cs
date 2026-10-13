@@ -127,11 +127,14 @@ namespace YTMusicWP.Services
         private static ResourceLoader Loader()
         {
             if (_loader != null) return _loader;
-            // GetForCurrentView throws on a thread without a CoreWindow (background audio task, worker thread)
-            if (Windows.UI.Core.CoreWindow.GetForCurrentThread() == null) return null;
             try
             {
-                _loader = ResourceLoader.GetForCurrentView();
+                // GetForCurrentView throws on a thread without a CoreWindow; the background audio task has no window
+                // at all and reads the same resources through the view-independent loader, once Run() has pointed it
+                // at the saved language.
+                _loader = Windows.UI.Core.CoreWindow.GetForCurrentThread() == null
+                    ? ResourceLoader.GetForViewIndependentUse()
+                    : ResourceLoader.GetForCurrentView();
             }
             catch { return null; }
             return _loader;

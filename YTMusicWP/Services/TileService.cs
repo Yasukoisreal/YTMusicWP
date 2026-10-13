@@ -179,13 +179,17 @@ namespace YTMusicWP.Services
                         string next1Title = WebUtility.HtmlEncode(next1.Title ?? "");
                         string next1Artist = WebUtility.HtmlEncode(next1.ChannelName ?? "YouTube Music");
 
+                        // The tile prints the label in two cases; both read the same translated text
+                        string upNextLabel = Loc.T("Tile_UpNext", "Up Next");
+                        string upNextCapsLabel = Loc.T("Tile_UpNextUpper", "UP NEXT");
+
                         string xmlUpNext = string.Format(
                             "<tile><visual version=\"2\">" +
                             "<binding template=\"TileSquare71x71Image\"><image id=\"1\" src=\"{0}\"/></binding>" +
-                            "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">Up Next: {1}</text></binding>" +
-                            "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT: {1}</text><text id=\"2\">{2}</text></binding>" +
-                            "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">UP NEXT: {1}</text><text id=\"2\">{2}</text></binding>" +
-                            "</visual></tile>", nextThumb, next1Title, next1Artist);
+                            "<binding template=\"TileSquare150x150PeekImageAndText04\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{3}: {1}</text></binding>" +
+                            "<binding template=\"TileWide310x150PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{4}: {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "<binding template=\"TileSquare310x310PeekImage01\"><image id=\"1\" src=\"{0}\"/><text id=\"1\">{4}: {1}</text><text id=\"2\">{2}</text></binding>" +
+                            "</visual></tile>", nextThumb, next1Title, next1Artist, upNextLabel, upNextCapsLabel);
 
                         var docNext = new XmlDocument();
                         docNext.LoadXml(xmlUpNext);
@@ -526,17 +530,17 @@ namespace YTMusicWP.Services
                 // Morning (06:00): Good Morning Mix
                 DateTime morningTime = now.Date.AddDays(now.Hour >= 6 ? 1 : 0).AddHours(6);
                 var morningTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, morningTrack, "Good Morning Mix", "daypart_morning", morningTime);
+                ScheduleSingleDaypart(updater, morningTrack, Loc.T("Tile_DaypartMorning", "Good Morning Mix"), "daypart_morning", morningTime);
 
                 // Afternoon (13:00): Energy Boost
                 DateTime afternoonTime = now.Date.AddDays(now.Hour >= 13 ? 1 : 0).AddHours(13);
                 var afternoonTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, afternoonTrack, "Energy Boost", "daypart_afternoon", afternoonTime);
+                ScheduleSingleDaypart(updater, afternoonTrack, Loc.T("Tile_DaypartAfternoon", "Energy Boost"), "daypart_afternoon", afternoonTime);
 
                 // Evening (20:00): Chill & Relax
                 DateTime eveningTime = now.Date.AddDays(now.Hour >= 20 ? 1 : 0).AddHours(20);
                 var eveningTrack = validTracks[r.Next(validTracks.Count)];
-                ScheduleSingleDaypart(updater, eveningTrack, "Chill & Relax", "daypart_evening", eveningTime);
+                ScheduleSingleDaypart(updater, eveningTrack, Loc.T("Tile_DaypartEvening", "Chill & Relax"), "daypart_evening", eveningTime);
             }
             catch { }
         }
@@ -578,12 +582,28 @@ namespace YTMusicWP.Services
 
         // ── Tile Push Helpers ──
 
+        /// <summary>
+        /// The text a tile label shows. The labels stay English inside the code (the tile logic matches on them, e.g.
+        /// the "Trending" pick at item 2), so the translation happens here, where the label reaches the tile.
+        /// </summary>
+        private static string LocalizedLabel(string label)
+        {
+            switch (label)
+            {
+                case "Your Favorite": return Loc.T("Tile_YourFavorite", "Your Favorite");
+                case "Trending": return Loc.T("Tile_Trending", "Trending");
+                case "Recently Played": return Loc.T("Tile_RecentlyPlayed", "Recently Played");
+                case "Top Charts": return Loc.T("Tile_TopCharts", "Top Charts");
+                default: return label;
+            }
+        }
+
         private static void PushBlockNumberTile(TileUpdater updater, TileItem item, string blockText, string blockLabel, int index)
         {
             string safeTitle = WebUtility.HtmlEncode(item.Track.Title ?? "");
             string safeArtist = WebUtility.HtmlEncode(item.Track.ChannelName ?? "YouTube Music");
             string safeBlockText = WebUtility.HtmlEncode(blockText ?? "#1");
-            string safeBlockLabel = WebUtility.HtmlEncode(blockLabel ?? "Top Charts");
+            string safeBlockLabel = WebUtility.HtmlEncode(LocalizedLabel(blockLabel ?? "Top Charts"));
 
             // Wide: TileWide310x150BlockAndText01 (Big #1 block on left, title & artist on right)
             // Medium: TileSquare150x150Block (Big #1 block with label)
@@ -616,7 +636,7 @@ namespace YTMusicWP.Services
             string safeThumb = WebUtility.HtmlEncode(squareThumb ?? "");
             string safeTitle = WebUtility.HtmlEncode(item.Track.Title ?? "");
             string safeArtist = WebUtility.HtmlEncode(item.Track.ChannelName ?? "YouTube Music");
-            string safeLabel = WebUtility.HtmlEncode(item.Label ?? "YouTube Music");
+            string safeLabel = WebUtility.HtmlEncode(LocalizedLabel(item.Label ?? "YouTube Music"));
 
             // Small: Single Cover
             // Medium: TileSquare150x150PeekImageAndText04 (Photos-style peek text over cover)

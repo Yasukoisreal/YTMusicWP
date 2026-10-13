@@ -1541,7 +1541,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="▶ Play All" Click="PlayAllPlaylist_Click" Background="{StaticResource BrandGreenBrush}" Foreground="Black" FontWeight="Bold" Width="130" Height="45">
+                    <Button x:Uid="Common_PlayAllButton" Grid.Column="0" Content="▶ Play All" Click="PlayAllPlaylist_Click" Background="{StaticResource BrandGreenBrush}" Foreground="Black" FontWeight="Bold" Width="130" Height="45">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="22">
