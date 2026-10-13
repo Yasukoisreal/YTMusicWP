@@ -34,7 +34,7 @@
                 <TextBlock Text="Recorded on this phone, plays over 30 seconds" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
             </StackPanel>
             <Button Click="Close_Click" Style="{StaticResource IconButtonStyle}" HorizontalAlignment="Right" Width="40" Height="40" VerticalAlignment="Top">
-                <Border Background="#1A1A1A" CornerRadius="20" Width="36" Height="36">
+                <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="20" Width="36" Height="36">
                     <Viewbox Width="14" Height="14"><Path Data="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12Z" Fill="#999"/></Viewbox>
                 </Border>
             </Button>
@@ -52,10 +52,10 @@
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,14,0,0">
             <StackPanel Margin="16,0,16,50">
-                <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Foreground="#1DB954" Visibility="Collapsed" Margin="0,0,0,10"/>
+                <ProgressBar x:Name="LoadingBar" IsIndeterminate="True" Foreground="{StaticResource BrandGreenBrush}" Visibility="Collapsed" Margin="0,0,0,10"/>
 
                 <!-- Empty state -->
-                <Border x:Name="EmptyCard" Background="#1A1A1A" CornerRadius="16" Padding="18,20" Visibility="Collapsed">
+                <Border x:Name="EmptyCard" Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,20" Visibility="Collapsed">
                     <StackPanel>
                         <TextBlock Text="Nothing yet" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
                         <TextBlock x:Name="EmptyText" Foreground="#777" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
@@ -65,10 +65,10 @@
 
                 <StackPanel x:Name="StatsContent">
                     <!-- Minutes and counts -->
-                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
+                    <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock x:Name="MinutesText" FontSize="40" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#1DB954"/>
-                            <TextBlock Text="minutes listened" FontSize="13" Foreground="#B3B3B3" Margin="0,0,0,14"/>
+                            <TextBlock x:Name="MinutesText" FontSize="40" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="{StaticResource BrandGreenBrush}"/>
+                            <TextBlock Text="minutes listened" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,14"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -88,12 +88,12 @@
                                     <TextBlock Text="artists" FontSize="12" Foreground="#777"/>
                                 </StackPanel>
                             </Grid>
-                            <TextBlock x:Name="BiggestDayText" FontSize="12" Foreground="#B3B3B3" Margin="0,14,0,0" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="BiggestDayText" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,14,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Listening clock -->
-                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
+                    <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock Text="When you listen" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White"/>
                             <TextBlock x:Name="PeakHourText" FontSize="12" Foreground="#777" Margin="0,2,0,12"/>
@@ -103,7 +103,7 @@
                     </Border>
 
                     <!-- Top songs -->
-                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
+                    <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock Text="Top songs" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
                             <StackPanel x:Name="TopSongsPanel"/>
@@ -111,7 +111,7 @@
                     </Border>
 
                     <!-- Top artists -->
-                    <Border Background="#1A1A1A" CornerRadius="16" Padding="18,16">
+                    <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Padding="18,16">
                         <StackPanel>
                             <TextBlock Text="Top artists" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" Margin="0,0,0,10"/>
                             <StackPanel x:Name="TopArtistsPanel"/>

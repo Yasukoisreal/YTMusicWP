@@ -28,14 +28,14 @@
                 <StackPanel Grid.Row="0">
                     <Rectangle Width="36" Height="4" Fill="#666666" RadiusX="2" RadiusY="2" Margin="0,0,0,12" HorizontalAlignment="Center"/>
                     <TextBlock Text="Song credits" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" Margin="0,0,0,4"/>
-                    <TextBlock x:Name="SongCreditsTrackTitle" Text="" FontSize="14" Foreground="#1DB954" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="SongCreditsTrackTitle" Text="" FontSize="14" Foreground="{StaticResource BrandGreenBrush}" Margin="0,0,0,12" TextTrimming="CharacterEllipsis"/>
                     <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
                 </StackPanel>
 
                 <!-- Loading indicator -->
                 <StackPanel x:Name="SongCreditsLoading" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,30">
-                    <ProgressRing IsActive="True" Width="36" Height="36" Foreground="#1DB954"/>
-                    <TextBlock Text="Loading credits..." FontSize="13" Foreground="#888888" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                    <ProgressRing IsActive="True" Width="36" Height="36" Foreground="{StaticResource BrandGreenBrush}"/>
+                    <TextBlock Text="Loading credits..." FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,10,0,0" HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Content -->
@@ -43,26 +43,26 @@
                     <StackPanel Margin="0,5,0,10">
                         <!-- Performed By -->
                         <StackPanel x:Name="CreditsPerformedBySection" Margin="0,0,0,14">
-                            <TextBlock Text="PERFORMED BY" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
+                            <TextBlock Text="PERFORMED BY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
                             <TextBlock x:Name="CreditsPerformedByText" Text="" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
                         </StackPanel>
 
                         <!-- Written By -->
                         <StackPanel x:Name="CreditsWrittenBySection" Margin="0,0,0,14">
-                            <TextBlock Text="WRITTEN BY" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
+                            <TextBlock Text="WRITTEN BY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
                             <TextBlock x:Name="CreditsWrittenByText" Text="" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
                         </StackPanel>
 
                         <!-- Produced By -->
                         <StackPanel x:Name="CreditsProducedBySection" Margin="0,0,0,14">
-                            <TextBlock Text="PRODUCED BY" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
+                            <TextBlock Text="PRODUCED BY" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
                             <TextBlock x:Name="CreditsProducedByText" Text="" FontSize="14" Foreground="White" TextWrapping="Wrap"/>
                         </StackPanel>
 
                         <!-- Source / Provided By -->
                         <StackPanel x:Name="CreditsProvidedBySection" Margin="0,0,0,14">
-                            <TextBlock Text="SOURCE" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,3"/>
-                            <TextBlock x:Name="CreditsProvidedByText" Text="" FontSize="13" Foreground="#B3B3B3" TextWrapping="Wrap"/>
+                            <TextBlock Text="SOURCE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,3"/>
+                            <TextBlock x:Name="CreditsProvidedByText" Text="" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
 
                         <!-- Details / Stats (Views, Released, Quality) -->
@@ -73,11 +73,11 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                <TextBlock Text="PLAYS / VIEWS" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
+                                <TextBlock Text="PLAYS / VIEWS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
                                 <TextBlock x:Name="CreditsViewsText" Text="--" FontSize="13" Foreground="White"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                <TextBlock Text="RELEASED" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
+                                <TextBlock Text="RELEASED" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
                                 <TextBlock x:Name="CreditsDateText" Text="--" FontSize="13" Foreground="White"/>
                             </StackPanel>
                         </Grid>
@@ -88,12 +88,12 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                                <TextBlock Text="ALBUM" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
+                                <TextBlock Text="ALBUM" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
                                 <TextBlock x:Name="CreditsAlbumText" Text="Single / Album" FontSize="13" Foreground="White" TextTrimming="CharacterEllipsis"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                                <TextBlock Text="AUDIO STREAM" FontSize="11" FontWeight="Bold" Foreground="#888888" Margin="0,0,0,2"/>
-                                <TextBlock x:Name="CreditsAudioText" Text="Opus / AAC" FontSize="13" Foreground="#1DB954"/>
+                                <TextBlock Text="AUDIO STREAM" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,2"/>
+                                <TextBlock x:Name="CreditsAudioText" Text="Opus / AAC" FontSize="13" Foreground="{StaticResource BrandGreenBrush}"/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>

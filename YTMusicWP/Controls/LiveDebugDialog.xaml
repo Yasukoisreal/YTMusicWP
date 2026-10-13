@@ -16,7 +16,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Button Grid.Row="0" Click="Close_Click" Style="{StaticResource IconButtonStyle}" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-        <Border x:Name="Sheet" Grid.Row="1" Background="#1E1E1E" CornerRadius="20,20,0,0" Padding="20,15,20,15" MaxHeight="540">
+        <Border x:Name="Sheet" Grid.Row="1" Background="{StaticResource SurfaceElevated2Brush}" CornerRadius="20,20,0,0" Padding="20,15,20,15" MaxHeight="540">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -35,15 +35,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Live Stream Logs" FontSize="18" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="#00E5FF" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Click="Save_Click" Content="Save" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <Button Grid.Column="2" Click="Share_Click" Content="Share" Style="{StaticResource ChipButtonStyle}" Background="#333333" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Click="Save_Click" Content="Save" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceDividerBrush}" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <Button Grid.Column="2" Click="Share_Click" Content="Share" Style="{StaticResource ChipButtonStyle}" Background="{StaticResource SurfaceDividerBrush}" Foreground="White" FontSize="12" Padding="10,6" Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <Button Grid.Column="3" Click="SelectAll_Click" Content="Select All" Style="{StaticResource ChipButtonStyle}" Background="#00E5FF" Foreground="Black" FontWeight="Bold" FontSize="12" Padding="10,6" VerticalAlignment="Center"/>
                     </Grid>
                     <Rectangle Height="1" Fill="#333333" Margin="0,0,0,10"/>
                 </StackPanel>
 
                 <!-- Log text area -->
-                <TextBox x:Name="LiveDebugTextBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" Background="#121212" Foreground="#00E5FF" FontFamily="Consolas" FontSize="11" BorderBrush="#333333" BorderThickness="1" MinHeight="220" MaxHeight="320" Margin="0,0,0,10" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                <TextBox x:Name="LiveDebugTextBox" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" Background="{StaticResource SurfaceBrush}" Foreground="#00E5FF" FontFamily="Consolas" FontSize="11" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="1" MinHeight="220" MaxHeight="320" Margin="0,0,0,10" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
 
                 <!-- Footer buttons -->
                 <Grid Grid.Row="2" Margin="0,5,0,0">
@@ -52,14 +52,14 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Click="Clear_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="0,0,4,0" Background="#282828">
+                    <Button Grid.Column="0" Click="Clear_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="0,0,4,0" Background="{StaticResource SurfaceHighBrush}">
                         <TextBlock Text="Clear" FontSize="14" Foreground="#FF6666" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
-                    <Button Grid.Column="1" Click="Refresh_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,4,0" Background="#282828">
+                    <Button Grid.Column="1" Click="Refresh_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,4,0" Background="{StaticResource SurfaceHighBrush}">
                         <TextBlock Text="Refresh" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
-                    <Button Grid.Column="2" Click="Close_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,0,0" Background="#282828">
-                        <TextBlock Text="Close" FontSize="14" Foreground="#B3B3B3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Button Grid.Column="2" Click="Close_Click" Style="{StaticResource IconButtonStyle}" Height="44" Margin="4,0,0,0" Background="{StaticResource SurfaceHighBrush}">
+                        <TextBlock Text="Close" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Button>
                 </Grid>
             </Grid>

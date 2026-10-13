@@ -12,7 +12,7 @@
 
     <Grid>
         <Rectangle Fill="#80000000"/>
-        <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="#282828" CornerRadius="12,12,0,0" Padding="6,8,6,8" Margin="12,0,12,52">
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Background="{StaticResource SurfaceHighBrush}" CornerRadius="12,12,0,0" Padding="6,8,6,8" Margin="12,0,12,52">
             <Border.RenderTransform>
                 <TranslateTransform x:Name="CreateSheetTransform" Y="200"/>
             </Border.RenderTransform>
@@ -31,7 +31,7 @@
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
                             <TextBlock Text="Playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Create a playlist with songs or podcast episodes" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
+                            <TextBlock Text="Create a playlist with songs or podcast episodes" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
@@ -50,7 +50,7 @@
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
                             <TextBlock Text="Collaborative playlist" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Create a playlist together with friends" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
+                            <TextBlock Text="Create a playlist together with friends" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
@@ -69,7 +69,7 @@
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
                             <TextBlock Text="Blend" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Create a playlist that combines music tastes with friends" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
+                            <TextBlock Text="Create a playlist that combines music tastes with friends" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>
@@ -88,7 +88,7 @@
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
                             <TextBlock Text="Listen Together" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="Listen to music together with friends in real-time" FontSize="12" Foreground="#A0A0A0" TextWrapping="Wrap"/>
+                            <TextBlock Text="Listen to music together with friends in real-time" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Grid>
                 </Button>

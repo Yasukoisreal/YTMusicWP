@@ -13,15 +13,26 @@
     <SolidColorBrush x:Key="OnBrandBrush" Color="#0A0A0A"/>
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B3B3B3"/>
-    <SolidColorBrush x:Key="TextMutedBrush" Color="#8A8A8A"/>
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#888888"/>
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#A0A0A0"/>
+    <SolidColorBrush x:Key="TextSubtleBrush" Color="#8E8E93"/>
+    <SolidColorBrush x:Key="TextSoftBrush" Color="#CCCCCC"/>
+    <SolidColorBrush x:Key="TextFaintBrush" Color="#666666"/>
     <SolidColorBrush x:Key="SurfaceBrush" Color="#121212"/>
     <SolidColorBrush x:Key="SurfaceAltBrush" Color="#1A1A1A"/>
     <SolidColorBrush x:Key="SurfaceElevatedBrush" Color="#262626"/>
     <SolidColorBrush x:Key="SurfaceInsetBrush" Color="#2B3242"/>
+    <SolidColorBrush x:Key="SurfaceCardBrush" Color="#252525"/>
+    <SolidColorBrush x:Key="SurfaceHighBrush" Color="#282828"/>
+    <SolidColorBrush x:Key="SurfaceElevated2Brush" Color="#1E1E1E"/>
+    <SolidColorBrush x:Key="SurfaceDeepBrush" Color="#1C212B"/>
+    <SolidColorBrush x:Key="SurfaceBlackBrush" Color="#0D0D0D"/>
+    <SolidColorBrush x:Key="SurfaceDividerBrush" Color="#333333"/>
     <SolidColorBrush x:Key="BorderSoftBrush" Color="#2E2E2E"/>
     <SolidColorBrush x:Key="TrackBrush" Color="#535353"/>
     <SolidColorBrush x:Key="DangerBrush" Color="#FF5B5B"/>
     <SolidColorBrush x:Key="AccentCyanBrush" Color="#00E5FF"/>
+    <SolidColorBrush x:Key="AccentAmberBrush" Color="#FFB800"/>
     <SolidColorBrush x:Key="ScrimButtonBrush" Color="#3DFFFFFF"/>
 
     <Style x:Key="IconButtonStyle" TargetType="Button">

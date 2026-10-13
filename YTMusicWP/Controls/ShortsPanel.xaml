@@ -161,7 +161,7 @@
                 </Rectangle>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,6,0">
                     <TextBlock x:Name="SampleTitle" x:FieldModifier="internal" FontSize="16" FontFamily="{StaticResource MontserratBold}" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock x:Name="SampleArtist" x:FieldModifier="internal" FontSize="13" Foreground="#CCCCCC" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                    <TextBlock x:Name="SampleArtist" x:FieldModifier="internal" FontSize="13" Foreground="{StaticResource TextSoftBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                 </StackPanel>
             </Grid>
             <Button Grid.Column="1" Click="More_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" MinWidth="0" MinHeight="0" VerticalAlignment="Center">
