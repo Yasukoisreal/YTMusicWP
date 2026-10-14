@@ -372,4 +372,13 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <!--
+    NOTE - ARM device deploy and MDIL: do not add a target here that deletes
+    obj\ARM\$(Configuration)\MSIL / MDIL, and do not try to steer the deploy engine's MDIL step
+    from the project. That step is what fails on a device deploy with DEP6810 / MDILXapCompile
+    2001 when the app contains a strong-named assembly, and no project property reaches it.
+    Deploy with tools\Build-ArmAppx.ps1 instead: it packs the plain appx and hands it to
+    AppDeployCmd, which optimizes the package for the device itself. Evidence:
+    .agents/memory/mdil-deploy-trap.md
+  -->
 </Project>

@@ -6,3 +6,4 @@
 - [Lyrics sources findings](lyrics-sources-findings.md) — boidu Apple Music lyrics API needs a key for uncached songs, cache keyed by duration ±2 s; TTML agent/x-bg markup; SimpMusic Lyrics API is UA-gated (don't spoof)
 - [Live memory growth findings](live-memory-growth-findings.md) — SABR live hit 20 MB cap; managed leak = AsStreamForRead (fixed, NativeBufferReader); rest was debugger-only (Release flat 1 h+)
 - [WP8.1 platform gotchas](wp81-platform-gotchas.md) — Newtonsoft POCO TypeAccessException, HttpClient cookie store vs cookie auth, Win10-only cookie APIs, no background-audio EQ
+- [MDIL deploy trap](mdil-deploy-trap.md) — VS's ARM deploy dies with DEP6810 / MDILXapCompile 2001 (its MDIL step runs twice over obj\ARM\<config>\MSIL, crossgen: strong name validation failed); deploy with tools\Build-ArmAppx.ps1, where AppDeployCmd does the optimization and needs the plain appx

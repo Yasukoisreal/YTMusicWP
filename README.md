@@ -223,6 +223,10 @@ cd YTMusicWP
 # Build Release ARM package for Lumia
 & "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" YTMusicWP.sln /p:Configuration=Release /p:Platform=ARM
 
+# Build ARM, pack the .appx and install it on the attached phone
+# (Visual Studio's own ARM deploy fails with DEP6810 / MDILXapCompile 2001)
+powershell -ExecutionPolicy Bypass -File tools\Build-ArmAppx.ps1 -Install 0 -Launch
+
 # Run automated unit test suite (43 tests)
 & "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe" YTMusicWP.Tests\bin\Debug\YTMusicWP.Tests.dll
 ```
