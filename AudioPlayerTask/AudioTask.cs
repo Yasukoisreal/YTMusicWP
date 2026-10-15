@@ -289,7 +289,7 @@ namespace AudioPlayerTask
                                 {
                                     curFav = Convert.ToBoolean(ls["CurrentTrackIsFavorite"]);
                                 }
-                                bool nextFav = !string.IsNullOrEmpty(val) ? (val == "true") : !curFav;
+                                bool nextFav = !string.IsNullOrEmpty(val) ? (val == "true" || val == "1") : !curFav;
                                 ls["CurrentTrackIsFavorite"] = nextFav;
 
                                 var vs = new Windows.Foundation.Collections.ValueSet();
@@ -300,7 +300,7 @@ namespace AudioPlayerTask
                             {
                                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                                 bool curShuffle = ls.ContainsKey("ShuffleMode") ? Convert.ToBoolean(ls["ShuffleMode"]) : false;
-                                bool nextShuffle = !string.IsNullOrEmpty(val) ? (val == "true") : !curShuffle;
+                                bool nextShuffle = !string.IsNullOrEmpty(val) ? (val == "true" || val == "1") : !curShuffle;
                                 ls["ShuffleMode"] = nextShuffle;
 
                                 var vs = new Windows.Foundation.Collections.ValueSet();
@@ -311,7 +311,18 @@ namespace AudioPlayerTask
                             {
                                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                                 int curRepeat = ls.ContainsKey("RepeatMode") ? Convert.ToInt32(ls["RepeatMode"]) : 0;
-                                int nextRepeat = (curRepeat + 1) % 3;
+                                int nextRepeat;
+                                if (!string.IsNullOrEmpty(val))
+                                {
+                                    if (val == "0" || val == "none") nextRepeat = 0;
+                                    else if (val == "1" || val == "all") nextRepeat = 1;
+                                    else if (val == "2" || val == "one" || val == "single") nextRepeat = 2;
+                                    else nextRepeat = (curRepeat + 1) % 3;
+                                }
+                                else
+                                {
+                                    nextRepeat = (curRepeat + 1) % 3;
+                                }
                                 ls["RepeatMode"] = nextRepeat;
 
                                 var vs = new Windows.Foundation.Collections.ValueSet();

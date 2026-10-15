@@ -1081,7 +1081,7 @@ namespace YTMusicWP
 
             if (currentTrack != null && currentTrack.VideoId == track.VideoId)
             {
-                BigHeartBtn.Content = isAdding ? "Liked" : "Like";
+                BigHeartBtn.Content = isAdding ? "♥" : "♡";
                 BigHeartBtn.Foreground = isAdding ? _greenBrush : _whiteBrush;
             }
 

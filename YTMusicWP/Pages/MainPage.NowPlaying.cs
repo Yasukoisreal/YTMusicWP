@@ -1137,10 +1137,10 @@ namespace YTMusicWP
             bool isFav = favoriteTracks.Any(t => t.VideoId == currentTrack.VideoId);
             if (AppleMusicMainHeartBtn != null)
             {
-                AppleMusicMainHeartBtn.Content = isFav ? "Liked" : "Like";
+                AppleMusicMainHeartBtn.Content = isFav ? "★" : "☆";
                 AppleMusicMainHeartBtn.Foreground = _whiteBrush;
             }
-            var heartContent = isFav ? "Liked" : "Like";
+            var heartContent = isFav ? "♥" : "♡";
             var heartFg = isFav ? _greenBrush : _whiteBrush;
             if (AppleMusicLyricsHeartBtn != null)
             {

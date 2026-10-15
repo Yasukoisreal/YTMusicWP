@@ -649,10 +649,10 @@
                             <TextBlock Text="▶" Foreground="Black" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0"/>
                         </Border>
                         <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource SurfaceHighBrush}" BorderBrush="#3D3D3D" BorderThickness="1" Margin="0,0,12,0" Tapped="FeaturedCardRadio_Tapped" Tag="{Binding}">
-                            <TextBlock x:Uid="Sample_Radio" Text="Radio" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="📻" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource SurfaceHighBrush}" BorderBrush="#3D3D3D" BorderThickness="1" Tapped="FeaturedCardSave_Tapped" Tag="{Binding}">
-                            <TextBlock x:Uid="Sample_Save" Text="Save" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="🔖" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </StackPanel>
                 </StackPanel>
@@ -1551,13 +1551,13 @@
                         </Button.Template>
                     </Button>
                     <Button Grid.Column="1" Click="EnhancePlaylist_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="10,0,0,0">
-                        <TextBlock x:Uid="Playlist_Enhance" Text="Enhance" FontSize="11" Foreground="{StaticResource BrandGreenBrush}"/>
+                        <TextBlock Text="✨" FontSize="22" Foreground="{StaticResource BrandGreenBrush}"/>
                     </Button>
                     <Button Grid.Column="2" Click="PlaylistPinToStart_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" x:Uid="Playlist_PinToStart" ToolTipService.ToolTip="Pin to Start">
-                        <TextBlock x:Uid="Playlist_Pin" Text="Pin" FontSize="12" Foreground="White"/>
+                        <TextBlock Text="📌" FontSize="20" Foreground="White"/>
                     </Button>
                     <Button Grid.Column="3" Click="PlaylistSearchToggle_Click" Style="{StaticResource IconButtonStyle}" Width="45" Height="45" Margin="8,0,0,0" x:Uid="Playlist_FilterSongs" ToolTipService.ToolTip="Filter songs">
-                        <TextBlock x:Uid="Playlist_Find" Text="Find" FontSize="12" Foreground="White"/>
+                        <TextBlock Text="🔍" FontSize="18" Foreground="White"/>
                     </Button>
                     <Button Grid.Column="5" Content="⋮" Foreground="{StaticResource TextSecondaryBrush}" FontSize="24" Style="{StaticResource IconButtonStyle}" Width="45" Height="45">
                         <Button.Flyout>
@@ -1992,7 +1992,7 @@
                                     <TextBlock x:Name="AppleMusicLyricsArtist" Text="" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button x:Name="AppleMusicLyricsHeartBtn" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
+                                    <Button x:Name="AppleMusicLyricsHeartBtn" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="22" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
                                     <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="More options">
                                         <Viewbox Width="18" Height="18"><Path Data="M12,16A2,2 0 0,1 10,14A2,2 0 0,1 12,12A2,2 0 0,1 14,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10M12,22A2,2 0 0,1 10,20A2,2 0 0,1 12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22Z" Fill="White"/></Viewbox>
                                     </Button>
@@ -2094,7 +2094,7 @@
                                         <TextBlock x:Name="AppleMusicQueueArtist" Text="" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button x:Name="AppleMusicQueueHeartBtn" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
+                                        <Button x:Name="AppleMusicQueueHeartBtn" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="22" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
                                         <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource IconButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="More options">
                                             <Viewbox Width="18" Height="18"><Path Data="M12,16A2,2 0 0,1 10,14A2,2 0 0,1 12,12A2,2 0 0,1 14,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10M12,22A2,2 0 0,1 10,20A2,2 0 0,1 12,18A2,2 0 0,1 14,20A2,2 0 0,1 12,22Z" Fill="White"/></Viewbox>
                                         </Button>
@@ -2160,7 +2160,7 @@
                         <Button x:Name="NowPlayingQueueBtn" Grid.Column="1" Click="QueueButton_Click" Style="{StaticResource IconButtonStyle}" Width="48" Height="48" VerticalAlignment="Center" Margin="0,0,4,0" AutomationProperties.Name="Queue">
                             <SymbolIcon x:Name="QueueIcon" Symbol="List" Foreground="White"/>
                         </Button>
-                        <Button x:Name="BigHeartBtn" Grid.Column="2" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="15" Width="50" Height="50" Margin="5,0,0,0" AutomationProperties.Name="Favorite"/>
+                        <Button x:Name="BigHeartBtn" Grid.Column="2" Content="♡" Click="HeartButton_Click" Style="{StaticResource IconButtonStyle}" Foreground="White" FontSize="32" Width="50" Height="50" Margin="5,0,0,0" AutomationProperties.Name="Favorite"/>
                     </Grid>
                     <StackPanel Margin="0,0,0,5">
                         <Slider x:Name="MusicSlider" Minimum="0" Maximum="100" Value="0" Margin="-5,-5,-5,-5" PointerCaptureLost="MusicSlider_PointerCaptureLost" PointerReleased="MusicSlider_PointerCaptureLost" PointerCanceled="MusicSlider_PointerCanceled" PointerPressed="MusicSlider_PointerPressed" Foreground="{StaticResource BrandGreenBrush}" Background="#404040" Style="{StaticResource ModernSliderStyle}"/>
@@ -2221,7 +2221,7 @@
                             <TextBlock x:Name="AppleMusicMainArtist" Text="" FontSize="13" Foreground="#B3FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" Margin="0,2,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button x:Name="AppleMusicMainHeartBtn" x:Uid="Common_Like" Content="Like" Click="HeartButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Foreground="White" FontSize="13" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
+                            <Button x:Name="AppleMusicMainHeartBtn" Content="☆" Click="HeartButton_Click" Style="{StaticResource AppleMusicButtonStyle}" Foreground="White" FontSize="24" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" AutomationProperties.Name="Favorite"/>
                             <Button Click="OpenNowPlayingMenu_Click" Style="{StaticResource AppleMusicButtonStyle}" Width="44" Height="44" Padding="0" MinWidth="0" MinHeight="0" Margin="4,0,0,0" AutomationProperties.Name="More options">
                                 <Viewbox Width="18" Height="18">
                                     <Path Data="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" Fill="White"/>
