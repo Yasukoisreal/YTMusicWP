@@ -231,7 +231,8 @@ namespace YTMusicWP
             }
 
             bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
-            BigHeartBtn.Content = isFav ? "Liked" : "Like";
+            try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = isFav; } catch { }
+            BigHeartBtn.Content = isFav ? "♥" : "♡";
             BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
@@ -618,6 +619,7 @@ namespace YTMusicWP
                 var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
             }
             SaveFavoritesAsync();
+            try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = isAdding; } catch { }
 
             // Sync to YouTube (skip LOCAL tracks that can't be rated)
             if (!track.VideoId.StartsWith("LOCAL:"))
@@ -1255,7 +1257,8 @@ namespace YTMusicWP
                     currentTrack = new YouTubeTrack { VideoId = vid, Title = title, ChannelName = artist, ThumbnailUrl = thumb };
                     UpdateAnimatedArtwork();
                     bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
-                    BigHeartBtn.Content = isFav ? "Liked" : "Like";
+                    try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = isFav; } catch { }
+                    BigHeartBtn.Content = isFav ? "♥" : "♡";
                     BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
 
                     var ignored = UpdateLyricsAsync(title, artist);
@@ -1308,6 +1311,47 @@ namespace YTMusicWP
             if (e.Data.ContainsKey("PoTokenInvalid"))
             {
                 InnerTubeClient.InvalidatePoToken();
+            }
+
+            if (e.Data.ContainsKey("ToggleFavorite"))
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    HeartButton_Click(null, null);
+                });
+            }
+
+            if (e.Data.ContainsKey("SetShuffleMode"))
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    try
+                    {
+                        var settings = ApplicationData.Current.LocalSettings;
+                        bool newState = Convert.ToBoolean(e.Data["SetShuffleMode"]);
+                        settings.Values["ShuffleMode"] = newState;
+                        ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
+                        ShuffleDot.Visibility = newState ? Visibility.Visible : Visibility.Collapsed;
+                        if (AppleMusicShuffleIcon != null)
+                            AppleMusicShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
+                    }
+                    catch { }
+                });
+            }
+
+            if (e.Data.ContainsKey("SetRepeatMode"))
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    try
+                    {
+                        var settings = ApplicationData.Current.LocalSettings;
+                        int newMode = Convert.ToInt32(e.Data["SetRepeatMode"]);
+                        settings.Values["RepeatMode"] = newMode;
+                        UpdateRepeatUI(newMode);
+                    }
+                    catch { }
+                });
             }
 
             if (e.Data.ContainsKey("TrackChanged"))

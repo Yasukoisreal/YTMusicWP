@@ -19,6 +19,7 @@ namespace AudioPlayerTask
         private BackgroundTaskDeferral _deferral;
         private SystemMediaTransportControls _systemControls;
         private MediaPlayer _mediaPlayer;
+        private LocalMusicServer _localServer;
 
         private static Windows.Web.Http.Filters.HttpBaseProtocolFilter CreateHttpFilter()
         {
@@ -126,6 +127,8 @@ namespace AudioPlayerTask
 
             BackgroundMediaPlayer.MessageReceivedFromForeground += BackgroundMediaPlayer_MessageReceivedFromForeground;
             taskInstance.Canceled += TaskInstance_Canceled;
+
+            StartLocalServer();
         }
 
         private async void TaskInstance_Canceled(IBackgroundTaskInstance sender, BackgroundTaskCancellationReason reason)
@@ -178,6 +181,7 @@ namespace AudioPlayerTask
                     _sabrMss = null;
                 }
                 await CleanupLiveTempFilesAsync();
+                StopLocalServer();
                 _httpClient?.Dispose();
             }
             catch { }
@@ -185,6 +189,339 @@ namespace AudioPlayerTask
             {
                 if (_deferral != null) _deferral.Complete();
             }
+        }
+
+        private void StartLocalServer()
+        {
+            try
+            {
+                _localServer = new LocalMusicServer(8088,
+                    GetTrackStatus,
+                    () => { _isUserPaused = false; try { if (_mediaPlayer.CurrentState == MediaPlayerState.Closed) StartPlaybackAsync(); else _mediaPlayer.Play(); } catch { StartPlaybackAsync(); } },
+                    () => { _isUserPaused = true; try { _mediaPlayer.Pause(); } catch { } },
+                    () => MoveNext(true),
+                    () => MovePrevious(true),
+                    (posMs) => { try { if (_mediaPlayer != null) _mediaPlayer.Position = TimeSpan.FromMilliseconds(posMs); } catch { } },
+                    () => { _isUserPaused = true; try { if (_mediaPlayer != null) { _mediaPlayer.Pause(); _mediaPlayer.Position = TimeSpan.Zero; } } catch { } },
+                    () => { try { if (_mediaPlayer != null) { var p = _mediaPlayer.Position + TimeSpan.FromSeconds(15); if (p > _mediaPlayer.NaturalDuration) p = _mediaPlayer.NaturalDuration; _mediaPlayer.Position = p; } } catch { } },
+                    () => { try { if (_mediaPlayer != null) { var p = _mediaPlayer.Position - TimeSpan.FromSeconds(15); if (p < TimeSpan.Zero) p = TimeSpan.Zero; _mediaPlayer.Position = p; } } catch { } },
+                    (spd) => { try { if (spd > 0 && _mediaPlayer != null) { _mediaPlayer.PlaybackRate = spd; _playbackRate = spd; Windows.Storage.ApplicationData.Current.LocalSettings.Values["PlaybackRate"] = (double)spd; } } catch { } },
+                    (rep) =>
+                    {
+                        try
+                        {
+                            var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                            ls["RepeatMode"] = rep;
+                            var vs = new Windows.Foundation.Collections.ValueSet();
+                            vs["SetRepeatMode"] = rep;
+                            BackgroundMediaPlayer.SendMessageToForeground(vs);
+                        }
+                        catch { }
+                    },
+                    (shuff) =>
+                    {
+                        try
+                        {
+                            bool isShuff = (shuff != 0);
+                            var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                            ls["ShuffleMode"] = isShuff;
+                            var vs = new Windows.Foundation.Collections.ValueSet();
+                            vs["SetShuffleMode"] = isShuff;
+                            BackgroundMediaPlayer.SendMessageToForeground(vs);
+                        }
+                        catch { }
+                    },
+                    (style, val) =>
+                    {
+                        try
+                        {
+                            if (style == 1 || style == 2)
+                            {
+                                bool isFav = val > 0.0f;
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                ls["CurrentTrackIsFavorite"] = isFav;
+                                var vs = new Windows.Foundation.Collections.ValueSet();
+                                vs["ToggleFavorite"] = isFav;
+                                BackgroundMediaPlayer.SendMessageToForeground(vs);
+                            }
+                        }
+                        catch { }
+                    },
+                    (queueId) => { MoveToTrackIndex((int)queueId); },
+                    (vol) =>
+                    {
+                        try
+                        {
+                            if (_mediaPlayer != null)
+                            {
+                                double v = Math.Max(0.0, Math.Min(1.0, vol / 100.0));
+                                _mediaPlayer.Volume = v;
+                                Windows.Storage.ApplicationData.Current.LocalSettings.Values["UserVolume"] = v;
+                            }
+                        }
+                        catch { }
+                    },
+                    (dir) =>
+                    {
+                        try
+                        {
+                            if (_mediaPlayer != null)
+                            {
+                                double currentVol = _mediaPlayer.Volume;
+                                double newVol = Math.Max(0.0, Math.Min(1.0, currentVol + (dir * 0.05)));
+                                _mediaPlayer.Volume = newVol;
+                                Windows.Storage.ApplicationData.Current.LocalSettings.Values["UserVolume"] = newVol;
+                            }
+                        }
+                        catch { }
+                    },
+                    () => { try { if (_mediaPlayer.CurrentState == MediaPlayerState.Closed) StartPlaybackAsync(); } catch { } },
+                    (action, val) =>
+                    {
+                        try
+                        {
+                            string actionLower = (action ?? "").ToLowerInvariant();
+                            if (actionLower == "favorite" || actionLower == "android.media.action.favorite")
+                            {
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                bool curFav = false;
+                                if (ls.ContainsKey("CurrentTrackIsFavorite"))
+                                {
+                                    curFav = Convert.ToBoolean(ls["CurrentTrackIsFavorite"]);
+                                }
+                                bool nextFav = !string.IsNullOrEmpty(val) ? (val == "true") : !curFav;
+                                ls["CurrentTrackIsFavorite"] = nextFav;
+
+                                var vs = new Windows.Foundation.Collections.ValueSet();
+                                vs["ToggleFavorite"] = nextFav;
+                                BackgroundMediaPlayer.SendMessageToForeground(vs);
+                            }
+                            else if (actionLower == "shuffle" || actionLower == "android.media.action.shuffle")
+                            {
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                bool curShuffle = ls.ContainsKey("ShuffleMode") ? Convert.ToBoolean(ls["ShuffleMode"]) : false;
+                                bool nextShuffle = !string.IsNullOrEmpty(val) ? (val == "true") : !curShuffle;
+                                ls["ShuffleMode"] = nextShuffle;
+
+                                var vs = new Windows.Foundation.Collections.ValueSet();
+                                vs["SetShuffleMode"] = nextShuffle;
+                                BackgroundMediaPlayer.SendMessageToForeground(vs);
+                            }
+                            else if (actionLower == "repeat" || actionLower == "android.media.action.repeat")
+                            {
+                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                                int curRepeat = ls.ContainsKey("RepeatMode") ? Convert.ToInt32(ls["RepeatMode"]) : 0;
+                                int nextRepeat = (curRepeat + 1) % 3;
+                                ls["RepeatMode"] = nextRepeat;
+
+                                var vs = new Windows.Foundation.Collections.ValueSet();
+                                vs["SetRepeatMode"] = nextRepeat;
+                                BackgroundMediaPlayer.SendMessageToForeground(vs);
+                            }
+                        }
+                        catch { }
+                    }
+                );
+                var ignored = _localServer.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[AudioTask] StartLocalServer error: " + ex.Message);
+            }
+        }
+
+        private void MoveToTrackIndex(int targetIdx)
+        {
+            lock (_playlistLock)
+            {
+                if (_trackList == null || _trackList.Count == 0) return;
+                if (targetIdx < 0 || targetIdx >= _trackList.Count) return;
+                ResetRetryState();
+                ClearPreResolvedState();
+                _currentTrackIndex = targetIdx;
+            }
+            StartPlaybackAsync();
+        }
+
+        private void StopLocalServer()
+        {
+            try
+            {
+                if (_localServer != null)
+                {
+                    _localServer.Dispose();
+                    _localServer = null;
+                }
+            }
+            catch { }
+        }
+
+        private TrackStatusDto GetTrackStatus()
+        {
+            var dto = new TrackStatusDto();
+            dto.AppName = "YTMusicWP";
+            dto.PackageName = "com.google.android.apps.youtube.music";
+            dto.AppIcon = "http://olmp.local/api/icon";
+            dto.AudioOutput = "Điện thoại này";
+            dto.SessionFlags = 3;
+            dto.PlaybackType = 1;
+            dto.VolumeControl = 2;
+            dto.VolumeControlId = "device_speaker_0";
+
+            lock (_playlistLock)
+            {
+                if (_currentTrackIndex >= 0 && _currentTrackIndex < _titleList.Count)
+                {
+                    dto.HasTrack = true;
+                    dto.Title = _titleList[_currentTrackIndex] ?? "";
+                    dto.Artist = (_currentTrackIndex < _artistList.Count) ? (_artistList[_currentTrackIndex] ?? "") : "";
+                    dto.Thumbnail = (_currentTrackIndex < _thumbnailList.Count) ? (_thumbnailList[_currentTrackIndex] ?? "") : "";
+                    dto.VideoId = (_currentTrackIndex < _videoIdList.Count) ? (_videoIdList[_currentTrackIndex] ?? "") : "";
+                }
+
+                dto.QueueTitle = "Danh sách phát";
+                dto.ActiveQueueItemId = _currentTrackIndex;
+
+                if (_titleList != null && _titleList.Count > 0)
+                {
+                    int totalTracks = _titleList.Count;
+                    for (int i = 0; i < totalTracks; i++)
+                    {
+                        var qItem = new QueueItemDto();
+                        qItem.Id = i;
+                        qItem.Title = _titleList[i] ?? "";
+                        qItem.Subtitle = (i < _artistList.Count) ? (_artistList[i] ?? "") : "";
+                        qItem.MediaId = (i < _videoIdList.Count) ? (_videoIdList[i] ?? "") : "";
+                        qItem.IconUri = (i < _thumbnailList.Count) ? (_thumbnailList[i] ?? "") : "";
+                        qItem.MediaUri = (i < _trackList.Count) ? (_trackList[i] ?? "") : "";
+                        qItem.BtFolderType = 0;
+                        dto.Queue.Add(qItem);
+                    }
+                }
+            }
+            if (_mediaPlayer != null)
+            {
+                var curState = _mediaPlayer.CurrentState;
+                if (curState == MediaPlayerState.Buffering || curState == MediaPlayerState.Opening || _isLiveInitializing || _isPreBuffering)
+                {
+                    dto.State = 6; // AndroidPlaybackState.STATE_BUFFERING
+                    dto.IsPlaying = true;
+                }
+                else if (curState == MediaPlayerState.Playing)
+                {
+                    dto.State = 3; // AndroidPlaybackState.STATE_PLAYING
+                    dto.IsPlaying = true;
+                }
+                else if (curState == MediaPlayerState.Paused)
+                {
+                    dto.State = 2; // AndroidPlaybackState.STATE_PAUSED
+                    dto.IsPlaying = false;
+                }
+                else if (curState == MediaPlayerState.Stopped)
+                {
+                    dto.State = 1; // AndroidPlaybackState.STATE_STOPPED
+                    dto.IsPlaying = false;
+                }
+                else
+                {
+                    dto.State = dto.HasTrack ? 2 : 0;
+                    dto.IsPlaying = false;
+                }
+
+                try { dto.PositionMs = (long)_mediaPlayer.Position.TotalMilliseconds; } catch { }
+                try { dto.DurationMs = (long)_mediaPlayer.NaturalDuration.TotalMilliseconds; } catch { }
+                try { dto.Speed = (float)_mediaPlayer.PlaybackRate; } catch { dto.Speed = 1.0f; }
+
+                // Tính toán BufferedPositionMs
+                try
+                {
+                    double bufProgress = _mediaPlayer.BufferingProgress;
+                    if (bufProgress > 0 && dto.DurationMs > 0)
+                    {
+                        dto.BufferedPositionMs = (long)(dto.DurationMs * bufProgress);
+                    }
+                    if (dto.BufferedPositionMs < dto.PositionMs)
+                    {
+                        dto.BufferedPositionMs = dto.PositionMs;
+                    }
+                    if (dto.DurationMs > 0 && dto.BufferedPositionMs > dto.DurationMs)
+                    {
+                        dto.BufferedPositionMs = dto.DurationMs;
+                    }
+                }
+                catch { }
+
+                // Âm lượng
+                try
+                {
+                    dto.Volume = (int)Math.Round(_mediaPlayer.Volume * 100);
+                    dto.MaxVolume = 100;
+                }
+                catch
+                {
+                    dto.Volume = 100;
+                    dto.MaxVolume = 100;
+                }
+            }
+
+            bool isFav = false;
+            bool shuffle = false;
+            int repeat = 0;
+            try
+            {
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                if (ls.ContainsKey("CurrentTrackIsFavorite")) isFav = Convert.ToBoolean(ls["CurrentTrackIsFavorite"]);
+                if (ls.ContainsKey("ShuffleMode")) shuffle = Convert.ToBoolean(ls["ShuffleMode"]);
+                if (ls.ContainsKey("RepeatMode")) repeat = Convert.ToInt32(ls["RepeatMode"]);
+            }
+            catch { }
+
+            dto.IsFavorite = isFav;
+            dto.IsShuffle = shuffle;
+            dto.ShuffleMode = shuffle ? 1 : 0;
+            dto.RepeatMode = repeat;
+            dto.RatingStyle = 1; // RATING_HEART
+            dto.RatingValue = isFav ? 1.0f : 0.0f;
+            // Tính toán Actions bitmask chuẩn AOSP PlaybackState
+            long actions = 1L // ACTION_STOP
+                         | 2L // ACTION_PAUSE
+                         | 4L // ACTION_PLAY
+                         | 8L // ACTION_REWIND
+                         | 64L // ACTION_FAST_FORWARD
+                         | 128L // ACTION_SET_RATING
+                         | 256L // ACTION_SEEK_TO
+                         | 512L // ACTION_PLAY_PAUSE
+                         | 4096L // ACTION_SKIP_TO_QUEUE_ITEM
+                         | 16384L // ACTION_PREPARE
+                         | 4194304L; // ACTION_SET_PLAYBACK_SPEED
+
+            // Next & Prev: Luôn bật bit 32L (ACTION_SKIP_TO_NEXT) và 16L (ACTION_SKIP_TO_PREVIOUS) chuẩn Samsung One UI 6.1
+            actions |= 16L; // ACTION_SKIP_TO_PREVIOUS
+            actions |= 32L; // ACTION_SKIP_TO_NEXT
+
+            dto.Actions = actions;
+            dto.TrackNumber = 0;
+            dto.NumTracks = 0;
+
+            dto.CustomActions = new List<CustomActionDto>
+            {
+                new CustomActionDto
+                {
+                    Action = "android.media.action.FAVORITE",
+                    Name = "Yêu thích",
+                    Icon = "heart",
+                    IsActive = isFav
+                },
+                new CustomActionDto
+                {
+                    Action = (repeat > 0) ? "android.media.action.REPEAT" : "android.media.action.SHUFFLE",
+                    Name = (repeat == 2) ? "Lặp 1 bài" : ((repeat == 1) ? "Lặp danh sách" : "Trộn bài"),
+                    Icon = (repeat == 2) ? "repeat_one" : ((repeat == 1) ? "repeat" : "shuffle"),
+                    IsActive = (repeat > 0) ? true : shuffle
+                }
+            };
+
+            return dto;
         }
 
         private void BackgroundMediaPlayer_MessageReceivedFromForeground(object sender, MediaPlayerDataReceivedEventArgs e)
@@ -2610,7 +2947,7 @@ namespace AudioPlayerTask
                 ResetRetryState();
                 ClearPreResolvedState();
                 if (shuffle) _currentTrackIndex = _rand.Next(0, _trackList.Count);
-                else { _currentTrackIndex--; if (_currentTrackIndex < 0) { if (repeat == 1) _currentTrackIndex = _trackList.Count - 1; else { _currentTrackIndex = 0; return; } } }
+                else { _currentTrackIndex--; if (_currentTrackIndex < 0) { if (repeat == 1) _currentTrackIndex = _trackList.Count - 1; else { _currentTrackIndex = 0; try { if (_mediaPlayer != null) { _mediaPlayer.Position = TimeSpan.Zero; _mediaPlayer.Play(); } } catch { } return; } } }
             }
             StartPlaybackAsync();
         }
