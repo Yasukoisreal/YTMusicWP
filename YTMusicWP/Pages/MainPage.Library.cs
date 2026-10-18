@@ -1233,6 +1233,41 @@ namespace YTMusicWP
         }
 
         /// <summary>
+        /// The .m4a name to write: the title, unless a file with that name already belongs to another video (two songs
+        /// sharing a title would otherwise overwrite each other with CreationCollisionOption.ReplaceExisting). The
+        /// videoId suffix is only added on a real collision, so existing downloads keep their name.
+        /// </summary>
+        private static async Task<string> ResolveDownloadFileNameAsync(YouTubeTrack track)
+        {
+            string baseName = GetDownloadBaseName(track);
+            string fileName = baseName + ".m4a";
+            try
+            {
+                bool fileExists = false;
+                try
+                {
+                    var existingFile = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
+                    fileExists = existingFile != null;
+                }
+                catch { }
+                if (!fileExists) return fileName; // nothing to protect
+
+                var map = await Services.DatabaseHelper.GetDownloadedMapAsync();
+                DownloadedEntity meta;
+                if (map.TryGetValue(fileName, out meta) && meta != null && meta.VideoId == track.VideoId)
+                {
+                    return fileName; // the same track downloaded again: replace its own file
+                }
+
+                return baseName + " [" + track.VideoId + "].m4a";
+            }
+            catch
+            {
+                return fileName;
+            }
+        }
+
+        /// <summary>
         /// True if the track is an offline file or a stream that has already been downloaded.
         /// Downloads are matched by file name, so it works without the SQLite metadata too.
         /// </summary>
@@ -1291,13 +1326,14 @@ namespace YTMusicWP
             }
         }
 
-        private async Task DownloadTrackAsync(YouTubeTrack track, bool isSilent = false)
+        /// <returns>True only when the file was downloaded, tagged and stored; failures are reported by toast/log.</returns>
+        private async Task<bool> DownloadTrackAsync(YouTubeTrack track, bool isSilent = false)
         {
-            if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return;
+            if (track == null || string.IsNullOrEmpty(track.VideoId) || track.VideoId.StartsWith("LOCAL:")) return false;
             if (!IsInternetAvailable())
             {
                 if (!isSilent) ShowToast(Services.Loc.T("Toast_InternetRequired", "Internet required to download"));
-                return;
+                return false;
             }
 
             StorageFile destinationFile = null;
@@ -1320,11 +1356,12 @@ namespace YTMusicWP
                         DownloadStatusBar.Visibility = Visibility.Collapsed;
                         ShowToast(Services.Loc.T("Toast_CannotResolveUrl", "Cannot resolve audio URL for this track"));
                     }
-                    return;
+                    return false;
                 }
 
-                string safeTitle = GetDownloadBaseName(track);
-                destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(safeTitle + ".m4a", CreationCollisionOption.ReplaceExisting);
+                // Two different songs can share a title: never let one download replace the other's file
+                string downloadFileName = await ResolveDownloadFileNameAsync(track);
+                destinationFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(downloadFileName, CreationCollisionOption.ReplaceExisting);
 
                 BackgroundDownloader downloader = new BackgroundDownloader();
                 DownloadOperation download = downloader.CreateDownload(new Uri(streamUrl), destinationFile);
@@ -1364,7 +1401,7 @@ namespace YTMusicWP
                         coverBytes = await _apiClient.GetByteArrayAsync(cleanUrl);
                         if (coverBytes != null && coverBytes.Length > 0)
                         {
-                            string thumbFileName = "thumb_" + safeTitle + ".jpg";
+                            string thumbFileName = "thumb_" + System.IO.Path.GetFileNameWithoutExtension(destinationFile.Name) + ".jpg";
                             var thumbFile = await ApplicationData.Current.LocalFolder.CreateFileAsync(thumbFileName, CreationCollisionOption.ReplaceExisting);
                             await FileIO.WriteBytesAsync(thumbFile, coverBytes);
                             localThumbUri = "ms-appdata:///local/" + thumbFileName;
@@ -1397,6 +1434,8 @@ namespace YTMusicWP
                     await Task.Delay(3000);
                     DownloadStatusBar.Visibility = Visibility.Collapsed;
                 }
+
+                return true;
             }
             catch
             {
@@ -1406,6 +1445,7 @@ namespace YTMusicWP
                     DownloadStatusBar.Visibility = Visibility.Collapsed;
                     ShowToast(Services.Loc.T("Toast_DownloadFailed", "Download failed or cancelled."));
                 }
+                return false;
             }
         }
 
@@ -1464,9 +1504,12 @@ namespace YTMusicWP
                         continue;
                     }
 
-                    await DownloadTrackAsync(track, isSilent: true);
-                    downloadedIds.Add(track.VideoId);
-                    downloadedCount++;
+                    // A failed download must not consume the 25-track budget: DownloadTrackAsync swallows the error
+                    if (await DownloadTrackAsync(track, isSilent: true))
+                    {
+                        downloadedIds.Add(track.VideoId);
+                        downloadedCount++;
+                    }
 
                     await Task.Delay(1500);
 

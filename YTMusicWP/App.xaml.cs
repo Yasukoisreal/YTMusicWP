@@ -23,9 +23,12 @@ namespace YTMusicWP
             this.UnhandledException += App_UnhandledException;
         }
 
-        private async void App_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void App_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            // Prevent app crash — especially important for OOM on 512MB WP8.1 devices
+            // Prevent app crash — especially important for OOM on 512MB WP8.1 devices.
+            // The handler is deliberately NOT async: this is the last chance to persist the report, and an async void
+            // continuation is dropped when the process is torn down. LocalFolder.Path is available synchronously, so a
+            // plain File.AppendAllText records it before returning.
             e.Handled = true;
             string msg = e.Exception != null ? e.Exception.Message : "Unknown error";
             string stack = e.Exception != null ? e.Exception.StackTrace : "No stack trace";
@@ -33,9 +36,25 @@ namespace YTMusicWP
             System.Diagnostics.Debug.WriteLine("[CRASH PREVENTED] " + err);
             try
             {
-                var folder = Windows.Storage.ApplicationData.Current.LocalFolder;
-                var file = await folder.CreateFileAsync("crash.log", Windows.Storage.CreationCollisionOption.OpenIfExists);
-                await Windows.Storage.FileIO.AppendTextAsync(file, err);
+                var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                int suppressed = 0;
+                if (settings.ContainsKey("SuppressedExceptionCount"))
+                {
+                    object v = settings["SuppressedExceptionCount"];
+                    if (v is int) suppressed = (int)v; else int.TryParse(v == null ? "" : v.ToString(), out suppressed);
+                }
+                settings["SuppressedExceptionCount"] = suppressed + 1;
+                settings["LastSuppressedException"] = msg;
+
+                // This profile has no System.IO.File, so the append happens on a thread-pool task that is waited on
+                // (bounded) here: if the process is torn down right after the handler, the line still reaches the file
+                var write = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    var file = await Windows.Storage.ApplicationData.Current.LocalFolder.CreateFileAsync(
+                        "crash.log", Windows.Storage.CreationCollisionOption.OpenIfExists);
+                    await Windows.Storage.FileIO.AppendTextAsync(file, err);
+                });
+                write.Wait(2000);
             }
             catch { }
         }

@@ -1127,6 +1127,9 @@ namespace YTMusicWP
                             if (!favoriteTracks.Any(t => t.VideoId == track.VideoId))
                             {
                                 favoriteTracks.Add(track);
+                                // SQLite is what LoadFavoritesAsync reads at startup: the JSON mirror below is only
+                                // used for the one-time migration, so a like imported here must be persisted too
+                                var persisted = Services.DatabaseHelper.AddFavoriteAsync(track);
                                 hasNew = true;
                             }
                         }
@@ -1178,14 +1181,16 @@ namespace YTMusicWP
                     if (title == "[Deleted video]" || title == "Deleted video" || title == "Private video") continue;
                     channel = CleanChannelName(channel ?? "");
 
-                    favoriteTracks.Add(new YouTubeTrack
+                    var syncedTrack = new YouTubeTrack
                     {
                         VideoId = videoId,
                         Title = title,
                         ChannelName = channel,
                         ChannelId = chId,
                         ThumbnailUrl = GetSquareThumbnail(thumbUrl)
-                    });
+                    };
+                    favoriteTracks.Add(syncedTrack);
+                    var persistedManual = Services.DatabaseHelper.AddFavoriteAsync(syncedTrack);
                     hasNew = true;
                 }
                 catch { continue; }

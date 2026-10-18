@@ -202,6 +202,29 @@ namespace YTMusicWP.Services
             }
         }
 
+        /// <summary>
+        /// Rewrites the stored metadata of an existing favourite (the cover upgrade). AddFavoriteAsync only inserts,
+        /// so without this an upgraded ThumbnailUrl was lost at the next start.
+        /// </summary>
+        public static async Task UpdateFavoriteAsync(YouTubeTrack track)
+        {
+            if (_db == null || track == null || string.IsNullOrEmpty(track.VideoId)) return;
+            try
+            {
+                var existing = await _db.Table<FavoriteEntity>().Where(x => x.VideoId == track.VideoId).FirstOrDefaultAsync();
+                if (existing == null) return;
+
+                if (!string.IsNullOrEmpty(track.Title)) existing.Title = track.Title;
+                if (!string.IsNullOrEmpty(track.ChannelName)) existing.ChannelName = track.ChannelName;
+                if (!string.IsNullOrEmpty(track.ThumbnailUrl)) existing.ThumbnailUrl = track.ThumbnailUrl;
+                await _db.UpdateAsync(existing);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("UpdateFavoriteAsync Error: " + ex.Message);
+            }
+        }
+
         public static async Task RemoveFavoriteAsync(string videoId)
         {
             if (_db == null || string.IsNullOrEmpty(videoId)) return;
@@ -266,6 +289,9 @@ namespace YTMusicWP.Services
                 var existing = await _db.Table<DownloadedEntity>().Where(x => x.FileName == fileName).FirstOrDefaultAsync();
                 if (existing != null)
                 {
+                    // The row is keyed by file name: if that name now holds another video's audio, the VideoId has to
+                    // follow it, otherwise smart downloads keep treating the file as the old track
+                    existing.VideoId = track.VideoId;
                     existing.Title = track.Title;
                     existing.ChannelName = track.ChannelName;
                     existing.ThumbnailUrl = localThumbPath ?? track.ThumbnailUrl;
