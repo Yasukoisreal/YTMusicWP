@@ -1,4 +1,4 @@
-- [No AI trailers](no-ai-trailers.md) — never add Co-Authored-By Claude / "Generated with" in YTMusicWP; user commits themselves
+- [No AI trailers](no-ai-trailers.md) — every repo, not just YTMusicWP: never add Co-Authored-By or "Generated with" markers; user commits themselves
 - [User tests on emulator](user-tests-on-emulator.md) — build + checklist; user tests on WP8.1 emulator; no screenshots, no Live Visual Tree
 - [MainPage.xaml split](mainpage-xaml-split.md) — screens moved to Controls/; remaining screens blocked by page DataTemplates
 - [Samples video findings](samples-video-findings.md) — WP8.1 MediaElement video: what works/failed, keyframe seek, 1080p emulator stutter, FEmusic_immersive blocked
