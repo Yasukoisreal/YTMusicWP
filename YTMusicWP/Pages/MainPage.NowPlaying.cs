@@ -1135,23 +1135,7 @@ namespace YTMusicWP
             }
 
             bool isFav = favoriteTracks.Any(t => t.VideoId == currentTrack.VideoId);
-            if (AppleMusicMainHeartBtn != null)
-            {
-                AppleMusicMainHeartBtn.Content = isFav ? "★" : "☆";
-                AppleMusicMainHeartBtn.Foreground = _whiteBrush;
-            }
-            var heartContent = isFav ? "♥" : "♡";
-            var heartFg = isFav ? _greenBrush : _whiteBrush;
-            if (AppleMusicLyricsHeartBtn != null)
-            {
-                AppleMusicLyricsHeartBtn.Content = heartContent;
-                AppleMusicLyricsHeartBtn.Foreground = heartFg;
-            }
-            if (AppleMusicQueueHeartBtn != null)
-            {
-                AppleMusicQueueHeartBtn.Content = heartContent;
-                AppleMusicQueueHeartBtn.Foreground = heartFg;
-            }
+            UpdateHeartButtonsUI(isFav);
         }
 
         private void QueueInfoPill_Tapped(object sender, TappedRoutedEventArgs e)

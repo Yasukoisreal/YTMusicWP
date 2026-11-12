@@ -421,6 +421,52 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ═══════ LOCK SCREEN / OLMP ═══════ -->
+                <Border Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Margin="0,0,0,16" Padding="18,16">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                            <Border Background="#0EA5E9" CornerRadius="12" Width="28" Height="28" Margin="0,0,10,0">
+                                <TextBlock Text="&#xE12B;" FontFamily="Segoe UI Symbol" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock x:Uid="Settings_OlmpTitle" Text="Lock Screen / OLMP" FontSize="16" FontFamily="{StaticResource MontserratSemiBold}" Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Enable OLMP Toggle -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Uid="Settings_OlmpEnable" Text="OLMP Server (port 8088)" Foreground="White" FontSize="15" FontFamily="{StaticResource MontserratSemiBold}"/>
+                                <TextBlock x:Uid="Settings_OlmpEnableDesc" Text="For Two UI lock screen widget &amp; media controls" Foreground="#555" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="OlmpServerToggle" x:FieldModifier="internal" Grid.Column="1" IsOn="True" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Rectangle Height="1" Fill="#252525" Margin="0,8,0,8"/>
+
+                        <!-- Server Status & Restart Button -->
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Uid="Settings_OlmpStatusHeader" Text="Server Status" Foreground="#888" FontSize="11" FontFamily="{StaticResource MontserratBold}"/>
+                                <TextBlock x:Name="OlmpStatusText" x:FieldModifier="internal" Text="" Foreground="{StaticResource BrandGreenBrush}" FontSize="13" FontFamily="{StaticResource MontserratSemiBold}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <Button Click="RestartOlmp_Click" Grid.Column="1" Style="{StaticResource CategoryButtonStyle}" Height="36" Padding="12,0" VerticalAlignment="Center">
+                                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="10" Padding="10,6">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="&#xE149;" FontFamily="Segoe UI Symbol" FontSize="12" Foreground="White" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                        <TextBlock x:Uid="Settings_OlmpRestart" Text="Restart" FontFamily="{StaticResource MontserratSemiBold}" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <!-- ═══════ LAST.FM (hidden in builds without API credentials) ═══════ -->
                 <Border x:Name="LastFmSection" x:FieldModifier="internal" Background="{StaticResource SurfaceAltBrush}" CornerRadius="16" Margin="0,0,0,16" Padding="18,16" Visibility="Collapsed">
                     <StackPanel>

@@ -17,6 +17,7 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace YTMusicWP
@@ -232,8 +233,7 @@ namespace YTMusicWP
 
             bool isFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
             try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = isFav; } catch { }
-            BigHeartBtn.Content = isFav ? "♥" : "♡";
-            BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+            UpdateHeartButtonsUI(isFav);
 
             var ignored = UpdateLyricsAsync(track.Title, track.ChannelName);
             UpdateNowPlayingGradient(track.Title, track.ChannelName, track.ThumbnailUrl);
@@ -580,49 +580,130 @@ namespace YTMusicWP
             }
         }
 
+        private void UpdateShuffleUI(bool isShuff)
+        {
+            if (ShuffleIcon != null)
+                ShuffleIcon.Foreground = isShuff ? _greenBrush : _whiteBrush;
+            if (ShuffleDot != null)
+                ShuffleDot.Visibility = isShuff ? Visibility.Visible : Visibility.Collapsed;
+            if (AppleMusicShuffleIcon != null)
+                AppleMusicShuffleIcon.Foreground = isShuff ? _greenBrush : _whiteBrush;
+        }
+
+        private void UpdateHeartButtonsUI(bool isFav)
+        {
+            if (BigHeartBtn != null)
+            {
+                BigHeartBtn.Content = isFav ? "♥" : "♡";
+                BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+            }
+            if (AppleMusicMainHeartBtn != null)
+            {
+                AppleMusicMainHeartBtn.Content = isFav ? "★" : "☆";
+                AppleMusicMainHeartBtn.Foreground = _whiteBrush;
+            }
+            if (AppleMusicLyricsHeartBtn != null)
+            {
+                AppleMusicLyricsHeartBtn.Content = isFav ? "♥" : "♡";
+                AppleMusicLyricsHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+            }
+            if (AppleMusicQueueHeartBtn != null)
+            {
+                AppleMusicQueueHeartBtn.Content = isFav ? "♥" : "♡";
+                AppleMusicQueueHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+            }
+        }
+
+        private async Task ApplyFavoriteStateAsync(string vid, bool desired, string title = null, string artist = null, string thumb = null)
+        {
+            if (string.IsNullOrEmpty(vid)) return;
+
+            if (!Dispatcher.HasThreadAccess)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+                {
+                    await ApplyFavoriteStateAsync(vid, desired, title, artist, thumb);
+                });
+                return;
+            }
+
+            var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == vid);
+            bool isCurrentlyFav = (existing != null);
+
+            if (desired == isCurrentlyFav)
+            {
+                if (currentTrack != null && currentTrack.VideoId == vid)
+                {
+                    UpdateHeartButtonsUI(desired);
+                    try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = desired; } catch { }
+                }
+                return;
+            }
+
+            if (!desired)
+            {
+                if (existing != null)
+                {
+                    favoriteTracks.Remove(existing);
+                }
+                var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(vid);
+            }
+            else
+            {
+                YouTubeTrack trackToAdd = existing;
+                if (trackToAdd == null)
+                {
+                    if (currentTrack != null && currentTrack.VideoId == vid)
+                    {
+                        trackToAdd = currentTrack;
+                    }
+                    else
+                    {
+                        trackToAdd = new YouTubeTrack
+                        {
+                            VideoId = vid,
+                            Title = title ?? "",
+                            ChannelName = artist ?? "",
+                            ThumbnailUrl = thumb ?? ""
+                        };
+                    }
+                }
+                favoriteTracks.Insert(0, trackToAdd);
+                var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(trackToAdd);
+            }
+
+            SaveFavoritesAsync();
+
+            if (currentTrack != null && currentTrack.VideoId == vid)
+            {
+                UpdateHeartButtonsUI(desired);
+                try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = desired; } catch { }
+            }
+
+            // Sync to YouTube (skip LOCAL tracks and non-authenticated sessions)
+            try
+            {
+                string token = await GetAccessTokenAsync();
+                bool hasAuth = !string.IsNullOrEmpty(token) || InnerTubeClient.HasCookieAuth;
+                if (hasAuth && !vid.StartsWith("LOCAL:"))
+                {
+                    string rating = desired ? "like" : "none";
+                    await RateVideoAsync(vid, rating);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[ApplyFavoriteState] RateVideo error: " + ex.Message);
+            }
+        }
+
         private async void HeartButton_Click(object sender, RoutedEventArgs e)
         {
             var track = currentTrack;
             if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
 
-            // Check if user is authenticated to sync likes to YouTube
-            string token = await GetAccessTokenAsync();
-            bool hasAuth = !string.IsNullOrEmpty(token) || InnerTubeClient.HasCookieAuth;
-
-            if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
-
-            var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
-            bool isAdding = (existing == null);
-
-            if (existing != null) 
-            { 
-                favoriteTracks.Remove(existing); 
-                BigHeartBtn.Content = "♡"; 
-                BigHeartBtn.Foreground = _whiteBrush; 
-                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "☆"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
-                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♡"; AppleMusicLyricsHeartBtn.Foreground = _whiteBrush; }
-                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♡"; AppleMusicQueueHeartBtn.Foreground = _whiteBrush; }
-                var _ = YTMusicWP.Services.DatabaseHelper.RemoveFavoriteAsync(track.VideoId);
-            }
-            else 
-            { 
-                favoriteTracks.Insert(0, track); 
-                BigHeartBtn.Content = "♥"; 
-                BigHeartBtn.Foreground = _greenBrush; 
-                if (AppleMusicMainHeartBtn != null) { AppleMusicMainHeartBtn.Content = "★"; AppleMusicMainHeartBtn.Foreground = _whiteBrush; }
-                if (AppleMusicLyricsHeartBtn != null) { AppleMusicLyricsHeartBtn.Content = "♥"; AppleMusicLyricsHeartBtn.Foreground = _greenBrush; }
-                if (AppleMusicQueueHeartBtn != null) { AppleMusicQueueHeartBtn.Content = "♥"; AppleMusicQueueHeartBtn.Foreground = _greenBrush; }
-                var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
-            }
-            SaveFavoritesAsync();
-            try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = isAdding; } catch { }
-
-            // Sync to YouTube (skip LOCAL tracks and non-authenticated sessions)
-            if (hasAuth && !track.VideoId.StartsWith("LOCAL:"))
-            {
-                string rating = isAdding ? "like" : "none";
-                await RateVideoAsync(track.VideoId, rating);
-            }
+            bool isCurrentlyFav = favoriteTracks.Any(t => t.VideoId == track.VideoId);
+            await ApplyFavoriteStateAsync(track.VideoId, !isCurrentlyFav, track.Title, track.ChannelName, track.ThumbnailUrl);
         }
 
         private void ShuffleButton_Click(object sender, RoutedEventArgs e)
@@ -630,10 +711,7 @@ namespace YTMusicWP
             var settings = ApplicationData.Current.LocalSettings;
             bool newState = !(settings.Values.ContainsKey("ShuffleMode") ? (bool)settings.Values["ShuffleMode"] : false);
             settings.Values["ShuffleMode"] = newState;
-            ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
-            ShuffleDot.Visibility = newState ? Visibility.Visible : Visibility.Collapsed;
-            if (AppleMusicShuffleIcon != null)
-                AppleMusicShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
+            UpdateShuffleUI(newState);
         }
 
         private void RepeatButton_Click(object sender, RoutedEventArgs e)
@@ -657,6 +735,98 @@ namespace YTMusicWP
                 else if (mode == 1) { AppleMusicRepeatIcon.Glyph = "\uE1CD"; AppleMusicRepeatIcon.Foreground = _greenBrush; }
                 else if (mode == 2) { AppleMusicRepeatIcon.Glyph = "\uE1CC"; AppleMusicRepeatIcon.Foreground = _greenBrush; }
             }
+        }
+
+        public async Task ProcessPendingActionsAndSyncModesAsync()
+        {
+            try
+            {
+                var settings = ApplicationData.Current.LocalSettings;
+
+                // 1. Đồng bộ ShuffleMode
+                if (settings.Values.ContainsKey("ShuffleMode"))
+                {
+                    bool isShuff = Convert.ToBoolean(settings.Values["ShuffleMode"]);
+                    UpdateShuffleUI(isShuff);
+                }
+
+                // 2. Đồng bộ RepeatMode
+                if (settings.Values.ContainsKey("RepeatMode"))
+                {
+                    int rep = Convert.ToInt32(settings.Values["RepeatMode"]);
+                    UpdateRepeatUI(rep);
+                }
+
+                // 3. Xử lý Pending Favorite từ màn hình khoá / OLMP
+                if (settings.Values.ContainsKey("PendingFavoriteVideoId"))
+                {
+                    string pVid = settings.Values["PendingFavoriteVideoId"] as string;
+                    if (!string.IsNullOrEmpty(pVid))
+                    {
+                        bool pState = settings.Values.ContainsKey("PendingFavoriteState") && Convert.ToBoolean(settings.Values["PendingFavoriteState"]);
+                        string pTitle = settings.Values.ContainsKey("PendingFavoriteTitle") ? settings.Values["PendingFavoriteTitle"] as string : "";
+                        string pArtist = settings.Values.ContainsKey("PendingFavoriteArtist") ? settings.Values["PendingFavoriteArtist"] as string : "";
+                        string pThumb = settings.Values.ContainsKey("PendingFavoriteThumb") ? settings.Values["PendingFavoriteThumb"] as string : "";
+
+                        settings.Values.Remove("PendingFavoriteVideoId");
+                        settings.Values.Remove("PendingFavoriteState");
+                        settings.Values.Remove("PendingFavoriteTitle");
+                        settings.Values.Remove("PendingFavoriteArtist");
+                        settings.Values.Remove("PendingFavoriteThumb");
+
+                        await ApplyFavoriteStateAsync(pVid, pState, pTitle, pArtist, pThumb);
+                    }
+                }
+                else if (currentTrack != null && !string.IsNullOrEmpty(currentTrack.VideoId))
+                {
+                    if (settings.Values.ContainsKey("CurrentTrackIsFavorite"))
+                    {
+                        bool lsFav = Convert.ToBoolean(settings.Values["CurrentTrackIsFavorite"]);
+                        bool isFavInDb = favoriteTracks.Any(t => t.VideoId == currentTrack.VideoId);
+                        if (lsFav != isFavInDb)
+                        {
+                            await ApplyFavoriteStateAsync(currentTrack.VideoId, lsFav, currentTrack.Title, currentTrack.ChannelName, currentTrack.ThumbnailUrl);
+                        }
+                        else
+                        {
+                            UpdateHeartButtonsUI(isFavInDb);
+                        }
+                    }
+                    else
+                    {
+                        bool isFavInDb = favoriteTracks.Any(t => t.VideoId == currentTrack.VideoId);
+                        UpdateHeartButtonsUI(isFavInDb);
+                    }
+                }
+
+                // 4. Đồng bộ trạng thái máy chủ OLMP
+                RequestOlmpStatus();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[ProcessPendingActions] Error: " + ex.Message);
+            }
+        }
+
+        public void UpdateOlmpStatusUI(bool isRunning)
+        {
+            try
+            {
+                if (SettingsPanel != null && SettingsPanel.OlmpStatusText != null)
+                {
+                    if (isRunning)
+                    {
+                        SettingsPanel.OlmpStatusText.Text = Services.Loc.T("Settings_OlmpStatusRunning", "Running (Port 8088)");
+                        SettingsPanel.OlmpStatusText.Foreground = _greenBrush;
+                    }
+                    else
+                    {
+                        SettingsPanel.OlmpStatusText.Text = Services.Loc.T("Settings_OlmpStatusStopped", "Stopped");
+                        SettingsPanel.OlmpStatusText.Foreground = (SolidColorBrush)Application.Current.Resources["TextMutedBrush"];
+                    }
+                }
+            }
+            catch { }
         }
 
         private bool _isCurrentLiveCached = false;
@@ -1254,8 +1424,7 @@ namespace YTMusicWP
                     UpdateAnimatedArtwork();
                     bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
                     try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = isFav; } catch { }
-                    BigHeartBtn.Content = isFav ? "♥" : "♡";
-                    BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+                    UpdateHeartButtonsUI(isFav);
 
                     var ignored = UpdateLyricsAsync(title, artist);
                     UpdateNowPlayingGradient(title, artist, thumb);
@@ -1311,24 +1480,22 @@ namespace YTMusicWP
 
             if (e.Data.ContainsKey("ToggleFavorite"))
             {
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
                 {
                     try
                     {
                         bool desired = Convert.ToBoolean(e.Data["ToggleFavorite"]);
-                        var track = currentTrack;
-                        if (track == null || string.IsNullOrEmpty(track.VideoId)) return;
-                        var existing = favoriteTracks.FirstOrDefault(t => t.VideoId == track.VideoId);
-                        bool isCurrentlyFav = (existing != null);
-                        if (desired != isCurrentlyFav)
+                        string vid = e.Data.ContainsKey("VideoId") ? e.Data["VideoId"]?.ToString() : null;
+                        if (string.IsNullOrEmpty(vid) && currentTrack != null)
                         {
-                            HeartButton_Click(null, null);
+                            vid = currentTrack.VideoId;
+                        }
+                        if (!string.IsNullOrEmpty(vid))
+                        {
+                            await ApplyFavoriteStateAsync(vid, desired, currentTrack?.Title, currentTrack?.ChannelName, currentTrack?.ThumbnailUrl);
                         }
                     }
-                    catch
-                    {
-                        HeartButton_Click(null, null);
-                    }
+                    catch { }
                 });
             }
 
@@ -1341,10 +1508,7 @@ namespace YTMusicWP
                         var settings = ApplicationData.Current.LocalSettings;
                         bool newState = Convert.ToBoolean(e.Data["SetShuffleMode"]);
                         settings.Values["ShuffleMode"] = newState;
-                        ShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
-                        ShuffleDot.Visibility = newState ? Visibility.Visible : Visibility.Collapsed;
-                        if (AppleMusicShuffleIcon != null)
-                            AppleMusicShuffleIcon.Foreground = newState ? _greenBrush : _whiteBrush;
+                        UpdateShuffleUI(newState);
                     }
                     catch { }
                 });
@@ -1360,6 +1524,19 @@ namespace YTMusicWP
                         int newMode = Convert.ToInt32(e.Data["SetRepeatMode"]);
                         settings.Values["RepeatMode"] = newMode;
                         UpdateRepeatUI(newMode);
+                    }
+                    catch { }
+                });
+            }
+
+            if (e.Data.ContainsKey("OlmpStatus"))
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    try
+                    {
+                        bool isRunning = Convert.ToBoolean(e.Data["OlmpStatus"]);
+                        UpdateOlmpStatusUI(isRunning);
                     }
                     catch { }
                 });
@@ -1482,8 +1659,8 @@ namespace YTMusicWP
                         UpdateAnimatedArtwork();
 
                         bool isFav = favoriteTracks.Any(t => t.VideoId == vid);
-                        BigHeartBtn.Content = isFav ? "♥" : "♡";
-                        BigHeartBtn.Foreground = isFav ? _greenBrush : _whiteBrush;
+                        try { ApplicationData.Current.LocalSettings.Values["CurrentTrackIsFavorite"] = isFav; } catch { }
+                        UpdateHeartButtonsUI(isFav);
 
                         var existingHistory = historyTracks.FirstOrDefault(t => t.VideoId == vid);
                         if (existingHistory != null) historyTracks.Remove(existingHistory);

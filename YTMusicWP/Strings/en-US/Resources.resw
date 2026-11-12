@@ -1207,4 +1207,31 @@ Swipe up for the next one.</value>
   <data name="Credits_OpusAac" xml:space="preserve">
     <value>Opus / AAC</value>
   </data>
+  <data name="Settings_OlmpTitle.Text" xml:space="preserve">
+    <value>Lock Screen / OLMP</value>
+  </data>
+  <data name="Settings_OlmpEnable.Text" xml:space="preserve">
+    <value>OLMP Server (port 8088)</value>
+  </data>
+  <data name="Settings_OlmpEnableDesc.Text" xml:space="preserve">
+    <value>For Two UI lock screen widget &amp; media controls</value>
+  </data>
+  <data name="Settings_OlmpStatusHeader.Text" xml:space="preserve">
+    <value>SERVER STATUS</value>
+  </data>
+  <data name="Settings_OlmpRestart.Text" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="Settings_OlmpStatusRunning" xml:space="preserve">
+    <value>Running (Port 8088)</value>
+  </data>
+  <data name="Settings_OlmpStatusStopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="Settings_OlmpStatusRestarting" xml:space="preserve">
+    <value>Restarting...</value>
+  </data>
+  <data name="Toast_OlmpRestarting" xml:space="preserve">
+    <value>Restarting OLMP server...</value>
+  </data>
 </root>

@@ -23,6 +23,7 @@ namespace YTMusicWP.Controls
         public event RoutedEventHandler RefreshStorageStatsClick;
         public event RoutedEventHandler ListenTogetherClick;
         public event RoutedEventHandler LastFmClick;
+        public event RoutedEventHandler RestartOlmpClick;
 
         public SettingsView()
         {
@@ -48,5 +49,6 @@ namespace YTMusicWP.Controls
         private void ExportAllToMusicFolder_Click(object sender, RoutedEventArgs e) { Raise(ExportAllToMusicFolderClick, sender, e); }
         private void RefreshStorageStats_Click(object sender, RoutedEventArgs e) { Raise(RefreshStorageStatsClick, sender, e); }
         private void ListenTogether_Click(object sender, RoutedEventArgs e) { Raise(ListenTogetherClick, sender, e); }
+        private void RestartOlmp_Click(object sender, RoutedEventArgs e) { Raise(RestartOlmpClick, sender, e); }
     }
 }

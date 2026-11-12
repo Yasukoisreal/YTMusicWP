@@ -997,4 +997,31 @@ Hãy kiểm tra kết nối rồi thử lại.</value>
   <data name="Credits_OpusAac" xml:space="preserve">
     <value>Opus / AAC</value>
   </data>
+  <data name="Settings_OlmpTitle.Text" xml:space="preserve">
+    <value>Màn hình khóa / OLMP</value>
+  </data>
+  <data name="Settings_OlmpEnable.Text" xml:space="preserve">
+    <value>Máy chủ OLMP (Cổng 8088)</value>
+  </data>
+  <data name="Settings_OlmpEnableDesc.Text" xml:space="preserve">
+    <value>Cho widget Two UI màn hình khóa &amp; phím điều khiển</value>
+  </data>
+  <data name="Settings_OlmpStatusHeader.Text" xml:space="preserve">
+    <value>TRẠNG THÁI MÁY CHỦ</value>
+  </data>
+  <data name="Settings_OlmpRestart.Text" xml:space="preserve">
+    <value>Khởi động lại</value>
+  </data>
+  <data name="Settings_OlmpStatusRunning" xml:space="preserve">
+    <value>Đang hoạt động (Cổng 8088)</value>
+  </data>
+  <data name="Settings_OlmpStatusStopped" xml:space="preserve">
+    <value>Đã dừng</value>
+  </data>
+  <data name="Settings_OlmpStatusRestarting" xml:space="preserve">
+    <value>Đang khởi động lại...</value>
+  </data>
+  <data name="Toast_OlmpRestarting" xml:space="preserve">
+    <value>Đang khởi động lại máy chủ OLMP...</value>
+  </data>
 </root>

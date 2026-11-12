@@ -631,6 +631,7 @@ namespace YTMusicWP
                     NetworkInformation.NetworkStatusChanged += NetworkInformation_NetworkStatusChanged;
                     _lastLiveCheck = DateTime.MinValue; // re-read the live flag: its messages were missed while suspended
                     SyncBackgroundPlayer();
+                    await ProcessPendingActionsAndSyncModesAsync();
 
                     bool npVisible = (NowPlayingView != null && NowPlayingView.Visibility == Visibility.Visible)
                                    || (FullscreenLyricsView != null && FullscreenLyricsView.Visibility == Visibility.Visible);
@@ -817,6 +818,7 @@ namespace YTMusicWP
             await LoadDownloadsAsync(); // depends on filesystem scan, runs after
 
             SyncBackgroundPlayer();
+            await ProcessPendingActionsAndSyncModesAsync();
 
             if (!IsInternetAvailable())
             {

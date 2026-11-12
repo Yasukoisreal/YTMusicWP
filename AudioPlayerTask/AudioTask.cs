@@ -191,10 +191,95 @@ namespace AudioPlayerTask
             }
         }
 
+        private void SetTrackFavoriteFromRemote(bool isFav)
+        {
+            try
+            {
+                string vid = null;
+                string title = "";
+                string artist = "";
+                string thumb = "";
+
+                lock (_playlistLock)
+                {
+                    if (_currentTrackIndex >= 0 && _videoIdList != null && _currentTrackIndex < _videoIdList.Count)
+                    {
+                        vid = _videoIdList[_currentTrackIndex];
+                        if (_titleList != null && _currentTrackIndex < _titleList.Count) title = _titleList[_currentTrackIndex] ?? "";
+                        if (_artistList != null && _currentTrackIndex < _artistList.Count) artist = _artistList[_currentTrackIndex] ?? "";
+                        if (_thumbnailList != null && _currentTrackIndex < _thumbnailList.Count) thumb = _thumbnailList[_currentTrackIndex] ?? "";
+                    }
+                }
+
+                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                ls["CurrentTrackIsFavorite"] = isFav;
+
+                if (!string.IsNullOrEmpty(vid))
+                {
+                    ls["PendingFavoriteVideoId"] = vid;
+                    ls["PendingFavoriteState"] = isFav;
+                    ls["PendingFavoriteTitle"] = title;
+                    ls["PendingFavoriteArtist"] = artist;
+                    ls["PendingFavoriteThumb"] = thumb;
+                }
+
+                var vs = new Windows.Foundation.Collections.ValueSet();
+                vs["ToggleFavorite"] = isFav;
+                if (!string.IsNullOrEmpty(vid))
+                {
+                    vs["VideoId"] = vid;
+                }
+                BackgroundMediaPlayer.SendMessageToForeground(vs);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[AudioTask] SetTrackFavoriteFromRemote error: " + ex.Message);
+            }
+        }
+
+        private void RestartLocalServer()
+        {
+            StopLocalServer();
+            StartLocalServer();
+        }
+
+        private void SendOlmpStatusToForeground()
+        {
+            try
+            {
+                bool isRunning = (_localServer != null && _localServer.IsRunning);
+                var vs = new Windows.Foundation.Collections.ValueSet();
+                vs["OlmpStatus"] = isRunning;
+                vs["OlmpPort"] = 8088;
+                BackgroundMediaPlayer.SendMessageToForeground(vs);
+            }
+            catch { }
+        }
+
         private void StartLocalServer()
         {
             try
             {
+                var localSettingsValues = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                bool enableOlmp = true;
+                if (localSettingsValues.ContainsKey("EnableOlmpServer"))
+                {
+                    try { enableOlmp = Convert.ToBoolean(localSettingsValues["EnableOlmpServer"]); } catch { }
+                }
+                if (!enableOlmp)
+                {
+                    StopLocalServer();
+                    return;
+                }
+
+                if (_localServer != null && _localServer.IsRunning)
+                {
+                    SendOlmpStatusToForeground();
+                    return;
+                }
+
+                StopLocalServer();
+
                 _localServer = new LocalMusicServer(8088,
                     GetTrackStatus,
                     () => { _isUserPaused = false; try { if (_mediaPlayer.CurrentState == MediaPlayerState.Closed) StartPlaybackAsync(); else _mediaPlayer.Play(); } catch { StartPlaybackAsync(); } },
@@ -238,11 +323,7 @@ namespace AudioPlayerTask
                             if (style == 1 || style == 2)
                             {
                                 bool isFav = val > 0.0f;
-                                var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-                                ls["CurrentTrackIsFavorite"] = isFav;
-                                var vs = new Windows.Foundation.Collections.ValueSet();
-                                vs["ToggleFavorite"] = isFav;
-                                BackgroundMediaPlayer.SendMessageToForeground(vs);
+                                SetTrackFavoriteFromRemote(isFav);
                             }
                         }
                         catch { }
@@ -289,18 +370,14 @@ namespace AudioPlayerTask
                                 {
                                     curFav = Convert.ToBoolean(ls["CurrentTrackIsFavorite"]);
                                 }
-                                bool nextFav = !string.IsNullOrEmpty(val) ? (val == "true" || val == "1") : !curFav;
-                                ls["CurrentTrackIsFavorite"] = nextFav;
-
-                                var vs = new Windows.Foundation.Collections.ValueSet();
-                                vs["ToggleFavorite"] = nextFav;
-                                BackgroundMediaPlayer.SendMessageToForeground(vs);
+                                bool nextFav = (!string.IsNullOrEmpty(val) && !val.Equals("toggle", StringComparison.OrdinalIgnoreCase)) ? (val == "true" || val == "1") : !curFav;
+                                SetTrackFavoriteFromRemote(nextFav);
                             }
                             else if (actionLower == "shuffle" || actionLower == "android.media.action.shuffle")
                             {
                                 var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
                                 bool curShuffle = ls.ContainsKey("ShuffleMode") ? Convert.ToBoolean(ls["ShuffleMode"]) : false;
-                                bool nextShuffle = !string.IsNullOrEmpty(val) ? (val == "true" || val == "1") : !curShuffle;
+                                bool nextShuffle = (!string.IsNullOrEmpty(val) && !val.Equals("toggle", StringComparison.OrdinalIgnoreCase)) ? (val == "true" || val == "1") : !curShuffle;
                                 ls["ShuffleMode"] = nextShuffle;
 
                                 var vs = new Windows.Foundation.Collections.ValueSet();
@@ -333,7 +410,11 @@ namespace AudioPlayerTask
                         catch { }
                     }
                 );
-                var ignored = _localServer.StartAsync();
+                var startTask = _localServer.StartAsync();
+                var ignored = startTask.ContinueWith(t =>
+                {
+                    SendOlmpStatusToForeground();
+                });
             }
             catch (Exception ex)
             {
@@ -363,6 +444,7 @@ namespace AudioPlayerTask
                     _localServer.Dispose();
                     _localServer = null;
                 }
+                SendOlmpStatusToForeground();
             }
             catch { }
         }
@@ -682,6 +764,32 @@ namespace AudioPlayerTask
                         }
                     }
                     catch { }
+                }
+                else if (e.Data.ContainsKey("RestartOlmpServer"))
+                {
+                    RestartLocalServer();
+                }
+                else if (e.Data.ContainsKey("SetOlmpEnabled"))
+                {
+                    try
+                    {
+                        bool enabled = Convert.ToBoolean(e.Data["SetOlmpEnabled"]);
+                        var ls = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+                        ls["EnableOlmpServer"] = enabled;
+                        if (enabled)
+                        {
+                            RestartLocalServer();
+                        }
+                        else
+                        {
+                            StopLocalServer();
+                        }
+                    }
+                    catch { }
+                }
+                else if (e.Data.ContainsKey("GetOlmpStatus"))
+                {
+                    SendOlmpStatusToForeground();
                 }
             }
             catch (Exception ex)

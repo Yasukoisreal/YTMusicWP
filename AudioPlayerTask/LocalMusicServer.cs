@@ -177,6 +177,7 @@ namespace AudioPlayerTask
         private readonly Action _prepareAction;
         private readonly Action<string, string> _customAction;
         private bool _isDisposed = false;
+        public bool IsRunning { get; private set; }
 
         internal LocalMusicServer(
             int port,
@@ -218,21 +219,48 @@ namespace AudioPlayerTask
             _adjustVolumeAction = adjustVolumeAction;
             _prepareAction = prepareAction;
             _customAction = customAction;
+            IsRunning = false;
         }
 
-        internal async Task StartAsync()
+        internal async Task<bool> StartAsync()
         {
-            if (_isDisposed) return;
+            if (_isDisposed) return false;
             try
             {
+                IsRunning = false;
+                if (_listener != null)
+                {
+                    try
+                    {
+                        _listener.ConnectionReceived -= OnConnectionReceived;
+                        _listener.Dispose();
+                    }
+                    catch { }
+                    _listener = null;
+                }
+
                 _listener = new StreamSocketListener();
                 _listener.ConnectionReceived += OnConnectionReceived;
                 await _listener.BindServiceNameAsync(_port.ToString());
+                IsRunning = true;
                 System.Diagnostics.Debug.WriteLine("[LocalMusicServer] Started on port " + _port);
+                return true;
             }
             catch (Exception ex)
             {
+                IsRunning = false;
+                if (_listener != null)
+                {
+                    try
+                    {
+                        _listener.ConnectionReceived -= OnConnectionReceived;
+                        _listener.Dispose();
+                    }
+                    catch { }
+                    _listener = null;
+                }
                 System.Diagnostics.Debug.WriteLine("[LocalMusicServer] Start failed: " + ex.Message);
+                return false;
             }
         }
 
@@ -249,7 +277,16 @@ namespace AudioPlayerTask
                 reader = new DataReader(socket.InputStream);
                 writer = new DataWriter(socket.OutputStream);
                 reader.InputStreamOptions = InputStreamOptions.Partial;
-                await reader.LoadAsync(2048);
+
+                var loadTask = reader.LoadAsync(2048).AsTask();
+                var timeoutTask = Task.Delay(4000);
+                var completedTask = await Task.WhenAny(loadTask, timeoutTask);
+                if (completedTask != loadTask)
+                {
+                    // Timed out waiting for client request data (prevents hanging half-open sockets)
+                    return;
+                }
+
                 if (reader.UnconsumedBufferLength == 0) return;
 
                 string request = reader.ReadString(reader.UnconsumedBufferLength);
@@ -291,6 +328,19 @@ namespace AudioPlayerTask
                 {
                     path = rawUrl.Substring(0, qIdx);
                     query = rawUrl.Substring(qIdx + 1);
+                }
+
+                if (string.IsNullOrEmpty(query))
+                {
+                    int bodyIdx = request.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+                    if (bodyIdx >= 0 && bodyIdx + 4 < request.Length)
+                    {
+                        string body = request.Substring(bodyIdx + 4).Trim();
+                        if (!string.IsNullOrEmpty(body) && !body.StartsWith("{"))
+                        {
+                            query = body;
+                        }
+                    }
                 }
 
                 // Xử lý nếu client truyền full URL: http://olmp.local/api/... -> bóc tách lấy /api/...
@@ -403,16 +453,29 @@ namespace AudioPlayerTask
                 {
                     int repMode = 0;
                     string modeStr = ExtractQueryParam(query, "mode");
-                    if (!string.IsNullOrEmpty(modeStr) && int.TryParse(modeStr, out repMode))
+                    string valRaw = ExtractQueryParam(query, "value");
+                    if (!string.IsNullOrEmpty(valRaw) && (valRaw.Equals("toggle", StringComparison.OrdinalIgnoreCase) || valRaw.Equals("next", StringComparison.OrdinalIgnoreCase)))
                     {
-                        // Parsed
+                        var curStatus = _getStatusFunc != null ? _getStatusFunc() : null;
+                        int curRep = curStatus != null ? curStatus.RepeatMode : 0;
+                        repMode = (curRep + 1) % 3;
+                    }
+                    else if (!string.IsNullOrEmpty(valRaw))
+                    {
+                        string val = valRaw.ToLowerInvariant();
+                        if (val == "one" || val == "track" || val == "single" || val == "2") repMode = 2; // In YTMusicWP: 2 is One
+                        else if (val == "all" || val == "true" || val == "playlist" || val == "1") repMode = 1; // In YTMusicWP: 1 is All
+                        else repMode = 0;
+                    }
+                    else if (!string.IsNullOrEmpty(modeStr) && int.TryParse(modeStr, out repMode))
+                    {
+                        // Parsed numeric mode
                     }
                     else
                     {
-                        string val = (ExtractQueryParam(query, "value") ?? "").ToLowerInvariant();
-                        if (val == "one" || val == "track" || val == "single") repMode = 1;
-                        else if (val == "all" || val == "true" || val == "playlist") repMode = 2;
-                        else repMode = 0;
+                        var curStatus = _getStatusFunc != null ? _getStatusFunc() : null;
+                        int curRep = curStatus != null ? curStatus.RepeatMode : 0;
+                        repMode = (curRep + 1) % 3;
                     }
                     if (_repeatAction != null) _repeatAction(repMode);
                     var status = _getStatusFunc != null ? _getStatusFunc() : new TrackStatusDto();
@@ -423,13 +486,20 @@ namespace AudioPlayerTask
                 {
                     int shuffMode = 0;
                     string modeStr = ExtractQueryParam(query, "mode");
+                    string valRaw = ExtractQueryParam(query, "value");
                     if (!string.IsNullOrEmpty(modeStr) && int.TryParse(modeStr, out shuffMode))
                     {
                         // Parsed
                     }
+                    else if (string.IsNullOrEmpty(valRaw) || valRaw.Equals("toggle", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var curStatus = _getStatusFunc != null ? _getStatusFunc() : null;
+                        bool curShuff = curStatus != null && curStatus.IsShuffle;
+                        shuffMode = curShuff ? 0 : 1;
+                    }
                     else
                     {
-                        string val = (ExtractQueryParam(query, "value") ?? "").ToLowerInvariant();
+                        string val = valRaw.ToLowerInvariant();
                         shuffMode = (val == "true" || val == "1") ? 1 : 0;
                     }
                     if (_shuffleAction != null) _shuffleAction(shuffMode);
@@ -445,7 +515,16 @@ namespace AudioPlayerTask
                     string styleStr = ExtractQueryParam(query, "style");
                     string valStr = ExtractQueryParam(query, "value");
                     if (!string.IsNullOrEmpty(styleStr)) int.TryParse(styleStr, out style);
-                    if (!string.IsNullOrEmpty(valStr)) float.TryParse(valStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out val);
+                    if (!string.IsNullOrEmpty(valStr) && !valStr.Equals("toggle", StringComparison.OrdinalIgnoreCase))
+                    {
+                        float.TryParse(valStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out val);
+                    }
+                    else
+                    {
+                        var curStatus = _getStatusFunc != null ? _getStatusFunc() : null;
+                        bool curFav = curStatus != null && curStatus.IsFavorite;
+                        val = curFav ? 0.0f : 1.0f;
+                    }
                     if (_ratingAction != null) _ratingAction(style, val);
                     var status = _getStatusFunc != null ? _getStatusFunc() : new TrackStatusDto();
                     status.RatingStyle = style;

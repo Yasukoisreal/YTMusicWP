@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -253,6 +254,15 @@ namespace YTMusicWP
                     SettingsPanel.SmartDownloadsToggle.Toggled += SmartDownloadsToggle_Toggled;
                 }
 
+                if (SettingsPanel.OlmpServerToggle != null)
+                {
+                    bool olmpEnabled = SafeGetBool(settings, "EnableOlmpServer", true);
+                    SettingsPanel.OlmpServerToggle.IsOn = olmpEnabled;
+                    SettingsPanel.OlmpServerToggle.Toggled += OlmpServerToggle_Toggled;
+                }
+                SettingsPanel.RestartOlmpClick += SettingsPanel_RestartOlmpClick;
+                RequestOlmpStatus();
+
                 // Now attach handlers  changes will save & apply immediately
                 // Quality handler removed
 
@@ -268,6 +278,61 @@ namespace YTMusicWP
                 SettingsPanel.LiveTileToggle.Toggled += LiveTileToggle_Toggled;
                 SettingsPanel.LiveTileModeComboBox.SelectionChanged += LiveTileModeComboBox_SelectionChanged;
                 SettingsPanel.LiveTileSpeedComboBox.SelectionChanged += LiveTileSpeedComboBox_SelectionChanged;
+            }
+            catch { }
+        }
+
+        private void OlmpServerToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                bool isEnabled = SettingsPanel.OlmpServerToggle.IsOn;
+                var settings = ApplicationData.Current.LocalSettings.Values;
+                settings["EnableOlmpServer"] = isEnabled;
+
+                var vs = new Windows.Foundation.Collections.ValueSet();
+                vs["SetOlmpEnabled"] = isEnabled;
+                BackgroundMediaPlayer.SendMessageToForeground(vs);
+
+                if (!isEnabled)
+                {
+                    UpdateOlmpStatusUI(false);
+                }
+                else
+                {
+                    if (SettingsPanel.OlmpStatusText != null)
+                    {
+                        SettingsPanel.OlmpStatusText.Text = Services.Loc.T("Settings_OlmpStatusRestarting", "Restarting...");
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void SettingsPanel_RestartOlmpClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (SettingsPanel.OlmpStatusText != null)
+                {
+                    SettingsPanel.OlmpStatusText.Text = Services.Loc.T("Settings_OlmpStatusRestarting", "Restarting...");
+                }
+                ShowToast(Services.Loc.T("Toast_OlmpRestarting", "Restarting OLMP server..."));
+
+                var vs = new Windows.Foundation.Collections.ValueSet();
+                vs["RestartOlmpServer"] = true;
+                BackgroundMediaPlayer.SendMessageToForeground(vs);
+            }
+            catch { }
+        }
+
+        public void RequestOlmpStatus()
+        {
+            try
+            {
+                var vs = new Windows.Foundation.Collections.ValueSet();
+                vs["GetOlmpStatus"] = true;
+                BackgroundMediaPlayer.SendMessageToForeground(vs);
             }
             catch { }
         }
