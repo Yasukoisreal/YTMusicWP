@@ -196,11 +196,12 @@ namespace AudioPlayerTask
             _clientNameInt = clientNameInt;
             Log("Initialized for client=" + (_clientName ?? "?") + " (id=" + _clientNameInt + "), poToken=" + (!string.IsNullOrEmpty(_poToken) ? (_poToken.Length + " chars") : "NONE"));
 
-            // Shared HTTP filter that ignores legacy SSL handshake anomalies and disables response caching
+            // Shared HTTP filter for the IP-pinned SABR requests, plus no response caching.
+            // Only InvalidName is ignored: the request goes to a DoH-resolved IP with the real host in the Host header,
+            // so the certificate name cannot match the URI host. Untrusted/Expired must NOT be ignored - a self-signed
+            // or expired certificate would let whoever controls the network read the cookies and tokens sent here.
             var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
-            filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
-            filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
             filter.CacheControl.ReadBehavior = Windows.Web.Http.Filters.HttpCacheReadBehavior.MostRecent;
             filter.CacheControl.WriteBehavior = Windows.Web.Http.Filters.HttpCacheWriteBehavior.NoCache;
             _httpClient = new HttpClient(filter);

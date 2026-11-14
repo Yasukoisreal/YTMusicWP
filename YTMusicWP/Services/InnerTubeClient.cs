@@ -27,9 +27,10 @@ namespace YTMusicWP
                     if (_winrtClient == null)
                     {
                         var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
-                        filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
+                        // This client carries the Google cookies and OAuth tokens. Only the name mismatch is tolerated
+                        // (a request addressed to a DoH-resolved IP but with the real host in the Host header); an
+                        // untrusted or expired certificate must still fail the request.
                         filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
-                        filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
                         _winrtClient = new Windows.Web.Http.HttpClient(filter);
                     }
                 }

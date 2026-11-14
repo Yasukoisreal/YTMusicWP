@@ -23,10 +23,10 @@ namespace AudioPlayerTask
 
         private static Windows.Web.Http.Filters.HttpBaseProtocolFilter CreateHttpFilter()
         {
+            // Only the name mismatch is tolerated (requests can be addressed to a DoH-resolved IP); an untrusted or
+            // expired certificate must fail, otherwise anyone on the network could serve the audio and read the tokens
             var filter = new Windows.Web.Http.Filters.HttpBaseProtocolFilter();
-            filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Untrusted);
             filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.InvalidName);
-            filter.IgnorableServerCertificateErrors.Add(Windows.Security.Cryptography.Certificates.ChainValidationResult.Expired);
             filter.CacheControl.ReadBehavior = Windows.Web.Http.Filters.HttpCacheReadBehavior.MostRecent;
             filter.CacheControl.WriteBehavior = Windows.Web.Http.Filters.HttpCacheWriteBehavior.NoCache;
             return filter;

@@ -51,9 +51,10 @@ namespace YTMusicWP.Services
                     if (_dohClient == null)
                     {
                         var filter = new HttpBaseProtocolFilter();
-                        filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Untrusted);
+                        // DoH calls to https://1.1.1.1 and https://8.8.8.8 are addressed by IP while the Host header
+                        // carries the real name (dns.google), so only the name mismatch is acceptable. Ignoring
+                        // Untrusted/Expired here would let an attacker answer the DoH query with a forged certificate.
                         filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.InvalidName);
-                        filter.IgnorableServerCertificateErrors.Add(ChainValidationResult.Expired);
                         _dohClient = new HttpClient(filter);
                     }
                 }

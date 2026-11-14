@@ -356,7 +356,9 @@ namespace YTMusicWP
                         {
                             track.ThumbnailUrl = squareArt;
                             hasUpdated = true;
-                            var _ = YTMusicWP.Services.DatabaseHelper.AddFavoriteAsync(track);
+                            // AddFavoriteAsync only inserts: an existing favourite needs the update path, otherwise
+                            // the upgraded cover is lost at the next start and the lookup is repeated
+                            var _ = YTMusicWP.Services.DatabaseHelper.UpdateFavoriteAsync(track);
                         }
                     }
                 }

@@ -4,7 +4,7 @@ description: "ARM device deploy fails DEP6810 / MDILXapCompile 2001 in VS's own 
 metadata:
   node_type: memory
   type: project
-  modified: 2026-10-14T05:20:20.000Z
+  modified: 2026-10-14T07:56:45.000Z
 ---
 
 **RESOLVED on 2026-10-14 - use `tools\Build-ArmAppx.ps1` to deploy to a phone, not F5.**
@@ -21,6 +21,11 @@ metadata:
 - **MDIL-compiling on the host ourselves and handing the result to AppDeployCmd** - `Errore: Deployment optimization failed due to an assembly that's not valid.` AppDeployCmd re-validates/re-optimizes and rejects images that were already compiled for it.
 - **Running the SDK's own optimizer first** (`MDILXAPCompile\BuildMDILAPPX.ps1`) and deploying its `_optimized` appx - `Errore: Deployment Optimization failed with error "Unable to read input file." Ensure that the input file is not already optimized for the target device.` Same reason, seen from the other side.
 - **A project-side guard** - there is none available. A `DropStaleMdilIntermediates` target (RemoveDir `obj\$(Platform)\$(Configuration)\MSIL` + `MDIL`, `BeforeTargets="Build;Clean"`, ARM only) was added on 2026-10-14 and **did not prevent the failure** (reproduced with it in place at 07:03); it was removed again and `YTMusicWP.csproj` now only carries a comment saying not to re-add such a target. Deleting the state makes the engine do a *full* pass 1, which is exactly the path that then runs pass 2 into the trap; it also wipes the state VS would otherwise reuse. VS's Clean/Rebuild never removed those folders either (they are not in `FileListAbsolute.txt`).
+
+## Where MDIL actually lives (probe of 2026-10-14)
+
+- **A plain ARM build never runs MDIL.** `MSBuild.exe YTMusicWP.csproj -p:Configuration=Debug -p:Platform=ARM` finished with exit 0 and produced the appx in `YTMusicWP\AppPackages\YTMusicWP_2.4.0.0_ARM_Debug_Test\` (4.37 MB, unoptimized), while `find obj bin -iname "*mdil*" -o -iname "*msil*"` came back **empty**. `MSIL`/`MDIL` only ever appear under `obj\ARM\<config>\` when VS does the ARM *deploy*, never after a command-line build. Do not go looking for a build switch for them.
+- **The MDIL step lives entirely in VS's deploy assemblies, not in MSBuild.** `MDIL` appears in `Microsoft.VisualStudio.TailoredProjectServices.dll` (the `mdilProcessor`), `Microsoft.VisualStudio.SmartDevice.DeployTask.dll`, `Microsoft.VisualStudio.SmartDevice.ProjectSystem.Base.dll` / `...Base.Utility.dll`, `...NativeProjectSystem.dll` (all under `Common7\IDE\`). The *only* MSBuild reference to `MDILCompile` is `Microsoft.Phone.Packaging.targets` (v8.0 and v8.1): it sets `MDILGeneration = $(MDILCompile)` (lines 444-445) only when `ProjectTypeGuids` is the Silverlight C#/VB guid pair **and** `XapOutputs == true`, then passes it to the `XapPackager` task (line 462). This project has neither, so no `.targets`/`.props`/`.csproj`/registry lever reaches that step.
 
 ## Facts worth keeping
 
